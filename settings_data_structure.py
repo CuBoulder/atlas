@@ -1,8 +1,8 @@
-# We are going to use a local mongod instance. MONGO_HOST and MONGO_PORT
-# default to these values, but we are being explicit.
-MONGO_HOST = 'localhost'
-MONGO_PORT = 27017
-MONGO_DBNAME = 'atlas'
+import os
+
+MONGO_HOST = os.environ.get('MONGO_HOST', 'localhost')
+MONGO_PORT = os.environ.get('MONGO_PORT', 27017)
+MONGO_DBNAME = os.environ.get('MONGO_DBNAME', 'atlas')
 
 # Enable reads (GET), inserts (POST) and DELETE for resources/collections.
 RESOURCE_METHODS = ['GET', 'POST', 'DELETE']

@@ -6,12 +6,29 @@ import logging
 import json
 import datetime
 
-from eve import Eve
-from hashlib import sha1
 
+from eve import Eve
+from eve.auth import BasicAuth
+
+from atlas.utilities import check_ldap_credentials
+from atlas.config import allowed_users
 from atlas import tasks
 
-app = Eve(settings="/data/code/atlas/settings_data_structure.py")
+# Basic Authentication
+class AtlasBasicAuth(BasicAuth):
+    def check_auth(self, username, password, allowed_roles=['default'], resource='default', method='default'):
+        if username not in allowed_users:
+            return False
+        # Test credentials against LDAP.
+        return check_ldap_credentials(username, password)
+
+# Tell Eve to use Basic Auth where our data structure is defined.
+app = Eve(auth=AtlasBasicAuth, settings="/data/code/atlas/settings_data_structure.py")
+# TODO: Remove debug mode.
+app.debug = True
+
+# Add specific callbacks for
+#app.on_post_POST += sites_callback
 
 if __name__ == '__main__':
     app.run(host='0.0.0.0', ssl_context='adhoc')

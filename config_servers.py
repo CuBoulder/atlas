@@ -15,13 +15,13 @@ platforms = {
         'test': ['wwebtest3', 'wwebtest4', 'wwebtest5'],
         'dev': ['wwebdev2'],
         'local': ['express.local'],
-    }
+    },
     'poolb-homepage': {
         'prod': ['wweb3', 'wweb4', 'wweb5'],
         'test': ['wwebtest3', 'wwebtest4', 'wwebtest5'],
         'dev': ['wwebdev2'],
         'local': ['express.local'],
-    }
+    },
 }
 
 base_urls = {

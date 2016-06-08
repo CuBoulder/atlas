@@ -1,6 +1,4 @@
-"""
-    atlas.tasks
-    ~~~~~~~~~
+"""atlas.tasks
 
     Celery tasks for Atlas.
 

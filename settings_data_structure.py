@@ -28,10 +28,12 @@ code_schema = {
             'created': {
                 'type': 'datetime',
                 'required': True,
+                'readonly': True,
             },
             'updated': {
                 'type': 'datetime',
                 'required': True,
+                'readonly': True,
             },
         },
     },

@@ -21,7 +21,6 @@ ITEM_METHODS = ['GET', 'PATCH', 'DELETE']
 
 # Code schema. Defines a code asset that can be applied to a site.
 code_schema = {
-    'versioning': True,
     'date': {
         'type': 'dict',
         'schema': {
@@ -64,7 +63,6 @@ code_schema = {
 
 # Site schema.
 sites_schema = {
-    'versioning': True,
     'name': {
       'type': 'string',
       'minlength': 1,
@@ -198,10 +196,11 @@ code = {
     'resource_methods': ['GET', 'POST'],
     'public_methods': ['GET'],
     'public_item_methods': ['GET'],
+    'versioning': True,
     'schema': code_schema,
 }
 
-# # Sites resource
+# Sites resource
 sites = {
     'item_title': 'site',
     # Allow lookup by 'sid' in addition to '_id'
@@ -212,6 +211,7 @@ sites = {
     'resource_methods': ['GET', 'POST'],
     'public_methods': ['GET'],
     'public_item_methods': ['GET'],
+    'versioning': True,
     'schema': sites_schema,
 }
 
@@ -220,6 +220,6 @@ sites = {
 #
 
 DOMAIN = {
-    # 'sites': sites,
+    'sites': sites,
     'code': code,
 }

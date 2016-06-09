@@ -44,7 +44,7 @@ def check_ldap_credentials(username, password):
         # Try a synchronous bind (we want synchronous so that the command is
         # blocked until the bind gets a result. If you can bind, the
         # credentials are valid.
-        result = ldap_connection.simple_bind_s(ldap_distinguished_name, password)
+        result = l.simple_bind_s(ldap_distinguished_name, password)
         return True
     except ldap.INVALID_CREDENTIALS:
         print "Username or Password is incorrect."

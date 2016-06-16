@@ -4,11 +4,12 @@ MONGO_HOST = os.environ.get('MONGO_HOST', 'localhost')
 MONGO_PORT = os.environ.get('MONGO_PORT', 27017)
 MONGO_DBNAME = os.environ.get('MONGO_DBNAME', 'atlas')
 
-# Enable reads (GET), inserts (POST) and DELETE for resources/collections.
+# Enable reads (GET), inserts (POST), and DELETE for resources/collections.
 RESOURCE_METHODS = ['GET', 'POST', 'DELETE']
 
-# Enable reads (GET), edits (PATCH), and deletes of individual items.
-ITEM_METHODS = ['GET', 'PATCH', 'DELETE']
+# Enable reads (GET), edits (PATCH), replacements (PUT), and deletes of
+# individual items.
+ITEM_METHODS = ['GET', 'PATCH', 'PUT', 'DELETE']
 
 #
 # Definitions of schemas for Items. Schema is based on Cerberus grammar
@@ -56,7 +57,7 @@ code_schema = {
     },
     'git_url': {
         'type': 'string',
-        'regex': 'http[s]?://(?:[a-zA-Z]|[0-9]|[$-_@.&+]|[!*\(\),]|(?:%[0-9a-fA-F][0-9a-fA-F]))+',
+        'regex': '((git|ssh|http(s)?)|(git@[\w\.]+))(:(//)?)([\w\.@\:/\-~]+)(\.git)(/)?',
         'required': True,
     },
     'commit_hash': {

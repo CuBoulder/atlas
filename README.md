@@ -1,6 +1,8 @@
 # Atlas
 
-Atlas is a RESTful API that interacts with servers to deploy and maintain [Web Express](https://github.com/CuBoulder/express) at University of Colorado Boulder.
+Atlas is a RESTful API that use Ansible to interact with servers to deploy and
+maintain [Web Express](https://github.com/CuBoulder/express) at University of
+Colorado Boulder.
 
 ## Installing / Getting started
 

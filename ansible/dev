@@ -1,0 +1,31 @@
+# Inventory of server definitions for DEV.
+# Individual pool definitions.
+[webservers]
+wwebdev2.int.colorado.edu
+
+[database_servers]
+wdbdev-poolb-master.int.colorado.edu
+wdbdev-poolb-read1.int.colorado.edu
+
+[varnish_servers]
+wvarndev2.int.colorado.edu
+
+[memcache_servers]
+wmemdev1.int.colorado.edu
+
+[f5_servers]
+its[5:7]-f5.colorado.edu
+
+[workhorse_servers]
+wwhdev1.int.colorado.edu
+
+[express]
+webservers
+database_servers
+varnish_servers
+memcache_servers
+
+[monitoring_shipping:children]
+webservers
+varnish_servers
+workhorse_servers

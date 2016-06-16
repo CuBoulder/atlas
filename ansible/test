@@ -1,0 +1,30 @@
+# Inventory of server definitions for TEST.
+# Individual pool definitions.
+[webservers]
+wwebtest[3:5].int.colorado.edu
+
+[database_servers]
+wdbtest-poolb-master.int.colorado.edu
+wdbtest-poolb-read1.int.colorado.edu
+
+[varnish_servers]
+wvarntest[3:4].int.colorado.edu
+
+[memcache_servers]
+
+[f5_servers]
+its[6:7]-f5.colorado.edu
+
+[workhorse_servers]
+wwhtest1.int.colorado.edu
+
+[express]
+webservers
+database_servers
+varnish_servers
+memcache_servers
+
+[monitoring_shipping:children]
+webservers
+varnish_servers
+workhorse_servers

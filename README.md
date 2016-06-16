@@ -26,7 +26,9 @@ CRUD Web Express instances
 
 ## Configuration
 
-Configuration is split between two files `local_conf.py` and `conf.py`. You can override anything in `conf.py` in `local_conf.py`.
+Configuration is split between several files and you will need to create a `config_local.py` file.
+
+Servers are defined in `ansible/hosts`.
 
 ## Contributing
 

@@ -5,12 +5,6 @@ All variable settings should go here so values can be propagated to the various
  functions from a central location.
 """
 
-# Import config_servers.py.
-try:
-    from config_servers import *
-except ImportError:
-    raise Exception("You need a config_servers.py file!")
-
 # Import config_local.py.
 try:
     from config_local import *

@@ -1,0 +1,12 @@
+---
+- hosts: webservers
+  vars:
+    target:
+    type:
+    name:
+    version:
+    git_url:
+    hash:
+    is_current:
+  roles:
+    - git

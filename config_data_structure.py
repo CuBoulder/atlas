@@ -24,22 +24,6 @@ ITEM_METHODS = ['GET', 'PATCH', 'PUT', 'DELETE']
 
 # Code schema. Defines a code asset that can be applied to a site.
 code_schema = {
-    'date': {
-        'type': 'dict',
-        'schema': {
-            # See https://docs.python.org/2/library/datetime.html#datetime.datetime for datetime format.
-            'created': {
-                'type': 'datetime',
-                'required': True,
-                'readonly': True,
-            },
-            'updated': {
-                'type': 'datetime',
-                'required': True,
-                'readonly': True,
-            },
-        },
-    },
     'name': {
         'type': 'string',
         'minlength': 3,
@@ -63,6 +47,10 @@ code_schema = {
     'commit_hash': {
         'type': 'string',
         'required': True,
+    },
+    'is_current': {
+        'type': 'boolean',
+        'default': False,
     },
 }
 

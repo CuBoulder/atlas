@@ -15,6 +15,8 @@ ITEM_METHODS = ['GET', 'PATCH', 'DELETE']
 # https://github.com/nicolaiarocci/cerberus.
 #
 
+# TODO: Add support for DNS entries that are owned as part of a site.
+
 # Mongo creates the following: '_created', '_updated', '_etag', and '_id'.
 # We don't use those fields in our logic because want to be able to move or
 # recreate a record without losing any information.

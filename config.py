@@ -14,7 +14,7 @@ except ImportError:
 # URL to eve instance, no trailing slash
 if environment == 'local':
     api_server = 'http://inventory.local/atlas'
-elif environment == 'dev':
+elif environment == 'development':
     api_server = 'https://wwhdev1.int.colorado.edu/atlas'
 elif environment == 'test':
     api_server = 'https://wwhtest1.int.colorado.edu/atlas'

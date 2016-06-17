@@ -9,8 +9,7 @@ RESOURCE_METHODS = ['GET', 'POST', 'DELETE']
 
 # Enable reads (GET), inserts (POST), edits (PATCH), replacements (PUT), and deletes of
 # individual items.
-ITEM_METHODS = ['GET', 'POST', 'PATCH', 'PUT', 'DELETE']
-
+ITEM_METHODS = ['GET', 'PATCH', 'PUT', 'DELETE']
 
 #
 # Definitions of schemas for Items. Schema is based on Cerberus grammar

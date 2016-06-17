@@ -14,31 +14,59 @@ path = '/data/code'
 if path not in sys.path:
     sys.path.append(path)
 
-"""
-Callback for POST to `code` endpoint.
+# Callbacks
+def pre_post_callback(resource, request):
+    """
+    Callback for POST to all endpoints.
 
-:param request: original flask.request object
+    Allows us to hook into any create event *before* the Mongo object is created.
 
-POST only sends one argument.
-"""
-def post_code_callback(request):
+    :param resource: resource accessed
+    :param request: original flask.request object
+    """
     # Request object brings the POST information as a MultiDict.
-    request.form
     app.logger.debug(request.form)
+    # TODO: Check to see if a record with the same combination of fields exists.
+    if resource == 'code':
+        app.logger.debug(request.form)
+        if request.form['name']:
+            app.logger.debug(request.form['name'])
+    elif resource == 'site':
+        app.logger.debug(request.form)
+
+
+# def post_post_code_callback(resource, request, payload):
+    """
+    Callback for POST to `code` endpoint.
+
+    Allows us to hook into 'code' create events *after* the Mongo object has been created.
+
+    :param resource: resource accessed
+    :param request: original flask.request object
+    :param payload: response payload
+    :return:
+    """
+    # Request object brings the POST information as a MultiDict.
+    # app.logger.debug(request.form)
+    # TODO: Deploy code.
 
 
 
-
-# Basic Authentication
+# Utilities
 class AtlasBasicAuth(BasicAuth):
-    def check_auth(self, username, password, allowed_roles=['default'], resource='default', method='default'):
+    """
+    Basic Authentication
+    """
+    def check_auth(self, username, password, allowed_roles=['default'],
+                   resource='default', method='default'):
         # Check if username is in the array of allowed users defined in config_local.py
         if username not in allowed_users:
             return False
-        # Test credentials against LDAP.
-        # Initialize LDAP. The initialize() method returns an LDAPObject
-        # object, which contains methods for performing LDAP operations and
-        # retrieving information about the LDAP connection and transactions.
+        """
+        Test credentials against LDAP.
+
+        Initialize LDAP. The initialize() method returns an LDAPObject object, which contains methods for performing LDAP operations and retrieving information about the LDAP connection and transactions.
+        """
         l = ldap.initialize(ldap_server)
 
         # Start the connection in a secure manner. Catch any errors and print
@@ -52,12 +80,15 @@ class AtlasBasicAuth(BasicAuth):
             else:
                 print e
 
-        ldap_distinguished_name = "uid={0},ou={1},{2}".format(username, ldap_org_unit, ldap_dns_domain_name)
+        ldap_distinguished_name = "uid={0},ou={1},{2}".format(username,
+                                                              ldap_org_unit,
+                                                              ldap_dns_domain_name)
+        app.logger.debug(ldap_distinguished_name)
 
         try:
-            # Try a synchronous bind (we want synchronous so that the
-            # command is blocked until the bind gets a result. If you can
-            # bind, the credentials are valid.
+            """
+            Try a synchronous bind (we want synchronous so that the command is blocked until the bind gets a result. If you can bind, the credentials are valid.
+            """
             result = l.simple_bind_s(ldap_distinguished_name, password)
             app.logger.info(
                 'LDAP - {0} - Bind successful'.format(username))
@@ -84,7 +115,8 @@ app.debug = True
 
 # Add specific callbacks
 # Pattern is: `atlas.on_{Hook}_{Method}_{Resource}`
-app.on_pre_POST_code += post_code_callback
+app.on_pre_POST += pre_post_callback
+# app.on_post_POST_code += post_post_code_callback
 
 if __name__ == '__main__':
     # Enable logging to 'atlas.log' file

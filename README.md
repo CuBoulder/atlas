@@ -26,7 +26,7 @@ CRUD Web Express instances
 
 ## Configuration
 
-Configuration is split between two files `local_conf.py` and `conf.py`. You can override anything in `conf.py` in `local_conf.py`.
+Configuration is split between various files `config_*.py`. You need to create a `config_local.py` file.
 
 ## Contributing
 

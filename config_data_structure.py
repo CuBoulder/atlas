@@ -23,6 +23,7 @@ ITEM_METHODS = ['GET', 'PATCH', 'PUT', 'DELETE']
 # recreate a record without losing any information.
 
 # Code schema. Defines a code asset that can be applied to a site.
+# We nest in 'meta' to allow us to check for a unique combo
 code_schema = {
     'name': {
         'type': 'string',
@@ -36,8 +37,13 @@ code_schema = {
     },
     'type': {
         'type': 'string',
-        'allowed':  ['custom_package', 'contrib_package', 'drupal_core', 'profile'],
+        'allowed': ['custom_package', 'contrib_package', 'drupal_core',
+                    'profile'],
         'required': True,
+    },
+    'is_current': {
+        'type': 'boolean',
+        'default': False,
     },
     'git_url': {
         'type': 'string',
@@ -47,10 +53,7 @@ code_schema = {
     'commit_hash': {
         'type': 'string',
         'required': True,
-    },
-    'is_current': {
-        'type': 'boolean',
-        'default': False,
+        'unique': True
     },
 }
 

@@ -51,7 +51,6 @@ def pre_post_callback(resource, request):
     # TODO: Deploy code.
 
 
-
 # Utilities
 class AtlasBasicAuth(BasicAuth):
     """
@@ -101,6 +100,7 @@ class AtlasBasicAuth(BasicAuth):
         # Apparently this was a bad login attempt
         app.logger.info('LDAP - {0} - Bind failed'.format(username))
         return False
+
 
 # TODO: Add in a message and/or result broker, I don't want to use the DB. It is currently 41 GB for inventory.
 

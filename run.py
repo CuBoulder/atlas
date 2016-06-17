@@ -7,8 +7,9 @@ import datetime
 from eve import Eve
 from eve.auth import BasicAuth
 
+from atlas import tasks
 from atlas.config import allowed_users, ldap_server, ldap_org_unit, ldap_dns_domain_name
-from atlas.tasks import *
+
 
 path = '/data/code'
 if path not in sys.path:
@@ -25,14 +26,16 @@ def pre_post_callback(resource, request):
     :param request: original flask.request object
     """
     # Request object brings the POST information as a MultiDict.
-    app.logger.debug(request.form)
+    # See http://flask.pocoo.org/docs/0.11/api/#incoming-request-data for
+    # debugging incoming requests.
     # TODO: Check to see if a record with the same combination of fields exists.
     if resource == 'code':
-        app.logger.debug(request.form)
-        if request.form['name']:
-            app.logger.debug(request.form['name'])
+        app.logger.debug(request.json)
+        app.logger.debug(request.json["commit_hash"])
+        #deploy_code.delay(name, git_url, commit_hash, version, code_type, current)
+        tasks.deploy_code.delay()
     elif resource == 'site':
-        app.logger.debug(request.form)
+        app.logger.debug(request.data)
 
 
 # def post_post_code_callback(resource, request, payload):

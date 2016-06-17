@@ -25,25 +25,31 @@ ITEM_METHODS = ['GET', 'PATCH', 'PUT', 'DELETE']
 # Code schema. Defines a code asset that can be applied to a site.
 # We nest in 'meta' to allow us to check for a unique combo
 code_schema = {
-    'name': {
-        'type': 'string',
-        'minlength': 3,
+    'meta': {
+        'type': 'dict',
         'required': True,
-    },
-    'version': {
-        'type': 'string',
-        'minlength': 1,
-        'required': True,
-    },
-    'type': {
-        'type': 'string',
-        'allowed': ['custom_package', 'contrib_package', 'drupal_core',
-                    'profile'],
-        'required': True,
-    },
-    'is_current': {
-        'type': 'boolean',
-        'default': False,
+        'unique': True,
+        'schema': {
+            'name': {
+                'type': 'string',
+                'minlength': 3,
+                'required': True,
+            },
+            'version': {
+                'type': 'string',
+                'minlength': 1,
+                'required': True,
+            },
+            'code_type': {
+                'type': 'string',
+                'allowed': ['custom_package', 'contrib_package', 'drupal_core', 'profile'],
+                'required': True,
+            },
+            'is_current': {
+                'type': 'boolean',
+                'default': False,
+            },
+        },
     },
     'git_url': {
         'type': 'string',
@@ -53,7 +59,8 @@ code_schema = {
     'commit_hash': {
         'type': 'string',
         'required': True,
-        'unique': True
+        # TODO: Commented out for development, put back before go live
+        # 'unique': True
     },
 }
 

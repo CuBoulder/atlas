@@ -1,6 +1,7 @@
-"""atlas.tasks
+"""
+atlas.tasks
 
-    Celery tasks for Atlas.
+Celery tasks for Atlas.
 
 """
 import sys

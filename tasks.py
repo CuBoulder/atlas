@@ -27,16 +27,22 @@ celery.config_from_object(config_celerybeat)
 # TODO: Figure out 'pickle' message on celeryd start
 
 @celery.task
-def deploy_code(name, git_url, commit_hash, version, code_type, current):
+def code_deploy(request):
     """
     Deploy git repositories to the appropriate places.
 
-    :param name:
-    :param git_url:
-    :param commit_hash:
-    :param version:
-    :param code_type:
-    :param current:
+    :param request: The flask request object.
+    :return:
+    """
+    request.json["meta"]["name"],request.json["git_url"],request.json["commit_hash"],request.json["meta"]["version"],request.json["meta"]["code_type"],request.json["meta"]["is_current"]
+    return True
+
+@celery.task
+def site_provision(request):
+    """
+    Provision a new instance with the given parameters.
+
+    :param request: The flask request object.
     :return:
     """
     return True

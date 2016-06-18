@@ -4,12 +4,12 @@ Atlas is a RESTful API that interacts with servers to deploy and maintain [Web E
 
 ## Installing / Getting started
 
-See [Express_local](https://github.com/CuBoulder/express_local)
+See [Express_local](https://github.com/CuBoulder/express_local) for setting up a local development environment.
+
 
 ## Developing
 
-Here's a brief intro about what a developer must do in order to start developing
-the project further.
+Here's a brief intro about what a developer must do in order to start developing the project further.
 
 ### Deploying / Publishing
 
@@ -19,10 +19,14 @@ sudo service celeryd restart && sudo service celerybeat restart && sudo service 
 ```
 
 ## Features
-CRUD Web Express instances
 * Chronological tasks run to keep a small number of instances available for assignment to end users.
 * POST to create additional instances on demand.
 * Available instances are replaced every night and every time code is updated.
+
+## API
+* Prefers to receive JSON encoded POST request.
+* CRUD Web Express instances
+
 
 ## Configuration
 

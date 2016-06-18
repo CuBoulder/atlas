@@ -25,9 +25,11 @@ def pre_post_callback(resource, request):
     :param resource: resource accessed
     :param request: original flask.request object
     """
-    # Request object brings the POST information as a MultiDict.
+    # We use request.json instead of request.form or request.values because
+    # our data comes in as JSON.
     # See http://flask.pocoo.org/docs/0.11/api/#incoming-request-data for
     # debugging incoming requests.
+    app.logger.debug(request.json)
     # TODO: Check to see if a record with the same combination of fields exists.
     if resource == 'code':
         app.logger.debug(request.json)
@@ -35,10 +37,10 @@ def pre_post_callback(resource, request):
         #deploy_code.delay(name, git_url, commit_hash, version, code_type, current)
         tasks.deploy_code.delay()
     elif resource == 'site':
-        app.logger.debug(request.data)
+        tasks.site_provision.delay(request.json)
 
 
-# def post_post_code_callback(resource, request, payload):
+def post_post_code_callback(resource, request, payload):
     """
     Callback for POST to `code` endpoint.
 
@@ -76,8 +78,7 @@ class AtlasBasicAuth(BasicAuth):
     """
     Basic Authentication
     """
-    def check_auth(self, username, password, allowed_roles=['default'],
-                   resource='default', method='default'):
+    def check_auth(self, username, password, allowed_roles=['default'], resource='default', method='default'):
         # Check if username is in the array of allowed users defined in config_local.py
         if username not in allowed_users:
             return False
@@ -93,15 +94,13 @@ class AtlasBasicAuth(BasicAuth):
         try:
             l.start_tls_s()
         except ldap.LDAPError, e:
-            print e.message['info']
+            app.logger.error(e.message['info'])
             if type(e.message) == dict and e.message.has_key('desc'):
-                print e.message['desc']
+                app.logger.error(e.message['desc'])
             else:
-                print e
+                app.logger.error(e)
 
-        ldap_distinguished_name = "uid={0},ou={1},{2}".format(username,
-                                                              ldap_org_unit,
-                                                              ldap_dns_domain_name)
+        ldap_distinguished_name = "uid={0},ou={1},{2}".format(username, ldap_org_unit, ldap_dns_domain_name)
         app.logger.debug(ldap_distinguished_name)
 
         try:
@@ -109,20 +108,17 @@ class AtlasBasicAuth(BasicAuth):
             Try a synchronous bind (we want synchronous so that the command is blocked until the bind gets a result. If you can bind, the credentials are valid.
             """
             result = l.simple_bind_s(ldap_distinguished_name, password)
-            app.logger.info(
-                'LDAP - {0} - Bind successful'.format(username))
+            app.logger.info('LDAP - {0} - Bind successful'.format(username))
             return True
         except ldap.INVALID_CREDENTIALS:
-            app.logger.info(
-                'LDAP - {0} - Invalid credentials'.format(username))
-            print "Username or Password is incorrect."
+            app.logger.info('LDAP - {0} - Invalid credentials'.format(username))
 
         # Apparently this was a bad login attempt
         app.logger.info('LDAP - {0} - Bind failed'.format(username))
         return False
 
 
-# TODO: Add in a message and/or result broker, I don't want to use the DB. It is currently 41 GB for inventory.
+# TODO: Add in a message (DONE) and result broker, I don't want to use the DB. It is currently 41 GB for inventory.
 
 
 """
@@ -136,9 +132,9 @@ app.debug = True
 # Add specific callbacks
 # Pattern is: `atlas.on_{Hook}_{Method}_{Resource}`
 app.on_pre_POST += pre_post_callback
-# app.on_post_POST_code += post_post_code_callback
 #app.on_insert += pre_insert
 #app.on_replace += pre_replace
+app.on_post_POST_code += post_post_code_callback
 
 if __name__ == '__main__':
     # Enable logging to 'atlas.log' file

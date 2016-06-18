@@ -29,15 +29,11 @@ def pre_post_callback(resource, request):
     # our data comes in as JSON.
     # See http://flask.pocoo.org/docs/0.11/api/#incoming-request-data for
     # debugging incoming requests.
-    app.logger.debug(request.json)
+    #app.logger.debug(request.json)
     # TODO: Check to see if a record with the same combination of fields exists.
-    if resource == 'code':
-        app.logger.debug(request.json)
-        app.logger.debug(request.json["commit_hash"])
-        #deploy_code.delay(name, git_url, commit_hash, version, code_type, current)
-        tasks.deploy_code.delay()
-    elif resource == 'site':
-        tasks.site_provision.delay(request.json)
+    # if resource == 'code':
+    #
+    # elif resource == 'site':
 
 
 def post_post_code_callback(resource, request, payload):
@@ -54,7 +50,21 @@ def post_post_code_callback(resource, request, payload):
     app.logger.debug(request.json)
     tasks.code_deploy.delay(request.json)
 
+def post_post_site_callback(resource, request, payload):
+    """
+    Callback for POST to `code` endpoint.
 
+    Allows us to hook into 'site' create events *after* the Mongo object has been created.
+
+    :param resource: resource accessed
+    :param request: original flask.request object
+    :param payload: response payload
+    :return:
+    """
+    app.logger.debug(request.json)
+    tasks.site_provison.delay(request.json)
+
+# TODO: Set it up to mark what user updated the record.
 # auto fill _created_by and _modified_by user fields
 # created_by_field = '_created_by'
 # modified_by_field = '_modified_by'
@@ -131,10 +141,12 @@ app.debug = True
 
 # Add specific callbacks
 # Pattern is: `atlas.on_{Hook}_{Method}_{Resource}`
-app.on_pre_POST += pre_post_callback
+#app.on_pre_POST += pre_post_callback
 #app.on_insert += pre_insert
 #app.on_replace += pre_replace
 app.on_post_POST_code += post_post_code_callback
+app.on_post_POST_site += post_post_site_callback
+
 
 if __name__ == '__main__':
     # Enable logging to 'atlas.log' file

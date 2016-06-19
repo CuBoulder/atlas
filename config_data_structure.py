@@ -189,14 +189,21 @@ sites_schema = {
     },
 }
 
-#
-# Definitions of Resources. Tells Eve what methods and schemas apply to a given resource.
-#
+command_schema = {
+    'name': {
+        'type': 'string',
+        'minlength': 3,
+        'required': True,
+    },
+}
 
+"""
+Definitions of Resources.
+Tells Eve what methods and schemas apply to a given resource.
+"""
 # Code resource
 code = {
     'item_title': 'code',
-    'resource_methods': ['GET', 'POST'],
     'public_methods': ['GET'],
     'public_item_methods': ['GET'],
     'versioning': True,
@@ -211,11 +218,21 @@ sites = {
         'url': 'regex("[\w]+")',
         'field': 'sid'
     },
-    'resource_methods': ['GET', 'POST'],
     'public_methods': ['GET'],
     'public_item_methods': ['GET'],
     'versioning': True,
     'schema': sites_schema,
+}
+
+# Command resource
+# Empty public_item_methods means that you can't call actual commands without
+# authentication. Anonymous users can list the commands, but not call them.
+command = {
+    'item_title': 'command',
+    'public_methods': ['GET'],
+    'public_item_methods': [],
+    'versioning': True,
+    'schema': command_schema,
 }
 
 #
@@ -225,4 +242,5 @@ sites = {
 DOMAIN = {
     'sites': sites,
     'code': code,
+    'command': command,
 }

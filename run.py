@@ -64,6 +64,21 @@ def post_post_site_callback(resource, request, payload):
     app.logger.debug(request.json)
     tasks.site_provison.delay(request.json)
 
+
+def post_get_command_callback(resource, request, payload):
+    """
+    Callback for GET to `command` endpoint.
+
+    Allows us to run commands when API endpoints are called.
+
+    :param resource: resource accessed
+    :param request: original flask.request object
+    :param payload: response payload
+    :return:
+    """
+    app.logger.debug(request.json)
+    tasks.command_run.delay(request.json)
+
 # TODO: Set it up to mark what user updated the record.
 # auto fill _created_by and _modified_by user fields
 # created_by_field = '_created_by'
@@ -146,6 +161,7 @@ app.debug = True
 #app.on_replace += pre_replace
 app.on_post_POST_code += post_post_code_callback
 app.on_post_POST_site += post_post_site_callback
+app.on_post_GET_command += post_get_command_callback
 
 
 if __name__ == '__main__':

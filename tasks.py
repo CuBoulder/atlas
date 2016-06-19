@@ -24,7 +24,7 @@ env = Environment(loader=PackageLoader('atlas', 'templates'))
 celery = Celery('tasks', broker='amqp://guest@localhost//')
 celery.config_from_object(config_celerybeat)
 
-# TODO: Figure out 'pickle' message on celeryd start
+# TODO: Figure out 'pickle' message on celeryd start.
 
 @celery.task
 def code_deploy(request):
@@ -37,10 +37,22 @@ def code_deploy(request):
     request.json["meta"]["name"],request.json["git_url"],request.json["commit_hash"],request.json["meta"]["version"],request.json["meta"]["code_type"],request.json["meta"]["is_current"]
     return True
 
+
 @celery.task
 def site_provision(request):
     """
     Provision a new instance with the given parameters.
+
+    :param request: The flask request object.
+    :return:
+    """
+    return True
+
+
+@celery.task
+def command_run(request):
+    """
+    Run the appropriate command.
 
     :param request: The flask request object.
     :return:

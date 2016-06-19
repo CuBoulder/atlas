@@ -1,8 +1,13 @@
 from datetime import timedelta
 from celery.schedules import crontab
 
-BROKER_URL = 'mongodb://localhost:27017/atlas'
-CELERY_RESULT_BACKEND = 'mongodb://localhost:27017/atlas'
+CELERY_RESULT_BACKEND = 'mongodb://localhost:27017/'
+CELERY_MONGODB_BACKEND_SETTINGS = {
+    'database': 'celery',
+    'taskmeta_collection': 'taskmeta_collection',
+}
+
+# TODO: Setup error emailing: http://docs.celeryproject.org/en/latest/configuration.html#error-e-mails
 
 CELERY_TIMEZONE = 'MST'
 

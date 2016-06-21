@@ -36,36 +36,53 @@ def pre_post_callback(resource, request):
     # elif resource == 'site':
 
 
-def post_post_code_callback(resource, request, payload):
+def post_post_callback(resource, request, payload):
+    """
+    Callback for POST to all endpoints.
+
+    Allows us to hook into any create event *after* the Mongo object is created.
+
+    :param resource: resource accessed
+    :param request: original flask.request object
+    :param payload: the response payload from Eve
+    """
+    app.logger.debug(request.json)
+
+
+def post_post_code_callback(request, payload):
     """
     Callback for POST to `code` endpoint.
 
     Allows us to hook into 'code' create events *after* the Mongo object has been created.
 
-    :param resource: resource accessed
     :param request: original flask.request object
+                    request.json["meta"]["name"],
+                    request.json["git_url"],
+                    request.json["commit_hash"],
+                    request.json["meta"]["version"],
+                    request.json["meta"]["code_type"],
+                    request.json["meta"]["is_current"]
+
     :param payload: response payload
     :return:
     """
-    app.logger.debug(request.json)
     tasks.code_deploy.delay(request.json)
 
-def post_post_site_callback(resource, request, payload):
+
+def post_post_site_callback(request, payload):
     """
     Callback for POST to `code` endpoint.
 
     Allows us to hook into 'site' create events *after* the Mongo object has been created.
 
-    :param resource: resource accessed
     :param request: original flask.request object
     :param payload: response payload
     :return:
     """
-    app.logger.debug(request.json)
     tasks.site_provison.delay(request.json)
 
 
-def post_get_command_callback(resource, request, payload):
+def post_get_command_callback(request, payload):
     """
     Callback for GET to `command` endpoint.
 
@@ -76,7 +93,6 @@ def post_get_command_callback(resource, request, payload):
     :param payload: response payload
     :return:
     """
-    app.logger.debug(request.json)
     tasks.command_run.delay(request.json)
 
 # TODO: Set it up to mark what user updated the record.
@@ -159,6 +175,7 @@ app.debug = True
 #app.on_pre_POST += pre_post_callback
 #app.on_insert += pre_insert
 #app.on_replace += pre_replace
+app.on_post_POST += post_post_callback
 app.on_post_POST_code += post_post_code_callback
 app.on_post_POST_site += post_post_site_callback
 app.on_post_GET_command += post_get_command_callback

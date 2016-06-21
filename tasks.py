@@ -7,7 +7,6 @@ import sys
 import time
 import re
 import random
-import logging
 
 from celery import Celery
 from jinja2 import Environment, PackageLoader
@@ -19,9 +18,11 @@ if path not in sys.path:
 
 # Tell Jinja where our templates live.
 env = Environment(loader=PackageLoader('atlas', 'templates'))
+# Setup logging
+logger = get_task_logger(__name__)
 
 # Create the Celery app object
-celery = Celery('tasks', broker='amqp://guest@localhost//')
+celery = Celery('tasks')
 celery.config_from_object(config_celerybeat)
 
 # TODO: Figure out 'pickle' message on celeryd start.

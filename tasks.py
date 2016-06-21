@@ -4,13 +4,17 @@ Celery tasks for Atlas.
 
 """
 import sys
+import fabfile
 import time
 import re
 import random
 
 from celery import Celery
+from celery.utils.log import get_task_logger
 from jinja2 import Environment, PackageLoader
+from fabric.api import execute
 from atlas import config_celerybeat
+
 
 path = '/data/code'
 if path not in sys.path:
@@ -28,15 +32,15 @@ celery.config_from_object(config_celerybeat)
 # TODO: Figure out 'pickle' message on celeryd start.
 
 @celery.task
-def code_deploy(request):
+def code_deploy(request_json):
     """
     Deploy git repositories to the appropriate places.
 
-    :param request: The flask request object.
+    :param request: The flask request.json object.
     :return:
     """
-    request.json["meta"]["name"],request.json["git_url"],request.json["commit_hash"],request.json["meta"]["version"],request.json["meta"]["code_type"],request.json["meta"]["is_current"]
-    return True
+    logger.info('Code deploy - {0}'.format(request_json))
+    execute(fabfile.code_deploy, request=request_json)
 
 
 @celery.task

@@ -1,6 +1,7 @@
 from datetime import timedelta
 from celery.schedules import crontab
 
+BROKER_URL='amqp://guest@localhost//'
 CELERY_RESULT_BACKEND = 'mongodb://localhost:27017/'
 CELERY_MONGODB_BACKEND_SETTINGS = {
     'database': 'celery',
@@ -10,6 +11,7 @@ CELERY_MONGODB_BACKEND_SETTINGS = {
 # TODO: Setup error emailing: http://docs.celeryproject.org/en/latest/configuration.html#error-e-mails
 
 CELERY_TIMEZONE = 'MST'
+CELERY_ENABLE_UTC = True
 
 CELERY_ROUTES = {
     'inventory.tasks.express_launched_cron': {'queue': 'expresscrons'},

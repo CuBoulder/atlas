@@ -170,7 +170,7 @@ if __name__ == '__main__':
     handler = logging.FileHandler('/var/log/celery/atlas.log')
     # The default log level is set to WARNING, so we have to explicitly set the
     # logging level to Debug.
-    app.logger.setLevel(logging.BEDUG)
+    app.logger.setLevel(logging.DEBUG)
     # Append the handler to the default application logger
     app.logger.addHandler(handler)
 

@@ -5,14 +5,13 @@ Celery tasks for Atlas.
 """
 import sys
 import fabfile
-import time
-import re
-import random
+
 
 from celery import Celery
 from celery.utils.log import get_task_logger
 from jinja2 import Environment, PackageLoader
 from fabric.api import execute
+
 from atlas import config_celerybeat
 
 
@@ -36,30 +35,30 @@ def code_deploy(request_json):
     """
     Deploy git repositories to the appropriate places.
 
-    :param request: The flask request.json object.
+    :param request_json: The flask request.json object.
     :return:
     """
-    logger.info('Code deploy - {0}'.format(request_json))
+    logger.debug('Code deploy - {0}'.format(request_json))
     execute(fabfile.code_deploy, request=request_json)
 
 
 @celery.task
-def site_provision(request):
+def site_provision(request_json):
     """
     Provision a new instance with the given parameters.
 
-    :param request: The flask request object.
+    :param request_json: The flask request.json object.
     :return:
     """
     return True
 
 
 @celery.task
-def command_run(request):
+def command_run(request_json):
     """
     Run the appropriate command.
 
-    :param request: The flask request object.
+    :param request_json: The flask request.json object.
     :return:
     """
     return True

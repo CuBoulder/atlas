@@ -42,7 +42,7 @@ code_schema = {
             },
             'code_type': {
                 'type': 'string',
-                'allowed': ['custom_package', 'contrib_package', 'drupal_core', 'profile'],
+                'allowed': ['custom_package', 'contrib_package', 'core', 'profile'],
                 'required': True,
             },
             'is_current': {
@@ -59,8 +59,7 @@ code_schema = {
     'commit_hash': {
         'type': 'string',
         'required': True,
-        # TODO: Commented out for development, put back before go live
-        # 'unique': True
+        'unique': True
     },
 }
 

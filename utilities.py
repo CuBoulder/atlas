@@ -4,6 +4,7 @@ Utility functions.
 import sys
 import requests
 import ldap
+import json
 
 from eve.auth import BasicAuth
 from flask import current_app
@@ -19,14 +20,13 @@ class AtlasBasicAuth(BasicAuth):
     Basic Authentication
     """
     def check_auth(self, username, password, allowed_roles=['default'], resource='default', method='default'):
-        # Check if username is in the array of allowed users defined in config_local.py
+        # Check if username is in 'allowed users' defined in config_local.py
         if username not in allowed_users:
             return False
-        """
-        Test credentials against LDAP.
-
-        Initialize LDAP. The initialize() method returns an LDAPObject object, which contains methods for performing LDAP operations and retrieving information about the LDAP connection and transactions.
-        """
+        # Test credentials against LDAP.
+        # Initialize LDAP. The initialize() method returns an LDAPObject
+        # object, which contains methods for performing LDAP operations and
+        # retrieving information about the LDAP connection and transactions.
         l = ldap.initialize(ldap_server)
 
         # Start the connection in a secure manner. Catch any errors and print
@@ -44,14 +44,14 @@ class AtlasBasicAuth(BasicAuth):
         current_app.logger.debug(ldap_distinguished_name)
 
         try:
-            """
-            Try a synchronous bind (we want synchronous so that the command is blocked until the bind gets a result. If you can bind, the credentials are valid.
-            """
+            # Try a synchronous bind (we want synchronous so that the command
+            # is blocked until the bind gets a result. If you can bind, the
+            # credentials are valid.
             result = l.simple_bind_s(ldap_distinguished_name, password)
-            current_app.logger.info('LDAP - {0} - Bind successful'.format(username))
+            current_app.logger.debug('LDAP - {0} - Bind successful'.format(username))
             return True
         except ldap.INVALID_CREDENTIALS:
-            current_app.logger.info('LDAP - {0} - Invalid credentials'.format(username))
+            current_app.logger.debug('LDAP - {0} - Invalid credentials'.format(username))
 
         # Apparently this was a bad login attempt
         current_app.logger.info('LDAP - {0} - Bind failed'.format(username))
@@ -86,7 +86,7 @@ def patch_eve(resource, item, etag, request_payload):
     url = "{0}/{1}/{2}".format(api_server, resource, item)
     current_app.logger.debug('patch_eve URL - {0}'.format(url))
     headers = {'Content-Type': 'application/json', 'If-Match': etag}
-    r = requests.patch(url, headers=headers, data=json.dumps(request_payload), auth=(ldap_user, ldap_pw))
+    r = requests.patch(url, headers=headers, data=json.dumps(request_payload), auth=(ldap_username, ldap_password))
     if r.ok:
         return r.json()
     else:

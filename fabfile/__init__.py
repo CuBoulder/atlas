@@ -6,7 +6,7 @@ Commands that run on servers to do the actual work.
 import sys
 from fabric.contrib.files import append, exists, sed
 from fabric.api import *
-from atlas.config import environment, ssh_user, roledefs
+from atlas.config import *
 
 
 path = '/data/code'
@@ -34,7 +34,8 @@ def code_deploy(request):
     :param request: The flask.request object
     :return:
     """
-    code_folder = '/data/code/{0}/{1}/{1}-{2}'.format(request['meta']['code_type'],request['meta']['name'],request['meta']['version'])
+
+    code_folder = '{0}/{1}s/{2}/{2}-{3}'.format(code_root,request['meta']['code_type'],request['meta']['name'],request['meta']['version'])
     _create_directory_structure(code_folder)
     _clone_repo(request["git_url"],request["commit_hash"],code_folder)
     if request['meta']['is_current']:

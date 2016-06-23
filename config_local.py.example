@@ -1,3 +1,5 @@
+# TODO: Verify that this is correct based on the latest configs.
+
 # config_local.py
 environment = 'ENVIRONMENT'
 

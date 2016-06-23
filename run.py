@@ -1,13 +1,9 @@
 import sys
-import ldap
 import logging
-import json
-import datetime
 
 from eve import Eve
-from eve.auth import BasicAuth
-
 from atlas import tasks
+from atlas import utilities
 from atlas.config import *
 
 
@@ -66,7 +62,19 @@ def post_post_code_callback(request, payload):
     :param payload: response payload
     :return:
     """
-    tasks.code_deploy.delay(request.json)
+    app.logger.debug(payload.__dict__)
+    # Verify that the POST was successful before we do anything else.
+    if payload._status_code == 200:
+        tasks.code_deploy.delay(request.json)
+        # Need a lowercase string when querying boolean values. Python stores
+        # it as 'True'.
+        query = 'where={{"meta.name":"{0}","meta.code_type":"{1}","meta.is_current": {2}}}'.format(request.json['meta']['name'], request.json['meta']['code_type'], str(request.json['meta']['is_current']).lower())
+        code_get = utilities.get_eve('code', query)
+        app.logger.debug(code_get)
+        for code in code_get['_items']:
+            request_payload = {'meta.is_current': False}
+            utilities.patch_eve('code', code['_id'], code['_etag'], request_payload)
+
 
 
 def post_post_site_callback(request, payload):
@@ -114,59 +122,14 @@ def post_get_command_callback(request, payload):
 #         document[modified_by_field] = user
 
 
-# Utilities
-class AtlasBasicAuth(BasicAuth):
-    """
-    Basic Authentication
-    """
-    def check_auth(self, username, password, allowed_roles=['default'], resource='default', method='default'):
-        # Check if username is in the array of allowed users defined in config_local.py
-        if username not in allowed_users:
-            return False
-        """
-        Test credentials against LDAP.
-
-        Initialize LDAP. The initialize() method returns an LDAPObject object, which contains methods for performing LDAP operations and retrieving information about the LDAP connection and transactions.
-        """
-        l = ldap.initialize(ldap_server)
-
-        # Start the connection in a secure manner. Catch any errors and print
-        # the description if present.
-        try:
-            l.start_tls_s()
-        except ldap.LDAPError, e:
-            app.logger.error(e.message['info'])
-            if type(e.message) == dict and e.message.has_key('desc'):
-                app.logger.error(e.message['desc'])
-            else:
-                app.logger.error(e)
-
-        ldap_distinguished_name = "uid={0},ou={1},{2}".format(username, ldap_org_unit, ldap_dns_domain_name)
-        app.logger.debug(ldap_distinguished_name)
-
-        try:
-            """
-            Try a synchronous bind (we want synchronous so that the command is blocked until the bind gets a result. If you can bind, the credentials are valid.
-            """
-            result = l.simple_bind_s(ldap_distinguished_name, password)
-            app.logger.info('LDAP - {0} - Bind successful'.format(username))
-            return True
-        except ldap.INVALID_CREDENTIALS:
-            app.logger.info('LDAP - {0} - Invalid credentials'.format(username))
-
-        # Apparently this was a bad login attempt
-        app.logger.info('LDAP - {0} - Bind failed'.format(username))
-        return False
-
-
-# TODO: Add in a message (DONE) and result broker, I don't want to use the DB. It is currently 41 GB for inventory.
+# TODO: Add in a message (DONE) and better result broker, I don't want to use the DB. It is currently 41 GB for inventory.
 
 
 """
 Setup the application and logging.
 """
-# Tell Eve to use Basic Auth where our data structure is defined.
-app = Eve(auth=AtlasBasicAuth, settings="/data/code/atlas/config_data_structure.py")
+# Tell Eve to use Basic Auth and where our data structure is defined.
+app = Eve(auth=utilities.AtlasBasicAuth, settings="/data/code/atlas/config_data_structure.py")
 # TODO: Remove debug mode.
 app.debug = True
 
@@ -184,7 +147,7 @@ app.on_post_GET_command += post_get_command_callback
 if __name__ == '__main__':
     # Enable logging to 'atlas.log' file
     # TODO: Figure out why the stuff shows in the apache error log, not this location.
-    handler = logging.FileHandler('/var/log/celery/atlas.log')
+    handler = logging.FileHandler('atlas.log')
     # The default log level is set to WARNING, so we have to explicitly set the
     # logging level to Debug.
     app.logger.setLevel(logging.DEBUG)

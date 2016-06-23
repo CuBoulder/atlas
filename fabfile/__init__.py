@@ -31,15 +31,14 @@ def code_deploy(request):
     The 'parallel' decorator allows several instances of this task to run at
     the same time.
 
-    :param request: The flask.request object
+    :param request: The flask.request object, JSON encoded
     :return:
     """
-
     code_folder = '{0}/{1}s/{2}/{2}-{3}'.format(code_root,request['meta']['code_type'],request['meta']['name'],request['meta']['version'])
     _create_directory_structure(code_folder)
     _clone_repo(request["git_url"],request["commit_hash"],code_folder)
     if request['meta']['is_current']:
-        code_folder_current = '/data/code/{0}/{1}/{1}-current'.format(request['meta']['code_type'],request['meta']['name'])
+        code_folder_current = '{0}/{1}s/{2}/{2}-current'.format(code_root,request['meta']['code_type'],request['meta']['name'])
         _update_symlink(code_folder,code_folder_current)
 
 

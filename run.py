@@ -8,7 +8,7 @@ from eve import Eve
 from eve.auth import BasicAuth
 
 from atlas import tasks
-from atlas.config import allowed_users, ldap_server, ldap_org_unit, ldap_dns_domain_name
+from atlas.config import *
 
 
 path = '/data/code'

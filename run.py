@@ -12,31 +12,37 @@ if path not in sys.path:
     sys.path.append(path)
 
 # Callbacks
-def pre_post_callback(resource, request):
+def pre_post_code_callback(request):
     """
-    Callback for POST to all endpoints.
+    Hook into 'code' create events *before* the Mongo object is created.
 
-    Allows us to hook into any create event *before* the Mongo object is created.
+    Set 'code.meta.is_current' for items with the same meta data to False.
 
-    :param resource: resource accessed
     :param request: original flask.request object
+                    request.json["meta"]["name"],
+                    request.json["git_url"],
+                    request.json["commit_hash"],
+                    request.json["meta"]["version"],
+                    request.json["meta"]["code_type"],
+                    request.json["meta"]["is_current"]
+    :return:
     """
-    # We use request.json instead of request.form or request.values because
-    # our data comes in as JSON.
-    # See http://flask.pocoo.org/docs/0.11/api/#incoming-request-data for
-    # debugging incoming requests.
-    #app.logger.debug(request.json)
-    # TODO: Check to see if a record with the same combination of fields exists.
-    # if resource == 'code':
-    #
-    # elif resource == 'site':
+    # Need a lowercase string when querying boolean values. Python
+    # stores it as 'True'.
+    query = 'where={{"meta.name":"{0}","meta.code_type":"{1}","meta.is_current": {2}}}'.format(request.json['meta']['name'], request.json['meta']['code_type'], str(request.json['meta']['is_current']).lower())
+    app.logger.debug(query)
+    code_get = utilities.get_eve('code', query)
+    app.logger.debug(code_get)
+    for code in code_get['_items']:
+        request_payload = {'meta.is_current': False}
+        utilities.patch_eve('code', code['_id'], code['_etag'], request_payload)
 
 
 def post_post_callback(resource, request, payload):
     """
     Callback for POST to all endpoints.
 
-    Allows us to hook into any create event *after* the Mongo object is created.
+    Hook into any create event *after* the Mongo object is created.
 
     :param resource: resource accessed
     :param request: original flask.request object
@@ -49,7 +55,7 @@ def post_post_code_callback(request, payload):
     """
     Callback for POST to `code` endpoint.
 
-    Allows us to hook into 'code' create events *after* the Mongo object has been created.
+    Hook into 'code' create events *after* the Mongo object is created.
 
     :param request: original flask.request object
                     request.json["meta"]["name"],
@@ -64,16 +70,9 @@ def post_post_code_callback(request, payload):
     """
     app.logger.debug(payload.__dict__)
     # Verify that the POST was successful before we do anything else.
-    if payload._status_code == 200:
-        tasks.code_deploy.delay(request.json)
-        # Need a lowercase string when querying boolean values. Python stores
-        # it as 'True'.
-        query = 'where={{"meta.name":"{0}","meta.code_type":"{1}","meta.is_current": {2}}}'.format(request.json['meta']['name'], request.json['meta']['code_type'], str(request.json['meta']['is_current']).lower())
-        code_get = utilities.get_eve('code', query)
-        app.logger.debug(code_get)
-        for code in code_get['_items']:
-            request_payload = {'meta.is_current': False}
-            utilities.patch_eve('code', code['_id'], code['_etag'], request_payload)
+    # Status code '201 Created'.
+    if payload._status_code == 201:
+        deploy_result = tasks.code_deploy.delay(request.json)
 
 
 
@@ -138,6 +137,7 @@ app.debug = True
 #app.on_pre_POST += pre_post_callback
 #app.on_insert += pre_insert
 #app.on_replace += pre_replace
+app.on_pre_POST_code += pre_post_code_callback
 app.on_post_POST += post_post_callback
 app.on_post_POST_code += post_post_code_callback
 app.on_post_POST_site += post_post_site_callback

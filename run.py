@@ -11,6 +11,15 @@ path = '/data/code'
 if path not in sys.path:
     sys.path.append(path)
 
+# TODO: PATCH for code for commit_hash, version, or is_current
+# TODO: DELETE for code
+# TODO: POST for site
+# TODO: PATCH for site
+# TODO: DELETE for site
+# TODO: POST for command
+# TODO: GET for command
+
+
 # Callbacks
 def pre_post_code_callback(request):
     """

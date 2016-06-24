@@ -42,15 +42,16 @@ def pre_post_code_callback(request):
 
     :param request: flask.request object
     """
-    # Need a lowercase string when querying boolean values. Python
-    # stores it as 'True'.
-    query = 'where={{"meta.name":"{0}","meta.code_type":"{1}","meta.is_current": {2}}}'.format(request.json['meta']['name'], request.json['meta']['code_type'], str(request.json['meta']['is_current']).lower())
-    app.logger.debug(query)
-    code_get = utilities.get_eve('code', query)
-    app.logger.debug(code_get)
-    for code in code_get['_items']:
-        request_payload = {'meta.is_current': False}
-        utilities.patch_eve('code', code['_id'], code['_etag'], request_payload)
+    if request.json['meta']['is_current']:
+        # Need a lowercase string when querying boolean values. Python
+        # stores it as 'True'.
+        query = 'where={{"meta.name":"{0}","meta.code_type":"{1}","meta.is_current": {2}}}'.format(request.json['meta']['name'], request.json['meta']['code_type'], str(request.json['meta']['is_current']).lower())
+        app.logger.debug(query)
+        code_get = utilities.get_eve('code', query)
+        app.logger.debug(code_get)
+        for code in code_get['_items']:
+            request_payload = {'meta.is_current': False}
+            utilities.patch_eve('code', code['_id'], code['_etag'], request_payload)
 
 
 def post_post_callback(resource, request, payload):

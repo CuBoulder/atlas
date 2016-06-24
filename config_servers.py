@@ -43,6 +43,7 @@ varnish_control_terminals = {
     'local': 'localhost:6082',
 }
 
+# See config_local.py for switch.
 nfs_mount_location = {
     'production': '/Net/hanfs/wwwng-poolb',
     'test': '/Net/hanfs-test/wwwng-poolb',

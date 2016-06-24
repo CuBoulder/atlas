@@ -6,9 +6,17 @@ environment = 'ENVIRONMENT'
 # Usernames that are allowed to interact with the API
 allowed_users = ['USER']
 
-# The directory where code assets will be stored. Path should be relative to
-# the root and should NOT include a trailing slash.
+# Symlink the files directory in from a NFS mount.
+# nfs_mount_location is set in config_server.py.
+nfs_mount_files_dir = True
+# Use f5 load balancer. You may need to override the configuration functions to
+# work with your environment.
+f5_load_balancer = True
+
+# The directory where assets will be stored.
+# Path should be relative to the root and should NOT include a trailing slash.
 code_root = '/data/code'
+sites_root = '/data/web'
 
 # LDAP configuration including service account credentials.
 ldap_server = 'ldap://URL:PORT'

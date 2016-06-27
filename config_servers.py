@@ -4,12 +4,24 @@ Server configuration file for Atlas
 All server definitions go here.
 """
 # Servers manipulate using Fabric.
-roledefs = {
+serverdefs = {
     'production': {
         'webservers' : ['wweb3.int.colorado.edu', 'wweb4.int.colorado.edu', 'wweb5.int.colorado.edu'],
         'varnish_servers': ['172.20.62.71', '172.20.62.72'],
         'memcache_servers': ['wmem1.int.colorado.edu:11212', 'wmem2.int.colorado.edu:11212'],
         'f5_servers': ['its4-f5.colorado.edu', 'its5-f5.colorado.edu'],
+    },
+    'test': {
+        'webservers': ['wwebtest3.int.colorado.edu', 'wwebtest4.int.colorado.edu', 'wwebtest5.int.colorado.edu'],
+        'varnish_servers': ['172.20.62.41', '172.20.62.42'],
+        'memcache_servers': ['wmemtest1.int.colorado.edu:11212', 'wmemtest2.int.colorado.edu:11212'],
+        'f5_servers': ['its6-f5.colorado.edu', 'its7-f5.colorado.edu'],
+    },
+    'development': {
+        'webservers': ['wwebdev2.int.colorado.edu'],
+        'varnish_servers': ['172.20.62.11'],
+        'memcache_servers': ['wmemdev1.int.colorado.edu:11212'],
+        'f5_servers': ['its6-f5.colorado.edu', 'its7-f5.colorado.edu'],
     },
     'local': {
         'webservers': ['express.local'],
@@ -17,22 +29,6 @@ roledefs = {
         'memcache_servers': ['localhost:11211'],
         'f5_servers': [],
     },
-    'webservers': {
-        'test': ['wwebtest3.int.colorado.edu', 'wwebtest4.int.colorado.edu', 'wwebtest5.int.colorado.edu'],
-        'development': ['wwebdevelopment2.int.colorado.edu'],
-    },
-    'varnish_servers': {
-        'test': ['172.20.62.41', '172.20.62.42', ],
-        'development': ['172.20.62.11', ],
-    },
-    'memcache_servers': {
-        'test': ['wmemtest1.int.colorado.edu:11212', 'wmemtest2.int.colorado.edu:11212', ],
-        'development': ['wmemdevelopment1.int.colorado.edu:11212', ],
-    },
-    'f5_servers': {
-        'test': ['uctool@its6-f5.colorado.edu', 'uctool@its7-f5.colorado.edu'],
-        'development': ['uctool@its6-f5.colorado.edu', 'uctool@its7-f5.colorado.edu'],
-    }
 }
 
 varnish_control_terminals = {

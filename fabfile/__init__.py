@@ -19,7 +19,7 @@ env.user = ssh_user
 # Allow ~/.ssh/config to be utilized.
 env.use_ssh_config = True
 env.colorize_error = True
-env.roledefs = roledefs[environment]
+env.roledefs = serverdefs[environment]
 
 # Code Commands.
 

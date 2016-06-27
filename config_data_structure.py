@@ -111,55 +111,35 @@ sites_schema = {
         'type': 'dict',
         'schema': {
             'custom_package': {
-                'type': 'dict',
-                'schema': {
-                    '_id': {'type': 'objectid'},
-                    '_version': {'type': 'integer'}
-                },
+                'type': 'objectid',
                 'data_relation': {
                     'resource': 'code',
                     'field': '_id',
                     'embeddable': True,
-                    'version': True,
                 },
             },
             'contrib_package': {
-                'type': 'dict',
-                'schema': {
-                    '_id': {'type': 'objectid'},
-                    '_version': {'type': 'integer'}
-                },
+                'type': 'objectid',
                 'data_relation': {
                     'resource': 'code',
                     'field': '_id',
                     'embeddable': True,
-                    'version': True,
                 },
             },
-            'drupal_core': {
-                'type': 'dict',
-                'schema': {
-                    '_id': {'type': 'objectid'},
-                    '_version': {'type': 'integer'}
-                },
+            'core': {
+                'type': 'objectid',
                 'data_relation': {
                     'resource': 'code',
                     'field': '_id',
                     'embeddable': True,
-                    'version': True,
                 },
             },
             'profile': {
-                'type': 'dict',
-                'schema': {
-                    '_id': {'type': 'objectid'},
-                    '_version': {'type': 'integer'}
-                },
+                'type': 'objectid',
                 'data_relation': {
                     'resource': 'code',
                     'field': '_id',
                     'embeddable': True,
-                    'version': True,
                 },
             },
         },
@@ -170,19 +150,15 @@ sites_schema = {
             # See https://docs.python.org/2/library/datetime.html#datetime.datetime for datetime format.
             'created': {
                 'type': 'datetime',
-                'required': True,
             },
             'updated': {
                 'type': 'datetime',
-                'required': True,
             },
             'launched': {
                 'type': 'datetime',
-                'required': True,
             },
             'taken_down': {
                 'type': 'datetime',
-                'required': True,
             },
         },
     },
@@ -205,7 +181,6 @@ code = {
     'item_title': 'code',
     'public_methods': ['GET'],
     'public_item_methods': ['GET'],
-    'versioning': True,
     'schema': code_schema,
 }
 

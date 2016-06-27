@@ -24,9 +24,17 @@ trailing_slash = re.compile("/$")
 # Uses re.match primitive to look from the beginning.
 if not begin_with_slash.match(code_root):
     raise Exception("'code_root' should begin with a slash.")
+if not begin_with_slash.match(sites_web_root):
+    raise Exception("'sites_web_root' should begin with a slash.")
+if not begin_with_slash.match(sites_code_root):
+    raise Exception("'sites_code_root' should begin with a slash.")
 # Uses re.search primitive to look anywhere in the string.
 if trailing_slash.search(code_root):
     raise Exception("'code_root' should not have a trailing slash.")
+if trailing_slash.search(sites_web_root):
+    raise Exception("'sites_web_root' should not have a trailing slash.")
+if trailing_slash.search(sites_web_root):
+    raise Exception("'sites_web_root' should not have a trailing slash.")
 
 # URL to eve instance, no trailing slash
 if environment == 'local':

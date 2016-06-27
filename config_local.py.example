@@ -15,8 +15,19 @@ f5_load_balancer = True
 
 # The directory where assets will be stored.
 # Path should be relative to the root and should NOT include a trailing slash.
+# We use separate site_web_root and site_code_root to make it easy use
+# different vhosts for different types of sites and to make it easy to switch
+# to the down page.
 code_root = '/data/code'
-sites_root = '/data/web'
+sites_web_root = '/data/web'
+sites_code_root = '/data/sites'
+
+# Default core and profile names for site creation.
+default_core = 'drupal'
+default_profile = 'express'
+
+# Database salt
+salt = ''
 
 # LDAP configuration including service account credentials.
 ldap_server = 'ldap://URL:PORT'

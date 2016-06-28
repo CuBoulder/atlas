@@ -17,6 +17,7 @@ ITEM_METHODS = ['GET', 'PATCH', 'PUT', 'DELETE']
 #
 
 # TODO: Add support for DNS entries that are owned as part of a site.
+# TODO: Consider adding additional field to 'code' for 'has_submodules'. This would allow us to improve performance of code checkouts.
 
 # Mongo creates the following: '_created', '_updated', '_etag', and '_id'.
 # We don't use those fields in our logic because want to be able to move or

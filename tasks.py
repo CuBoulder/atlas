@@ -41,6 +41,18 @@ def code_deploy(request_json):
 
 
 @celery.task
+def code_update(request_json):
+    """
+    Update code checkout.
+
+    :param request_json: The flask request.json object.
+    :return:
+    """
+    logger.debug('Code update - {0}'.format(request_json))
+    execute(fabfile.code_update, request=request_json)
+
+
+@celery.task
 def site_provision(site):
     """
     Provision a new instance with the given parameters.

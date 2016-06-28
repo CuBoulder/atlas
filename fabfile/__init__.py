@@ -46,6 +46,21 @@ def code_deploy(request):
 
 
 @roles('webservers')
+def code_update(request):
+    """
+    Responds to PATCHes to update code in the right places on the server.
+
+    :param request: The flask.request object, JSON encoded
+    :return:
+    """
+    code_folder = '{0}/{1}s/{2}/{2}-{3}'.format(code_root, request['meta']['code_type'], request['meta']['name'], request['meta']['version'])
+    _checkout_repo(request["commit_hash"], code_folder)
+    if request['meta']['is_current']:
+        code_folder_current = '{0}/{1}s/{2}/{2}-current'.format(code_root, request['meta']['code_type'], request['meta']['name'])
+        _update_symlink(code_folder,code_folder_current)
+
+
+@roles('webservers')
 def site_provision(site, install=True):
     """
     Responds to POSTs to provision a site to the right places on the server.
@@ -208,6 +223,17 @@ def _clone_repo(git_url, checkout_item, destination):
     run('git clone {0} {1}'.format(git_url, destination))
     with cd(destination):
         run('git checkout {0}'.format(checkout_item))
+        run('git submodule update --init --recursive')
+        run('git clean -f -f -d')
+
+
+def _checkout_repo(checkout_item, destination):
+    print('Checkout Repo: {0}\n Checkout: {1}'.format(destination, checkout_item))
+    with cd(destination):
+        run('git reset --hard')
+        run('git checkout {0}'.format(checkout_item))
+        run('git submodule update --init --recursive')
+        run('git clean -f -f -d')
 
 
 def _replace_files_directory(source, destination):

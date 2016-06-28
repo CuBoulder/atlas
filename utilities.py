@@ -107,11 +107,12 @@ def get_eve(resource, query):
     :return: dict of items that match the query string.
     """
     url = "{0}/{1}?{2}".format(api_server, resource, query)
-    current_app.logger.debug('query_eve URL - {0}'.format(url))
     r = requests.get(url, auth=(ldap_username, ldap_password), verify=False)
     if r.ok:
         return r.json()
+        current_app.logger.debug('query_eve URL - {0}\n{1}'.format(url, r.json))
     else:
+        current_app.logger.debug('query_eve URL - {0}\n{1}'.format(url, r.text))
         return r.text
 
 def patch_eve(resource, item, etag, request_payload):

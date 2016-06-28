@@ -17,19 +17,19 @@ if path not in sys.path:
 # TODO: PATCH for code for commit_hash, version, or is_current
 # TODO: DELETE for code
 # TODO: POST for site
+# TODO: Validate that each code type is correct for a site. IE no core as a profile.
 # TODO: PATCH for site
 # TODO: DELETE for site
 # TODO: POST for command
 # TODO: GET for command
 # TODO: Make Atlas autodiscover assets
+# TODO: Create requirements.txt
 
 
 # Callbacks
 def pre_post_callback(resource, request):
     """
-    Callback for POST to all endpoints.
-
-    Hook into all create events before the Mongo object is created.
+    Pre callback for POST to all endpoints.
 
     :param resource: resource accessed
     :param request: flask.request object
@@ -39,7 +39,7 @@ def pre_post_callback(resource, request):
 
 def pre_post_code_callback(request):
     """
-    Hook into 'code' create events before the Mongo object is created.
+    Pre callback for POST to 'code' endpoint.
 
     Set 'meta.is_current' for code items with the same meta data to False.
 
@@ -49,7 +49,6 @@ def pre_post_code_callback(request):
         # Need a lowercase string when querying boolean values. Python
         # stores it as 'True'.
         query = 'where={{"meta.name":"{0}","meta.code_type":"{1}","meta.is_current": {2}}}'.format(request.json['meta']['name'], request.json['meta']['code_type'], str(request.json['meta']['is_current']).lower())
-        app.logger.debug(query)
         code_get = utilities.get_eve('code', query)
         app.logger.debug(code_get)
         for code in code_get['_items']:
@@ -59,22 +58,20 @@ def pre_post_code_callback(request):
 
 def post_post_callback(resource, request, payload):
     """
-    Callback for POST to all endpoints.
-
-    Hook into all create events after the Mongo object is created.
+    Post callback for POST to all endpoints.
 
     :param resource: resource accessed
     :param request: original flask.request object
     :param payload: the response payload from Eve
     """
-    app.logger.debug('POST to {0} resource\nPayload:\n{1}'.format(resource,payload.__dict__))
+    app.logger.debug('POST to {0} resource\nPayload:\n{1}'.format(resource, payload.__dict__))
 
 
 def post_post_code_callback(request, payload):
     """
-    Callback for POST to `code` endpoint.
+    Post callback for POST to `code` endpoint.
 
-    Hook into 'code' create events after the Mongo object is created.
+    Get code onto servers after the document is created.
 
     :param request: original flask.request object
     :param payload: response payload

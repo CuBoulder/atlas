@@ -6,6 +6,10 @@ import requests
 import ldap
 import json
 
+from cryptography.fernet import Fernet
+from random import choice
+from string import lowercase
+from hashlib import sha1
 from eve.auth import BasicAuth
 from flask import current_app
 from atlas.config import *
@@ -56,6 +60,42 @@ class AtlasBasicAuth(BasicAuth):
         # Apparently this was a bad login attempt
         current_app.logger.info('LDAP - {0} - Bind failed'.format(username))
         return False
+
+
+def randomstring(length=14):
+    """
+    :param length: Length of the string
+    :return: String of random lowercase letters.
+    """
+    return ''.join(choice(lowercase) for i in range(length))
+
+
+def mysql_password():
+    """
+    Hash string twice with SHA1 and return uppercase hex digest, prepended with
+    an astrix.
+
+    This function is identical to the MySQL PASSWORD() function.
+    """
+    start = randomstring()
+    pass1 = sha1(start).digest()
+    pass2 = sha1(pass1).hexdigest()
+    return "*" + pass2.upper()
+
+
+# See https://cryptography.io/en/latest/fernet/#implementation
+def encrypt_string(string):
+    cipher = Fernet(encryption_key)
+    msg = cipher.encrypt(string)
+    encrypted = msg.encode('hex')
+    return encrypted
+
+
+def decrypt_string(string):
+    cipher = Fernet(encryption_key)
+    msg = string.decode('hex')
+    decrypted = cipher.decrypt(msg)
+    return decrypted
 
 
 def get_eve(resource, query):

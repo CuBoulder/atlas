@@ -26,8 +26,8 @@ sites_code_root = '/data/sites'
 default_core = 'drupal'
 default_profile = 'express'
 
-# Database salt
-salt = ''
+# Encryption variables
+encryption_password = 'astringtouseforapassword'
 
 # LDAP configuration including service account credentials.
 ldap_server = 'ldap://URL:PORT'

@@ -16,13 +16,13 @@ if path not in sys.path:
 
 # TODO: PATCH for code for commit_hash, version, or is_current
 # TODO: DELETE for code
-# TODO: POST for site
 # TODO: Validate that each code type is correct for a site. IE no core as a profile.
 # TODO: PATCH for site
 # TODO: DELETE for site
 # TODO: POST for command
 # TODO: GET for command
-# TODO: Make Atlas autodiscover assets
+# TODO: DELETE for a command.
+# TODO: Make Atlas autodiscover resources
 # TODO: Create requirements.txt
 
 
@@ -107,20 +107,20 @@ def post_post_sites_callback(request, payload):
             site = site['_items'][0]
             app.logger.debug(site)
             if site['type'] == 'express':
-                # Update each site with an sid, an update group, any missing code, and date fields.
+                # Assign an sid, an update group, any missing code, and date fields.
                 site['sid'] = 'p1' + sha1(site['_id']).hexdigest()[0:10]
                 site['update_group'] = random.randint(0, 2)
                 # Add default core and profile if not set.
-                if not site['code']['core']:
-                    query = 'where={{"meta.name":"drupal","meta.code_type":"core","meta.is_current": true}}'.format(default_core)
+                if not site['code'].get('core'):
+                    query = 'where={{"meta.name":"{0}","meta.code_type":"core","meta.is_current":true}}'.format(default_core)
                     core_get = utilities.get_eve('code', query)
                     app.logger.debug(core_get)
-                    site['code']['core'] = core_get['_items']['_id']
-                if not site['code']['profile']:
-                    query = 'where={{"meta.name":"{0}","meta.code_type":"profile","meta.is_current": true}}.'.format(default_profile)
+                    site['code']['core'] = core_get['_items'][0]['_id']
+                if not site['code'].get('profile'):
+                    query = 'where={{"meta.name":"{0}","meta.code_type":"profile","meta.is_current":true}}'.format(default_profile)
                     profile_get = utilities.get_eve('code', query)
                     app.logger.debug(profile_get)
-                    site['code']['profile'] = profile_get['_items']['_id']
+                    site['code']['profile'] = profile_get['_items'][0]['_id']
                 app.logger.debug(site)
                 date_json = '{{"created":"{0}","update":"{1}"}}'.format(site['_created'], site['_updated'])
                 site['dates'] = json.loads(date_json)

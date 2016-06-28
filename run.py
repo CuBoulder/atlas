@@ -1,7 +1,10 @@
 import sys
 import logging
+import random
+import json
 
 from eve import Eve
+from hashlib import sha1
 from atlas import tasks
 from atlas import utilities
 from atlas.config import *
@@ -83,30 +86,64 @@ def post_post_code_callback(request, payload):
 
 
 
-def post_post_site_callback(request, payload):
+def post_post_sites_callback(request, payload):
     """
-    Callback for POST to `code` endpoint.
+    Post callback for POST to `site` endpoint.
 
-    Allows us to hook into 'site' create events after the Mongo object has been created.
+    Provision an instance.
 
     :param request: original flask.request object
     :param payload: response payload
     """
-    tasks.site_provison.delay(request.json)
+    if payload._status_code == 201:
+        app.logger.debug(payload.data)
+        payload_data = json.loads(payload.data)
+        # Convert payload to list.
+        if not isinstance(payload_data, list):
+            payload_data = [payload_data]
+        app.logger.debug(payload_data)
+        for site in payload_data:
+            app.logger.debug(site)
+            # Need the rest of the Site object to see if this is Express.
+            query = 'where={{"_id":"{0}"}}'.format(site['_id'])
+            site = utilities.get_eve('sites', query)
+            site = site['_items'][0]
+            app.logger.debug(site)
+            if site['type'] == 'express':
+                # Update each site with an sid, an update group, any missing code, and date fields.
+                site['sid'] = 'p1' + sha1(site['_id']).hexdigest()[0:10]
+                site['update_group'] = random.randint(0, 2)
+                # Add default core and profile if not set.
+                if not site['code']['core']:
+                    query = 'where={{"meta.name":"drupal","meta.code_type":"core","meta.is_current": true}}'.format(default_core)
+                    core_get = utilities.get_eve('code', query)
+                    app.logger.debug(core_get)
+                    site['code']['core'] = core_get['_items']['_id']
+                if not site['code']['profile']:
+                    query = 'where={{"meta.name":"{0}","meta.code_type":"profile","meta.is_current": true}}.'.format(default_profile)
+                    profile_get = utilities.get_eve('code', query)
+                    app.logger.debug(profile_get)
+                    site['code']['profile'] = profile_get['_items']['_id']
+                app.logger.debug(site)
+                date_json = '{{"created":"{0}","update":"{1}"}}'.format(site['_created'], site['_updated'])
+                site['dates'] = json.loads(date_json)
+                # Ready to provision.
+                app.logger.debug('Got to fabric\n{0}'.format(site))
+                tasks.site_provision.delay(site)
 
 
 def post_get_command_callback(request, payload):
     """
-    Callback for GET to `command` endpoint.
+    Post callback for GET to `command` endpoint.
 
-    Allows us to run commands when API endpoints are called.
+    Run commands when API endpoints are called.
 
-    :param resource: resource accessed
     :param request: original flask.request object
     :param payload: response payload
     :return:
     """
     tasks.command_run.delay(request.json)
+
 
 # TODO: Set it up to mark what user updated the record.
 # auto fill _created_by and _modified_by user fields
@@ -146,7 +183,7 @@ app.on_pre_POST_code += pre_post_code_callback
 #app.on_replace += pre_replace
 app.on_post_POST += post_post_callback
 app.on_post_POST_code += post_post_code_callback
-app.on_post_POST_site += post_post_site_callback
+app.on_post_POST_sites += post_post_sites_callback
 app.on_post_GET_command += post_get_command_callback
 
 

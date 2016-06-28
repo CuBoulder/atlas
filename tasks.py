@@ -6,21 +6,19 @@ Celery tasks for Atlas.
 import sys
 import fabfile
 
-
 from celery import Celery
 from celery.utils.log import get_task_logger
-from jinja2 import Environment, PackageLoader
 from fabric.api import execute
-
+from atlas.config import *
+from atlas import utilities
 from atlas import config_celerybeat
+
 
 
 path = '/data/code'
 if path not in sys.path:
     sys.path.append(path)
 
-# Tell Jinja where our templates live.
-env = Environment(loader=PackageLoader('atlas', 'templates'))
 # Setup logging
 logger = get_task_logger(__name__)
 
@@ -43,14 +41,16 @@ def code_deploy(request_json):
 
 
 @celery.task
-def site_provision(request_json):
+def site_provision(site):
     """
     Provision a new instance with the given parameters.
 
-    :param request_json: The flask request.json object.
+    :param site: A single site from Flask request.json object.
     :return:
     """
-    return True
+    logger.debug('Site provision - {0}'.format(site))
+    site['db_key'] = utilities.encrypt_string(utilities.mysql_password())
+    execute(fabfile.site_provision, site=site)
 
 
 @celery.task

@@ -4,6 +4,7 @@ import random
 import json
 
 from eve import Eve
+from flask import abort, jsonify
 from hashlib import sha1
 from atlas import tasks
 from atlas import utilities
@@ -56,7 +57,7 @@ def pre_post_code_callback(request):
             utilities.patch_eve('code', code['_id'], code['_etag'], request_payload)
 
 
-def pre_patch_code_callback(request):
+def pre_patch_code_callback(request, payload):
     """
     Pre callback for PATCH to 'code' endpoint.
 
@@ -73,6 +74,29 @@ def pre_patch_code_callback(request):
         for code in code_get['_items']:
             request_payload = {'meta.is_current': False}
             utilities.patch_eve('code', code['_id'], code['_etag'], request_payload)
+
+
+def pre_delete_code_callback(request, payload):
+    """
+    Pre callback for DELETE to 'code' endpoint.
+
+    Make sure no sites are using the code. Need to get the full code item first.
+
+    :param request: flask.request object
+    """
+    code_query = 'where={{"_id":"{0}"}}'.format(payload['_id'])
+    code_get = utilities.get_eve('code', code_query)
+    app.logger.debug(code_get)
+    site_query = 'where={{"code.{0}":"{1}"}}'.format(code_get['_items'][0]['meta']['code_type'], code_get['_items'][0]['_id'])
+    sites_get = utilities.get_eve('sites', site_query)
+    app.logger.debug(sites_get)
+    if not sites_get['_meta']['total'] == 0:
+        for site in sites_get['_items']:
+            # Create a list of sites that use this code item.
+            # If 'sid' is a key in the site dict use it, otherwise use '_id'.
+            site_ids = site_ids + site['sid'] if 'sid' in site else site['_id'] + '\n'
+        app.logger.error('Code item is in use by one or more sites:\n{0}'.format(site_ids))
+        abort(409, 'A conflict happened while processing the request. Code item is in use by one or more sites.')
 
 
 def post_post_callback(resource, request, payload):
@@ -113,7 +137,7 @@ def post_patch_code_callback(request, payload):
     # Verify that the PATCH was successful before we do anything else.
     # Status code '200 OK'.
     if payload._status_code == 200:
-        deploy_result = tasks.code_update.delay(request.json)
+        update_result = tasks.code_update.delay(request.json)
 
 
 def post_post_sites_callback(request, payload):
@@ -186,27 +210,8 @@ def post_patch_sites_callback(request, payload):
             site = site['_items'][0]
             app.logger.debug(site)
             if site['type'] == 'express':
-                # Assign an sid, an update group, any missing code, and date fields.
-                site['sid'] = 'p1' + sha1(site['_id']).hexdigest()[0:10]
-                site['update_group'] = random.randint(0, 2)
-                # Add default core and profile if not set.
-                # The 'get' method checks if the key exists.
-                if not site['code'].get('core'):
-                    query = 'where={{"meta.name":"{0}","meta.code_type":"core","meta.is_current":true}}'.format(default_core)
-                    core_get = utilities.get_eve('code', query)
-                    app.logger.debug(core_get)
-                    site['code']['core'] = core_get['_items'][0]['_id']
-                if not site['code'].get('profile'):
-                    query = 'where={{"meta.name":"{0}","meta.code_type":"profile","meta.is_current":true}}'.format(default_profile)
-                    profile_get = utilities.get_eve('code', query)
-                    app.logger.debug(profile_get)
-                    site['code']['profile'] = profile_get['_items'][0]['_id']
-                app.logger.debug(site)
-                date_json = '{{"created":"{0}","update":"{1}"}}'.format(site['_created'], site['_updated'])
-                site['dates'] = json.loads(date_json)
-                # Ready to provision.
                 app.logger.debug('Got to fabric\n{0}'.format(site))
-                tasks.site_provision.delay(site)
+                tasks.site_update.delay(site)
 
 
 def post_get_command_callback(request, payload):
@@ -257,11 +262,19 @@ app.debug = True
 app.on_pre_POST += pre_post_callback
 app.on_pre_POST_code += pre_post_code_callback
 app.on_pre_PATCH_code += pre_patch_code_callback
+app.on_pre_DELETE_code += pre_delete_code_callback
 app.on_post_POST += post_post_callback
 app.on_post_POST_code += post_post_code_callback
 app.on_post_POST_sites += post_post_sites_callback
 app.on_post_PATCH_code += post_patch_code_callback
 app.on_post_GET_command += post_get_command_callback
+
+
+@app.errorhandler(409)
+def custom409(error):
+    response = jsonify({'message': error.description})
+    response.status_code = 409
+    return response
 
 
 if __name__ == '__main__':

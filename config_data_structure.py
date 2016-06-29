@@ -5,7 +5,7 @@ MONGO_PORT = os.environ.get('MONGO_PORT', 27017)
 MONGO_DBNAME = os.environ.get('MONGO_DBNAME', 'atlas')
 
 # Enable reads (GET), inserts (POST), and DELETE for resources/collections.
-RESOURCE_METHODS = ['GET', 'POST', 'DELETE']
+RESOURCE_METHODS = ['GET', 'POST']
 
 # Enable reads (GET), edits (PATCH), replacements (PUT), and deletes of
 # individual items.

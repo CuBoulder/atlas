@@ -53,6 +53,18 @@ def code_update(request_json):
 
 
 @celery.task
+def code_remove(item):
+    """
+    Remove code from the server.
+
+    :param item: Item to be removed.
+    :return:
+    """
+    logger.debug('Code delete - {0}'.format(item))
+    execute(fabfile.code_remove, item=item)
+
+
+@celery.task
 def site_provision(site):
     """
     Provision a new instance with the given parameters.

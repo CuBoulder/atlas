@@ -80,7 +80,7 @@ def pre_delete_code_callback(request, payload):
     """
     Pre callback for DELETE to 'code' endpoint.
 
-    Make sure no sites are using the code. Need to get the full code item first.
+    Make sure no sites are using the code.
 
     :param request: flask.request object
     """
@@ -96,6 +96,18 @@ def pre_delete_code_callback(request, payload):
             site_ids = site_ids + site['sid'] if 'sid' in site else site['_id'] + '\n'
         app.logger.error('Code item is in use by one or more sites:\n{0}'.format(site_ids))
         abort(409, 'A conflict happened while processing the request. Code item is in use by one or more sites.')
+
+
+def on_delete_item_code_callback(item):
+    """
+    Pre DB delete callback for DELETE to `code` endpoint.
+
+    Remove code from servers right before the document is removed.
+
+    :param item: database item to be deleted.
+    """
+    app.logger.debug(item)
+    tasks.code_remove.delay(item)
 
 
 def post_post_callback(resource, request, payload):
@@ -121,7 +133,7 @@ def post_post_code_callback(request, payload):
     # Verify that the POST was successful before we do anything else.
     # Status code '201 Created'.
     if payload._status_code == 201:
-        deploy_result = tasks.code_deploy.delay(request.json)
+        tasks.code_deploy.delay(request.json)
 
 
 def post_patch_code_callback(request, payload):
@@ -136,7 +148,7 @@ def post_patch_code_callback(request, payload):
     # Verify that the PATCH was successful before we do anything else.
     # Status code '200 OK'.
     if payload._status_code == 200:
-        update_result = tasks.code_update.delay(request.json)
+        tasks.code_update.delay(request.json)
 
 
 def post_post_sites_callback(request, payload):
@@ -262,6 +274,7 @@ app.on_pre_POST += pre_post_callback
 app.on_pre_POST_code += pre_post_code_callback
 app.on_pre_PATCH_code += pre_patch_code_callback
 app.on_pre_DELETE_code += pre_delete_code_callback
+app.on_delete_item_code += on_delete_item_code_callback
 app.on_post_POST += post_post_callback
 app.on_post_POST_code += post_post_code_callback
 app.on_post_POST_sites += post_post_sites_callback

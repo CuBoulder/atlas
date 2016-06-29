@@ -61,6 +61,18 @@ def code_update(request):
 
 
 @roles('webservers')
+def code_remove(item):
+    """
+    Responds to DELETEs to remove code from the server.
+
+    :param item: Item to remove
+    :return:
+    """
+    code_folder = '{0}/{1}s/{2}/{2}-{3}'.format(code_root, item['meta']['code_type'], item['meta']['name'], item['meta']['version'])
+    _remove_directory(code_folder)
+
+
+@roles('webservers')
 def site_provision(site, install=True):
     """
     Responds to POSTs to provision a site to the right places on the server.
@@ -117,6 +129,8 @@ def site_provision(site, install=True):
     if install:
         _install_site(profile_name, code_directory_current)
 
+    # TODO: Patch site with all its new information.
+
 
 def correct_file_directory_permissions(site):
     code_directory_sid = '{0}/{1}/{1}'.format(sites_code_root, site['sid'])
@@ -132,6 +146,11 @@ def correct_file_directory_permissions(site):
 def _create_directory_structure(folder):
     print('Create directory\n{0}'.format(folder))
     run('mkdir -p {0}'.format(folder))
+
+
+def _remove_directory(folder):
+    print('Remove directory\n{0}'.format(folder))
+    run('rm -rf {0}'.format(folder))
 
 
 # TODO: Add decorator to run on a single host.

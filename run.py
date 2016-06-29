@@ -84,14 +84,13 @@ def pre_delete_code_callback(request, payload):
 
     :param request: flask.request object
     """
-    code_query = 'where={{"_id":"{0}"}}'.format(payload['_id'])
-    code_get = utilities.get_eve('code', code_query)
-    app.logger.debug(code_get)
-    site_query = 'where={{"code.{0}":"{1}"}}'.format(code_get['_items'][0]['meta']['code_type'], code_get['_items'][0]['_id'])
-    sites_get = utilities.get_eve('sites', site_query)
-    app.logger.debug(sites_get)
-    if not sites_get['_meta']['total'] == 0:
-        for site in sites_get['_items']:
+    code = utilities.get_single_eve('code', payload['_id'])
+    app.logger.debug(code)
+    site_query = 'where={{"code.{0}":"{1}"}}'.format(code['meta']['code_type'], code['_id'])
+    sites = utilities.get_eve('sites', site_query)
+    app.logger.debug(sites)
+    if not sites['_meta']['total'] == 0:
+        for site in sites['_items']:
             # Create a list of sites that use this code item.
             # If 'sid' is a key in the site dict use it, otherwise use '_id'.
             site_ids = site_ids + site['sid'] if 'sid' in site else site['_id'] + '\n'

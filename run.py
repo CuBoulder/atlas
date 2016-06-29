@@ -16,7 +16,6 @@ if path not in sys.path:
     sys.path.append(path)
 
 # TODO: PATCH for code for commit_hash, version, or is_current
-# TODO: DELETE for code
 # TODO: Validate that each code type is correct for a site. IE no core as a profile.
 # TODO: PATCH for site
 # TODO: DELETE for site
@@ -100,6 +99,40 @@ def pre_delete_code_callback(request, lookup):
         abort(409, 'A conflict happened while processing the request. Code item is in use by one or more sites.')
 
 
+def on_insert_sites_callback(items):
+    """
+    On Insert callback for POST to `site` endpoint.
+
+    Provision an instance.
+
+    :param items:
+    """
+    app.logger.debug(items)
+    for item in items:
+        app.logger.debug(item)
+        if item['type'] == 'express':
+            # Assign a sid, an update group, any missing code, and date fields.
+            item['sid'] = 'p1' + sha1(utilities.randomstring()).hexdigest()[0:10]
+            item['update_group'] = random.randint(0, 2)
+            # Add default core and profile if not set.
+            # The 'get' method checks if the key exists.
+            if not item['code'].get('core'):
+                query = 'where={{"meta.name":"{0}","meta.code_type":"core","meta.is_current":true}}'.format(default_core)
+                core_get = utilities.get_eve('code', query)
+                app.logger.debug(core_get)
+                item['code']['core'] = core_get['_items'][0]['_id']
+            if not item['code'].get('profile'):
+                query = 'where={{"meta.name":"{0}","meta.code_type":"profile","meta.is_current":true}}'.format(default_profile)
+                profile_get = utilities.get_eve('code', query)
+                app.logger.debug(profile_get)
+                item['code']['profile'] = profile_get['_items'][0]['_id']
+            date_json = '{{"created":"{0}"}}'.format(item['_created'])
+            item['dates'] = json.loads(date_json)
+            # Ready to provision.
+            app.logger.debug('Ready to send to Celery\n{0}'.format(item))
+            tasks.site_provision.delay(item)
+
+
 def on_delete_item_code_callback(item):
     """
     Pre DB delete callback for DELETE to `code` endpoint.
@@ -151,52 +184,6 @@ def post_patch_code_callback(request, payload):
     # Status code '200 OK'.
     if payload._status_code == 200:
         tasks.code_update.delay(request.json)
-
-
-def post_post_sites_callback(request, payload):
-    """
-    Post callback for POST to `site` endpoint.
-
-    Provision an instance.
-
-    :param request: original flask.request object
-    :param payload: response payload
-    """
-    if payload._status_code == 201:
-        app.logger.debug(payload.data)
-        payload_data = json.loads(payload.data)
-        # Convert payload to list.
-        if not isinstance(payload_data, list):
-            payload_data = [payload_data]
-        app.logger.debug(payload_data)
-        for site in payload_data:
-            app.logger.debug(site)
-            # Need the rest of the Site object to see if this is Express.
-            query = 'where={{"_id":"{0}"}}'.format(site['_id'])
-            site = utilities.get_eve('sites', query)
-            site = site['_items'][0]
-            app.logger.debug(site)
-            if site['type'] == 'express':
-                # Assign an sid, an update group, any missing code, and date fields.
-                site['sid'] = 'p1' + sha1(site['_id']).hexdigest()[0:10]
-                site['update_group'] = random.randint(0, 2)
-                # Add default core and profile if not set.
-                # The 'get' method checks if the key exists.
-                if not site['code'].get('core'):
-                    query = 'where={{"meta.name":"{0}","meta.code_type":"core","meta.is_current":true}}'.format(default_core)
-                    core_get = utilities.get_eve('code', query)
-                    app.logger.debug(core_get)
-                    site['code']['core'] = core_get['_items'][0]['_id']
-                if not site['code'].get('profile'):
-                    query = 'where={{"meta.name":"{0}","meta.code_type":"profile","meta.is_current":true}}'.format(default_profile)
-                    profile_get = utilities.get_eve('code', query)
-                    app.logger.debug(profile_get)
-                    site['code']['profile'] = profile_get['_items'][0]['_id']
-                date_json = '{{"created":"{0}","update":"{1}"}}'.format(site['_created'], site['_updated'])
-                site['dates'] = json.loads(date_json)
-                # Ready to provision.
-                app.logger.debug('Ready to send to Celery\n{0}'.format(site))
-                tasks.site_provision.delay(site)
 
 
 def post_patch_sites_callback(request, payload):
@@ -276,10 +263,10 @@ app.on_pre_POST += pre_post_callback
 app.on_pre_POST_code += pre_post_code_callback
 app.on_pre_PATCH_code += pre_patch_code_callback
 app.on_pre_DELETE_code += pre_delete_code_callback
+app.on_insert_sites += on_insert_sites_callback
 app.on_delete_item_code += on_delete_item_code_callback
 app.on_post_POST += post_post_callback
 app.on_post_POST_code += post_post_code_callback
-app.on_post_POST_sites += post_post_sites_callback
 app.on_post_PATCH_code += post_patch_code_callback
 app.on_post_GET_command += post_get_command_callback
 

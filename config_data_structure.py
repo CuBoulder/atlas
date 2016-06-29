@@ -182,6 +182,7 @@ code = {
     'item_title': 'code',
     'public_methods': ['GET'],
     'public_item_methods': ['GET'],
+    'soft_delete': True,
     'schema': code_schema,
 }
 
@@ -196,6 +197,7 @@ sites = {
     'public_methods': ['GET'],
     'public_item_methods': ['GET'],
     'versioning': True,
+    'soft_delete': True,
     'schema': sites_schema,
 }
 
@@ -206,7 +208,6 @@ command = {
     'item_title': 'command',
     'public_methods': ['GET'],
     'public_item_methods': [],
-    'versioning': True,
     'schema': command_schema,
 }
 

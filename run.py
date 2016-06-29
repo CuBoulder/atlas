@@ -57,13 +57,14 @@ def pre_post_code_callback(request):
             utilities.patch_eve('code', code['_id'], code['_etag'], request_payload)
 
 
-def pre_patch_code_callback(request, payload):
+def pre_patch_code_callback(request, lookup):
     """
     Pre callback for PATCH to 'code' endpoint.
 
     Set 'meta.is_current' for code items with the same meta data to False.
 
     :param request: flask.request object
+    :param lookup:
     """
     if request.json['meta']['is_current']:
         # Need a lowercase string when querying boolean values. Python
@@ -76,15 +77,16 @@ def pre_patch_code_callback(request, payload):
             utilities.patch_eve('code', code['_id'], code['_etag'], request_payload)
 
 
-def pre_delete_code_callback(request, payload):
+def pre_delete_code_callback(request, lookup):
     """
     Pre callback for DELETE to 'code' endpoint.
 
     Make sure no sites are using the code.
 
     :param request: flask.request object
+    :param lookup:
     """
-    code = utilities.get_single_eve('code', payload['_id'])
+    code = utilities.get_single_eve('code', lookup['_id'])
     app.logger.debug(code)
     site_query = 'where={{"code.{0}":"{1}"}}'.format(code['meta']['code_type'], code['_id'])
     sites = utilities.get_eve('sites', site_query)

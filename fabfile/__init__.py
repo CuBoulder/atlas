@@ -28,7 +28,7 @@ env.colorize_error = True
 env.roledefs = serverdefs[environment]
 
 
-# TODO: Figure out a better way to deal with the output
+# TODO: Figure out a better way to deal with the output. Calling functions via 'var = execute(func)' seems to suppress a lot of the output.
 
 
 # Code Commands.

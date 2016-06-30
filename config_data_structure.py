@@ -4,6 +4,8 @@ MONGO_HOST = os.environ.get('MONGO_HOST', 'localhost')
 MONGO_PORT = os.environ.get('MONGO_PORT', 27017)
 MONGO_DBNAME = os.environ.get('MONGO_DBNAME', 'atlas')
 
+DATE_FORMAT = '%Y-%m-%d %H:%M:%S GMT'
+
 # Enable reads (GET), inserts (POST), and DELETE for resources/collections.
 RESOURCE_METHODS = ['GET', 'POST']
 

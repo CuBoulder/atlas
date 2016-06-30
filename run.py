@@ -69,8 +69,6 @@ def on_fetched_item_command_callback(response):
 
 def on_insert_sites_callback(items):
     """
-    Provision an Express instance.
-
     Assign a sid, an update group, db_key, any missing code, and date fields.
 
     :param items: List of dicts for items to be created.
@@ -96,7 +94,19 @@ def on_insert_sites_callback(items):
                 item['code']['profile'] = profile_get['_items'][0]['_id']
             date_json = '{{"created":"{0}"}}'.format(item['_created'])
             item['dates'] = json.loads(date_json)
-            # Ready to provision.
+            app.logger.debug('Ready to send to create item\n{0}'.format(item))
+
+
+def on_inserted_sites_callback(items):
+    """
+    Provision Express instances.
+
+    :param items: List of dicts for instances to be provisioned.
+    """
+    app.logger.debug(items)
+    for item in items:
+        app.logger.debug(item)
+        if item['type'] == 'express':
             app.logger.debug('Ready to send to Celery\n{0}'.format(item))
             tasks.site_provision.delay(item)
 
@@ -223,6 +233,7 @@ app.on_pre_DELETE_code += pre_delete_code_callback
 app.on_fetched_item_command += on_fetched_item_command_callback
 app.on_insert_code += on_insert_code_callback
 app.on_insert_sites += on_insert_sites_callback
+app.on_inserted_sites += on_inserted_sites_callback
 app.on_update_code += on_update_code_callback
 app.on_update_sites += on_update_sites_callback
 app.on_delete_item_code += on_delete_item_code_callback

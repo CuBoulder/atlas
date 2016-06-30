@@ -25,6 +25,7 @@ logger = get_task_logger(__name__)
 celery = Celery('tasks')
 celery.config_from_object(config_celery)
 
+
 @celery.task
 def code_deploy(item):
     """
@@ -38,7 +39,7 @@ def code_deploy(item):
     logger.debug(fabric_task)
     # Output from execute is a dict of hosts with 'None' as the value if
     # everything went well.
-    if not all(value == None for value in fabric_task.values()):
+    if not all(value is None for value in fabric_task.values()):
         logger.debug(fabric_task.values())
         # TODO: Push notification to someone.
         return
@@ -55,7 +56,7 @@ def code_update(item):
     logger.debug('Code update - {0}'.format(item))
     fabric_task = execute(fabfile.code_update, item=item)
     logger.debug(fabric_task)
-    if not all(value == None for value in fabric_task.values()):
+    if not all(value is None for value in fabric_task.values()):
         logger.debug(fabric_task.values())
         # TODO: Push notification to someone.
         return
@@ -72,7 +73,7 @@ def code_remove(item):
     logger.debug('Code delete - {0}'.format(item))
     fabric_task = execute(fabfile.code_remove, item=item)
     logger.debug(fabric_task)
-    if not all(value == None for value in fabric_task.values()):
+    if not all(value is None for value in fabric_task.values()):
         logger.debug(fabric_task.values())
         # TODO: Push notification to someone.
         return
@@ -92,7 +93,7 @@ def site_provision(site):
     site['db_key'] = utilities.encrypt_string(utilities.mysql_password())
     fabric_task = execute(fabfile.site_provision, site=site)
     logger.debug(fabric_task)
-    if not all(value == None for value in fabric_task.values()):
+    if not all(value is None for value in fabric_task.values()):
         logger.debug(fabric_task.values())
         # TODO: Push notification to someone.
         return
@@ -111,7 +112,6 @@ def site_update(site):
     """
     logger.debug('Site update - {0}'.format(site))
     return
-
 
 
 @celery.task

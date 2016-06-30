@@ -25,6 +25,7 @@ if path not in sys.path:
 # TODO: Create requirements.txt
 # TODO: Figure out how to do redirects
 # TODO: Figure out how to test
+# TODO: Support sites without a profile. Check if default profile is set or not.
 
 
 # Callbacks
@@ -86,13 +87,14 @@ def on_insert_sites_callback(items):
                 core_get = utilities.get_eve('code', query)
                 app.logger.debug(core_get)
                 item['code']['core'] = core_get['_items'][0]['_id']
+            # TODO: Support sites without a profile. Check if default profile is set or not.
             if not item['code'].get('profile'):
                 query = 'where={{"meta.name":"{0}","meta.code_type":"profile","meta.is_current":true}}'.format(default_profile)
                 profile_get = utilities.get_eve('code', query)
                 app.logger.debug(profile_get)
                 # TODO: Error if there is no current code.
                 item['code']['profile'] = profile_get['_items'][0]['_id']
-            date_json = '{{"created":"{0}"}}'.format(item['_created'])
+            date_json = '{{"created":"{0} GMT"}}'.format(item['_created'])
             item['dates'] = json.loads(date_json)
             app.logger.debug('Ready to send to create item\n{0}'.format(item))
 

@@ -132,7 +132,7 @@ def on_insert_code_callback(items):
             app.logger.debug(code_get)
             for code in code_get['_items']:
                 request_payload = {'meta.is_current': False}
-                utilities.patch_eve('code', code['_id'], code['_etag'], request_payload)
+                utilities.patch_eve('code', code['_id'], request_payload)
         app.logger.debug('Ready to send to Celery\n{0}'.format(item))
         tasks.code_deploy.delay(item)
 
@@ -169,8 +169,10 @@ def on_update_code_callback(updates, original):
 
         for code in code_get['_items']:
             request_payload = {'meta.is_current': False}
-            utilities.patch_eve('code', code['_id'], code['_etag'], request_payload)
+            utilities.patch_eve('code', code['_id'], request_payload)
 
+    # We need the whole record so that we can manipulate code in the right
+    # place.
     # Copy 'original' to a new dict, then update it with values from 'updates'
     # to create an item to deploy. Need to do the same process for meta first,
     # otherwise the update will fully overwrite.

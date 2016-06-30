@@ -154,7 +154,7 @@ sites_schema = {
             'created': {
                 'type': 'datetime',
             },
-            'updated': {
+            'assigned': {
                 'type': 'datetime',
             },
             'launched': {

@@ -187,6 +187,7 @@ code = {
 }
 
 # Sites resource
+# TODO: Create an additional lookup for 'skeleton' POSTs to allow for creating sites but not installing them.
 sites = {
     'item_title': 'site',
     # Allow lookup by 'sid' in addition to '_id'

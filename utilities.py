@@ -134,18 +134,18 @@ def get_single_eve(resource, id):
         return r.text
 
 
-def patch_eve(resource, item, etag, request_payload):
+def patch_eve(resource, id, request_payload):
     """
     Patch items in the Atlas API.
 
     :param resource:
-    :param item:
+    :param id:
     :param request_payload:
     :return:
     """
-    url = "{0}/{1}/{2}".format(api_server, resource, item)
-    current_app.logger.debug('patch_eve URL - {0}'.format(url))
-    headers = {'Content-Type': 'application/json', 'If-Match': etag}
+    url = "{0}/{1}/{2}".format(api_server, resource, id)
+    get_etag = get_single_eve(resource, id)
+    headers = {'Content-Type': 'application/json', 'If-Match': get_etag['_etag']}
     r = requests.patch(url, headers=headers, data=json.dumps(request_payload), auth=(ldap_username, ldap_password))
     if r.ok:
         return r.json()

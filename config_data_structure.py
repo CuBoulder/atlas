@@ -86,7 +86,7 @@ sites_schema = {
       'unique': True,
       'readonly': True,
     },
-    'type' : {
+    'type': {
       'type': 'string',
       'allowed':  ['custom', 'express', 'legacy', 'homepage'],
       'default': 'express',

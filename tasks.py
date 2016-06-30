@@ -11,8 +11,7 @@ from celery.utils.log import get_task_logger
 from fabric.api import execute
 from atlas.config import *
 from atlas import utilities
-from atlas import config_celerybeat
-
+from atlas import config_celery
 
 
 path = '/data/code'
@@ -24,9 +23,7 @@ logger = get_task_logger(__name__)
 
 # Create the Celery app object
 celery = Celery('tasks')
-celery.config_from_object(config_celerybeat)
-
-# TODO: Figure out 'pickle' message on celeryd start.
+celery.config_from_object(config_celery)
 
 @celery.task
 def code_deploy(item):

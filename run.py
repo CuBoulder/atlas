@@ -29,57 +29,14 @@ if path not in sys.path:
 # Callbacks
 def pre_post_callback(resource, request):
     """
-    Pre callback for POST to all endpoints.
-
     :param resource: resource accessed
     :param request: flask.request object
     """
     app.logger.debug('POST to {0} resource\nRequest:\n{1}'.format(resource, request.json))
 
 
-def pre_post_code_callback(request):
-    """
-    Pre callback for POST to 'code' endpoint.
-
-    Set 'meta.is_current' for code items with the same meta data to False.
-
-    :param request: flask.request object
-    """
-    if request.json['meta']['is_current']:
-        # Need a lowercase string when querying boolean values. Python
-        # stores it as 'True'.
-        query = 'where={{"meta.name":"{0}","meta.code_type":"{1}","meta.is_current": {2}}}'.format(request.json['meta']['name'], request.json['meta']['code_type'], str(request.json['meta']['is_current']).lower())
-        code_get = utilities.get_eve('code', query)
-        app.logger.debug(code_get)
-        for code in code_get['_items']:
-            request_payload = {'meta.is_current': False}
-            utilities.patch_eve('code', code['_id'], code['_etag'], request_payload)
-
-
-def pre_patch_code_callback(request, lookup):
-    """
-    Pre callback for PATCH to 'code' endpoint.
-
-    Set 'meta.is_current' for code items with the same meta data to False.
-
-    :param request: flask.request object
-    :param lookup:
-    """
-    if request.json['meta']['is_current']:
-        # Need a lowercase string when querying boolean values. Python
-        # stores it as 'True'.
-        query = 'where={{"meta.name":"{0}","meta.code_type":"{1}","meta.is_current": {2}}}'.format(request.json['meta']['name'], request.json['meta']['code_type'], str(request.json['meta']['is_current']).lower())
-        code_get = utilities.get_eve('code', query)
-        app.logger.debug(code_get)
-        for code in code_get['_items']:
-            request_payload = {'meta.is_current': False}
-            utilities.patch_eve('code', code['_id'], code['_etag'], request_payload)
-
-
 def pre_delete_code_callback(request, lookup):
     """
-    Pre callback for DELETE to 'code' endpoint.
-
     Make sure no sites are using the code.
 
     :param request: flask.request object
@@ -94,15 +51,23 @@ def pre_delete_code_callback(request, lookup):
         for site in sites['_items']:
             # Create a list of sites that use this code item.
             # If 'sid' is a key in the site dict use it, otherwise use '_id'.
-            site_ids = site_ids + site['sid'] if 'sid' in site else site['_id'] + '\n'
+            site_ids = site_ids + site['sid'] if site.get('sid') else site['_id'] + '\n'
         app.logger.error('Code item is in use by one or more sites:\n{0}'.format(site_ids))
         abort(409, 'A conflict happened while processing the request. Code item is in use by one or more sites.')
 
 
+def on_fetched_item_command_callback(response):
+    """
+    Run commands when API endpoints are called.
+
+    :param response:
+    """
+    app.logger.debug('Ready to send to Celery\n{0}'.format(item))
+    tasks.command_run.delay(response)
+
+
 def on_insert_sites_callback(items):
     """
-    On Insert callback for POST to `site` endpoint.
-
     Provision an instance.
 
     :param items:
@@ -111,7 +76,7 @@ def on_insert_sites_callback(items):
     for item in items:
         app.logger.debug(item)
         if item['type'] == 'express':
-            # Assign a sid, an update group, any missing code, and date fields.
+            # Assign a sid, an update group, db_key, any missing code, and date fields.
             item['sid'] = 'p1' + sha1(utilities.randomstring()).hexdigest()[0:10]
             item['update_group'] = random.randint(0, 2)
             # Add default core and profile if not set.
@@ -133,98 +98,85 @@ def on_insert_sites_callback(items):
             tasks.site_provision.delay(item)
 
 
+def on_insert_code_callback(items):
+    """
+    Get code onto servers as the items are created.
+
+    :param items:
+    """
+    app.logger.debug(items)
+    for item in items:
+        if item.get('meta') and item['meta'].get('is_current') and item['meta']['is_current'] == True:
+            # Need a lowercase string when querying boolean values. Python
+            # stores it as 'True'.
+            query = 'where={{"meta.name":"{0}","meta.code_type":"{1}","meta.is_current": {2}}}'.format(item['meta']['name'], item['meta']['code_type'], str(item['meta']['is_current']).lower())
+            code_get = utilities.get_eve('code', query)
+            app.logger.debug(code_get)
+            for code in code_get['_items']:
+                request_payload = {'meta.is_current': False}
+                utilities.patch_eve('code', code['_id'], code['_etag'], request_payload)
+        app.logger.debug('Ready to send to Celery\n{0}'.format(item))
+        tasks.code_deploy.delay(item)
+
 def on_delete_item_code_callback(item):
     """
-    Pre DB delete callback for DELETE to `code` endpoint.
+    Remove code from servers right before the item is removed.
 
-    Remove code from servers right before the document is removed.
-
-    :param item: database item to be deleted.
+    :param item:
     """
     app.logger.debug(item)
     tasks.code_remove.delay(item)
 
 
-def post_post_callback(resource, request, payload):
+def on_update_code_callback(updates, original):
     """
-    Post callback for POST to all endpoints.
+    Update code on the servers as the item is updated.
 
-    :param resource: resource accessed
-    :param request: original flask.request object
-    :param payload: the response payload from Eve
+    :param updates:
+    :param original:
     """
-    app.logger.debug('POST to {0} resource\nPayload:\n{1}'.format(resource, payload.__dict__))
+    app.logger.debug(updates)
+    app.logger.debug(original)
+    # If this 'is_current' PATCH code with the same name and code_type.
+    if updates.get('meta') and updates['meta'].get('is_current') and updates['meta']['is_current'] == True:
+        # If the name and code_type are not changing, we need to load them from
+        # the original.
+        name = updates['meta']['name'] if updates['meta'].get('name') else original['meta']['name']
+        code_type = updates['meta']['code_type'] if updates['meta'].get('code_type') else original['meta']['code_type']
+
+        query = 'where={{"meta.name":"{0}","meta.code_type":"{1}","meta.is_current": {2}}}'.format(name, code_type, str(updates['meta']['is_current']).lower())
+        code_get = utilities.get_eve('code', query)
+        # TODO: Filter out the site we are updating.
+        app.logger.debug(code_get)
+
+        for code in code_get['_items']:
+            request_payload = {'meta.is_current': False}
+            utilities.patch_eve('code', code['_id'], code['_etag'], request_payload)
+
+    # Copy 'original' to a new dict, then update it with values from 'updates'
+    # to create an item to deploy. Need to do the same process for meta first,
+    # otherwise the update will fully overwrite.
+    meta = original['meta'].copy()
+    meta.update(updates['meta'])
+    item = original.copy()
+    item.update(updates)
+    item['meta'] = meta
+
+    app.logger.debug('Ready to hand to Celery\n{0}'.format(item))
+    tasks.code_update.delay(item)
 
 
-def post_post_code_callback(request, payload):
+def on_update_sites_callback(updates, original):
     """
-    Post callback for POST to `code` endpoint.
+    Update an instance.
 
-    Get code onto servers after the document is created.
-
-    :param request: original flask.request object
-    :param payload: response payload
+    :param updates:
+    :param original:
     """
-    # Verify that the POST was successful before we do anything else.
-    # Status code '201 Created'.
-    if payload._status_code == 201:
-        tasks.code_deploy.delay(request.json)
-
-
-def post_patch_code_callback(request, payload):
-    """
-    Post callback for POST to `code` endpoint.
-
-    Get code onto servers after the document is created.
-
-    :param request: original flask.request object
-    :param payload: response payload
-    """
-    # Verify that the PATCH was successful before we do anything else.
-    # Status code '200 OK'.
-    if payload._status_code == 200:
-        tasks.code_update.delay(request.json)
-
-
-def post_patch_sites_callback(request, payload):
-    """
-    Post callback for PATCH to `site` endpoint.
-
-    Provision an instance.
-
-    :param request: original flask.request object
-    :param payload: response payload
-    """
-    if payload._status_code == 201:
-        app.logger.debug(payload.data)
-        payload_data = json.loads(payload.data)
-        # Convert payload to list.
-        if not isinstance(payload_data, list):
-            payload_data = [payload_data]
-        app.logger.debug(payload_data)
-        for site in payload_data:
-            app.logger.debug(site)
-            # Need the rest of the Site object to see if this is Express.
-            query = 'where={{"_id":"{0}"}}'.format(site['_id'])
-            site = utilities.get_eve('sites', query)
-            site = site['_items'][0]
-            app.logger.debug(site)
-            if site['type'] == 'express':
-                app.logger.debug('Got to fabric\n{0}'.format(site))
-                tasks.site_update.delay(site)
-
-
-def post_get_command_callback(request, payload):
-    """
-    Post callback for GET to `command` endpoint.
-
-    Run commands when API endpoints are called.
-
-    :param request: original flask.request object
-    :param payload: response payload
-    :return:
-    """
-    tasks.command_run.delay(request.json)
+    app.logger.debug(item)
+    if item['type'] == 'express':
+        app.logger.debug('Ready to hand to Celery\n{0}'.format(item))
+        tasks.site_update.delay(item)
 
 
 # TODO: Set it up to mark what user updated the record.
@@ -260,15 +212,14 @@ app.debug = True
 # Add specific callbacks
 # Pattern is: `atlas.on_{Hook}_{Method}_{Resource}`
 app.on_pre_POST += pre_post_callback
-app.on_pre_POST_code += pre_post_code_callback
-app.on_pre_PATCH_code += pre_patch_code_callback
 app.on_pre_DELETE_code += pre_delete_code_callback
+app.on_fetched_item_command += on_fetched_item_command_callback
+app.on_insert_code += on_insert_code_callback
 app.on_insert_sites += on_insert_sites_callback
+app.on_update_code += on_update_code_callback
+app.on_update_sites += on_update_sites_callback
 app.on_delete_item_code += on_delete_item_code_callback
-app.on_post_POST += post_post_callback
-app.on_post_POST_code += post_post_code_callback
-app.on_post_PATCH_code += post_patch_code_callback
-app.on_post_GET_command += post_get_command_callback
+
 
 
 @app.errorhandler(409)

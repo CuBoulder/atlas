@@ -30,33 +30,33 @@ env.roledefs = serverdefs[environment]
 
 # Code Commands.
 @roles('webservers')
-def code_deploy(request):
+def code_deploy(item):
     """
     Responds to POSTs to deploy code to the right places on the server.
 
-    :param request: The flask.request object, JSON encoded
+    :param item:
     :return:
     """
-    code_folder = '{0}/{1}s/{2}/{2}-{3}'.format(code_root, request['meta']['code_type'], request['meta']['name'], request['meta']['version'])
+    code_folder = '{0}/{1}s/{2}/{2}-{3}'.format(code_root, item['meta']['code_type'], item['meta']['name'], item['meta']['version'])
     _create_directory_structure(code_folder)
-    _clone_repo(request["git_url"],request["commit_hash"], code_folder)
-    if request['meta']['is_current']:
-        code_folder_current = '{0}/{1}s/{2}/{2}-current'.format(code_root, request['meta']['code_type'], request['meta']['name'])
+    _clone_repo(item["git_url"],item["commit_hash"], code_folder)
+    if item['meta']['is_current']:
+        code_folder_current = '{0}/{1}s/{2}/{2}-current'.format(code_root, item['meta']['code_type'], item['meta']['name'])
         _update_symlink(code_folder,code_folder_current)
 
 
 @roles('webservers')
-def code_update(request):
+def code_update(item):
     """
     Responds to PATCHes to update code in the right places on the server.
 
-    :param request: The flask.request object, JSON encoded
+    :param item:
     :return:
     """
-    code_folder = '{0}/{1}s/{2}/{2}-{3}'.format(code_root, request['meta']['code_type'], request['meta']['name'], request['meta']['version'])
-    _checkout_repo(request["commit_hash"], code_folder)
-    if request['meta']['is_current']:
-        code_folder_current = '{0}/{1}s/{2}/{2}-current'.format(code_root, request['meta']['code_type'], request['meta']['name'])
+    code_folder = '{0}/{1}s/{2}/{2}-{3}'.format(code_root, item['meta']['code_type'], item['meta']['name'], item['meta']['version'])
+    _checkout_repo(item["commit_hash"], code_folder)
+    if item['meta']['is_current']:
+        code_folder_current = '{0}/{1}s/{2}/{2}-current'.format(code_root, item['meta']['code_type'], item['meta']['name'])
         _update_symlink(code_folder,code_folder_current)
 
 

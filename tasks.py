@@ -29,27 +29,27 @@ celery.config_from_object(config_celerybeat)
 # TODO: Figure out 'pickle' message on celeryd start.
 
 @celery.task
-def code_deploy(request_json):
+def code_deploy(item):
     """
     Deploy git repositories to the appropriate places.
 
-    :param request_json: The flask request.json object.
+    :param item: The flask request.json object.
     :return:
     """
-    logger.debug('Code deploy - {0}'.format(request_json))
-    execute(fabfile.code_deploy, request=request_json)
+    logger.debug('Code deploy - {0}'.format(item))
+    execute(fabfile.code_deploy, item=item)
 
 
 @celery.task
-def code_update(request_json):
+def code_update(item):
     """
     Update code checkout.
 
-    :param request_json: The flask request.json object.
+    :param item: The flask request.json object.
     :return:
     """
-    logger.debug('Code update - {0}'.format(request_json))
-    execute(fabfile.code_update, request=request_json)
+    logger.debug('Code update - {0}'.format(item))
+    execute(fabfile.code_update, item=item)
 
 
 @celery.task
@@ -69,20 +69,22 @@ def site_provision(site):
     """
     Provision a new instance with the given parameters.
 
-    :param site: A single site from Flask request.json object.
+    :param site: A single site.
     :return:
     """
     logger.debug('Site provision - {0}'.format(site))
+    # 'db_key' needs to be added here and not in Eve so that the encryption
+    # works properly.
     site['db_key'] = utilities.encrypt_string(utilities.mysql_password())
     execute(fabfile.site_provision, site=site)
 
 
 @celery.task
-def command_run(request_json):
+def command_run(command):
     """
     Run the appropriate command.
 
-    :param request_json: The flask request.json object.
+    :param command:
     :return:
     """
     return True

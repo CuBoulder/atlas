@@ -193,8 +193,22 @@ def on_update_sites_callback(updates, original):
     :param updates:
     :param original:
     """
-    app.logger.debug(item)
-    if item['type'] == 'express':
+    app.logger.debug(updates)
+    app.logger.debug(original)
+    type = updates['type'] if updates.get('type') else original['type']
+    if type == 'express':
+        item = original.copy()
+        item.update(updates)
+        # Only need to rewrite the nested dicts if they got updated.
+        if updates.get('code'):
+            code = original['code'].copy()
+            code.update(updates['code'])
+            item['code'] = code
+        if updates.get('dates'):
+            dates = original['dates'].copy()
+            dates.update(updates['dates'])
+            item['dates'] = dates
+
         app.logger.debug('Ready to hand to Celery\n{0}'.format(item))
         tasks.site_update.delay(item)
 

@@ -96,6 +96,22 @@ def site_provision(site):
         logger.debug(fabric_task.values())
         # TODO: Push notification to someone.
         return
+    patch_payload = {'status': 'available'}
+    patch = utilities.patch_eve('sites', site['_id'], patch_payload)
+    logger.debug(patch)
+
+
+@celery.task
+def site_update(site):
+    """
+    Update an instance with the given parameters.
+
+    :param site: A single site.
+    :return:
+    """
+    logger.debug('Site update - {0}'.format(site))
+    return
+
 
 
 @celery.task

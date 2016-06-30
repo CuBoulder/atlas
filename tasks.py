@@ -34,7 +34,14 @@ def code_deploy(item):
     :return:
     """
     logger.debug('Code deploy - {0}'.format(item))
-    execute(fabfile.code_deploy, item=item)
+    fabric_task = execute(fabfile.code_deploy, item=item)
+    logger.debug(fabric_task)
+    # Output from execute is a dict of hosts with 'None' as the value if
+    # everything went well.
+    if not all(value == None for value in fabric_task.values()):
+        logger.debug(fabric_task.values())
+        # TODO: Push notification to someone.
+        return
 
 
 @celery.task
@@ -46,7 +53,12 @@ def code_update(item):
     :return:
     """
     logger.debug('Code update - {0}'.format(item))
-    execute(fabfile.code_update, item=item)
+    fabric_task = execute(fabfile.code_update, item=item)
+    logger.debug(fabric_task)
+    if not all(value == None for value in fabric_task.values()):
+        logger.debug(fabric_task.values())
+        # TODO: Push notification to someone.
+        return
 
 
 @celery.task
@@ -58,7 +70,12 @@ def code_remove(item):
     :return:
     """
     logger.debug('Code delete - {0}'.format(item))
-    execute(fabfile.code_remove, item=item)
+    fabric_task = execute(fabfile.code_remove, item=item)
+    logger.debug(fabric_task)
+    if not all(value == None for value in fabric_task.values()):
+        logger.debug(fabric_task.values())
+        # TODO: Push notification to someone.
+        return
 
 
 @celery.task
@@ -73,7 +90,12 @@ def site_provision(site):
     # 'db_key' needs to be added here and not in Eve so that the encryption
     # works properly.
     site['db_key'] = utilities.encrypt_string(utilities.mysql_password())
-    execute(fabfile.site_provision, site=site)
+    fabric_task = execute(fabfile.site_provision, site=site)
+    logger.debug(fabric_task)
+    if not all(value == None for value in fabric_task.values()):
+        logger.debug(fabric_task.values())
+        # TODO: Push notification to someone.
+        return
 
 
 @celery.task

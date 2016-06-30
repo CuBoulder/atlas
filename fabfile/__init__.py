@@ -28,6 +28,9 @@ env.colorize_error = True
 env.roledefs = serverdefs[environment]
 
 
+# TODO: Figure out a better way to deal with the output
+
+
 # Code Commands.
 @roles('webservers')
 def code_deploy(item):

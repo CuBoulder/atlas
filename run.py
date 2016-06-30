@@ -15,7 +15,6 @@ path = '/data/code'
 if path not in sys.path:
     sys.path.append(path)
 
-# TODO: PATCH for code for commit_hash, version, or is_current
 # TODO: Validate that each code type is correct for a site. IE no core as a profile.
 # TODO: PATCH for site
 # TODO: DELETE for site
@@ -24,6 +23,8 @@ if path not in sys.path:
 # TODO: DELETE for a command.
 # TODO: Make Atlas autodiscover resources
 # TODO: Create requirements.txt
+# TODO: Figure out how to do redirects
+# TODO: Figure out how to test
 
 
 # Callbacks
@@ -68,15 +69,16 @@ def on_fetched_item_command_callback(response):
 
 def on_insert_sites_callback(items):
     """
-    Provision an instance.
+    Provision an Express instance.
 
-    :param items:
+    Assign a sid, an update group, db_key, any missing code, and date fields.
+
+    :param items: List of dicts for items to be created.
     """
     app.logger.debug(items)
     for item in items:
         app.logger.debug(item)
         if item['type'] == 'express':
-            # Assign a sid, an update group, db_key, any missing code, and date fields.
             item['sid'] = 'p1' + sha1(utilities.randomstring()).hexdigest()[0:10]
             item['update_group'] = random.randint(0, 2)
             # Add default core and profile if not set.
@@ -90,6 +92,7 @@ def on_insert_sites_callback(items):
                 query = 'where={{"meta.name":"{0}","meta.code_type":"profile","meta.is_current":true}}'.format(default_profile)
                 profile_get = utilities.get_eve('code', query)
                 app.logger.debug(profile_get)
+                # TODO: Error if there is no current code.
                 item['code']['profile'] = profile_get['_items'][0]['_id']
             date_json = '{{"created":"{0}"}}'.format(item['_created'])
             item['dates'] = json.loads(date_json)
@@ -100,9 +103,12 @@ def on_insert_sites_callback(items):
 
 def on_insert_code_callback(items):
     """
-    Get code onto servers as the items are created.
+    Deploy code onto servers as the items are created.
 
-    :param items:
+    If a new code item 'is_current', PATCH 'is_current' code with the same name
+    and type to no longer be current.
+
+    :param items: List of dicts for items to be created.
     """
     app.logger.debug(items)
     for item in items:
@@ -209,8 +215,9 @@ app = Eve(auth=utilities.AtlasBasicAuth, settings="/data/code/atlas/config_data_
 # TODO: Remove debug mode.
 app.debug = True
 
-# Add specific callbacks
-# Pattern is: `atlas.on_{Hook}_{Method}_{Resource}`
+# Specific callbacks. Pattern is: `atlas.on_{Hook}_{Method}_{Resource}`
+# Use pre event hooks if there is a chance you want to abort.
+# Use DB hooks if you want to modify data on the way in.
 app.on_pre_POST += pre_post_callback
 app.on_pre_DELETE_code += pre_delete_code_callback
 app.on_fetched_item_command += on_fetched_item_command_callback

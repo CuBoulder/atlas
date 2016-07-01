@@ -95,7 +95,7 @@ sites_schema = {
     },
     'status': {
         'type': 'string',
-        'allowed': ['pending', 'available', 'assigned', 'assigned_training', 'launching', 'launched',  'take_down', 'down', 'restore', 'delete'],
+        'allowed': ['pending', 'available', 'assigned', 'assigned_training', 'launching', 'launched',  'take_down', 'down', 'restore'],
         'default': 'pending',
     },
     'pool': {

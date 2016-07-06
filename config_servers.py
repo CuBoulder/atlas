@@ -105,9 +105,9 @@ base_urls = {
 }
 
 f5_config_files = {
-    'production': 'WWWNGproductionDataGroup.dat',
+    'production': 'WWWNGProdDataGroup.dat',
     'test': 'WWWNGTestDataGroup.dat',
-    'development': 'WWWNGdevelopmentDataGroup.dat',
+    'development': 'WWWNGDevDataGroup.dat',
 }
 # Entries in the f5 that are not sites.
 f5_exceptions = [

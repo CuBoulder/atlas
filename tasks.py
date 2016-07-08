@@ -81,12 +81,13 @@ def site_provision(site):
 
 
 @celery.task
-def site_update(site, updates):
+def site_update(site, updates, original):
     """
     Update an instance with the given parameters.
 
     :param site: A complete site item, including new values.
     :param updates: A partial site item, including only changed keys.
+    :param original: Complete original site item.
     :return:
     """
     logger.debug('Site update - {0}\n{1}'.format(site['_id'], updates))
@@ -96,9 +97,9 @@ def site_update(site, updates):
         if 'package' in updates['code']:
             logger.debug('Have package changes')
             execute(fabfile.site_package_update, site=site)
-        # if updates['code'].get('core'):
-        #     logger.debug('Have core changes')
-        #     execute(fabfile.site_core_update, site=site)
+        if updates['code'].get('core') != original['code'].get('core'):
+            logger.debug('Have core change')
+            execute(fabfile.site_core_update, site=site)
         # TODO: Add support for switching profiles.
 
     if updates.get('status'):

@@ -45,7 +45,7 @@ code_schema = {
             },
             'code_type': {
                 'type': 'string',
-                'allowed': ['custom_package', 'contrib_package', 'core', 'profile'],
+                'allowed': ['library', 'theme', 'module', 'core', 'profile'],
                 'required': True,
             },
             'is_current': {
@@ -65,6 +65,7 @@ code_schema = {
         'unique': True
     },
 }
+
 
 # Site schema.
 sites_schema = {

@@ -15,17 +15,22 @@ path = '/data/code'
 if path not in sys.path:
     sys.path.append(path)
 
-# TODO: Validate that each code type is correct for a site. IE no core as a profile.
+# Required for MVP
 # TODO: PATCH for site
 # TODO: DELETE for site
 # TODO: POST for command
 # TODO: GET for command
 # TODO: DELETE for a command.
-# TODO: Make Atlas autodiscover resources
 # TODO: Create requirements.txt
+
+# Nice to have
+# TODO: Make Atlas autodiscover resources
+
+# Backlog
+# TODO: Validate that each code type is correct. IE no core as a profile.
 # TODO: Figure out how to do redirects and path changes
 # TODO: Figure out how to test
-# TODO: Support sites without a profile. Check if default profile is set or not.
+# TODO: Support sites without a profile. Check if default profile is set.
 
 
 # Callbacks

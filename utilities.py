@@ -98,6 +98,22 @@ def decrypt_string(string):
     return decrypted
 
 
+def post_eve(resource, payload):
+    """
+    Make calls to the Atlas API.
+
+    :param resource: A resource as defined in config_data_structure.py
+    :param payload: argument string
+    """
+    url = "{0}/{1}".format(api_server, resource)
+    headers = {"content-type": "application/json"}
+    r = requests.post(url, auth=(ldap_username, ldap_password), headers=headers, verify=False, data=json.dumps(payload))
+    if r.ok:
+        return r.json()
+    else:
+        return r.text
+
+
 def get_eve(resource, query):
     """
     Make calls to the Atlas API.

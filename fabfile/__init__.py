@@ -4,10 +4,14 @@ Fabric Commands
 Commands that run on servers to do the actual work.
 """
 import sys
+import requests
+import re
 
 from fabric.contrib.files import append, exists, sed
 from fabric.api import *
 from jinja2 import Environment, PackageLoader
+from random import randint
+from time import time
 from atlas.config import *
 from atlas import utilities
 
@@ -24,7 +28,6 @@ env.user = ssh_user
 #env.key_filename =
 # Allow ~/.ssh/config to be utilized.
 env.use_ssh_config = True
-env.colorize_error = True
 env.roledefs = serverdefs[environment]
 
 
@@ -40,12 +43,16 @@ def code_deploy(item):
     :param item:
     :return:
     """
-    code_folder = '{0}/{1}s/{2}/{2}-{3}'.format(code_root, item['meta']['code_type'], item['meta']['name'], item['meta']['version'])
+    if item['meta']['code_type'] == 'library':
+        code_type_dir = 'libraries'
+    else:
+        code_type_dir = item['meta']['code_type'] + 's'
+    code_folder = '{0}/{1}/{2}/{2}-{3}'.format(code_root, code_type_dir, item['meta']['name'], item['meta']['version'])
     _create_directory_structure(code_folder)
-    _clone_repo(item["git_url"],item["commit_hash"], code_folder)
+    _clone_repo(item["git_url"], item["commit_hash"], code_folder)
     if item['meta']['is_current']:
-        code_folder_current = '{0}/{1}s/{2}/{2}-current'.format(code_root, item['meta']['code_type'], item['meta']['name'])
-        _update_symlink(code_folder,code_folder_current)
+        code_folder_current = '{0}/{1}/{2}/{2}-current'.format(code_root, code_type_dir, item['meta']['name'])
+        _update_symlink(code_folder, code_folder_current)
 
 
 @roles('webservers')
@@ -56,10 +63,14 @@ def code_update(item):
     :param item:
     :return:
     """
-    code_folder = '{0}/{1}s/{2}/{2}-{3}'.format(code_root, item['meta']['code_type'], item['meta']['name'], item['meta']['version'])
+    if item['meta']['code_type'] == 'library':
+        code_type_dir = 'libraries'
+    else:
+        code_type_dir = item['meta']['code_type'] + 's'
+    code_folder = '{0}/{1}/{2}/{2}-{3}'.format(code_root, code_type_dir, item['meta']['name'], item['meta']['version'])
     _checkout_repo(item["commit_hash"], code_folder)
     if item['meta']['is_current']:
-        code_folder_current = '{0}/{1}s/{2}/{2}-current'.format(code_root, item['meta']['code_type'], item['meta']['name'])
+        code_folder_current = '{0}/{1}/{2}/{2}-current'.format(code_root, code_type_dir, item['meta']['name'])
         _update_symlink(code_folder,code_folder_current)
 
 
@@ -71,7 +82,11 @@ def code_remove(item):
     :param item: Item to remove
     :return:
     """
-    code_folder = '{0}/{1}s/{2}/{2}-{3}'.format(code_root, item['meta']['code_type'], item['meta']['name'], item['meta']['version'])
+    if item['meta']['code_type'] == 'library':
+        code_type_dir = 'libraries'
+    else:
+        code_type_dir = item['meta']['code_type'] + 's'
+    code_folder = '{0}/{1}/{2}/{2}-{3}'.format(code_root, code_type_dir, item['meta']['name'], item['meta']['version'])
     _remove_directory(code_folder)
 
 
@@ -90,8 +105,8 @@ def site_provision(site, install=True):
     code_directory_sid = '{0}/{1}'.format(code_directory, site['sid'])
     code_directory_current = '{0}/current'.format(code_directory)
     web_directory = '{0}/{1}/{2}'.format(sites_web_root, site['type'], site['sid'])
-    profile = utilities.get_eve('code', 'where={{"_id":"{0}"}}'.format(site['code']['profile']))
-    profile_name = profile['_items'][0]['meta']['name']
+    profile = utilities.get_single_eve('code', site['code']['profile'])
+    profile_name = profile['meta']['name']
 
     _create_database(site)
 
@@ -101,17 +116,19 @@ def site_provision(site, install=True):
 
     with cd(code_directory):
         # TODO: Get core from site object.
-        # core = site['code']['core']
-        core = 'current'
-        run('drush dslm-new {0} --{1}'.format(site['sid'], core))
+        core = utilities.get_single_eve('code', site['code']['core'])
+        core_name = core['meta']['name']
+        core_version = core['meta']['version']
+        core_complete = '{0}-{1}'.format(core_name, core_version)
+        run('drush dslm-new {0} {1}'.format(site['sid'], core_complete))
 
     _update_symlink(code_directory_sid, code_directory_current)
 
     with cd(code_directory_current):
         # TODO: Get profile from site object.
-        # version = site['code']['profile']
-        version = 'current'
-        run('drush dslm-add-profile {0} --{1}'.format(default_profile, version))
+        profile_version = profile['meta']['version']
+        profile_complete = '{0}-{1}'.format(profile_name, profile_version)
+        run('drush dslm-add-profile {0}'.format(profile_complete))
 
     if nfs_mount_files_dir:
         nfs_dir = nfs_mount_location[environment]
@@ -122,7 +139,6 @@ def site_provision(site, install=True):
         # Replace default files dir with this one
         site_files_dir = code_directory_current + '/sites/default/files'
         _replace_files_directory(nfs_files_dir, site_files_dir)
-
 
     _push_settings_files(site, code_directory_current)
 
@@ -245,7 +261,6 @@ def _clone_repo(git_url, checkout_item, destination):
     run('git clone {0} {1}'.format(git_url, destination))
     with cd(destination):
         run('git checkout {0}'.format(checkout_item))
-        run('git submodule update --init --recursive')
         run('git clean -f -f -d')
 
 
@@ -254,7 +269,6 @@ def _checkout_repo(checkout_item, destination):
     with cd(destination):
         run('git reset --hard')
         run('git checkout {0}'.format(checkout_item))
-        run('git submodule update --init --recursive')
         run('git clean -f -f -d')
 
 

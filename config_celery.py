@@ -12,6 +12,8 @@ CELERY_MONGODB_BACKEND_SETTINGS = {
 
 CELERY_TIMEZONE = 'MST'
 CELERY_ENABLE_UTC = True
+# Time in seconds
+CELERYD_TASK_TIME_LIMIT = 600
 
 CELERY_ROUTES = {
     'inventory.tasks.express_launched_cron': {'queue': 'expresscrons'},

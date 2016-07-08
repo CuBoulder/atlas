@@ -23,7 +23,7 @@ if path not in sys.path:
 # TODO: DELETE for a command.
 # TODO: Make Atlas autodiscover resources
 # TODO: Create requirements.txt
-# TODO: Figure out how to do redirects
+# TODO: Figure out how to do redirects and path changes
 # TODO: Figure out how to test
 # TODO: Support sites without a profile. Check if default profile is set or not.
 
@@ -79,6 +79,7 @@ def on_insert_sites_callback(items):
         app.logger.debug(item)
         if item['type'] == 'express':
             item['sid'] = 'p1' + sha1(utilities.randomstring()).hexdigest()[0:10]
+            item['path'] = item['sid']
             item['update_group'] = random.randint(0, 2)
             # Add default core and profile if not set.
             # The 'get' method checks if the key exists.
@@ -186,7 +187,8 @@ def on_update_code_callback(updates, original):
     tasks.code_update.delay(item)
 
 
-def on_update_sites_callback(updates, original):
+# TODO: Verify that updated has the same arguments.
+def on_updated_sites_callback(updates, original):
     """
     Update an instance.
 
@@ -195,8 +197,8 @@ def on_update_sites_callback(updates, original):
     """
     app.logger.debug(updates)
     app.logger.debug(original)
-    type = updates['type'] if updates.get('type') else original['type']
-    if type == 'express':
+    site_type = updates['type'] if updates.get('type') else original['type']
+    if site_type == 'express':
         item = original.copy()
         item.update(updates)
         # Only need to rewrite the nested dicts if they got updated.
@@ -210,7 +212,7 @@ def on_update_sites_callback(updates, original):
             item['dates'] = dates
 
         app.logger.debug('Ready to hand to Celery\n{0}'.format(item))
-        tasks.site_update.delay(item)
+        tasks.site_update.delay(item, updates)
 
 
 # TODO: Set it up to mark what user updated the record.
@@ -253,9 +255,8 @@ app.on_insert_code += on_insert_code_callback
 app.on_insert_sites += on_insert_sites_callback
 app.on_inserted_sites += on_inserted_sites_callback
 app.on_update_code += on_update_code_callback
-app.on_update_sites += on_update_sites_callback
+app.on_updated_sites += on_updated_sites_callback
 app.on_delete_item_code += on_delete_item_code_callback
-
 
 
 @app.errorhandler(409)

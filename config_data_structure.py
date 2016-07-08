@@ -52,6 +52,9 @@ code_schema = {
                 'type': 'boolean',
                 'default': False,
             },
+            'tag': {
+                'type': 'list',
+            },
         },
     },
     'git_url': {
@@ -110,6 +113,9 @@ sites_schema = {
     'f5only': {
         'type': 'boolean',
         'default': False
+    },
+    'tag': {
+        'type': 'list',
     },
     'code': {
         'type': 'dict',

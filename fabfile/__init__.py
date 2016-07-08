@@ -148,7 +148,6 @@ def site_provision(site, install=True):
     if install:
         _install_site(profile_name, code_directory_current)
 
-    # TODO: Patch site with all its new information.
 @roles('webservers')
 def site_launch(site):
     print('Site Launch\n{0}'.format(site))

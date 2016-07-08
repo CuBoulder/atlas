@@ -167,6 +167,18 @@ def site_package_update(site):
 
 
 @roles('webservers')
+def site_core_update(site):
+    print('Site Core Update\n{0}'.format(site))
+    code_directory_sid = '{0}/{1}/{1}'.format(sites_code_root, site['sid'])
+    core_string = _get_code_name_version(site['code']['core'])
+
+    with cd(code_directory_sid):
+        run("drush dslm-switch-core {0}".format(core_string))
+        print('Running database updates.')
+        run("drush updb -y")
+
+
+@roles('webservers')
 def site_launch(site):
     print('Site Launch\n{0}'.format(site))
     code_directory = '{0}/{1}'.format(sites_code_root, site['sid'])

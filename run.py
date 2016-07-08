@@ -212,7 +212,7 @@ def on_updated_sites_callback(updates, original):
             item['dates'] = dates
 
         app.logger.debug('Ready to hand to Celery\n{0}'.format(item))
-        tasks.site_update.delay(item, updates)
+        tasks.site_update.delay(item, updates, original)
 
 
 # TODO: Set it up to mark what user updated the record.

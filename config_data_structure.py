@@ -114,22 +114,6 @@ sites_schema = {
     'code': {
         'type': 'dict',
         'schema': {
-            'custom_package': {
-                'type': 'objectid',
-                'data_relation': {
-                    'resource': 'code',
-                    'field': '_id',
-                    'embeddable': True,
-                },
-            },
-            'contrib_package': {
-                'type': 'objectid',
-                'data_relation': {
-                    'resource': 'code',
-                    'field': '_id',
-                    'embeddable': True,
-                },
-            },
             'core': {
                 'type': 'objectid',
                 'data_relation': {
@@ -145,6 +129,17 @@ sites_schema = {
                     'field': '_id',
                     'embeddable': True,
                 },
+            },
+            'package': {
+                'type': 'list',
+                'schema': {
+                    'type': 'objectid',
+                    'data_relation': {
+                        'resource': 'code',
+                        'field': '_id',
+                        'embeddable': True,
+                    },
+                }
             },
         },
     },

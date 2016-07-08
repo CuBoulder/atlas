@@ -89,16 +89,17 @@ def site_update(site, updates):
     :param updates: A partial site item, including only changed keys.
     :return:
     """
-    logger.debug('Site update - {0}'.format(site))
+    logger.debug('Site update - {0}\n{1}'.format(site['_id'], updates))
 
     if updates.get('code'):
-        if updates['code'].get('package'):
-            execute(fabfile.site_packages_update, site=site)
-        if updates['code'].get('core'):
-            execute(fabfile.site_core_update, site=site)
-        # TODO: Handle adding and removing profiles. Might need 'dslm-remove-all-profiles'
-        if updates['code'].get('profile'):
-            execute(fabfile.site_profile_update, site=site)
+        logger.debug('Found code changes')
+        if 'package' in updates['code']:
+            logger.debug('Have package changes')
+            execute(fabfile.site_package_update, site=site)
+        # if updates['code'].get('core'):
+        #     logger.debug('Have core changes')
+        #     execute(fabfile.site_core_update, site=site)
+        # TODO: Add support for switching profiles.
 
     if updates.get('status'):
         if updates['status'] in ['launching', 'take_down', 'restore']:

@@ -115,20 +115,15 @@ def site_provision(site, install=True):
     _create_directory_structure(code_directory)
 
     with cd(code_directory):
-        # TODO: Get core from site object.
-        core = utilities.get_single_eve('code', site['code']['core'])
-        core_name = core['meta']['name']
-        core_version = core['meta']['version']
-        core_complete = '{0}-{1}'.format(core_name, core_version)
-        run('drush dslm-new {0} {1}'.format(site['sid'], core_complete))
+        core = _get_code_name_version(site['code']['core'])
+        run('drush dslm-new {0} {1}'.format(site['sid'], core))
 
     _update_symlink(code_directory_sid, code_directory_current)
 
     with cd(code_directory_current):
         # TODO: Get profile from site object.
-        profile_version = profile['meta']['version']
-        profile_complete = '{0}-{1}'.format(profile_name, profile_version)
-        run('drush dslm-add-profile {0}'.format(profile_complete))
+        profile = _get_code_name_version(site['code']['profile'])
+        run('drush dslm-add-profile {0}'.format(profile))
 
     if nfs_mount_files_dir:
         nfs_dir = nfs_mount_location[environment]
@@ -147,6 +142,29 @@ def site_provision(site, install=True):
 
     if install:
         _install_site(profile_name, code_directory_current)
+
+
+@roles('webservers')
+def site_package_update(site):
+    print('Site Package Update\n{0}'.format(site))
+    code_directory_sid = '{0}/{1}/{1}'.format(sites_code_root, site['sid'])
+    packages_directory = '{0}/sites/all'.format(code_directory_sid)
+
+    package_name_string = ""
+    for package in site['code']['package']:
+        # Append the package name and a space.
+        package_name_string += _get_code_name_version(package) + " "
+    # Strip the trailing space off the end.
+    package_name_string = package_name_string.rstrip()
+    print("Ready to add packages - {0}\n{1}".format(site['sid'], package_name_string))
+
+    with cd(packages_directory):
+        run("drush dslm-remove-all")
+        run("drush dslm-add-package {0}".format(package_name_string))
+        if len(package_name_string) > 0:
+            print('Running database updates just in case.')
+            run("drush updb -y")
+
 
 @roles('webservers')
 def site_launch(site):
@@ -335,6 +353,17 @@ def _checkout_repo(checkout_item, destination):
         run('git clean -f -f -d')
 
 
+def _get_code_name_version(code_id):
+    """
+    Get the label and version for a code item.
+    :param code_id: string '_id' for a code item
+    :return: string 'label'-'version'
+    """
+    code = utilities.get_single_eve('code', code_id)
+    code_name = code['meta']['name']
+    code_version = code['meta']['version']
+    return '{0}-{1}'.format(code_name, code_version)
+
 def _replace_files_directory(source, destination):
     if exists(destination):
         run('rm -rf {0}'.format(destination))
@@ -461,6 +490,7 @@ def _gsa_parse_entries(entries):
         collections[name] = follow
 
     return collections
+
 
 def _launch_site(site, pool='poolb-express', gsa_collection=False):
     """
@@ -594,7 +624,6 @@ def _update_f5():
                     ofile.write('"{0}" := "{1}",\n'.format(path, site['pool']))
 
     execute(_exportf5, new_file_name=new_file_name, f5_config_dir=f5_config_dir)
-
 
 
 @hosts('f5_servers')

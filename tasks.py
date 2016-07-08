@@ -92,38 +92,26 @@ def site_update(site, updates):
     logger.debug('Site update - {0}'.format(site))
 
     if updates.get('code'):
-        if updates['code'].get('custom_package') or updates['code'].get('contrib_package'):
-            packages_task = execute(fabfile.site_packages_update, site=site)
-            if not all(value is None for value in packages_task.values()):
-                logger.debug(packages_task.values())
-                # TODO: Push notification to someone.
+        if updates['code'].get('package'):
+            execute(fabfile.site_packages_update, site=site)
         if updates['code'].get('core'):
-            core_task = execute(fabfile.site_core_update, site=site)
-            if not all(value is None for value in core_task.values()):
-                logger.debug(core_task.values())
-                # TODO: Push notification to someone.
+            execute(fabfile.site_core_update, site=site)
         # TODO: Handle adding and removing profiles. Might need 'dslm-remove-all-profiles'
         if updates['code'].get('profile'):
-            profile_task = execute(fabfile.site_profile_update, site=site)
-            if not all(value is None for value in profile_task.values()):
-                logger.debug(profile_task.values())
-                # TODO: Push notification to someone.
+            execute(fabfile.site_profile_update, site=site)
 
     if updates.get('status'):
         if updates['status'] in ['launching', 'take_down', 'restore']:
             if updates['status'] == 'launching':
-                status_task = execute(fabfile.site_launch, site=site)
+                execute(fabfile.site_launch, site=site)
                 patch_payload = '{{"launched":"{0} GMT", "status": "launched"}}'.format(site['_updated'])
             elif updates['status'] == 'take_down':
-                status_task = execute(fabfile.site_take_down, site=site)
+                execute(fabfile.site_take_down, site=site)
                 patch_payload = '{{"taken_down":"{0} GMT", "status": "down"}}'.format(site['_updated'])
             elif updates['status'] == 'restore':
-                status_task = execute(fabfile.site_restore, site=site)
+                execute(fabfile.site_restore, site=site)
                 patch_payload = '{{"taken_down": None, "status": "assigned"}}'.format(site['_updated'])
-            if not all(value is None for value in status_task.values()):
-                logger.debug(status_task.values())
-                # TODO: Push notification to someone.
-                return
+
             patch = utilities.patch_eve('sites', site['_id'], patch_payload)
             logger.debug(patch)
 

@@ -83,7 +83,6 @@ serverdefs = {
 
 varnish_control_terminals = {
     'production': 'wvarn3.int.colorado.edu:6082 wvarn4.int.colorado.edu:6082',
-    'stage': 'wstage1.colorado.edu:6082',
     'test': 'wvarntest3.int.colorado.edu:6082 wvarntest4.int.colorado.edu:6082',
     'development': 'wvarndevelopment2.int.colorado.edu:6082',
     'local': 'localhost:6082',

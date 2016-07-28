@@ -129,12 +129,6 @@ if (isset($_SERVER["WWWNG_ENV"]) || PHP_SAPI === "cli") {
     }
 
     switch($_SERVER['WWWNG_ENV']) {
-      case 'stage':
-        $conf['environment_indicator_text'] = 'STAGE';
-        $conf['environment_indicator_color'] = 'blue';
-        $base_url .= 'www-stage.colorado.edu';
-        break;
-
       case 'cust_dev':
         $conf['environment_indicator_text'] = 'DEV';
         $conf['environment_indicator_color'] = 'green';

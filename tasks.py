@@ -75,9 +75,9 @@ def site_provision(site):
     # works properly.
     site['db_key'] = utilities.encrypt_string(utilities.mysql_password())
     execute(fabfile.site_provision, site=site)
-    patch_payload = {'status': 'available'}
+    patch_payload = {'status': 'available', 'db_key': site['db_key']}
     patch = utilities.patch_eve('sites', site['_id'], patch_payload)
-    logger.debug(patch)
+    logger.debug('Site has been provisioned\n{0}'.format(patch))
 
 
 @celery.task

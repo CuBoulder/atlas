@@ -82,8 +82,6 @@ sites_schema = {
     },
     'db_key': {
       'type': 'string',
-      'minlength': 1,
-      'maxlength': 128,
     },
     'sid': {
       'type': 'string',

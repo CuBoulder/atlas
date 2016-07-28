@@ -427,7 +427,7 @@ def _gsa_create_collection(name, follow):
     payload = payload.format(name, follow)
     r = requests.post(url, data=payload, headers=headers, verify=False)
     if not r.ok:
-        print r.text
+        print(r.text)
 
 
 def _gsa_auth():

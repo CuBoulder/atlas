@@ -239,8 +239,8 @@ def site_restore(site):
 def correct_file_directory_permissions(site):
     code_directory_sid = '{0}/{1}/{1}'.format(sites_code_root, site['sid'])
     with cd(code_directory_sid):
-        run('chgrp -R lapurd sites/default'.format(ssh_user_group))
-        run('chgrp -R apache sites/default/files'.format(webserver_user_group))
+        run('chgrp -R {0} sites/default'.format(ssh_user_group))
+        run('chgrp -R {0} sites/default/files'.format(webserver_user_group))
         run('chmod -R 775 sites/default')
 
 
@@ -269,7 +269,7 @@ def _remove_directory(folder):
 def _create_database(site):
     if environment != 'local':
         # TODO: Make file location config.
-        os.environ['MYSQL_TEST_LOGIN_FILE'] = '/home/dplagnt/.mylogin.cnf'
+        os.environ['MYSQL_TEST_LOGIN_FILE'] = '/home/{0}/.mylogin.cnf'.format(ssh_user)
         mysql_login_path = "invsqlagnt_{0}_poolb".format(environment)
         mysql_info = '/usr/local/mysql/bin/mysql --login-path={0} -e'.format(mysql_login_path)
         database_password = utilities.decrypt_string(site['db_key'])

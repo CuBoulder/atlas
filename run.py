@@ -31,6 +31,8 @@ if path not in sys.path:
 # TODO: Figure out how to do redirects and path changes
 # TODO: Figure out how to test
 # TODO: Support sites without a profile. Check if default profile is set.
+# TODO: Add support for DNS entries that are owned as part of a site.
+# TODO: Consider adding additional field to 'code' for 'has_submodules'. This would allow us to improve performance of code checkouts.
 
 
 # Callbacks

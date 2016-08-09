@@ -18,9 +18,6 @@ ITEM_METHODS = ['GET', 'PATCH', 'PUT', 'DELETE']
 # https://github.com/nicolaiarocci/cerberus.
 #
 
-# TODO: Add support for DNS entries that are owned as part of a site.
-# TODO: Consider adding additional field to 'code' for 'has_submodules'. This would allow us to improve performance of code checkouts.
-
 # Mongo creates the following: '_created', '_updated', '_etag', and '_id'.
 # We don't use those fields in our logic because want to be able to move or
 # recreate a record without losing any information.
@@ -97,12 +94,25 @@ sites_schema = {
     },
     'status': {
         'type': 'string',
-        'allowed': ['pending', 'available', 'assigned', 'assigned_training', 'launching', 'launched',  'take_down', 'down', 'restore'],
+        'allowed': [
+            'pending',
+            'available',
+            'installed',
+            'launching',
+            'launched',
+            'take_down',
+            'down',
+            'restore'
+        ],
         'default': 'pending',
     },
     'pool': {
         'type': 'string',
-        'allowed': ['poolb-express', 'poola-custom', 'poola-homepage', 'poolb-homepage', 'WWWLegacy'],
+        'allowed': [
+            'poolb-express',
+            'poola-custom',
+            'poolb-homepage',
+            'WWWLegacy'],
         'default': 'poolb-express',
     },
     'update_group': {

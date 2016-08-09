@@ -100,9 +100,10 @@ def site_update(site, updates, original):
         if updates['code'].get('core') != original['code'].get('core'):
             logger.debug('Have core change')
             execute(fabfile.site_core_update, site=site)
-        # TODO: Add support for switching profiles.
 
-    # TODO: Work through status changes.
+    # TODO: Launch
+    # TODO: Take Down
+    # TODO: Restore
     if updates.get('status'):
         if updates['status'] in ['launching', 'take_down', 'restore']:
             if updates['status'] == 'launching':

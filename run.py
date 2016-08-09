@@ -22,11 +22,16 @@ if path not in sys.path:
 # TODO: GET for command
 # TODO: DELETE for a command.
 # TODO: Create requirements.txt
+# TODO: Add a Package.
+# TODO: Change the name of a code package.
 
 # Nice to have
 # TODO: Make Atlas autodiscover resources
+# TODO: Test for failure to add package and revert the PATCH of the site item.
 
 # Backlog
+# TODO: Add support for switching profiles.
+# TODO: Convert 'installed' to 'assigned', 'assigned_training'.
 # TODO: Validate that each code type is correct. IE no core as a profile.
 # TODO: Figure out how to do redirects and path changes
 # TODO: Figure out how to test

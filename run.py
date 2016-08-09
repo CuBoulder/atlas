@@ -191,12 +191,12 @@ def on_update_code_callback(updates, original):
     # otherwise the update will fully overwrite.
     meta = original['meta'].copy()
     meta.update(updates['meta'])
-    item = original.copy()
-    item.update(updates)
-    item['meta'] = meta
+    updated_item = original.copy()
+    updated_item.update(updates)
+    updated_item['meta'] = meta
 
-    app.logger.debug('Ready to hand to Celery\n{0}'.format(item))
-    tasks.code_update.delay(item)
+    app.logger.debug('Ready to hand to Celery\n{0}\n{1}'.format(updated_item, original))
+    tasks.code_update.delay(updated_item, original)
 
 
 # TODO: Verify that updated has the same arguments.

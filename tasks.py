@@ -39,15 +39,15 @@ def code_deploy(item):
 
 
 @celery.task
-def code_update(item):
+def code_update(updated_item, original_item):
     """
     Update code checkout.
 
     :param item: The flask request.json object.
     :return:
     """
-    logger.debug('Code update - {0}'.format(item))
-    execute(fabfile.code_update, item=item)
+    logger.debug('Code update - {0}'.format(updated_item))
+    execute(fabfile.code_update, updated_item=updated_item, original_item=original_item)
 
 
 @celery.task
@@ -105,8 +105,10 @@ def site_update(site, updates, original):
     # TODO: Take Down
     # TODO: Restore
     if updates.get('status'):
-        if updates['status'] in ['launching', 'take_down', 'restore']:
-            if updates['status'] == 'launching':
+        if updates['status'] in ['installed', 'launching', 'take_down', 'restore']:
+            if updates['status'] == 'installed':
+                patch_payload = '{{"installed":"{0} GMT"}'.format(site['_updated'])
+            elif updates['status'] == 'launching':
                 execute(fabfile.site_launch, site=site)
                 patch_payload = '{{"launched":"{0} GMT", "status": "launched"}}'.format(site['_updated'])
             elif updates['status'] == 'take_down':
@@ -114,7 +116,7 @@ def site_update(site, updates, original):
                 patch_payload = '{{"taken_down":"{0} GMT", "status": "down"}}'.format(site['_updated'])
             elif updates['status'] == 'restore':
                 execute(fabfile.site_restore, site=site)
-                patch_payload = '{{"taken_down": None, "status": "assigned"}}'.format(site['_updated'])
+                patch_payload = '{{"taken_down": None, "status": "installed"}}'.format(site['_updated'])
 
             patch = utilities.patch_eve('sites', site['_id'], patch_payload)
             logger.debug(patch)

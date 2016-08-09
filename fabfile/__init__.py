@@ -43,6 +43,7 @@ def code_deploy(item):
     :param item:
     :return:
     """
+    print('Code - Deploy\n{0}'.format(item))
     if item['meta']['code_type'] == 'library':
         code_type_dir = 'libraries'
     else:
@@ -56,22 +57,29 @@ def code_deploy(item):
 
 
 @roles('webservers')
-def code_update(item):
+def code_update(updated_item, original_item):
     """
     Responds to PATCHes to update code in the right places on the server.
 
-    :param item:
+    :param updated_item:
+    :param original_item:
     :return:
     """
-    if item['meta']['code_type'] == 'library':
+    print('Code - Update\nUpdated Item\n{0}\n\nOriginal Item\n{1}'.format(updated_item, original_item))
+    if updated_item['meta']['code_type'] == 'library':
         code_type_dir = 'libraries'
     else:
-        code_type_dir = item['meta']['code_type'] + 's'
-    code_folder = '{0}/{1}/{2}/{2}-{3}'.format(code_root, code_type_dir, item['meta']['name'], item['meta']['version'])
-    _checkout_repo(item["commit_hash"], code_folder)
-    if item['meta']['is_current']:
-        code_folder_current = '{0}/{1}/{2}/{2}-current'.format(code_root, code_type_dir, item['meta']['name'])
-        _update_symlink(code_folder,code_folder_current)
+        code_type_dir = updated_item['meta']['code_type'] + 's'
+    code_folder = '{0}/{1}/{2}/{2}-{3}'.format(code_root, code_type_dir, updated_item['meta']['name'], updated_item['meta']['version'])
+    if updated_item['meta']['name'] != original_item['meta']['name']:
+
+        code_remove(original_item)
+        code_deploy(updated_item)
+    else:
+        _checkout_repo(updated_item["commit_hash"], code_folder)
+        if updated_item['meta']['is_current']:
+            code_folder_current = '{0}/{1}/{2}/{2}-current'.format(code_root, code_type_dir, updated_item['meta']['name'])
+            _update_symlink(code_folder,code_folder_current)
 
 
 @roles('webservers')
@@ -82,12 +90,16 @@ def code_remove(item):
     :param item: Item to remove
     :return:
     """
+    print('Code - Remove\n{0}'.format(item))
     if item['meta']['code_type'] == 'library':
         code_type_dir = 'libraries'
     else:
         code_type_dir = item['meta']['code_type'] + 's'
     code_folder = '{0}/{1}/{2}/{2}-{3}'.format(code_root, code_type_dir, item['meta']['name'], item['meta']['version'])
     _remove_directory(code_folder)
+    if item['meta']['is_current']:
+        code_folder_current = '{0}/{1}/{2}/{2}-current'.format(code_root, code_type_dir, item['meta']['name'])
+        _remove_symlink(code_folder_current)
 
 
 @roles('webservers')
@@ -263,6 +275,10 @@ def _create_directory_structure(folder):
 def _remove_directory(folder):
     print('Remove directory\n{0}'.format(folder))
     run('rm -rf {0}'.format(folder))
+
+def _remove_symlink(symlink):
+    print('Remove symlink\n{0}'.format(symlink))
+    run('rm -f {0}'.format(symlink))
 
 
 # TODO: Add decorator to run on a single host.

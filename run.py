@@ -95,18 +95,15 @@ def on_insert_sites_callback(items):
             item['update_group'] = random.randint(0, 2)
             # Add default core and profile if not set.
             # The 'get' method checks if the key exists.
-            if not item['code'].get('core'):
-                query = 'where={{"meta.name":"{0}","meta.code_type":"core","meta.is_current":true}}'.format(default_core)
-                core_get = utilities.get_eve('code', query)
-                app.logger.debug(core_get)
-                item['code']['core'] = core_get['_items'][0]['_id']
-            # TODO: Support sites without a profile. Check if default profile is set or not.
-            if not item['code'].get('profile'):
-                query = 'where={{"meta.name":"{0}","meta.code_type":"profile","meta.is_current":true}}'.format(default_profile)
-                profile_get = utilities.get_eve('code', query)
-                app.logger.debug(profile_get)
-                # TODO: Error if there is no current code.
-                item['code']['profile'] = profile_get['_items'][0]['_id']
+            if item.get('code'):
+                if not item['code'].get('core'):
+                    item['code']['core'] = utilities.get_current_code(name=default_core, type='core')
+                if not item['code'].get('profile'):
+                    item['code']['profile'] = utilities.get_current_code(name=default_profile, type='profile')
+            else:
+                item['code'] = {}
+                item['code']['core'] = utilities.get_current_code(name=default_core, type='core')
+                item['code']['profile'] = utilities.get_current_code(name=default_profile, type='profile')
             date_json = '{{"created":"{0} GMT"}}'.format(item['_created'])
             item['dates'] = json.loads(date_json)
             app.logger.debug('Ready to send to create item\n{0}'.format(item))

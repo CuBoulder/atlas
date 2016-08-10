@@ -90,36 +90,41 @@ def site_update(site, updates, original):
     :param original: Complete original site item.
     :return:
     """
-    logger.debug('Site update - {0}\n{1}'.format(site['_id'], updates))
+    logger.debug('Site update - {0}\n{1}\n\n{2}'.format(site['_id'], site, updates))
 
     if updates.get('code'):
-        logger.debug('Found code changes')
+        logger.debug('Found code changes.')
         if 'package' in updates['code']:
-            logger.debug('Have package changes')
+            logger.debug('Found package changes.')
             execute(fabfile.site_package_update, site=site)
         if updates['code'].get('core') != original['code'].get('core'):
-            logger.debug('Have core change')
+            logger.debug('Found core change.')
             execute(fabfile.site_core_update, site=site)
         if updates['code'].get('profile') != original['code'].get('profile'):
-            logger.debug('Have profile change')
+            logger.debug('Found profile change.')
             execute(fabfile.site_profile_update, site=site, original=original, updates=updates)
 
     # TODO: Launch
     # TODO: Take Down
     # TODO: Restore
     if updates.get('status'):
-        if updates['status'] in ['installed', 'launching', 'take_down', 'restore']:
-            if updates['status'] == 'installed':
-                patch_payload = '{{"installed":"{0} GMT"}'.format(site['_updated'])
+        logger.debug('Found status change.')
+        if updates['status'] in ['installing', 'launching', 'take_down', 'restore']:
+            if updates['status'] == 'installing':
+                logger.debug('Status changed to installing')
+                patch_payload = '{"status": "installed"}'
             elif updates['status'] == 'launching':
+                logger.debug('Status changed to launching')
                 execute(fabfile.site_launch, site=site)
-                patch_payload = '{{"launched":"{0} GMT", "status": "launched"}}'.format(site['_updated'])
+                patch_payload = '{"status": "launched"}'
             elif updates['status'] == 'take_down':
+                logger.debug('Status changed to take_down')
                 execute(fabfile.site_take_down, site=site)
-                patch_payload = '{{"taken_down":"{0} GMT", "status": "down"}}'.format(site['_updated'])
+                patch_payload = '{"status": "down"}'
             elif updates['status'] == 'restore':
+                logger.debug('Status changed to restore')
                 execute(fabfile.site_restore, site=site)
-                patch_payload = '{{"taken_down": None, "status": "installed"}}'.format(site['_updated'])
+                patch_payload = '{"status": "installed"}'
 
             patch = utilities.patch_eve('sites', site['_id'], patch_payload)
             logger.debug(patch)

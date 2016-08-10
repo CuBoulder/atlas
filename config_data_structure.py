@@ -97,6 +97,7 @@ sites_schema = {
         'allowed': [
             'pending',
             'available',
+            'installing',
             'installed',
             'launching',
             'launched',

@@ -174,7 +174,9 @@ def site_package_update(site):
         run("drush dslm-remove-all")
         run("drush dslm-add-package {0}".format(package_name_string))
         if len(package_name_string) > 0:
-            print('Running database updates just in case.')
+            print('Rebuild registry.')
+            run("drush rr")
+            print('Running database updates.')
             run("drush updb -y")
 
 

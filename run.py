@@ -197,15 +197,14 @@ def on_update_code_callback(updates, original):
 
 
 # TODO: Verify that updated has the same arguments.
-def on_updated_sites_callback(updates, original):
+def on_update_sites_callback(updates, original):
     """
     Update an instance.
 
     :param updates:
     :param original:
     """
-    app.logger.debug(updates)
-    app.logger.debug(original)
+    app.logger.debug('Update Site\n{0}\n\n{1}'.format(updates, original))
     site_type = updates['type'] if updates.get('type') else original['type']
     if site_type == 'express':
         item = original.copy()
@@ -264,7 +263,7 @@ app.on_insert_code += on_insert_code_callback
 app.on_insert_sites += on_insert_sites_callback
 app.on_inserted_sites += on_inserted_sites_callback
 app.on_update_code += on_update_code_callback
-app.on_updated_sites += on_updated_sites_callback
+app.on_update_sites += on_update_sites_callback
 app.on_delete_item_code += on_delete_item_code_callback
 
 

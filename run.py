@@ -22,7 +22,6 @@ if path not in sys.path:
 # TODO: GET for command
 # TODO: DELETE for a command.
 # TODO: Create requirements.txt
-# TODO: Add a Package.
 # TODO: Change the name of a code package.
 
 # Nice to have
@@ -219,6 +218,18 @@ def on_update_sites_callback(updates, original):
             dates.update(updates['dates'])
             item['dates'] = dates
 
+        if updates.get('status'):
+            if updates['status'] in ['installing', 'launching', 'take_down','restore']:
+                if updates['status'] == 'installing':
+                    date_json = '{{"assigned":"{0} GMT"}}'.format(updates['_updated'])
+                elif updates['status'] == 'launching':
+                    date_json = '{{"launched":"{0} GMT"}}'.format(updates['_updated'])
+                elif updates['status'] == 'take_down':
+                    date_json = '{{"taken_down":"{0} GMT"}}'.format(updates['_updated'])
+                elif updates['status'] == 'restore':
+                    date_json = '{{"taken_down":NULL}}'.format(updates['_updated'])
+
+                updates['dates'] = json.loads(date_json)
         app.logger.debug('Ready to hand to Celery\n{0}'.format(item))
         tasks.site_update.delay(item, updates, original)
 

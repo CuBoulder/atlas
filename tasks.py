@@ -100,6 +100,9 @@ def site_update(site, updates, original):
         if updates['code'].get('core') != original['code'].get('core'):
             logger.debug('Have core change')
             execute(fabfile.site_core_update, site=site)
+        if updates['code'].get('profile') != original['code'].get('profile'):
+            logger.debug('Have profile change')
+            execute(fabfile.site_profile_update, site=site, original=original, updates=updates)
 
     # TODO: Launch
     # TODO: Take Down

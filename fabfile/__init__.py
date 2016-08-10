@@ -189,6 +189,22 @@ def site_core_update(site):
         print('Running database updates.')
         run("drush updb -y")
 
+@roles('webservers')
+def site_profile_update(site, original, updates):
+    print('Site Profile Update\n{0}'.format(site))
+    code_directory_sid = '{0}/{1}/{1}'.format(sites_code_root, site['sid'])
+    old_profile = utilities.get_single_eve('code', original['code']['profile'])
+    new_profile = utilities.get_single_eve('code', site['code']['profile'])
+    new_profile_full_string = _get_code_name_version(site['code']['profile'])
+
+    with cd(code_directory_sid + '/profiles'):
+        run("rm {0}; ln -s {1}/profiles/{2}/{3} {2}".format(old_profile['meta']['name'], code_root, new_profile['meta']['name'], new_profile_full_string))
+        print('Rebuild registry.')
+        run("drush rr")
+        print('Running database updates.')
+        run("drush updb -y")
+
+
 
 @roles('webservers')
 def site_launch(site):

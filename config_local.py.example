@@ -21,6 +21,7 @@ f5_load_balancer = True
 code_root = '/data/code'
 sites_web_root = '/data/web'
 sites_code_root = '/data/sites'
+site_down_path = '/data/web/down'
 
 # Default core and profile names for site creation.
 default_core = 'drupal'
@@ -28,6 +29,7 @@ default_profile = 'express'
 
 # Encryption variables
 encryption_password = 'astringtouseforapassword'
+encryption_salt = 'saltstring'
 
 # LDAP configuration including service account credentials.
 ldap_server = 'ldap://URL:PORT'

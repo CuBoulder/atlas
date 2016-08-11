@@ -227,7 +227,7 @@ def on_update_sites_callback(updates, original):
                 elif updates['status'] == 'take_down':
                     date_json = '{{"taken_down":"{0} GMT"}}'.format(updates['_updated'])
                 elif updates['status'] == 'restore':
-                    date_json = '{{"taken_down":NULL}}'.format(updates['_updated'])
+                    date_json = '{{"taken_down":""}}'.format(updates['_updated'])
 
                 updates['dates'] = json.loads(date_json)
         app.logger.debug('Ready to hand to Celery\n{0}'.format(item))

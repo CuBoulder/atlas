@@ -104,9 +104,6 @@ def site_update(site, updates, original):
             logger.debug('Found profile change.')
             execute(fabfile.site_profile_update, site=site, original=original, updates=updates)
 
-    # TODO: Launch
-    # TODO: Take Down
-    # TODO: Restore
     if updates.get('status'):
         logger.debug('Found status change.')
         if updates['status'] in ['installing', 'launching', 'take_down', 'restore']:

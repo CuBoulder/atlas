@@ -45,7 +45,6 @@ if trailing_slash.search(sites_web_root):
 
 
 # Encryption variables. See https://cryptography.io/en/latest/fernet/#implementation
-encryption_salt = os.urandom(16)
 encryption_kdf = PBKDF2HMAC(
     algorithm=hashes.SHA256(),
     length=32,

@@ -15,7 +15,6 @@ path = '/data/code'
 if path not in sys.path:
     sys.path.append(path)
 
-# TODO: Create requirements.txt
 # Nice to have
 # TODO: Nice frontend.
 # TODO: Make Atlas autodiscover resources

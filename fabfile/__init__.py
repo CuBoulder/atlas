@@ -176,8 +176,6 @@ def site_package_update(site):
         if len(package_name_string) > 0:
             print('Rebuild registry.')
             run("drush rr")
-            print('Running database updates.')
-            run("drush updb -y")
 
 
 @roles('webservers')
@@ -188,8 +186,6 @@ def site_core_update(site):
 
     with cd(code_directory_sid):
         run("drush dslm-switch-core {0}".format(core_string))
-        print('Running database updates.')
-        run("drush updb -y")
 
 
 @roles('webservers')
@@ -204,9 +200,6 @@ def site_profile_update(site, original, updates):
         run("rm {0}; ln -s {1}/profiles/{2}/{3} {2}".format(old_profile['meta']['name'], code_root, new_profile['meta']['name'], new_profile_full_string))
         print('Rebuild registry.')
         run("drush rr")
-        print('Running database updates.')
-        run("drush updb -y")
-
 
 
 @roles('webservers')
@@ -258,12 +251,9 @@ def site_restore(site):
     _update_symlink(code_directory_sid, code_directory_current)
     with cd(code_directory_current):
         # Run updates
-        action_0 = run("drush updb -y")
-        action_1 = run("drush vset inactive_30_email FALSE; drush vset inactive_55_email FALSE; drush vset inactive_60_email FALSE;")
+        action_0 = run("drush vset inactive_30_email FALSE; drush vset inactive_55_email FALSE; drush vset inactive_60_email FALSE;")
         # TODO: See if this works as intended.
         if action_0.failed:
-            return task
-        elif action_1.failed:
             return task
 
 
@@ -285,7 +275,6 @@ def site_remove(site):
 
     _remove_symlink(web_directory)
     _remove_symlink(web_directory_path)
-    _remove_symlink()
 
     if nfs_mount_files_dir:
         nfs_dir = nfs_mount_location[environment]
@@ -305,8 +294,25 @@ def correct_file_directory_permissions(site):
         run('chmod -R 0644 sites/default/*.php')
 
 
+@roles('webserver_single')
+def update_database(site):
+    """
+    Run a updb
+
+    :param site: Site to run command on
+    :return:
+    """
+    print('Database Update\n{0}'.format(site))
+    code_directory_sid = '{0}/{1}/{1}'.format(sites_code_root, site['sid'])
+    with cd(code_directory_sid):
+        print('Running database updates.')
+        run("drush updb -y")
+
+
+@roles('webservers')
 def clear_apc():
     run("wget -q -O - http://localhost/sysadmintools/apc/clearapc.php")
+
 
 def drush_cache_clear(sid):
     code_directory_current = '{0}/{1}/current'.format(sites_code_root, sid)

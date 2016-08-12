@@ -11,6 +11,9 @@ serverdefs = {
             'wweb4.int.colorado.edu',
             'wweb5.int.colorado.edu',
         ],
+        'webserver_single': [
+            'wweb4.int.colorado.edu',
+        ],
         'database_servers': {
             'master': 'wdb-poolb-master.int.colorado.edu',
             'slaves': ['wdb-poolb-read1.int.colorado.edu', ],
@@ -34,6 +37,9 @@ serverdefs = {
             'wwebtest4.int.colorado.edu',
             'wwebtest5.int.colorado.edu',
         ],
+        'webserver_single': [
+            'wwebtest4.int.colorado.edu',
+        ],
         'database_servers': {
             'master': 'wdbtest-poolb-master.int.colorado.edu',
             'slaves': ['wdbtest-poolb-read1.int.colorado.edu', ],
@@ -55,6 +61,9 @@ serverdefs = {
         'webservers': [
             'wwebdev2.int.colorado.edu'
         ],
+        'webserver_single': [
+            'wwebdev2.int.colorado.edu',
+        ],
         'database_servers': {
             'master': 'wdbdev-poolb-master.int.colorado.edu',
             'slaves': ['wdbdev-poolb-read1.int.colorado.edu', ],
@@ -72,6 +81,7 @@ serverdefs = {
     },
     'local': {
         'webservers': ['express.local'],
+        'webserver_single': ['express.local'],
         'database_servers': {
             'master': 'localhost',
         },

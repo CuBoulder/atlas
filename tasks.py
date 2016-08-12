@@ -97,12 +97,15 @@ def site_update(site, updates, original):
         if 'package' in updates['code']:
             logger.debug('Found package changes.')
             execute(fabfile.site_package_update, site=site)
+            execute(fabfile.update_database, site=site)
         if updates['code'].get('core') != original['code'].get('core'):
             logger.debug('Found core change.')
             execute(fabfile.site_core_update, site=site)
+            execute(fabfile.update_database, site=site)
         if updates['code'].get('profile') != original['code'].get('profile'):
             logger.debug('Found profile change.')
             execute(fabfile.site_profile_update, site=site, original=original, updates=updates)
+            execute(fabfile.update_database, site=site)
 
     if updates.get('status'):
         logger.debug('Found status change.')
@@ -121,6 +124,7 @@ def site_update(site, updates, original):
             elif updates['status'] == 'restore':
                 logger.debug('Status changed to restore')
                 execute(fabfile.site_restore, site=site)
+                execute(fabfile.update_database, site=site)
                 patch_payload = '{"status": "installed"}'
 
             patch = utilities.patch_eve('sites', site['_id'], patch_payload)

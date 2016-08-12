@@ -179,11 +179,26 @@ sites_schema = {
     },
 }
 
-command_schema = {
+commands_schema = {
     'name': {
         'type': 'string',
         'minlength': 3,
         'required': True,
+    },
+    'command': {
+        'type': 'string',
+        'minlength': 3,
+        'required': True,
+    },
+    # String that is stored needs to be posted with Unicode character encodings
+    'query': {
+        'type': 'string',
+        'minlength': 9,
+    },
+    'single_server': {
+        'type': 'boolean',
+        'required': True,
+        'default': True,
     },
 }
 
@@ -196,6 +211,7 @@ code = {
     'item_title': 'code',
     'public_methods': ['GET'],
     'public_item_methods': ['GET'],
+    'versioning': True,
     'soft_delete': True,
     'schema': code_schema,
 }
@@ -219,11 +235,12 @@ sites = {
 # Command resource
 # Empty public_item_methods means that you can't call actual commands without
 # authentication. Anonymous users can list the commands, but not call them.
-command = {
-    'item_title': 'command',
+commands = {
+    'item_title': 'commands',
     'public_methods': ['GET'],
     'public_item_methods': [],
-    'schema': command_schema,
+    'versioning': True,
+    'schema': commands_schema,
 }
 
 #
@@ -233,5 +250,5 @@ command = {
 DOMAIN = {
     'sites': sites,
     'code': code,
-    'command': command,
+    'commands': commands,
 }

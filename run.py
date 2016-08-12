@@ -15,18 +15,15 @@ path = '/data/code'
 if path not in sys.path:
     sys.path.append(path)
 
-# Required for MVP
-# TODO: POST for command
-# TODO: GET for command
-# TODO: DELETE for a command.
 # TODO: Create requirements.txt
-
 # Nice to have
+# TODO: Nice frontend.
 # TODO: Make Atlas autodiscover resources
 # TODO: Test for failure to add code and revert the PATCH of the site item.
 # TODO: Re add packages when changing meta data of a code item.
 
 # Backlog
+# TODO: Support additional dependencies for a package.
 # TODO: Backup DB and files on soft delete.
 # TODO: Add support for switching profiles.
 # TODO: Convert 'installed' to 'assigned', 'assigned_training'.
@@ -66,16 +63,6 @@ def pre_delete_code_callback(request, lookup):
             site_ids = site_ids + site['sid'] if site.get('sid') else site['_id'] + '\n'
         app.logger.error('Code item is in use by one or more sites:\n{0}'.format(site_ids))
         abort(409, 'A conflict happened while processing the request. Code item is in use by one or more sites.')
-
-
-def on_fetched_item_command_callback(response):
-    """
-    Run commands when API endpoints are called.
-
-    :param response:
-    """
-    app.logger.debug('Ready to send to Celery\n{0}'.format(item))
-    tasks.command_run.delay(response)
 
 
 def on_insert_sites_callback(items):
@@ -248,6 +235,19 @@ def on_update_sites_callback(updates, original):
         tasks.site_update.delay(item, updates, original)
 
 
+def on_update_commands_callback(updates, original):
+    """
+    Run commands when API endpoints are called.
+
+    :param updates:
+    :param original:
+    """
+    item = original.copy()
+    item.update(updates)
+    app.logger.debug('Update command\n\nItem\n{0}\n\nUpdate\n{1}\n\nOriginal\n{2}'.format(item, updates, original))
+    tasks.command_prepare.delay(item)
+
+
 # TODO: Set it up to mark what user updated the record.
 # auto fill _created_by and _modified_by user fields
 # created_by_field = '_created_by'
@@ -284,12 +284,12 @@ app.debug = True
 app.on_pre_POST += pre_post_callback
 app.on_pre_DELETE_code += pre_delete_code_callback
 app.on_post_DELETE_site += post_delete_site_callback
-app.on_fetched_item_command += on_fetched_item_command_callback
 app.on_insert_code += on_insert_code_callback
 app.on_insert_sites += on_insert_sites_callback
 app.on_inserted_sites += on_inserted_sites_callback
 app.on_update_code += on_update_code_callback
 app.on_update_sites += on_update_sites_callback
+app.on_update_commands += on_update_commands_callback
 app.on_delete_item_code += on_delete_item_code_callback
 
 

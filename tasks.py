@@ -126,6 +126,20 @@ def site_update(site, updates, original):
             patch = utilities.patch_eve('sites', site['_id'], patch_payload)
             logger.debug(patch)
 
+@celery.task
+def site_remove(site):
+    """
+    Remove site from the server.
+
+    :param site: Item to be removed.
+    :return:
+    """
+    logger.debug('Site delete\n{0}'.format(site))
+    execute(fabfile.site_remove, site=site)
+
+    delete = utilities.delete_eve('sites', site['_id'])
+    logger.debug(delete)
+
 
 @celery.task
 def command_run(command):

@@ -164,6 +164,25 @@ def patch_eve(resource, id, request_payload):
     else:
         return r.text
 
+
+def delete_eve(resource, id):
+    """
+    Patch items in the Atlas API.
+
+    :param resource:
+    :param id:
+    :return:
+    """
+    url = "{0}/{1}/{2}".format(api_server, resource, id)
+    get_etag = get_single_eve(resource, id)
+    headers = {'Content-Type': 'application/json', 'If-Match': get_etag['_etag']}
+    r = requests.delete(url, headers=headers, auth=(ldap_username, ldap_password))
+    if r.ok:
+        return r.status_code
+    else:
+        return r.text
+
+
 def get_current_code(name, type):
     """
     Get the current code item for a given name and type.

@@ -103,7 +103,8 @@ sites_schema = {
             'launched',
             'take_down',
             'down',
-            'restore'
+            'restore',
+            'delete'
         ],
         'default': 'pending',
     },

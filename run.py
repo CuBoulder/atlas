@@ -16,19 +16,18 @@ if path not in sys.path:
     sys.path.append(path)
 
 # Required for MVP
-# TODO: PATCH for site
-# TODO: DELETE for site
 # TODO: POST for command
 # TODO: GET for command
 # TODO: DELETE for a command.
 # TODO: Create requirements.txt
-# TODO: Change the name of a code package.
 
 # Nice to have
 # TODO: Make Atlas autodiscover resources
-# TODO: Test for failure to add package and revert the PATCH of the site item.
+# TODO: Test for failure to add code and revert the PATCH of the site item.
+# TODO: Re add packages when changing meta data of a code item.
 
 # Backlog
+# TODO: Backup DB and files on soft delete.
 # TODO: Add support for switching profiles.
 # TODO: Convert 'installed' to 'assigned', 'assigned_training'.
 # TODO: Validate that each code type is correct. IE no core as a profile.
@@ -145,6 +144,17 @@ def on_insert_code_callback(items):
         app.logger.debug('Ready to send to Celery\n{0}'.format(item))
         tasks.code_deploy.delay(item)
 
+
+def post_delete_site_callback(item):
+    """
+    Remove site from servers right before the item is removed.
+
+    :param item:
+    """
+    app.logger.debug(item)
+    tasks.site_remove.delay(item)
+
+
 def on_delete_item_code_callback(item):
     """
     Remove code from servers right before the item is removed.
@@ -195,7 +205,6 @@ def on_update_code_callback(updates, original):
     tasks.code_update.delay(updated_item, original)
 
 
-# TODO: Verify that updated has the same arguments.
 def on_update_sites_callback(updates, original):
     """
     Update an instance.
@@ -230,8 +239,12 @@ def on_update_sites_callback(updates, original):
                     date_json = '{{"taken_down":""}}'.format(updates['_updated'])
 
                 updates['dates'] = json.loads(date_json)
-        app.logger.debug('Ready to hand to Celery\n{0}'.format(item))
-        tasks.site_update.delay(item, updates, original)
+
+                app.logger.debug('Ready to hand to Celery\n{0}'.format(item))
+                tasks.site_update.delay(item, updates, original)
+            elif updates['status'] == 'delete':
+                app.logger.debug('Ready to hand to Celery\n{0}'.format(item))
+                tasks.site_remove.delay(item)
 
 
 # TODO: Set it up to mark what user updated the record.
@@ -269,6 +282,7 @@ app.debug = True
 # Use DB hooks if you want to modify data on the way in.
 app.on_pre_POST += pre_post_callback
 app.on_pre_DELETE_code += pre_delete_code_callback
+app.on_post_DELETE_site += post_delete_site_callback
 app.on_fetched_item_command += on_fetched_item_command_callback
 app.on_insert_code += on_insert_code_callback
 app.on_insert_sites += on_insert_sites_callback

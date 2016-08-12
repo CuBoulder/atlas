@@ -133,7 +133,6 @@ def site_provision(site, install=True):
     _update_symlink(code_directory_sid, code_directory_current)
 
     with cd(code_directory_current):
-        # TODO: Get profile from site object.
         profile = _get_code_name_version(site['code']['profile'])
         run('drush dslm-add-profile {0}'.format(profile))
 
@@ -154,6 +153,7 @@ def site_provision(site, install=True):
 
     if install:
         _install_site(profile_name, code_directory_current)
+        correct_file_directory_permissions(site)
 
 
 @roles('webservers')
@@ -190,6 +190,7 @@ def site_core_update(site):
         run("drush dslm-switch-core {0}".format(core_string))
         print('Running database updates.')
         run("drush updb -y")
+
 
 @roles('webservers')
 def site_profile_update(site, original, updates):
@@ -266,12 +267,42 @@ def site_restore(site):
             return task
 
 
+@roles('webservers')
+def site_remove(site):
+    """
+    Responds to DELETEs to remove site from the server.
+
+    :param site: Item to remove
+    :return:
+    """
+    print('Site - Remove\n{0}'.format(site))
+
+    code_directory = '{0}/{1}'.format(sites_code_root, site['sid'])
+    web_directory = '{0}/{1}/{2}'.format(sites_web_root, site['type'], site['sid'])
+    web_directory_path = '{0}/{1}/{2}'.format(sites_web_root, site['type'], site['path'])
+
+    _delete_database(site)
+
+    _remove_symlink(web_directory)
+    _remove_symlink(web_directory_path)
+    _remove_symlink()
+
+    if nfs_mount_files_dir:
+        nfs_dir = nfs_mount_location[environment]
+        nfs_files_dir = '{0}/sitefiles/{1}'.format(nfs_dir, site['sid'])
+        _remove_directory(nfs_files_dir)
+
+    _remove_directory(code_directory)
+
+
 def correct_file_directory_permissions(site):
     code_directory_sid = '{0}/{1}/{1}'.format(sites_code_root, site['sid'])
     with cd(code_directory_sid):
         run('chgrp -R {0} sites/default'.format(ssh_user_group))
         run('chgrp -R {0} sites/default/files'.format(webserver_user_group))
-        run('chmod -R 775 sites/default')
+        run('chmod -R 0775 sites/default')
+        run('chmod -R 2775 sites/default/files')
+        run('chmod -R 0644 sites/default/*.php')
 
 
 def clear_apc():
@@ -315,6 +346,22 @@ def _create_database(site):
     else:
         with settings(host_string='express.local'):
             run("mysql -e 'create database `{}`;'".format(site['sid']))
+
+
+# TODO: Add decorator to run on a single host.
+def _delete_database(site):
+    if environment != 'local':
+        # TODO: Make file location config.
+        os.environ['MYSQL_TEST_LOGIN_FILE'] = '/home/{0}/.mylogin.cnf'.format(ssh_user)
+        mysql_login_path = "invsqlagnt_{0}_poolb".format(environment)
+        mysql_info = '/usr/local/mysql/bin/mysql --login-path={0} -e'.format(mysql_login_path)
+        database_password = utilities.decrypt_string(site['db_key'])
+        local('{0} \'drop database `{1}`;\''.format(mysql_info, site['sid']))
+        # TODO: Make IP addresses config.
+        local("{0} \"drop user '{1}'@'172.20.62.0/255.255.255.0' identified by '{2}';\"".format(mysql_info, site['sid'], database_password))
+    else:
+        with settings(host_string='express.local'):
+            run("mysql -e 'drop database `{}`;'".format(site['sid']))
 
 
 def _create_settings_files(site, profile_name):
@@ -368,12 +415,11 @@ def _create_settings_files(site, profile_name):
 
 def _push_settings_files(site, directory):
     send_from = '/tmp/{0}'.format(site['sid'])
-    send_to = "{0}/sites/default/".format(directory)
-    run("chmod -R u+w {0}".format(send_to))
-    put("{0}.settings.local_pre.php".format(send_from), "{0}settings.local_pre.php".format(send_to))
-    put("{0}.settings.local_post.php".format(send_from), "{0}settings.local_post.php".format(send_to))
-    put("{0}.settings.php".format(send_from), "{0}settings.php".format(send_to))
-    run("chmod -R u+w {0}".format(send_to))
+    send_to = "{0}/sites/default".format(directory)
+    run("chmod -R 755 {0}".format(send_to))
+    put("{0}.settings.local_pre.php".format(send_from), "{0}/settings.local_pre.php".format(send_to))
+    put("{0}.settings.local_post.php".format(send_from), "{0}/settings.local_post.php".format(send_to))
+    put("{0}.settings.php".format(send_from), "{0}/settings.php".format(send_to))
 
 
 # TODO: Add decorator to run on a single host.

@@ -295,6 +295,36 @@ def correct_file_directory_permissions(site):
 
 
 @roles('webserver_single')
+def command_run_single(site, command):
+    """
+    Run a command on a single server
+
+    :param site: Site to run command on
+    :param command: Command to run
+    :return:
+    """
+    print('Command - Single Server - {0}\n{1}'.format(site['sid'], command))
+    web_directory = '{0}/{1}/{2}'.format(sites_web_root, site['type'], site['sid'])
+    with cd(web_directory):
+        run('{0}'.format(command))
+
+
+@roles('webservers')
+def command_run(site, command):
+    """
+    Run a command on a all webservers.
+
+    :param site: Site to run command on
+    :param command: Command to run
+    :return:
+    """
+    print('Command - {0}\n{1}'.format(site['sid'], command))
+    web_directory = '{0}/{1}/{2}'.format(sites_web_root, site['type'], site['sid'])
+    with cd(web_directory):
+        run('{0}'.format(command))
+
+
+@roles('webserver_single')
 def update_database(site):
     """
     Run a updb

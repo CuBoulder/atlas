@@ -146,11 +146,41 @@ def site_remove(site):
 
 
 @celery.task
-def command_run(command):
+def command_prepare(item):
+    """
+    Prepare sites to run the appropriate command.
+
+    :param item: A complete command item, including new values.
+    :return:
+    """
+    logger.debug('Prepare Command\n{0}'.format(item))
+    if item['command'] == ['clear_apc']:
+        execute(fabfile.clear_apc())
+        return
+    if item['query']:
+        site_query = 'where={0}'.format(item['query'])
+        sites = utilities.get_eve('sites', site_query)
+        logger.debug('Ran query\n{0}'.format(sites))
+        if not sites['_meta']['total'] == 0:
+            for site in sites['_items']:
+                if item['command'] == ['correct_file_permissions']:
+                    execute(fabfile.correct_file_directory_permissions(site))
+                    continue
+                command_run(site, item['command'], item['single_server'])
+
+
+@celery.task
+def command_run(site, command, single_server):
     """
     Run the appropriate command.
 
-    :param command:
+    :param site: A complete command item, including new values.
+    :param command: Command to run.
+    :param single_server: boolean Run a single server or all servers.
     :return:
     """
-    return True
+    logger.debug('Run Command - {0} - {1}\n{2}'.format(site['sid'], single_server, command))
+    if single_server:
+        execute(fabfile.command_run_single, site=site, command=command)
+    else:
+        execute(fabfile.command_run, site=site, command=command)

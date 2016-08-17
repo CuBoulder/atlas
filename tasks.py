@@ -174,7 +174,7 @@ def command_run(site, command, single_server):
     """
     Run the appropriate command.
 
-    :param site: A complete command item, including new values.
+    :param site: A complete site item.
     :param command: Command to run.
     :param single_server: boolean Run a single server or all servers.
     :return:
@@ -184,3 +184,47 @@ def command_run(site, command, single_server):
         execute(fabfile.command_run_single, site=site, command=command)
     else:
         execute(fabfile.command_run, site=site, command=command)
+
+
+@celery.task
+def cron(status=None, include_packages=None, exclude_packages=None):
+    logger.debug('Cron | Status - {0} | Include - {1} | Exclude - {2}'.format(status, include_packages, exclude_packages))
+    # Build query.
+    site_query_string = ['max_results=2000']
+    logger.debug('Cron - found argument')
+    site_query_string.append('&where={')
+    if status:
+        logger.debug('Cron - found status')
+        site_query_string.append('"status":"{0}",'.format(status))
+    else:
+        logger.debug('Cron - No status found')
+        site_query_string.append('"status":{"$in":["installed","launched"],')
+    if include_packages:
+        logger.debug('Cron - found include_packages')
+        for package_name in include_packages:
+            packages = utilities.get_code(name=package_name, type='package')
+            include_packages_ids = []
+            if not packages['_meta']['total'] == 0:
+                for item in packages:
+                    include_packages_ids.append(item['_id'])
+                site_query_string.append('"code.package": {{"$in": {0}}},'.format(include_packages_ids))
+    if exclude_packages:
+        logger.debug('Cron - found exclude_packages')
+        for package_name in exclude_packages:
+            packages = utilities.get_code(name=package_name, type='package')
+            exclude_packages_ids = []
+            if not packages['_meta']['total'] == 0:
+                for item in packages:
+                    exclude_packages_ids.append(item['_id'])
+                site_query_string.append('"code.package": {{"$in": {0}}},'.format(exclude_packages_ids))
+
+    site_query = ''.join(site_query_string)
+    logger.debug('Query after join - {0}'.format(site_query))
+    site_query = site_query.rstrip('\,')
+    logger.debug('Query after rstrip - {0}'.format(site_query))
+    site_query += '}'
+
+    sites = utilities.get_eve('sites', site_query)
+    if not sites['_meta']['total'] == 0:
+        for site in sites['_items']:
+            command_run(site, 'drush cron', True)

@@ -193,6 +193,20 @@ def get_current_code(name, type):
     """
     query = 'where={{"meta.name":"{0}","meta.code_type":"{1}","meta.is_current":true}}'.format(name, type)
     current_get = get_eve('code', query)
-    current_app.logger.debug(current_get)
+    print(current_get)
     # TODO: Error if there is no current code.
     return current_get['_items'][0]['_id']
+
+def get_code(name, type):
+    """
+    Get the current code item for a given name and type.
+
+    :param name: string
+    :param type: string
+    :return: _id of the item.
+    """
+    query = 'where={{"meta.name":"{0}","meta.code_type":"{1}"}}'.format(name, type)
+    code_get = get_eve('code', query)
+    print(code_get)
+    return code_get
+

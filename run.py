@@ -15,6 +15,9 @@ path = '/data/code'
 if path not in sys.path:
     sys.path.append(path)
 
+# MVP
+# TODO: Celerybeat tasks
+
 # Nice to have
 # TODO: Nice frontend.
 # TODO: Make Atlas autodiscover resources
@@ -31,7 +34,8 @@ if path not in sys.path:
 # TODO: Figure out how to test
 # TODO: Support sites without a profile. Check if default profile is set.
 # TODO: Add support for DNS entries that are owned as part of a site.
-# TODO: Consider adding additional field to 'code' for 'has_submodules'. This would allow us to improve performance of code checkouts.
+# TODO: Field in 'code.meta' for 'has_submodules'.
+# TODO: Field for 'code.meta' for 'requires updb', 'requires registry rebuild'.
 
 
 # Callbacks

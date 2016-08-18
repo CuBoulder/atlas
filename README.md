@@ -7,9 +7,31 @@ Atlas is a RESTful API that interacts with servers to deploy and maintain [Web E
 See [Express_local](https://github.com/CuBoulder/express_local) for setting up a local development environment.
 
 ## Getting started
+
 Code items should be created first. Required fields are: git URL, commit hash, Name, Version, and Type (core, profile, module, theme, library). Optional fields are: is_current (allows you to indicate the preferred version of a code item) and a tagging field.
  
- Site items are created with a 'pending' status and can be assigned a specific core and/or profile when created. If a core or profile is not specified, the 'current' version of the default is used.
+Site items are created with a 'pending' status and can be assigned a specific core and/or profile when created. If a core or profile is not specified, the 'current' version of the default is used.
+
+## Features
+* Chronological tasks run to keep a small number of instances available for assignment to end users.
+* POST to create additional instances on demand.
+* Available instances are replaced every night.
+
+## API
+* Prefers to receive JSON encoded POST request.
+* CRUD Web Express instances
+
+## Configuration
+
+Configuration is split between various files `config_*.py`. You need to create a `config_local.py` file and will most likely want to replace `config_servers.py`.
+
+## Deploying Atlas
+
+Currently we use a `git pull` deployment. When code is changed, you need to restart Celery, Celerybeat and Apache.
+
+## Contributing
+
+Pull requests are always welcome. Project is under active development. We want to make sure that Express doesn't become dependant on Atlas.
 
 ## Sample requests
 ### Code items
@@ -34,28 +56,12 @@ curl -i -v -X POST -d '{"status": "pending"}' -H 'Content-Type: application/json
 curl -i -v -X PATCH -d '{"status": "installed"}' -H "If-Match: 4173813fc614292febc79241a8b677266cbed826" -H 'Content-Type: application/json' -u 'USERNAME:PASSWORD' http://inventory.local/atlas/sites/579b8f9a89b0dc0d7d7ce090
 ```
 
-### Patch a new Profile in (update site to new version of profile)
+#### Patch a new Profile in (update site to new version of profile)
 ```bash
 curl -i -v -X PATCH -d '{"code": {"profile": "57adffc389b0dc1631822bce"}}' -H "If-Match: b8c1942d0238559ca9c3333626777ec7ce97f955" -H 'Content-Type: application/json' -u 'USERNAME:PASSWORD' http://inventory.local/atlas/sites/57adff1389b0dc1613d0f948
 ```
 
-## Deploying Atlas
-
-Currently we use a `git pull` deployment. When code is changed, you need to restart Celery, Celerybeat and Apache.
-
-## Features
-* Chronological tasks run to keep a small number of instances available for assignment to end users.
-* POST to create additional instances on demand.
-* Available instances are replaced every night.
-
-## API
-* Prefers to receive JSON encoded POST request.
-* CRUD Web Express instances
-
-## Configuration
-
-Configuration is split between various files `config_*.py`. You need to create a `config_local.py` file and will most likely want to replace `config_servers.py`.
-
-## Contributing
-
-Pull requests are always welcome. Project is under active development. We want to make sure that Express doesn't become dependant on Atlas.
+#### Delete a site
+```bash
+curl -i -v -X PATCH -d '{"status":"delete"}' -H "If-Match: 5b3bc91045cca9fdc9a8b50bfb4095ecceb2dcbe" -H 'Content-Type: application/json' -u 'USERNAME:PASSWORD' http://inventory.local/atlas/sites/57adfdb789b0dc1612c23a90
+```

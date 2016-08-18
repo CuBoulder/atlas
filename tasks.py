@@ -5,8 +5,10 @@ Celery tasks for Atlas.
 """
 import sys
 import fabfile
+import time
 
 from celery import Celery
+from celery import group
 from celery.utils.log import get_task_logger
 from fabric.api import execute
 from atlas.config import *
@@ -228,3 +230,75 @@ def cron(status=None, include_packages=None, exclude_packages=None):
     if not sites['_meta']['total'] == 0:
         for site in sites['_items']:
             command_run(site, 'drush cron', True)
+
+
+@celery.task
+def available_sites_check():
+    site_query = 'where={"status":{"$in":["pending","available"]}}'
+    sites = utilities.get_eve('sites', site_query)
+    actual_site_count = sites['_meta']['total']
+    if environment == "local":
+        desired_site_count = 2
+    else:
+        desired_site_count = 5
+    if actual_site_count < desired_site_count:
+        needed_sites_count = desired_site_count - actual_site_count
+        while needed_sites_count > 0:
+            payload = {
+                "status": "pending",
+            }
+            utilities.post_eve('sites', payload)
+            needed_sites_count -= 1
+
+
+@celery.task
+def delete_stale_pending_sites():
+    site_query = 'where={"status":"pending"}'
+    sites = utilities.get_eve('sites', site_query)
+    # Loop through and remove sites that are more than 30 minutes old.
+    for site in sites['_items']:
+        # Parse date string into structured time.
+        # See https://docs.python.org/2/library/datetime.html#strftime-and-strptime-behavior for mask format.
+        date_created = time.strptime(site['_created'],"%Y-%m-%d %H:%M:%S %Z")
+        # Get time now, Convert date_created to seconds from epoch and
+        # calculate the age of the site.
+        seconds_since_creation = time.time() - time.mktime(date_created)
+        # 30 min * 60 sec = 1800 seconds
+        if seconds_since_creation > 1800:
+            payload = {'status': 'delete'}
+            utilities.patch_eve('sites', site['_id'], payload)
+
+
+@celery.task
+def delete_all_available_sites():
+    """
+    Get a list of available sites and delete them
+    """
+    site_query = 'where={"status":"available"}'
+    sites = utilities.get_eve('sites', site_query)
+    payload = {'status': 'delete'}
+    for site in sites:
+        utilities.patch_eve('sites', site['_id'], payload)
+
+
+@celery.task
+def take_down_installed_35_day_old_sites():
+    if environment != 'prod':
+        site_query = 'where={"status":"installed"}'
+        sites = utilities.get_eve('sites', site_query)
+        # Loop through and remove sites that are more than 35 days old.
+        for site in sites['_items']:
+            # Parse date string into structured time.
+            # See https://docs.python.org/2/library/datetime.html#strftime-and-strptime-behavior
+            # for mask format.
+            date_created = time.strptime(site['_created'],"%Y-%m-%d %H:%M:%S %Z")
+            # Get time now, Convert date_created to seconds from epoch and
+            # calculate the age of the site.
+            seconds_since_creation = time.time() - time.mktime(date_created)
+            print '{0} is {1} seconds old'.format(site['sid'], seconds_since_creation)
+            # 35 days * 24 hrs * 60 min * 60 sec = 302400 seconds
+            if seconds_since_creation > 3024000:
+                # Patch the status to 'take_down'. We need to build the request first.
+                # We have to request the site object again in case the _etag has changed.
+                payload = {'status': 'take_down'}
+                utilities.patch_eve('sites', site['_id'], payload)

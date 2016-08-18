@@ -35,20 +35,20 @@ CELERYBEAT_SCHEDULE = {
         'schedule': timedelta(minutes=120),
         'kwargs': {"status": "installed", "exclude_packages": ["cu_classes_bundle"]},
     },
-    # 'available_sites_upkeep': {
-    #     'task': 'atlas.tasks.available_sites_upkeep',
-    #     'schedule': timedelta(minutes=5),
-    # },
-    # 'delete_stale_pending_sites': {
-    #     'task': 'atlas.tasks.delete_stale_pending_sites',
-    #     'schedule': timedelta(minutes=5),
-    # },
-    # 'remove_stale_available_sites': {
-    #     'task': 'atlas.tasks.delete_all_available_sites',
-    #     'schedule': crontab(minute=0, hour=3),
-    # },
-    # 'remove_stale_installed_sites': {
-    #     'task': 'atlas.tasks.take_down_installed_35_day_old_sites',
-    #     'schedule': crontab(minute=0, hour=2),
-    # },
+    'available_sites_check': {
+        'task': 'atlas.tasks.available_sites_check',
+        'schedule': timedelta(minutes=5),
+    },
+    'delete_stale_pending_sites': {
+        'task': 'atlas.tasks.delete_stale_pending_sites',
+        'schedule': timedelta(minutes=5),
+    },
+    'remove_stale_available_sites': {
+        'task': 'atlas.tasks.delete_all_available_sites',
+        'schedule': crontab(minute=0, hour=3),
+    },
+    'remove_stale_installed_sites': {
+        'task': 'atlas.tasks.take_down_installed_35_day_old_sites',
+        'schedule': crontab(minute=0, hour=2),
+    },
 }

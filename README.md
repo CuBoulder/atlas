@@ -16,6 +16,7 @@ Site items are created with a 'pending' status and can be assigned a specific co
 * Chronological tasks run to keep a small number of instances available for assignment to end users.
 * POST to create additional instances on demand.
 * Available instances are replaced every night.
+* Code, Site, and Command items are versioned.
 
 ## API
 * Prefers to receive JSON encoded POST request.

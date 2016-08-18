@@ -259,7 +259,8 @@ def delete_stale_pending_sites():
     for site in sites['_items']:
         # Parse date string into structured time.
         # See https://docs.python.org/2/library/datetime.html#strftime-and-strptime-behavior for mask format.
-        date_created = time.strptime(site['_created'],"%Y-%m-%d %H:%M:%S %Z")
+        date_created = time.strptime(
+            site['_created'], "%Y-%m-%d %H:%M:%S %Z")
         # Get time now, Convert date_created to seconds from epoch and
         # calculate the age of the site.
         seconds_since_creation = time.time() - time.mktime(date_created)
@@ -291,14 +292,17 @@ def take_down_installed_35_day_old_sites():
             # Parse date string into structured time.
             # See https://docs.python.org/2/library/datetime.html#strftime-and-strptime-behavior
             # for mask format.
-            date_created = time.strptime(site['_created'],"%Y-%m-%d %H:%M:%S %Z")
+            date_created = time.strptime(
+                site['_created'], "%Y-%m-%d %H:%M:%S %Z")
             # Get time now, Convert date_created to seconds from epoch and
             # calculate the age of the site.
             seconds_since_creation = time.time() - time.mktime(date_created)
-            print '{0} is {1} seconds old'.format(site['sid'], seconds_since_creation)
+            print('{0} is {1} seconds old'.format(
+                site['sid'],
+                seconds_since_creation)
+            )
             # 35 days * 24 hrs * 60 min * 60 sec = 302400 seconds
             if seconds_since_creation > 3024000:
-                # Patch the status to 'take_down'. We need to build the request first.
-                # We have to request the site object again in case the _etag has changed.
+                # Patch the status to 'take_down'.
                 payload = {'status': 'take_down'}
                 utilities.patch_eve('sites', site['_id'], payload)

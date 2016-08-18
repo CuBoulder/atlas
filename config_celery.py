@@ -23,7 +23,10 @@ CELERYBEAT_SCHEDULE = {
     'launched-cron': {
         'task': 'atlas.tasks.cron',
         'schedule': timedelta(minutes=5),
-        'kwargs': {"status": "launched", "exclude_packages": ["cu_classes_bundle"]},
+        'kwargs': {
+            "status": "launched",
+            "exclude_packages": ["cu_classes_bundle"]
+        },
     },
     'classes-cron': {
         'task': 'atlas.tasks.cron',
@@ -33,7 +36,10 @@ CELERYBEAT_SCHEDULE = {
     'installed-cron': {
         'task': 'atlas.tasks.cron',
         'schedule': timedelta(minutes=120),
-        'kwargs': {"status": "installed", "exclude_packages": ["cu_classes_bundle"]},
+        'kwargs': {
+            "status": "installed",
+            "exclude_packages": ["cu_classes_bundle"]
+        },
     },
     'available_sites_check': {
         'task': 'atlas.tasks.available_sites_check',

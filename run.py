@@ -19,8 +19,9 @@ if path not in sys.path:
 # TODO: Celerybeat tasks
 
 # Nice to have
+# TODO: Add support for files (robots and .htaccess)
 # TODO: Nice frontend.
-# TODO: Make Atlas autodiscover resources
+# TODO: Make Atlas autodiscover resources.
 # TODO: Test for failure to add code and revert the PATCH of the site item.
 # TODO: Re add packages when changing meta data of a code item.
 

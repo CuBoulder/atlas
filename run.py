@@ -15,11 +15,11 @@ path = '/data/code'
 if path not in sys.path:
     sys.path.append(path)
 
-# MVP
-# TODO: Celerybeat tasks
+# Missing from Inventory
+# TODO: Rebuild settings files.
+# TODO: Add support for files (robots and .htaccess)
 
 # Nice to have
-# TODO: Add support for files (robots and .htaccess)
 # TODO: Nice frontend.
 # TODO: Make Atlas autodiscover resources.
 # TODO: Test for failure to add code and revert the PATCH of the site item.

@@ -13,6 +13,9 @@ RESOURCE_METHODS = ['GET', 'POST']
 # individual items.
 ITEM_METHODS = ['GET', 'PATCH', 'PUT', 'DELETE']
 
+# Add support for CORS
+X_DOMAINS = '*'
+X_HEADERS = ['Access-Control-Allow-Origin']
 #
 # Definitions of schemas for Items. Schema is based on Cerberus grammar
 # https://github.com/nicolaiarocci/cerberus.

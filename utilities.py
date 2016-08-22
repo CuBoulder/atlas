@@ -212,3 +212,56 @@ def get_code(name, code_type):
     code_get = get_eve('code', query)
     print(code_get)
     return code_get
+
+
+def post_to_slack(message, title, value='', level='good'):
+    """
+    Posts a message to a given channel using the Slack Incoming Webhooks API.
+    Links should be in the message in the format: '<https://www.colorado.edu/p1234|New Website>'.
+
+    Message Output Format:
+        Inventory
+        # `message`
+        #     `title`
+        #     `value`
+
+
+    :param message: We don't deal with `short` at the moment because we don't
+     have multi-attachement posts.
+    :param title:
+    :param value:
+    :param level: 'Level' creates the color bar next to the fields.
+     Values for level are 'good' (green), 'warning' (orange), 'danger' (red)
+     or a hex value.
+    """
+    # We want to notify the channel if we get a message with 'fail' in it.
+    if 'fail' in message:
+        fallback = '<!channel>' + environment + ' - ' + message + ' - ' + title + ' - ' + value
+    else:
+        fallback = environment + ' - ' + message + ' - ' + title + ' - ' + value
+    pretext = environment + ' - ' + message
+    payload = {
+        "attachments": [
+            {
+                "fallback": fallback,
+                "pretext": pretext,
+                "color": level,
+                "fields": [
+                    {
+                        "title": title,
+                        "value": value,
+                    }
+                ]
+            }
+        ]
+    }
+    # Hook for the devops-log channel
+    slack_url = "https://hooks.slack.com/services/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"
+
+    # We need 'json=payload' vs. 'payload' because arguments can be passed in
+    # any order. Using json=payload instead of data=json.dumps(payload) so that
+    # we don't have to encode the dict ourselves. The Requests library will do
+    # it for us.
+    r = requests.post(slack_url, json=payload, verify=False)
+    if not r.ok:
+        print r.text

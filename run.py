@@ -15,29 +15,6 @@ path = '/data/code'
 if path not in sys.path:
     sys.path.append(path)
 
-# Missing from Inventory
-# TODO: Rebuild settings files.
-# TODO: Add support for files (robots and .htaccess)
-
-# Nice to have
-# TODO: Nice frontend.
-# TODO: Make Atlas autodiscover resources.
-# TODO: Test for failure to add code and revert the PATCH of the site item.
-# TODO: Re add packages when changing meta data of a code item.
-
-# Backlog
-# TODO: Support additional dependencies for a package.
-# TODO: Backup DB and files on soft delete.
-# TODO: Add support for switching profiles.
-# TODO: Convert 'installed' to 'assigned', 'assigned_training'.
-# TODO: Validate that each code type is correct. IE no core as a profile.
-# TODO: Figure out how to do redirects and path changes
-# TODO: Figure out how to test
-# TODO: Support sites without a profile. Check if default profile is set.
-# TODO: Add support for DNS entries that are owned as part of a site.
-# TODO: Field in 'code.meta' for 'has_submodules'.
-# TODO: Field for 'code.meta' for 'requires updb', 'requires registry rebuild'.
-
 
 # Callbacks
 def pre_post_callback(resource, request):
@@ -271,9 +248,6 @@ def on_update_commands_callback(updates, original):
 #         document[modified_by_field] = user
 
 
-# TODO: Add in a message (DONE) and better result broker, I don't want to use the DB. It is currently 41 GB for inventory.
-
-
 """
 Setup the application and logging.
 """
@@ -306,7 +280,6 @@ def custom409(error):
 
 if __name__ == '__main__':
     # Enable logging to 'atlas.log' file
-    # TODO: Figure out why the stuff shows in the apache error log, not this location.
     handler = logging.FileHandler('atlas.log')
     # The default log level is set to WARNING, so we have to explicitly set the
     # logging level to Debug.

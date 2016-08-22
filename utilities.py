@@ -194,7 +194,6 @@ def get_current_code(name, type):
     query = 'where={{"meta.name":"{0}","meta.code_type":"{1}","meta.is_current":true}}'.format(name, type)
     current_get = get_eve('code', query)
     print(current_get)
-    # TODO: Error if there is no current code.
     return current_get['_items'][0]['_id']
 
 

@@ -237,14 +237,7 @@ def site_profile_update(site, original, updates):
 
 @roles('webservers')
 def site_launch(site):
-    print('Site Launch\n{0}'.format(site))
-    code_directory = '{0}/{1}'.format(sites_code_root, site['sid'])
-    code_directory_current = '{0}/current'.format(code_directory)
-    profile = utilities.get_single_eve('code', site['code']['profile'])
-    profile_name = profile['meta']['name']
-
-    _create_settings_files(site, profile_name)
-    _push_settings_files(site, code_directory_current)
+    update_settings_file(site)
 
     if environment is 'prod' and site['pool'] is 'poolb-express':
         # Create GSA collection if needed.
@@ -331,11 +324,15 @@ def site_remove(site):
 
 def correct_file_directory_permissions(site):
     code_directory_sid = '{0}/{1}/{1}'.format(sites_code_root, site['sid'])
+    nfs_dir = nfs_mount_location[environment]
+    nfs_files_dir = '{0}/sitefiles/{1}/files'.format(nfs_dir, site['sid'])
     with cd(code_directory_sid):
         run('chgrp -R {0} sites/default'.format(ssh_user_group))
-        run('chgrp -R {0} sites/default/files'.format(webserver_user_group))
         run('chmod -R 0775 sites/default')
-        run('chmod -R 2775 sites/default/files')
+    with cd(nfs_files_dir):
+        run('chgrp -R {0} {nfs_files_dir}'.format(webserver_user_group, nfs_files_dir))
+        run('chmod -R 2775 {nfs_files_dir}'.format(nfs_files_dir))
+    with cd(code_directory_sid):
         run('chmod -R 0644 sites/default/*.php')
 
 
@@ -399,6 +396,18 @@ def drush_cache_clear(sid):
     code_directory_current = '{0}/{1}/current'.format(sites_code_root, sid)
     with cd(code_directory_current):
         run("drush cc all")
+
+
+@roles('webservers')
+def update_settings_file(site):
+    print('Update Settings Files\n{0}'.format(site))
+    code_directory = '{0}/{1}'.format(sites_code_root, site['sid'])
+    code_directory_current = '{0}/current'.format(code_directory)
+    profile = utilities.get_single_eve('code', site['code']['profile'])
+    profile_name = profile['meta']['name']
+
+    _create_settings_files(site, profile_name)
+    _push_settings_files(site, code_directory_current)
 
 
 # Fabric utility functions.

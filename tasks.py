@@ -168,6 +168,9 @@ def command_prepare(item):
                 if item['command'] == ['correct_file_permissions']:
                     execute(fabfile.correct_file_directory_permissions(site))
                     continue
+                if item['command'] == ['update_settings_file']:
+                    execute(fabfile.update_settings_file(site))
+                    continue
                 command_run(site, item['command'], item['single_server'])
 
 

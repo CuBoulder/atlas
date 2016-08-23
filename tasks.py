@@ -37,7 +37,20 @@ def code_deploy(item):
     :return:
     """
     logger.debug('Code deploy - {0}'.format(item))
-    execute(fabfile.code_deploy, item=item)
+    fab_task = execute(fabfile.code_deploy, item=item)
+
+    slack_title = '{0} - {1}'.format(item['meta']['name'],
+                                     item['meta']['version'])
+    if False in fab_task.values():
+        slack_message = 'Code Deploy - Failed'
+        slack_color = 'bad'
+    else:
+        slack_message = 'Code Deploy - Success'
+        slack_color = 'good'
+    utilities.post_to_slack(
+        message=slack_message,
+        title=slack_title,
+        level=slack_color)
 
 
 @celery.task
@@ -45,11 +58,26 @@ def code_update(updated_item, original_item):
     """
     Update code checkout.
 
-    :param item: The flask request.json object.
+    :param updated_item:
+    :param original_item:
     :return:
     """
     logger.debug('Code update - {0}'.format(updated_item))
-    execute(fabfile.code_update, updated_item=updated_item, original_item=original_item)
+    fab_task = execute(fabfile.code_update, updated_item=updated_item, original_item=original_item)
+
+    name = updated_item['meta']['name'] if updated_item['meta']['name'] else original_item['meta']['name']
+    version = updated_item['meta']['version'] if updated_item['meta']['version'] else original_item['meta']['version']
+    slack_title = '{0} - {1}'.format(name, version)
+    if False in fab_task.values():
+        slack_message = 'Code Update - Failed'
+        slack_color = 'bad'
+    else:
+        slack_message = 'Code Update - Success'
+        slack_color = 'good'
+    utilities.post_to_slack(
+        message=slack_message,
+        title=slack_title,
+        level=slack_color)
 
 
 @celery.task
@@ -61,7 +89,20 @@ def code_remove(item):
     :return:
     """
     logger.debug('Code delete - {0}'.format(item))
-    execute(fabfile.code_remove, item=item)
+    fab_task = execute(fabfile.code_remove, item=item)
+
+    slack_title = '{0} - {1}'.format(item['meta']['name'],
+                                     item['meta']['version'])
+    if False in fab_task.values():
+        slack_message = 'Code Remove - Failed'
+        slack_color = 'bad'
+    else:
+        slack_message = 'Code Remove - Success'
+        slack_color = 'good'
+    utilities.post_to_slack(
+        message=slack_message,
+        title=slack_title,
+        level=slack_color)
 
 
 @celery.task

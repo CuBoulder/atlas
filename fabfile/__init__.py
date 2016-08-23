@@ -330,8 +330,8 @@ def correct_file_directory_permissions(site):
         run('chgrp -R {0} sites/default'.format(ssh_user_group))
         run('chmod -R 0775 sites/default')
     with cd(nfs_files_dir):
-        run('chgrp -R {0} {nfs_files_dir}'.format(webserver_user_group, nfs_files_dir))
-        run('chmod -R 2775 {nfs_files_dir}'.format(nfs_files_dir))
+        run('chgrp -R {0} {1}'.format(webserver_user_group, nfs_files_dir))
+        run('chmod -R 2775 {0}'.format(nfs_files_dir))
     with cd(code_directory_sid):
         run('chmod -R 0644 sites/default/*.php')
 

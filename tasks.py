@@ -207,7 +207,7 @@ def cron(status=None, include_packages=None, exclude_packages=None):
     if include_packages:
         logger.debug('Cron - found include_packages')
         for package_name in include_packages:
-            packages = utilities.get_code(name=package_name, type='package')
+            packages = utilities.get_code(name=package_name)
             include_packages_ids = []
             if not packages['_meta']['total'] == 0:
                 for item in packages:
@@ -216,7 +216,7 @@ def cron(status=None, include_packages=None, exclude_packages=None):
     if exclude_packages:
         logger.debug('Cron - found exclude_packages')
         for package_name in exclude_packages:
-            packages = utilities.get_code(name=package_name, type='package')
+            packages = utilities.get_code(name=package_name)
             exclude_packages_ids = []
             if not packages['_meta']['total'] == 0:
                 for item in packages:

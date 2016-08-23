@@ -41,16 +41,13 @@ def code_deploy(item):
 
     slack_title = '{0} - {1}'.format(item['meta']['name'],
                                      item['meta']['version'])
-    if False in fab_task.values():
-        slack_message = 'Code Deploy - Failed'
-        slack_color = 'bad'
-    else:
+    if False not in fab_task.values():
         slack_message = 'Code Deploy - Success'
         slack_color = 'good'
-    utilities.post_to_slack(
-        message=slack_message,
-        title=slack_title,
-        level=slack_color)
+        utilities.post_to_slack(
+            message=slack_message,
+            title=slack_title,
+            level=slack_color)
 
 
 @celery.task
@@ -68,16 +65,13 @@ def code_update(updated_item, original_item):
     name = updated_item['meta']['name'] if updated_item['meta']['name'] else original_item['meta']['name']
     version = updated_item['meta']['version'] if updated_item['meta']['version'] else original_item['meta']['version']
     slack_title = '{0} - {1}'.format(name, version)
-    if False in fab_task.values():
-        slack_message = 'Code Update - Failed'
-        slack_color = 'bad'
-    else:
+    if False not in fab_task.values():
         slack_message = 'Code Update - Success'
         slack_color = 'good'
-    utilities.post_to_slack(
-        message=slack_message,
-        title=slack_title,
-        level=slack_color)
+        utilities.post_to_slack(
+            message=slack_message,
+            title=slack_title,
+            level=slack_color)
 
 
 @celery.task
@@ -93,16 +87,13 @@ def code_remove(item):
 
     slack_title = '{0} - {1}'.format(item['meta']['name'],
                                      item['meta']['version'])
-    if False in fab_task.values():
-        slack_message = 'Code Remove - Failed'
-        slack_color = 'bad'
-    else:
+    if False not in fab_task.values():
         slack_message = 'Code Remove - Success'
         slack_color = 'good'
-    utilities.post_to_slack(
-        message=slack_message,
-        title=slack_title,
-        level=slack_color)
+        utilities.post_to_slack(
+            message=slack_message,
+            title=slack_title,
+            level=slack_color)
 
 
 @celery.task
@@ -117,10 +108,27 @@ def site_provision(site):
     # 'db_key' needs to be added here and not in Eve so that the encryption
     # works properly.
     site['db_key'] = utilities.encrypt_string(utilities.mysql_password())
-    execute(fabfile.site_provision, site=site)
+    fab_task = execute(fabfile.site_provision, site=site)
+    logger.debug(fab_task)
+    logger.debug(fab_task.values)
+
     patch_payload = {'status': 'available', 'db_key': site['db_key']}
     patch = utilities.patch_eve('sites', site['_id'], patch_payload)
+
     logger.debug('Site has been provisioned\n{0}'.format(patch))
+
+    slack_title = '{0}/{1}'.format(base_urls[environment], site['sid'])
+    slack_link = '{0}/{1}'.format(base_urls[environment], site['sid'])
+    attachment_text = '{0}/sites/{1}'.format(api_server, site['_id'])
+    if False not in fab_task.values():
+        slack_message = 'Site provision - Success'
+        slack_color = 'good'
+        utilities.post_to_slack(
+            message=slack_message,
+            title=slack_title,
+            link=slack_link,
+            attachment_text=attachment_text,
+            level=slack_color)
 
 
 @celery.task
@@ -173,6 +181,18 @@ def site_update(site, updates, original):
             patch = utilities.patch_eve('sites', site['_id'], patch_payload)
             logger.debug(patch)
 
+    slack_title = '{0}/{1}'.format(base_urls[environment], site['sid'])
+    slack_link = '{0}/{1}'.format(base_urls[environment], site['sid'])
+    attachment_text = '{0}/sites/{1}'.format(api_server, site['_id'])
+    slack_message = 'Site Update - Success'
+    slack_color = 'good'
+    utilities.post_to_slack(
+        message=slack_message,
+        title=slack_title,
+        link=slack_link,
+        attachment_text=attachment_text,
+        level=slack_color)
+
 @celery.task
 def site_remove(site):
     """
@@ -186,6 +206,14 @@ def site_remove(site):
 
     delete = utilities.delete_eve('sites', site['_id'])
     logger.debug(delete)
+
+    slack_title = '{0}/{1}'.format(base_urls[environment], site['sid'])
+    slack_message = 'Site Remove - Success'
+    slack_color = 'good'
+    utilities.post_to_slack(
+        message=slack_message,
+        title=slack_title,
+        level=slack_color)
 
 
 @celery.task
@@ -230,6 +258,18 @@ def command_run(site, command, single_server):
         execute(fabfile.command_run_single, site=site, command=command)
     else:
         execute(fabfile.command_run, site=site, command=command)
+
+    slack_title = '{0}/{1}'.format(base_urls[environment], site['sid'])
+    slack_link = '{0}/{1}'.format(base_urls[environment], site['sid'])
+    slack_message = 'Command - Success'
+    slack_color = 'good'
+    attachment_text = command
+    utilities.post_to_slack(
+        message=slack_message,
+        title=slack_title,
+        link=slack_link,
+        attachment_text=attachment_text,
+        level=slack_color)
 
 
 @celery.task

@@ -6,6 +6,7 @@ import requests
 import ldap
 import json
 
+from re import compile, search
 from cryptography.fernet import Fernet
 from random import choice
 from string import lowercase
@@ -213,49 +214,51 @@ def get_code(name, code_type):
     return code_get
 
 
-def post_to_slack(message, title, value='', level='good'):
+def post_to_slack(message, title, link='', attachment_text='', level='good', user=slack_username):
     """
     Posts a message to a given channel using the Slack Incoming Webhooks API.
-    Links should be in the message in the format: '<https://www.colorado.edu/p1234|New Website>'.
+    Links should be in the message or attachment_text in the format:
+    `<https://www.colorado.edu/p1234|New Website>`.
 
     Message Output Format:
-        Inventory
-        # `message`
-        #     `title`
-        #     `value`
+        Atlas [BOT] - 3:00 PM
+        `message`
+        # `title` (with `link`)
+        # `attachment_text`
 
 
-    :param message: We don't deal with `short` at the moment because we don't
-     have multi-attachement posts.
-    :param title:
-    :param value:
+    :param message: Text that appears before the attachment
+    :param title: Often the name of the site
+    :param link: Often a link to the site
+    :param attachment_text: Description of result of action
     :param level: 'Level' creates the color bar next to the fields.
      Values for level are 'good' (green), 'warning' (orange), 'danger' (red)
      or a hex value.
+     :param user: The user that called the action.
     """
     # We want to notify the channel if we get a message with 'fail' in it.
-    if 'fail' in message:
-        fallback = '<!channel>' + environment + ' - ' + message + ' - ' + title + ' - ' + value
+    regexp = compile(r'fail')
+    if regexp.search(message) is not None:
+        message_text = '<!channel> ' + environment + ' - ' + message
     else:
-        fallback = environment + ' - ' + message + ' - ' + title + ' - ' + value
-    pretext = environment + ' - ' + message
+        message_text = environment + ' - ' + message
+    fallback = title + ' - ' + link + ' - ' + attachment_text
     payload = {
+        "text": message_text,
+        "username": 'Atlas',
         "attachments": [
             {
                 "fallback": fallback,
-                "pretext": pretext,
                 "color": level,
-                "fields": [
-                    {
-                        "title": title,
-                        "value": value,
-                    }
-                ]
+                "author_name": user,
+                "title": title,
+                "title_link": link,
+                 "text": attachment_text,
             }
         ]
     }
-    # Hook for the devops-log channel
-    slack_url = "https://hooks.slack.com/services/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"
+    if environment == 'local':
+        payload['channel'] ='@{0}'.format(user)
 
     # We need 'json=payload' vs. 'payload' because arguments can be passed in
     # any order. Using json=payload instead of data=json.dumps(payload) so that

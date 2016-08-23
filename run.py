@@ -34,15 +34,25 @@ def pre_delete_code_callback(request, lookup):
     """
     code = utilities.get_single_eve('code', lookup['_id'])
     app.logger.debug(code)
-    site_query = 'where={{"code.{0}":"{1}"}}'.format(code['meta']['code_type'], code['_id'])
+    if code['meta']['code_type'] in ['module', 'theme', 'library']:
+        code_type = 'package'
+    else:
+        code_type = code['meta']['code_type']
+    app.logger.debug(code_type)
+    site_query = 'where={{"code.{0}":"{1}"}}'.format(code_type, code['_id'])
     sites = utilities.get_eve('sites', site_query)
     app.logger.debug(sites)
     if not sites['_meta']['total'] == 0:
         for site in sites['_items']:
             # Create a list of sites that use this code item.
             # If 'sid' is a key in the site dict use it, otherwise use '_id'.
-            site_ids = site_ids + site['sid'] if site.get('sid') else site['_id'] + '\n'
-        app.logger.error('Code item is in use by one or more sites:\n{0}'.format(site_ids))
+            site_list = []
+            if site.get('sid'):
+                site_list.append(site['sid'])
+            else:
+                site_list.append(site['_id'])
+        site_list_full = ', '.join(site_list)
+        app.logger.error('Code item is in use by one or more sites:\n{0}'.format(site_list_full))
         abort(409, 'A conflict happened while processing the request. Code item is in use by one or more sites.')
 
 

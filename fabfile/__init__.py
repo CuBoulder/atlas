@@ -200,7 +200,7 @@ def site_package_update(site):
         package_name_string))
 
     with cd(packages_directory):
-        run("drush dslm-remove-all")
+        run("drush dslm-remove-all-packages")
         run("drush dslm-add-package {0}".format(package_name_string))
         if len(package_name_string) > 0:
             print('Rebuild registry.')

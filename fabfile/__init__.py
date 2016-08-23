@@ -410,6 +410,23 @@ def update_settings_file(site):
     _push_settings_files(site, code_directory_current)
 
 
+@roles('webservers')
+def update_homepage_extra_files():
+    """
+    SCP the homepage files to web heads.
+    :return:
+    """
+    send_from_robots = '/data/code/atlas/files/homepage_robots'
+    send_from_htaccess = '/data/code/atlas/files/homepage_htaccess'
+    send_to = '/data/web/homepage'
+    run("chmod -R u+w {}".format(send_to))
+    run("rm -f {0}/robots.txt".format(send_to))
+    put(send_from_robots, "{0}/robots.txt".format(send_to))
+    run("rm -f {0}/.htaccess".format(send_to))
+    put(send_from_htaccess, "{0}/.htaccess".format(send_to))
+    run("chmod -R u+w {}".format(send_to))
+
+
 # Fabric utility functions.
 # TODO: Add decorator to run on a single host if called via 'execute'.
 # Need to make sure it runs on all when called without execute.

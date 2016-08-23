@@ -197,7 +197,7 @@ def get_current_code(name, type):
     return current_get['_items'][0]['_id']
 
 
-def get_code(name, code_type):
+def get_code(name, code_type=''):
     """
     Get the current code item for a given name and code_type.
 
@@ -205,9 +205,12 @@ def get_code(name, code_type):
     :param code_type: string
     :return: _id of the item.
     """
-    query = 'where={{"meta.name":"{0}","meta.code_type":"{1}"}}'.format(
-        name,
-        code_type)
+    if code_type:
+        query = 'where={{"meta.name":"{0}","meta.code_type":"{1}"}}'.format(
+            name,
+            code_type)
+    else:
+        query = 'where={{"meta.name":"{0}"}}'.format(name)
     code_get = get_eve('code', query)
     print(code_get)
     return code_get

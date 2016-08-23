@@ -227,6 +227,7 @@ sites = {
         'url': 'regex("[\w]+")',
         'field': 'sid'
     },
+    'embedded_fields': ['code.core','code.profile','code.package'],
     'public_methods': ['GET'],
     'public_item_methods': ['GET'],
     'versioning': True,

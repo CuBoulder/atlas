@@ -324,15 +324,21 @@ def site_remove(site):
 
 def correct_file_directory_permissions(site):
     code_directory_sid = '{0}/{1}/{1}'.format(sites_code_root, site['sid'])
+    web_directory_sid = '{0}/{1}/{2}'.format(sites_web_root, site['type'], site['sid'])
     nfs_dir = nfs_mount_location[environment]
     nfs_files_dir = '{0}/sitefiles/{1}/files'.format(nfs_dir, site['sid'])
+    nfs_files_tmp_dir = '{0}/sitefiles/{1}/tmp'.format(nfs_dir, site['sid'])
     with cd(code_directory_sid):
         run('chgrp -R {0} sites/default'.format(ssh_user_group))
         run('chmod -R 0775 sites/default')
     with cd(nfs_files_dir):
         run('chgrp -R {0} {1}'.format(webserver_user_group, nfs_files_dir))
-        run('chmod -R 2775 {0}'.format(nfs_files_dir))
-    with cd(code_directory_sid):
+        run('chmod -R 0775 {0}'.format(nfs_files_dir))
+    with cd(nfs_files_tmp_dir):
+        run('chgrp -R {0} {1}'.format(webserver_user_group, nfs_files_tmp_dir))
+        run('chmod -R 0775 {0}'.format(nfs_files_tmp_dir))
+    with cd(web_directory_sid):
+        run('chmod -R 0775 sites/default')
         run('chmod -R 0644 sites/default/*.php')
 
 

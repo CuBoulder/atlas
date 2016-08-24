@@ -1,5 +1,6 @@
 language: python
-sudo: false
+# Need sudo to start services.
+sudo: true
 
 services:
   - mongodb

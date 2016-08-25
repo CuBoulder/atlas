@@ -85,8 +85,7 @@ def code_update(updated_item, original_item):
         code_type_dir,
         updated_item['meta']['name'],
         updated_item['meta']['version'])
-    if updated_item['meta']['name'] != original_item['meta']['name']:
-
+    if (updated_item['meta']['name'] != original_item['meta']['name']) or (updated_item['meta']['version'] != original_item['meta']['version']) or (updated_item['meta']['code_type'] != original_item['meta']['code_type']):
         code_remove(original_item)
         code_deploy(updated_item)
     else:

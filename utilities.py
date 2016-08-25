@@ -253,7 +253,7 @@ def post_to_slack(message, title, link='', attachment_text='', level='good', use
                 "author_name": user,
                 "title": title,
                 "title_link": link,
-                 "text": attachment_text,
+                "text": attachment_text,
             }
         ]
     }

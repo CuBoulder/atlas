@@ -244,16 +244,20 @@ def site_launch(site):
         gsa_task = _create_gsa(site)
         if gsa_task is True:
             print ('GSA Collection - Success')
+            machine_name = _machine_readable(site['path'])
             _launch_site(site=site, gsa_collection=machine_name)
             return
         else:
             print ('GSA Collection - Failed')
             _launch_site(site=site)
     else:
+        print ('Site launch - No GSA')
         _launch_site(site=site)
 
     if environment is not 'local':
+        print ('Diff f5')
         _diff_f5()
+        print ('Update f5')
         _update_f5()
 
 
@@ -414,6 +418,23 @@ def update_settings_file(site):
 
     _create_settings_files(site, profile_name)
     _push_settings_files(site, code_directory_current)
+
+
+@roles('webservers')
+def update_homepage_extra_files():
+    """
+    SCP the homepage files to web heads.
+    :return:
+    """
+    send_from_robots = '{0}/atlas/files/homepage_robots'.format(sys.path)
+    send_from_htaccess = '{0}/atlas/files/homepage_htaccess'.format(sys.path)
+    send_to = '{0}/homepage'.format(sites_web_root)
+    run("chmod -R u+w {}".format(send_to))
+    run("rm -f {0}/robots.txt".format(send_to))
+    put(send_from_robots, "{0}/robots.txt".format(send_to))
+    run("rm -f {0}/.htaccess".format(send_to))
+    put(send_from_htaccess, "{0}/.htaccess".format(send_to))
+    run("chmod -R u+w {}".format(send_to))
 
 
 # Fabric utility functions.
@@ -601,6 +622,13 @@ def _machine_readable(string):
 
 
 # GSA utilities
+def _create_gsa(site):
+    machine_name = _machine_readable(site['path'])
+    if not _gsa_collection_exists(machine_name):
+        index_path = "http://www.colorado.edu/{0}/".format(site['path'])
+        _gsa_create_collection(machine_name, index_path)
+
+
 def _gsa_collection_exists(name):
     """
     Return if a collection of the given name already exists.
@@ -709,15 +737,16 @@ def _gsa_parse_entries(entries):
     return collections
 
 
-def _launch_site(site, pool='poolb-express', gsa_collection=False):
+def _launch_site(site, gsa_collection=False):
     """
     Create symlinks with new site name.
     """
+    print ('Launch subtask')
     code_directory = '{0}/{1}'.format(sites_code_root, site['sid'])
     code_directory_current = '{0}/current'.format(code_directory)
 
-    if pool in ['poolb-express', 'poolb-homepage']:
-        if pool == 'poolb-express':
+    if site['pool'] in ['poolb-express', 'poolb-homepage']:
+        if site['pool'] == 'poolb-express':
             web_directory = '{0}/{1}'.format(sites_web_root, site['type'])
             web_directory_path = '{0}/{1}'.format(web_directory, site['path'])
             with cd(web_directory):
@@ -740,8 +769,8 @@ def _launch_site(site, pool='poolb-express', gsa_collection=False):
                     drush_cache_clear(site['sid'])
             # Assign it to an update group.
             update_group = randint(0, 10)
-        if pool == 'poolb-homepage':
-            web_directory = '{0}/{1}'.format(sites_web_root, site['type'])
+        if site['pool'] == 'poolb-homepage':
+            web_directory = '{0}/{1}'.format(sites_web_root, 'homepage')
             with cd(sites_web_root):
                 _update_symlink(code_directory_current, web_directory)
                 # enter new site directory

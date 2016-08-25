@@ -12,6 +12,7 @@ addons:
     packages:
     - ldap-utils
     - apache2
+    - libapache2-mod-wsgi
 
 python:
   - "2.7"
@@ -19,6 +20,14 @@ python:
 # command to install dependencies
 install:
   - "pip install -r requirements.txt"
+
+before_script:
+    # timer is needed in order to get mongo to properly initialize on travis-ci
+    # See https://github.com/travis-ci/travis-ci/issues/1967#issuecomment-42008605
+  - sudo a2enmod wsgi
+  - sudo service apache2 restart
+  - sleep 15
+  - mongo eve_test --eval 'db.addUser("test_user", "test_pw");'
 
 # command to run tests
 #script: nosetests

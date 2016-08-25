@@ -240,6 +240,9 @@ def command_prepare(item):
                 if item['command'] == ['update_settings_file']:
                     execute(fabfile.update_settings_file(site))
                     continue
+                if item['command'] == ['update_homepage_extra_files']:
+                    execute(fabfile.update_homepage_extra_files())
+                    continue
                 command_run(site, item['command'], item['single_server'])
 
 

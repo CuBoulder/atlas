@@ -13,6 +13,9 @@ RESOURCE_METHODS = ['GET', 'POST']
 # individual items.
 ITEM_METHODS = ['GET', 'PATCH', 'PUT', 'DELETE']
 
+# Add support for CORS
+X_DOMAINS = '*'
+X_HEADERS = ['Access-Control-Allow-Origin']
 #
 # Definitions of schemas for Items. Schema is based on Cerberus grammar
 # https://github.com/nicolaiarocci/cerberus.
@@ -217,7 +220,6 @@ code = {
 }
 
 # Sites resource
-# TODO: Create an additional lookup for 'skeleton' POSTs to allow for creating sites but not installing them.
 sites = {
     'item_title': 'site',
     # Allow lookup by 'sid' in addition to '_id'
@@ -225,6 +227,7 @@ sites = {
         'url': 'regex("[\w]+")',
         'field': 'sid'
     },
+    'embedded_fields': ['code.core','code.profile','code.package'],
     'public_methods': ['GET'],
     'public_item_methods': ['GET'],
     'versioning': True,

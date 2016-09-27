@@ -8,8 +8,6 @@ CELERY_MONGODB_BACKEND_SETTINGS = {
     'taskmeta_collection': 'taskmeta_collection',
 }
 
-# TODO: Setup error emailing: http://docs.celeryproject.org/en/latest/configuration.html#error-e-mails
-
 CELERY_TIMEZONE = 'MST'
 CELERY_ENABLE_UTC = True
 # Time in seconds

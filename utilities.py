@@ -240,33 +240,34 @@ def post_to_slack(message, title, link='', attachment_text='', level='good', use
      :param user: The user that called the action.
     """
     # We want to notify the channel if we get a message with 'fail' in it.
-    regexp = compile(r'fail')
-    if regexp.search(message) is not None:
-        message_text = '<!channel> ' + environment + ' - ' + message
-    else:
-        message_text = environment + ' - ' + message
-    fallback = title + ' - ' + link + ' - ' + attachment_text
-    payload = {
-        "text": message_text,
-        "username": 'Atlas',
-        "attachments": [
-            {
-                "fallback": fallback,
-                "color": level,
-                "author_name": user,
-                "title": title,
-                "title_link": link,
-                "text": attachment_text,
-            }
-        ]
-    }
-    if environment == 'local':
-        payload['channel'] ='@{0}'.format(user)
+    if slack_notify:
+        regexp = compile(r'fail')
+        if regexp.search(message) is not None:
+            message_text = '<!channel> ' + environment + ' - ' + message
+        else:
+            message_text = environment + ' - ' + message
+        fallback = title + ' - ' + link + ' - ' + attachment_text
+        payload = {
+            "text": message_text,
+            "username": 'Atlas',
+            "attachments": [
+                {
+                    "fallback": fallback,
+                    "color": level,
+                    "author_name": user,
+                    "title": title,
+                    "title_link": link,
+                    "text": attachment_text,
+                }
+            ]
+        }
+        if environment == 'local':
+            payload['channel'] ='@{0}'.format(user)
 
-    # We need 'json=payload' vs. 'payload' because arguments can be passed in
-    # any order. Using json=payload instead of data=json.dumps(payload) so that
-    # we don't have to encode the dict ourselves. The Requests library will do
-    # it for us.
-    r = requests.post(slack_url, json=payload, verify=False)
-    if not r.ok:
-        print r.text
+        # We need 'json=payload' vs. 'payload' because arguments can be passed in
+        # any order. Using json=payload instead of data=json.dumps(payload) so that
+        # we don't have to encode the dict ourselves. The Requests library will do
+        # it for us.
+        r = requests.post(slack_url, json=payload, verify=False)
+        if not r.ok:
+            print r.text

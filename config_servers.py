@@ -103,7 +103,7 @@ nfs_mount_location = {
     'production': '/Net/hanfs/wwwng-poolb',
     'test': '/Net/hanfs-test/wwwng-poolb',
     'development': '/Net/hanfs-test/wwwng-poolb',
-    'local': '/wwwng',
+    'local': '/wwwng/atlas',
 }
 
 base_urls = {

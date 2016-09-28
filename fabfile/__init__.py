@@ -139,9 +139,11 @@ def site_provision(site, install=True):
     code_directory = '{0}/{1}'.format(sites_code_root, site['sid'])
     code_directory_sid = '{0}/{1}'.format(code_directory, site['sid'])
     code_directory_current = '{0}/current'.format(code_directory)
-    web_directory = '{0}/{1}/{2}'.format(
+    web_directory_type = '{0}/{1}'.format(
         sites_web_root,
-        site['type'],
+        site['type'])
+    web_directory_sid = '{0}/{1}'.format(
+        web_directory_type,
         site['sid'])
     profile = utilities.get_single_eve('code', site['code']['profile'])
     profile_name = profile['meta']['name']
@@ -151,6 +153,7 @@ def site_provision(site, install=True):
     _create_settings_files(site, profile_name)
 
     _create_directory_structure(code_directory)
+    _create_directory_structure(web_directory_type)
 
     with cd(code_directory):
         core = _get_code_name_version(site['code']['core'])
@@ -174,7 +177,7 @@ def site_provision(site, install=True):
 
     _push_settings_files(site, code_directory_current)
 
-    _update_symlink(code_directory_current, web_directory)
+    _update_symlink(code_directory_current, web_directory_sid)
     correct_file_directory_permissions(site)
 
     if install:

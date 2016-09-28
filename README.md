@@ -30,6 +30,11 @@ Configuration is split between various files `config_*.py`. You need to create a
 
 Currently we use a `git pull` deployment. When code is changed, you need to restart Celery, Celerybeat and Apache.
 
+Celery Flower is available via to command line to inspect tasks. 
+```bash
+/home/osr_web_deploy/atlas-python27-environment/bin/celery -A celery flower --conf=flowerconfig.py
+```
+
 ## Contributing
 
 Pull requests are always welcome. Project is under active development. We want to make sure that Express doesn't become dependant on Atlas.

@@ -217,6 +217,32 @@ def get_code(name, code_type=''):
     return code_get
 
 
+def import_code(query):
+    """
+    Import code definitions from a URL. Should be a JSON file export from Atlas
+     or a live Atlas code endpoint.
+
+    :param query: URL for JSON to import
+    """
+    r = requests.get(query)
+    print(r.json())
+    data = r.json()
+    for code in data['_items']:
+        payload = {
+            'git_url': code['git_url'],
+            'commit_hash': code['commit_hash'],
+            'meta': {
+                'name': code['meta']['name'],
+                'version': code['meta']['version'],
+                'code_type': code['meta']['code_type'],
+                'is_current': code['meta']['is_current'],
+            },
+        }
+        if code['meta'].get('tag'):
+            payload['meta']['tag'] = code['meta']['tag']
+        post_eve('code', payload)
+
+
 def post_to_slack(message, title, link='', attachment_text='', level='good', user=slack_username):
     """
     Posts a message to a given channel using the Slack Incoming Webhooks API.

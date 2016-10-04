@@ -19,11 +19,12 @@ f5_load_balancer = True
 # different vhosts for different types of sites and to make it easy to switch
 # to the down page.
 code_root = '/data/code'
-sites_web_root = '/data/web'
-sites_code_root = '/data/sites'
-site_down_path = '/data/web/down'
+sites_web_root = '/data/atlas/web'
+sites_code_root = '/data/atlas/sites'
+site_down_path = '/data/code/down'
 
-# Default core and profile names for site creation.
+# Default core and profile names for site creation. If you do not set
+# default_profile, sites without a profile on POST will do a core install.
 default_core = 'drupal'
 default_profile = 'express'
 
@@ -55,3 +56,12 @@ gsa_password = 'PASSWORD'
 slack_notify = True
 slack_url = 'SLACK_URL'
 slack_username = 'SLACK_USERNAME'
+
+# Email notifications for failed tasks
+send_error_emails = True
+send_from_email = 'no-reply@example.com'
+email_host = 'smtp.example.edu'
+email_port = 587
+email_use_tls = True
+email_username = 'no-reply@example.com'
+email_password = ''

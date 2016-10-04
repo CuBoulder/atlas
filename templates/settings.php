@@ -191,6 +191,10 @@ $conf['cu_class_import_api_username'] = "CU_WS_CLASSSRCH_UCB_CUOL";
 $conf['cu_class_import_api_password'] = "YEF9BYQSfFr8UXNmDvM5";
 $conf['cu_class_import_institutions'] = array('B-CUBLD' => 'B-CUBLD');
 
+{% if environment == 'local' %}
+$conf['error_level'] = 2;
+{% endif %}
+
 /**
  * Include a post local settings file if it exists.
  */

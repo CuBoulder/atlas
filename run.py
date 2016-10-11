@@ -123,6 +123,20 @@ def on_insert_code_callback(items):
         tasks.code_deploy.delay(item)
 
 
+def on_insert_api_keys_callback(items):
+    """
+    Generate a key if it is missing.
+
+    :param items: List of dicts for items to be created.
+    """
+    app.logger.debug(items)
+    for item in items:
+        app.logger.debug(item)
+        if item['service'] == 'alerts':
+            item['api_key'] = sha1(utilities.randomstring()).hexdigest()[0:16]
+        app.logger.debug('Ready to send to create item\n{0}'.format(item))
+
+
 def post_delete_site_callback(item):
     """
     Remove site from servers right before the item is removed.
@@ -273,6 +287,7 @@ app.on_pre_POST += pre_post_callback
 app.on_pre_DELETE_code += pre_delete_code_callback
 app.on_post_DELETE_site += post_delete_site_callback
 app.on_insert_code += on_insert_code_callback
+app.on_insert_api_keys += on_insert_api_keys_callback
 app.on_insert_sites += on_insert_sites_callback
 app.on_inserted_sites += on_inserted_sites_callback
 app.on_update_code += on_update_code_callback

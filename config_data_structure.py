@@ -222,6 +222,9 @@ api_keys_schema = {
         'type': 'string',
         'required': True,
     },
+    'domain': {
+        'type': 'string',
+    },
 }
 
 """

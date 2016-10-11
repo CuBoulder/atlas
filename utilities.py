@@ -243,7 +243,7 @@ def import_code(query):
         post_eve('code', payload)
 
 
-def post_to_slack(message, title, link='', attachment_text='', level='good', user=slack_username):
+def post_to_slack(message, title, link='', attachment_text='', level='good', user=slack_username, fields=''):
     """
     Posts a message to a given channel using the Slack Incoming Webhooks API.
     Links should be in the message or attachment_text in the format:
@@ -284,12 +284,13 @@ def post_to_slack(message, title, link='', attachment_text='', level='good', use
                     "title": title,
                     "title_link": link,
                     "text": attachment_text,
+                    "fields": fields,
                 }
             ]
         }
         if environment == 'local':
             payload['channel'] ='@{0}'.format(user)
-
+        print (payload)
         # We need 'json=payload' vs. 'payload' because arguments can be passed in
         # any order. Using json=payload instead of data=json.dumps(payload) so that
         # we don't have to encode the dict ourselves. The Requests library will do

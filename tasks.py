@@ -11,6 +11,7 @@ from celery import Celery
 from celery import group
 from celery.utils.log import get_task_logger
 from fabric.api import execute
+from datetime import timedelta
 from atlas.config import *
 from atlas import utilities
 from atlas import config_celery
@@ -104,6 +105,8 @@ def site_provision(site):
     :param site: A single site.
     :return:
     """
+    # Start a timer
+    task_start_time = time.clock()
     logger.debug('Site provision - {0}'.format(site))
     # 'db_key' needs to be added here and not in Eve so that the encryption
     # works properly.
@@ -115,11 +118,18 @@ def site_provision(site):
     patch_payload = {'status': 'available', 'db_key': site['db_key']}
     patch = utilities.patch_eve('sites', site['_id'], patch_payload)
 
+    # End the timer
+    task_end_time = time.clock()
+    task_duration = task_end_time - task_start_time
+
+
     logger.debug('Site has been provisioned\n{0}'.format(patch))
 
     slack_title = '{0}/{1}'.format(base_urls[environment], site['sid'])
     slack_link = '{0}/{1}'.format(base_urls[environment], site['sid'])
     attachment_text = '{0}/sites/{1}'.format(api_server, site['_id'])
+    fields = '[{{"title":"Timer", "value":"{0}", "short": false}}]'.format(str(timedelta(seconds=task_duration)))
+    logger.debug('Slack fields\n{0}'.format(fields))
     if False not in fab_task.values():
         slack_message = 'Site provision - Success'
         slack_color = 'good'
@@ -128,7 +138,8 @@ def site_provision(site):
             title=slack_title,
             link=slack_link,
             attachment_text=attachment_text,
-            level=slack_color)
+            level=slack_color,
+            fields=fields)
 
 
 @celery.task

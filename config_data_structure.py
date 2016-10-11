@@ -205,6 +205,28 @@ commands_schema = {
     },
 }
 
+api_keys_schema = {
+    'api_key': {
+        'type': 'string',
+        'minlength': 3,
+        'unique': True,
+    },
+    'service': {
+        'type': 'string',
+        'allowed': [
+            'alerts',
+        ],
+        'required': True,
+    },
+    'user_email': {
+        'type': 'string',
+        'required': True,
+    },
+    'domain': {
+        'type': 'string',
+    },
+}
+
 """
 Definitions of Resources.
 Tells Eve what methods and schemas apply to a given resource.
@@ -227,7 +249,7 @@ sites = {
         'url': 'regex("[\w]+")',
         'field': 'sid'
     },
-    'embedded_fields': ['code.core','code.profile','code.package'],
+    'embedded_fields': ['code.core', 'code.profile', 'code.package'],
     'public_methods': ['GET'],
     'public_item_methods': ['GET'],
     'versioning': True,
@@ -246,6 +268,15 @@ commands = {
     'schema': commands_schema,
 }
 
+api_keys = {
+    'item_title': 'api_keys',
+    'public_methods': [],
+    'public_item_methods': [],
+    'versioning': True,
+    'soft_delete': True,
+    'schema': api_keys_schema,
+}
+
 #
 # Domain definition. Tells Eve what resources are available on this domain.
 #
@@ -254,4 +285,5 @@ DOMAIN = {
     'sites': sites,
     'code': code,
     'commands': commands,
+    'api_keys': api_keys
 }

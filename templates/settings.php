@@ -53,14 +53,8 @@ $conf['page_compression'] = 0;
 // If wwwng env isset or php executed through cli (drush).
 if (isset($_SERVER["WWWNG_ENV"]) || PHP_SAPI === "cli") {
 
-{% if environment != 'local' %}
   // Ensure secure pages is enabled.
   $conf['securepages_enable'] = TRUE;
-{% else %}
-  // Need to do this to until we can properly support SSL.
-  $conf['securepages_enable'] = FALSE;
-  $conf['ldap_servers_require_ssl_for_credentails'] = '0';
-{% endif %}
 
   // Never allow updating modules through UI.
   $conf['allow_authorize_operations'] = FALSE;

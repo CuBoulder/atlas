@@ -124,6 +124,7 @@ def get_eve(resource, query):
     :return: dict of items that match the query string.
     """
     url = "{0}/{1}?{2}".format(api_server, resource, query)
+    print(url)
     r = requests.get(url, auth=(ldap_username, ldap_password), verify=False)
     if r.ok:
         return r.json()
@@ -140,6 +141,7 @@ def get_single_eve(resource, id):
     :return: dict of items that match the query string.
     """
     url = "{0}/{1}/{2}".format(api_server, resource, id)
+    print(url)
     r = requests.get(url, auth=(ldap_username, ldap_password), verify=False)
     if r.ok:
         return r.json()

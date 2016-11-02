@@ -55,12 +55,12 @@ encryption_kdf = PBKDF2HMAC(
 encryption_key = base64.urlsafe_b64encode(encryption_kdf.derive(encryption_password))
 
 
-# URL to eve instance, no trailing slash
+# URL to Atlas instance, no trailing slash
 if environment == 'local':
-    api_server = 'http://inventory.local/atlas'
+    api_server = 'http://inventory.local'
 elif environment == 'development':
-    api_server = 'https://wwhdev1.int.colorado.edu/atlas'
+    api_server = 'http://osr-atlas01.int.colorado.edu'
 elif environment == 'test':
-    api_server = 'https://wwhtest1.int.colorado.edu/atlas'
+    api_server = 'http://wwhtest1.int.colorado.edu'
 elif environment == 'prod':
-    api_server = 'https://wwh1.int.colorado.edu/atlas'
+    api_server = 'http://wwh1.int.colorado.edu'

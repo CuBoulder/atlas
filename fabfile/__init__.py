@@ -519,6 +519,7 @@ def _create_settings_files(site, profile_name):
     local_pre_settings = template.render(
         profile=profile_name,
         sid=sid,
+        _id=_id,
         path=path,
         status=status,
         pool_full=site['pool']

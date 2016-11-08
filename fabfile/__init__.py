@@ -511,6 +511,7 @@ def _create_settings_files(site, profile_name):
     # If the site is launching or launched, we add 'cu_path' and redirect the
     # p1 URL.
     status = site['status']
+    id = site['_id']
 
     database_password = utilities.decrypt_string(site['db_key'])
 
@@ -519,7 +520,7 @@ def _create_settings_files(site, profile_name):
     local_pre_settings = template.render(
         profile=profile_name,
         sid=sid,
-        _id=_id,
+        id=id,
         path=path,
         status=status,
         pool_full=site['pool']

@@ -9,7 +9,7 @@
 global $conf;
 $conf["install_profile"] = "{{profile}}";
 $conf["cu_sid"] = "{{sid}}";
-$conf["atlas_id"] = "{{_id}}";
+$conf["atlas_id"] = "{{id}}";
 
 $path = "{{path}}";
 $pool = "{{pool_full}}";

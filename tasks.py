@@ -112,7 +112,7 @@ def site_provision(site):
     logger.debug(fab_task)
     logger.debug(fab_task.values)
 
-    patch_payload = {'status': 'available', 'db_key': site['db_key']}
+    patch_payload = {'status': 'available', 'db_key': site['db_key'], 'statistics': site['statistics']}
     patch = utilities.patch_eve('sites', site['_id'], patch_payload)
 
     logger.debug('Site has been provisioned\n{0}'.format(patch))

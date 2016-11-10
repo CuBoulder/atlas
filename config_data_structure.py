@@ -180,6 +180,107 @@ sites_schema = {
             },
         },
     },
+    'statistics': {
+        'type': 'objectid',
+        'data_relation': {
+            'resource': 'statistics',
+            'field': '_id',
+            'embeddable': True,
+            'unique': True,
+        },
+    },
+}
+
+statistics_schema = {
+    'site': {
+        'type': 'objectid',
+        'data_relation': {
+            'resource': 'sites',
+            'field': '_id',
+        },
+        'required': True,
+        'unique': True,
+    },
+    'nodes_total': {
+        'type': 'integer',
+    },
+    'nodes_by_type': {
+        'type': 'dict',
+        'schema': {
+            'number_nodes_page': {'type': 'integer'},
+            'number_nodes_file': {'type': 'integer'},
+            'number_nodes_faq': {'type': 'integer'},
+            'number_nodes_content_list_page': {'type': 'integer'},
+            'number_nodes_webform': {'type': 'integer'},
+            'number_nodes_article': {'type': 'integer'},
+            'number_nodes_article_list_page': {'type': 'integer'},
+            'number_nodes_person': {'type': 'integer'},
+            'number_nodes_person_list_page': {'type': 'integer'},
+            'number_nodes_photo_gallery': {'type': 'integer'},
+        },
+    },
+    'days_since_last_edit': {
+        'type': 'integer',
+    },
+    'beans_total': {
+        'type': 'integer',
+    },
+    'beans_by_type': {
+        'type': 'dict',
+        'schema': {
+            'number_beans_hero_unit': {'type': 'integer'},
+            'number_beans_slider': {'type': 'integer'},
+            'number_beans_block': {'type': 'integer'},
+            'number_beans_content_list': {'type': 'integer'},
+            'number_beans_feature_callout': {'type': 'integer'},
+            'number_beans_quicktab': {'type': 'integer'},
+            'number_beans_video_reveal': {'type': 'integer'},
+            'number_beans_block_row': {'type': 'integer'},
+            'number_beans_block_section': {'type': 'integer'},
+            'number_beans_cu_events_calendar_block': {'type': 'integer'},
+            'number_beans_events_calendar_grid': {'type': 'integer'},
+            'number_beans_rss': {'type': 'integer'},
+            'number_beans_articles': {'type': 'integer'},
+            'number_beans_article_feature': {'type': 'integer'},
+            'number_beans_article_grid': {'type': 'integer'},
+            'number_beans_article_slider': {'type': 'integer'},
+            'number_beans_people_list_block': {'type': 'integer'},
+            'number_beans_social_links': {'type': 'integer'},
+            'number_beans_facebook_activity': {'type': 'integer'},
+            'number_beans_facebook_like_button': {'type': 'integer'},
+            'number_beans_twitter_block': {'type': 'integer'},
+        },
+    },
+    'last_cron_timestamp': {
+        'type': 'integer',
+    },
+    'variable_403_path': {
+        'type': 'string',
+    },
+    'variable_404_path': {
+        'type': 'string',
+    },
+    'theme': {
+        'type': 'string',
+    },
+    'google_analytics_id': {
+        'type': 'string',
+    },
+    'users': {
+        'type': 'dict',
+        'schema': {
+            'email_address': {
+                'type': 'dict',
+                'schema': {
+                },
+            },
+            'username': {
+                'type': 'dict',
+                'schema': {
+                },
+            },
+        },
+    },
 }
 
 commands_schema = {
@@ -234,6 +335,16 @@ sites = {
     'schema': sites_schema,
 }
 
+# Statistics resource
+statistics = {
+    'item_title': 'statistics',
+    'public_methods': ['GET'],
+    'public_item_methods': ['GET'],
+    'versioning': True,
+    'soft_delete': True,
+    'schema': statistics_schema,
+}
+
 # Command resource
 # Empty public_item_methods means that you can't call actual commands without
 # authentication. Anonymous users can list the commands, but not call them.
@@ -253,4 +364,5 @@ DOMAIN = {
     'sites': sites,
     'code': code,
     'commands': commands,
+    'statistics': statistics,
 }

@@ -44,6 +44,7 @@ ssh_user = 'SSH_USER'
 ssh_user_group = 'SSH_USER_GROUP'
 webserver_user = 'WEBSERVER_USER'
 webserver_user_group = 'WEBSERVER_USER_GROUP'
+database_user = 'DATABASE_USER'
 load_balancer_user = 'LOAD_BALANCER_USER'
 
 # Google Search Appliance credentials

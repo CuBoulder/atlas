@@ -33,6 +33,7 @@ Site items are created with a 'pending' status and can be assigned a specific co
 ## Configuration
 
 Configuration is split between various files `config_*.py`. You need to create `config_local.py` and `config_servers.py` files.
+If you are on anything other than a local development environment, you will also need to create a `.mylogin.cnf` file to authenticate into MySQL (http://dev.mysql.com/doc/refman/5.7/en/mysql-config-editor.html). The naming convention is `[database_user]_[environment]`. 
 
 ## Deploying Atlas
 

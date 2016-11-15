@@ -53,14 +53,3 @@ encryption_kdf = PBKDF2HMAC(
     backend=default_backend()
 )
 encryption_key = base64.urlsafe_b64encode(encryption_kdf.derive(encryption_password))
-
-
-# URL to Atlas instance, no trailing slash
-if environment == 'local':
-    api_server = 'http://inventory.local'
-elif environment == 'development':
-    api_server = 'http://osr-atlas01.int.colorado.edu'
-elif environment == 'test':
-    api_server = 'http://wwhtest1.int.colorado.edu'
-elif environment == 'prod':
-    api_server = 'http://wwh1.int.colorado.edu'

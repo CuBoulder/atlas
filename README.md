@@ -32,7 +32,7 @@ Site items are created with a 'pending' status and can be assigned a specific co
 
 ## Configuration
 
-Configuration is split between various files `config_*.py`. You need to create a `config_local.py` file and will most likely want to replace `config_servers.py`.
+Configuration is split between various files `config_*.py`. You need to create `config_local.py` and `config_servers.py` files.
 
 ## Deploying Atlas
 

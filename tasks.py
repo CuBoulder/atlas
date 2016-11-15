@@ -119,7 +119,7 @@ def site_provision(site):
 
     slack_title = '{0}/{1}'.format(base_urls[environment], site['sid'])
     slack_link = '{0}/{1}'.format(base_urls[environment], site['sid'])
-    attachment_text = '{0}/sites/{1}'.format(api_server, site['_id'])
+    attachment_text = '{0}/sites/{1}'.format(api_urls[environment], site['_id'])
     if False not in fab_task.values():
         slack_message = 'Site provision - Success'
         slack_color = 'good'
@@ -183,7 +183,7 @@ def site_update(site, updates, original):
 
     slack_title = '{0}/{1}'.format(base_urls[environment], site['sid'])
     slack_link = '{0}/{1}'.format(base_urls[environment], site['sid'])
-    attachment_text = '{0}/sites/{1}'.format(api_server, site['_id'])
+    attachment_text = '{0}/sites/{1}'.format(api_urls[environment], site['_id'])
     slack_message = 'Site Update - Success'
     slack_color = 'good'
     utilities.post_to_slack(

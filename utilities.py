@@ -106,7 +106,7 @@ def post_eve(resource, payload):
     :param resource: A resource as defined in config_data_structure.py
     :param payload: argument string
     """
-    url = "{0}/{1}".format(api_server, resource)
+    url = "{0}/{1}".format(api_urls[environment], resource)
     headers = {"content-type": "application/json"}
     r = requests.post(url, auth=(ldap_username, ldap_password), headers=headers, verify=False, data=json.dumps(payload))
     if r.ok:
@@ -123,7 +123,7 @@ def get_eve(resource, query):
     :param query: argument string
     :return: dict of items that match the query string.
     """
-    url = "{0}/{1}?{2}".format(api_server, resource, query)
+    url = "{0}/{1}?{2}".format(api_urls[environment], resource, query)
     print(url)
     r = requests.get(url, auth=(ldap_username, ldap_password), verify=False)
     if r.ok:
@@ -140,7 +140,7 @@ def get_single_eve(resource, id):
     :param id: _id string
     :return: dict of items that match the query string.
     """
-    url = "{0}/{1}/{2}".format(api_server, resource, id)
+    url = "{0}/{1}/{2}".format(api_urls[environment], resource, id)
     print(url)
     r = requests.get(url, auth=(ldap_username, ldap_password), verify=False)
     if r.ok:
@@ -158,7 +158,7 @@ def patch_eve(resource, id, request_payload):
     :param request_payload:
     :return:
     """
-    url = "{0}/{1}/{2}".format(api_server, resource, id)
+    url = "{0}/{1}/{2}".format(api_urls[environment], resource, id)
     get_etag = get_single_eve(resource, id)
     headers = {'Content-Type': 'application/json', 'If-Match': get_etag['_etag']}
     r = requests.patch(url, headers=headers, data=json.dumps(request_payload), auth=(ldap_username, ldap_password))
@@ -176,7 +176,7 @@ def delete_eve(resource, id):
     :param id:
     :return:
     """
-    url = "{0}/{1}/{2}".format(api_server, resource, id)
+    url = "{0}/{1}/{2}".format(api_urls[environment], resource, id)
     get_etag = get_single_eve(resource, id)
     headers = {'Content-Type': 'application/json', 'If-Match': get_etag['_etag']}
     r = requests.delete(url, headers=headers, auth=(ldap_username, ldap_password))

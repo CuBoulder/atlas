@@ -181,6 +181,13 @@ def site_update(site, updates, original):
             patch = utilities.patch_eve('sites', site['_id'], patch_payload)
             logger.debug(patch)
 
+    if updates.get('settings'):
+        logger.debug('Found settings change.')
+        if updates['settings'].get('page_cache_maximum_age') != original['settings'].get('page_cache_maximum_age'):
+            logger.debug('Found page_cache_maximum_age change.')
+        execute(fabfile.update_settings_file, site=site)
+
+
     slack_title = '{0}/{1}'.format(base_urls[environment], site['sid'])
     slack_link = '{0}/{1}'.format(base_urls[environment], site['sid'])
     attachment_text = '{0}/sites/{1}'.format(api_urls[environment], site['_id'])

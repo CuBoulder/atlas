@@ -65,10 +65,6 @@ if (isset($_SERVER["WWWNG_ENV"]) || PHP_SAPI === "cli") {
   // @see #attached.
   $conf['block_cache'] = 0;
 
-  // Min cache lifetime 0, max 5 mins * 60 = 300 seconds.
-  $conf['cache_lifetime'] = 0;
-  $conf['page_cache_maximum_age'] = 300;
-
   // Aggregate css and js files.
   $conf['preprocess_css'] = TRUE;
   $conf['preprocess_js'] = TRUE;

@@ -510,6 +510,7 @@ def _create_settings_files(site, profile_name):
     # p1 URL.
     status = site['status']
     id = site['_id']
+    page_cache_maximum_age = site['settings']['page_cache_maximum_age']
 
     database_password = utilities.decrypt_string(site['db_key'])
 
@@ -531,6 +532,7 @@ def _create_settings_files(site, profile_name):
     local_post_settings = template.render(
         sid=sid,
         pw=database_password,
+        page_cache_maximum_age=page_cache_maximum_age,
         database_servers=env.roledefs['database_servers'],
         memcache_servers=env.roledefs['memcache_servers'],
         environment=environment if environment != 'prod' else '',

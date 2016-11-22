@@ -127,6 +127,15 @@ sites_schema = {
         'type': 'boolean',
         'default': False
     },
+    'settings': {
+        'type': 'dict',
+        'schema': {
+            'page_cache_maximum_age': {
+                'type': 'integer',
+                'default': 300,
+            },
+        },
+    },
     'tag': {
         'type': 'list',
     },

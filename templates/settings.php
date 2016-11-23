@@ -53,14 +53,8 @@ $conf['page_compression'] = 0;
 // If wwwng env isset or php executed through cli (drush).
 if (isset($_SERVER["WWWNG_ENV"]) || PHP_SAPI === "cli") {
 
-{% if environment != 'local' %}
   // Ensure secure pages is enabled.
   $conf['securepages_enable'] = TRUE;
-{% else %}
-  // Need to do this to until we can properly support SSL.
-  $conf['securepages_enable'] = FALSE;
-  $conf['ldap_servers_require_ssl_for_credentails'] = '0';
-{% endif %}
 
   // Never allow updating modules through UI.
   $conf['allow_authorize_operations'] = FALSE;
@@ -70,10 +64,6 @@ if (isset($_SERVER["WWWNG_ENV"]) || PHP_SAPI === "cli") {
   // @todo Solve js inclusion issues to re-enable block cache.
   // @see #attached.
   $conf['block_cache'] = 0;
-
-  // Min cache lifetime 0, max 5 mins * 60 = 300 seconds.
-  $conf['cache_lifetime'] = 0;
-  $conf['page_cache_maximum_age'] = 300;
 
   // Aggregate css and js files.
   $conf['preprocess_css'] = TRUE;
@@ -190,6 +180,10 @@ $conf['googleanalytics_account'] = 'UA-25752450-1';
 $conf['cu_class_import_api_username'] = "CU_WS_CLASSSRCH_UCB_CUOL";
 $conf['cu_class_import_api_password'] = "YEF9BYQSfFr8UXNmDvM5";
 $conf['cu_class_import_institutions'] = array('B-CUBLD' => 'B-CUBLD');
+
+{% if environment == 'local' %}
+$conf['error_level'] = 2;
+{% endif %}
 
 /**
  * Include a post local settings file if it exists.

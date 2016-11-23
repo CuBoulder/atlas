@@ -1,0 +1,143 @@
+"""
+Server configuration file for Atlas
+
+All server definitions go here.
+"""
+# Servers manipulate using Fabric.
+serverdefs = {
+    'production': {
+        'webservers': [
+            'webserver1.example.com',
+            'webserver2.example.com',
+            'webserver3.example.com',
+        ],
+        'webserver_single': [
+            'webserver2.example.com',
+        ],
+        'database_servers': {
+            'master': 'db-master.example.com',
+            'slaves': [
+                'db-slave1.example.com',
+            ],
+        },
+        'varnish_servers': [
+            'varnish1.example.com',
+            'varnish2.example.com',
+        ],
+        'memcache_servers': [
+            'memcache1.example.com:port',
+            'memcache2.example.com:port',
+        ],
+        'load_balancer': [
+            'lb1.example.com',
+            'lb2.example.com',
+        ],
+    },
+    'test': {
+        'webservers': [
+            'webserver-test1.example.com',
+            'webserver-test2.example.com',
+            'webserver-test3.example.com',
+        ],
+        'webserver_single': [
+            'webserver-test2.example.com',
+        ],
+        'database_servers': {
+            'master': 'db-test-master.example.com',
+            'slaves': [
+                'db-test-slave1.example.com',
+            ],
+        },
+        'varnish_servers': [
+            'varnish-test1.example.com',
+            'varnish-test2.example.com',
+        ],
+        'memcache_servers': [
+            'memcache-test1.example.com:port',
+            'memcache-test2.example.com:port',
+        ],
+        'load_balancer': [
+            'lb-test1.example.com',
+            'lb-test2.example.com',
+        ],
+    },
+    'development': {
+        'webservers': [
+            'webserver-dev1.example.com',
+
+        ],
+        'webserver_single': [
+            'webserver-dev1.example.com',
+        ],
+        'database_servers': {
+            'master': 'db-dev-master.example.com',
+            'slaves': [
+                'db-dev-slave1.example.com',
+            ],
+        },
+        'varnish_servers': [
+            'varnish-dev1.example.com',
+            'varnish-dev2.example.com',
+        ],
+        'memcache_servers': [
+            'memcache-dev1.example.com:port',
+        ],
+        'load_balancer': [
+            'lb-dev1.example.com',
+            'lb-dev2.example.com',
+        ],
+    },
+    'local': {
+        'webservers': ['express.local'],
+        'webserver_single': ['express.local'],
+        'database_servers': {
+            'master': 'localhost',
+        },
+        'varnish_servers': ['localhost'],
+        'memcache_servers': ['localhost:11211'],
+        'load_balancer': [],
+    },
+}
+
+varnish_control_terminals = {
+    'production': 'varnish1.example.com:6082 varnish2.example.com:6082',
+    'test': 'varnish-test1.example.com:6082 varnish-test2.example.com:6082',
+    'development': 'varnish-dev1.example.com:6082',
+    'local': 'localhost:6082',
+}
+
+# See config_local.py for switch.
+nfs_mount_location = {
+    'production': '/path/to/mount',
+    'test': '/path/to/mount',
+    'development': '/path/to/mount',
+    'local': '/wwwng',
+}
+
+base_urls = {
+    'production': 'http://www.example.com',
+    'test': 'http://www-test.example.com',
+    'development': 'http://www-development.example.com',
+    'local': 'http://express.local',
+}
+
+api_urls = {
+    'production': 'http://atlas.example.com',
+    'test': 'http://atlas-test.example.com',
+    'development': 'http://atlas-development.example.com',
+    'local': 'http://inventory.local',
+}
+
+load_balancer_config_files = {
+    'production': 'WWWNGProdDataGroup.dat',
+    'test': 'WWWNGTestDataGroup.dat',
+    'development': 'WWWNGDevDataGroup.dat',
+}
+# Entries in the f5 that are not sites.
+load_balancer_exceptions = [
+    '/engineering/videos',
+    '/law/media',
+    '/catalog',
+    '/p1',
+]
+

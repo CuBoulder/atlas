@@ -139,9 +139,11 @@ def site_provision(site, install=True):
     code_directory = '{0}/{1}'.format(sites_code_root, site['sid'])
     code_directory_sid = '{0}/{1}'.format(code_directory, site['sid'])
     code_directory_current = '{0}/current'.format(code_directory)
-    web_directory = '{0}/{1}/{2}'.format(
+    web_directory_type = '{0}/{1}'.format(
         sites_web_root,
-        site['type'],
+        site['type'])
+    web_directory_sid = '{0}/{1}'.format(
+        web_directory_type,
         site['sid'])
     profile = utilities.get_single_eve('code', site['code']['profile'])
     profile_name = profile['meta']['name']
@@ -151,6 +153,7 @@ def site_provision(site, install=True):
     _create_settings_files(site, profile_name)
 
     _create_directory_structure(code_directory)
+    _create_directory_structure(web_directory_type)
 
     with cd(code_directory):
         core = _get_code_name_version(site['code']['core'])
@@ -174,7 +177,7 @@ def site_provision(site, install=True):
 
     _push_settings_files(site, code_directory_current)
 
-    _update_symlink(code_directory_current, web_directory)
+    _update_symlink(code_directory_current, web_directory_sid)
     correct_file_directory_permissions(site)
 
     if install:
@@ -457,12 +460,10 @@ def _remove_symlink(symlink):
 # TODO: Add decorator to run on a single host.
 def _create_database(site):
     if environment != 'local':
-        # TODO: Make file location config.
         os.environ['MYSQL_TEST_LOGIN_FILE'] = '/home/{0}/.mylogin.cnf'.format(
             ssh_user)
-        mysql_login_path = "invsqlagnt_{0}_poolb".format(environment)
-        mysql_info = '/usr/local/mysql/bin/mysql --login-path={0} -e'.format(
-            mysql_login_path)
+        mysql_login_path = "{0}_{1}".format(database_user, environment)
+        mysql_info = '{0} --login-path={1} -e'.format(mysql_path, mysql_login_path)
         database_password = utilities.decrypt_string(site['db_key'])
         local('{0} \'create database `{1}`;\''.format(mysql_info, site['sid']))
         # TODO: Make IP addresses config.
@@ -508,6 +509,8 @@ def _create_settings_files(site, profile_name):
     # If the site is launching or launched, we add 'cu_path' and redirect the
     # p1 URL.
     status = site['status']
+    id = site['_id']
+    page_cache_maximum_age = site['settings']['page_cache_maximum_age']
 
     database_password = utilities.decrypt_string(site['db_key'])
 
@@ -516,6 +519,7 @@ def _create_settings_files(site, profile_name):
     local_pre_settings = template.render(
         profile=profile_name,
         sid=sid,
+        id=id,
         path=path,
         status=status,
         pool_full=site['pool']
@@ -528,6 +532,7 @@ def _create_settings_files(site, profile_name):
     local_post_settings = template.render(
         sid=sid,
         pw=database_password,
+        page_cache_maximum_age=page_cache_maximum_age,
         database_servers=env.roledefs['database_servers'],
         memcache_servers=env.roledefs['memcache_servers'],
         environment=environment if environment != 'prod' else '',
@@ -788,24 +793,24 @@ def _diff_f5():
     site items.
 
     """
-    f5_config_dir = '{0}/atlas/fabfile'.format(path)
-    f5_config_file = '{0}/{1}'.format(
-        f5_config_dir,
-        f5_config_files[environment])
+    load_balancer_config_dir = '{0}/atlas/fabfile'.format(path)
+    load_balancer_config_file = '{0}/{1}'.format(
+        load_balancer_config_dir,
+        load_balancer_config_files[environment])
     # If an older config file exists, copy it to a backup folder.
-    if os.path.isfile(f5_config_file):
+    if os.path.isfile(load_balancer_config_file):
         local('mv {0} /data/code/inventory/fabfile/backup/{1}.{2}'.format(
-            f5_config_file,
-            f5_config_files[environment],
+            load_balancer_config_file,
+            load_balancer_config_files[environment],
             str(time()).split('.')[0]))
     # Copy config file from the f5 server to the Atlas server.
     local('scp {0}:/config/{1} {2}/'.format(
-        serverdefs[environment]['f5_servers'][0],
-        f5_config_files[environment],
-        f5_config_dir))
+        serverdefs[environment]['load_balancer'][0],
+        load_balancer_config_files[environment],
+        load_balancer_config_dir))
 
     # Open file from f5
-    with open(f5_config_file, "r") as ifile:
+    with open(load_balancer_config_file, "r") as ifile:
         data = ifile.read()
     # Use regex to parse out path values
     p = re.compile('"(.+/?)" := "(\w+(-\w+)?)",')
@@ -855,18 +860,18 @@ def _diff_f5():
 
 def _update_f5():
     # Like 'WWWNGProdDataGroup.dat'
-    old_file_name = f5_config_file[environment]
+    old_file_name = load_balancer_config_files[environment]
     # Like 'WWWNGDevDataGroup.dat.1402433484.bac'
     new_file_name = "{0}.{1}.bac".format(
-        f5_config_file[environment],
+        load_balancer_config_files[environment],
         str(time()).split('.')[0])
-    f5_config_dir = '{0}/atlas/fabfile'.format(path)
+    load_balancer_config_dir = '{0}/atlas/fabfile'.format(path)
     sites = get_eve('sites', 'max_results=3000')
 
     # TODO: delete old backups
 
     # Write data to file
-    with open("{0}/{1}".format(f5_config_dir, f5_config_file[environment]),
+    with open("{0}/{1}".format(load_balancer_config_dir, load_balancer_config_files[environment]),
               "w") as ofile:
         for site in sites['_items']:
             if 'path' in site:
@@ -881,11 +886,11 @@ def _update_f5():
 
     execute(_exportf5,
             new_file_name=new_file_name,
-            f5_config_dir=f5_config_dir)
+            load_balancer_config_dir=load_balancer_config_dir)
 
 
-@hosts('f5_servers')
-def _exportf5(new_file_name, f5_config_dir):
+@hosts('load_balancer')
+def _exportf5(new_file_name, load_balancer_config_dir):
     """
     Backup configuration file on f5 server, replace the active file, and reload
     the configuration.
@@ -893,9 +898,9 @@ def _exportf5(new_file_name, f5_config_dir):
     """
     # On an f5 server, backup the current configuration file.
     with cd("/config"):
-        run("cp {0} {1}".format(f5_config_file[environment], new_file_name))
+        run("cp {0} {1}".format(load_balancer_config_files[environment], new_file_name))
     # Copy the new configuration file to the server.
-    put("{0}/{1}".format(f5_config_dir, f5_config_file[environment]), "/config")
+    put("{0}/{1}".format(load_balancer_config_dir, load_balancer_config_files[environment]), "/config")
     # Load the new configuration.
     with cd("/config"):
         run("b load;")

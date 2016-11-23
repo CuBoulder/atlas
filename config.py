@@ -53,14 +53,3 @@ encryption_kdf = PBKDF2HMAC(
     backend=default_backend()
 )
 encryption_key = base64.urlsafe_b64encode(encryption_kdf.derive(encryption_password))
-
-
-# URL to eve instance, no trailing slash
-if environment == 'local':
-    api_server = 'http://inventory.local/atlas'
-elif environment == 'development':
-    api_server = 'https://wwhdev1.int.colorado.edu/atlas'
-elif environment == 'test':
-    api_server = 'https://wwhtest1.int.colorado.edu/atlas'
-elif environment == 'prod':
-    api_server = 'https://wwh1.int.colorado.edu/atlas'

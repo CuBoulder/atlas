@@ -112,14 +112,14 @@ def site_provision(site):
     logger.debug(fab_task)
     logger.debug(fab_task.values)
 
-    patch_payload = {'status': 'available', 'db_key': site['db_key']}
+    patch_payload = {'status': 'available', 'db_key': site['db_key'], 'statistics': site['statistics']}
     patch = utilities.patch_eve('sites', site['_id'], patch_payload)
 
     logger.debug('Site has been provisioned\n{0}'.format(patch))
 
     slack_title = '{0}/{1}'.format(base_urls[environment], site['sid'])
     slack_link = '{0}/{1}'.format(base_urls[environment], site['sid'])
-    attachment_text = '{0}/sites/{1}'.format(api_server, site['_id'])
+    attachment_text = '{0}/sites/{1}'.format(api_urls[environment], site['_id'])
     if False not in fab_task.values():
         slack_message = 'Site provision - Success'
         slack_color = 'good'
@@ -181,9 +181,16 @@ def site_update(site, updates, original):
             patch = utilities.patch_eve('sites', site['_id'], patch_payload)
             logger.debug(patch)
 
+    if updates.get('settings'):
+        logger.debug('Found settings change.')
+        if updates['settings'].get('page_cache_maximum_age') != original['settings'].get('page_cache_maximum_age'):
+            logger.debug('Found page_cache_maximum_age change.')
+        execute(fabfile.update_settings_file, site=site)
+
+
     slack_title = '{0}/{1}'.format(base_urls[environment], site['sid'])
     slack_link = '{0}/{1}'.format(base_urls[environment], site['sid'])
-    attachment_text = '{0}/sites/{1}'.format(api_server, site['_id'])
+    attachment_text = '{0}/sites/{1}'.format(api_urls[environment], site['_id'])
     slack_message = 'Site Update - Success'
     slack_color = 'good'
     utilities.post_to_slack(
@@ -225,8 +232,11 @@ def command_prepare(item):
     :return:
     """
     logger.debug('Prepare Command\n{0}'.format(item))
-    if item['command'] == ['clear_apc']:
+    if item['command'] == 'clear_apc':
         execute(fabfile.clear_apc())
+        return
+    if item['command'] == 'import_code':
+        utilities.import_code(item['query'])
         return
     if item['query']:
         site_query = 'where={0}'.format(item['query'])

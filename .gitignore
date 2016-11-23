@@ -1,3 +1,4 @@
 *.DS_Store
 *.pyc
 config_local.py
+config_servers.py

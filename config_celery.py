@@ -17,13 +17,8 @@ CELERYD_TASK_TIME_LIMIT = 600
 # Enables error emails.
 CELERY_SEND_TASK_ERROR_EMAILS = send_error_emails
 
-# Name and email addresses of recipients
-ADMINS = (
-    ('James Fuller', 'james.w.fuller@colorado.edu'),
-)
-
 # Email address used as sender (From field).
-SERVER_EMAIL = 'osr_web_deploy@colorado.edu'
+SERVER_EMAIL = send_from_email
 
 # Mailserver configuration
 EMAIL_HOST = email_host

@@ -66,3 +66,8 @@ email_port = 587
 email_use_tls = True
 email_username = 'no-reply@example.com'
 email_password = ''
+
+# Name and email addresses of recipients of notifications
+ADMINS = (
+    ('Admin User', 'admin@example.com'),
+)

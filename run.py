@@ -43,10 +43,10 @@ def pre_delete_code_callback(request, lookup):
     sites = utilities.get_eve('sites', site_query)
     app.logger.debug(sites)
     if not sites['_meta']['total'] == 0:
+        site_list = []
         for site in sites['_items']:
             # Create a list of sites that use this code item.
             # If 'sid' is a key in the site dict use it, otherwise use '_id'.
-            site_list = []
             if site.get('sid'):
                 site_list.append(site['sid'])
             else:
@@ -85,6 +85,7 @@ def on_insert_sites_callback(items):
             app.logger.debug('Ready to send to create item\n{0}'.format(item))
 
 
+
 def on_inserted_sites_callback(items):
     """
     Provision Express instances.
@@ -95,6 +96,15 @@ def on_inserted_sites_callback(items):
     for item in items:
         app.logger.debug(item)
         if item['type'] == 'express':
+            app.logger.debug(item)
+            # Create statistics item
+            statistics_payload = {}
+            # Need to get the string out of the ObjectID.
+            statistics_payload['site'] = str(item['_id'])
+            app.logger.debug('Create Statistics item\n{0}'.format(statistics_payload))
+            statistics = utilities.post_eve(resource='statistics', payload= statistics_payload)
+            app.logger.debug(statistics)
+            item['statistics'] = str(statistics['_id'])
             app.logger.debug('Ready to send to Celery\n{0}'.format(item))
             tasks.site_provision.delay(item)
 

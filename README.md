@@ -39,6 +39,11 @@ If you are on anything other than a local development environment, you will also
 
 Currently we use a `git pull` deployment. When code is changed, you need to restart Celery, Celerybeat and Apache.
 
+Celery Flower is available via to command line to inspect tasks. 
+```bash
+/data/environments/atlas/bin/celery -A celery flower --conf=/data/code/atlas/config_flower.py
+```
+
 ## Contributing
 
 Pull requests are always welcome. Project is under active development. We want to make sure that Express doesn't become dependant on Atlas.

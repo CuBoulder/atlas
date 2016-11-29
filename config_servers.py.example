@@ -122,10 +122,10 @@ base_urls = {
 }
 
 api_urls = {
-    'production': 'http://atlas.example.com',
-    'test': 'http://atlas-test.example.com',
-    'development': 'http://atlas-development.example.com',
-    'local': 'http://inventory.local',
+    'production': 'https://atlas.example.com',
+    'test': 'https://atlas-test.example.com',
+    'development': 'https://atlas-development.example.com',
+    'local': 'https://inventory.local',
 }
 
 load_balancer_config_files = {

@@ -437,29 +437,6 @@ commands_schema = {
     },
 }
 
-statistics_schema = {
-    'statistics': {
-        'type': 'list',
-        'nullable': True,
-        'schema': {
-            'type': 'dict',
-            'allow_unknown': True,
-            'schema': {
-                'var_theme_default': {'type': 'string'},
-                'var_ga_account': {'type': 'string'},
-                'var_livechat_license_number': {'type': 'string'},
-                'var_inactive_30_email': {'type': 'boolean'},
-                'var_inactive_55_email': {'type': 'boolean'},
-                'var_inactive_60_email': {'type': 'boolean'},
-                'var_cron_last': {'type': 'integer'},
-                'num_days_since_last_edit': {'type': 'integer'},
-                'num_nodes': {'type': 'integer'},
-                'num_beans': {'type': 'integer'},
-            },
-        },
-    },
-}
-
 """
 Definitions of Resources.
 Tells Eve what methods and schemas apply to a given resource.

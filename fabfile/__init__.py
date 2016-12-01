@@ -465,9 +465,9 @@ def _create_database(site):
         mysql_login_path = "{0}_{1}".format(database_user, environment)
         mysql_info = '{0} --login-path={1} -e'.format(mysql_path, mysql_login_path)
         database_password = utilities.decrypt_string(site['db_key'])
-        local('{0} \'create database `{1}`;\''.format(mysql_info, site['sid']))
+        local('{0} \'CREATE DATABASE `{1}`;\''.format(mysql_info, site['sid']))
         # TODO: Make IP addresses config.
-        local("{0} \"create user '{1}'@'172.20.62.0/255.255.255.0' identified by '{2}';\"".format(
+        local("{0} \"CREATE USER '{1}'@'172.20.62.0/255.255.255.0' IDENTIFIED BY '{2}';\"".format(
             mysql_info,
             site['sid'],
             database_password))
@@ -489,15 +489,15 @@ def _delete_database(site):
         mysql_info = '/usr/local/mysql/bin/mysql --login-path={0} -e'.format(
             mysql_login_path)
         database_password = utilities.decrypt_string(site['db_key'])
-        local('{0} \'drop database `{1}`;\''.format(mysql_info, site['sid']))
+        local('{0} \'DROP DATABASE IF EXISTS `{1}`;\''.format(mysql_info, site['sid']))
         # TODO: Make IP addresses config.
-        local("{0} \"drop user '{1}'@'172.20.62.0/255.255.255.0' identified by '{2}';\"".format(
+        local("{0} \"DROP USER '{1}'@'172.20.62.0/255.255.255.0' IDENTIFIED BY '{2}';\"".format(
             mysql_info,
             site['sid'],
             database_password))
     else:
         with settings(host_string='express.local'):
-            run("mysql -e 'drop database `{}`;'".format(site['sid']))
+            run("mysql -e 'DROP DATABASE IF EXISTS `{}`;'".format(site['sid']))
 
 
 def _create_settings_files(site, profile_name):

@@ -249,23 +249,19 @@ def on_update_commands_callback(updates, original):
     tasks.command_prepare.delay(item)
 
 
-# TODO: Set it up to mark what user updated the record.
-# auto fill _created_by and _modified_by user fields
-# created_by_field = '_created_by'
-# modified_by_field = '_modified_by'
-# for resource in settings['DOMAIN']:
-#     settings['DOMAIN'][resource]['schema'][created_by_field] = {'type': 'string'}
-#     settings['DOMAIN'][resource]['schema'][modified_by_field] = {'type': 'string'}
-# def pre_insert(resource, documents):
-#     user = g.get('user', None)
-#     if user is not None:
-#         for document in documents:
-#             document[created_by_field] = user
-#             document[modified_by_field] = user
-# def pre_replace(resource, document):
-#     user = g.get('user', None)
-#     if user is not None:
-#         document[modified_by_field] = user
+# Update user fields on all events.
+def pre_insert(resource, documents):
+    user = g.get('user', None)
+    if user is not None:
+        for document in documents:
+            document['_created_by'] = user
+            document['_modified_by'] = user
+
+
+def pre_replace(resource, document):
+    user = g.get('user', None)
+    if user is not None:
+        document['_modified_by'] = user
 
 
 """

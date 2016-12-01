@@ -290,6 +290,12 @@ statistics_schema = {
             },
         },
     },
+    '_created_by': {
+        'type': 'string',
+    },
+    '_modified_by': {
+        'type': 'string',
+    },
 }
 
 commands_schema = {

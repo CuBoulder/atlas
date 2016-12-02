@@ -278,6 +278,12 @@ statistics_schema = {
     'profile_module_manager': {
         'type': 'string',
     },
+    'express_code_version': {
+        'type': 'string',
+    },
+    'express_core_schema_version': {
+        'type': 'integer',
+    },
     'theme_is_responsive': {
         'type': 'boolean',
     },

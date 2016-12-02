@@ -250,18 +250,24 @@ def on_update_commands_callback(updates, original):
 
 
 # Update user fields on all events.
-def pre_insert(resource, documents):
-    user = g.get('user', None)
-    if user is not None:
-        for document in documents:
-            document['_created_by'] = user
-            document['_modified_by'] = user
+def pre_insert(resource, items):
+    username = g.get('username', None)
+    if username is not None:
+        for item in items:
+            item['_created_by'] = username
+            item['_modified_by'] = username
 
 
-def pre_replace(resource, document):
-    user = g.get('user', None)
-    if user is not None:
-        document['_modified_by'] = user
+def pre_update(resource, updates, original):
+    username = g.get('username', None)
+    if username is not None:
+        updates['_modified_by'] = username
+
+
+def pre_replace(resource, item, original):
+    username = g.get('username', None)
+    if username is not None:
+        item['_modified_by'] = username
 
 
 """
@@ -286,6 +292,7 @@ app.on_update_sites += on_update_sites_callback
 app.on_update_commands += on_update_commands_callback
 app.on_delete_item_code += on_delete_item_code_callback
 app.on_insert += pre_insert
+app.on_update += pre_update
 app.on_replace += pre_replace
 
 

@@ -49,7 +49,7 @@ class AtlasBasicAuth(BasicAuth):
         current_app.logger.debug(ldap_distinguished_name)
 
         # Add the username as a Flask application global.
-        g.user = username
+        g.username = username
 
         try:
             # Try a synchronous bind (we want synchronous so that the command

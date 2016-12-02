@@ -272,32 +272,160 @@ statistics_schema = {
             'number_beans_twitter_block': {'type': 'integer'},
         },
     },
-    'last_cron_timestamp': {
+    'variable_cron_last': {
         'type': 'integer',
     },
-    'variable_403_path': {
+    'variable_site_403': {
         'type': 'string',
     },
-    'variable_404_path': {
+    'variable_site_404': {
         'type': 'string',
     },
-    'theme': {
+    'variable_theme_default': {
         'type': 'string',
     },
-    'google_analytics_id': {
+    'variable_ga_account': {
         'type': 'string',
+    },
+    'profile_module_manager': {
+        'type': 'string',
+    },
+    'express_code_version': {
+        'type': 'string',
+    },
+    'express_core_schema_version': {
+        'type': 'integer',
+    },
+    'theme_is_responsive': {
+        'type': 'boolean',
+    },
+    'overridden_features': {
+        'type': 'dict',
     },
     'users': {
         'type': 'dict',
         'schema': {
             'email_address': {
-                'type': 'dict',
-                'schema': {
-                },
+                'type': 'list',
             },
             'username': {
+                'type': 'list',
+            },
+        },
+    },
+    'bundles': {
+        'type': 'dict',
+        'schema': {
+            'cu_advanced_content_bundle': {
                 'type': 'dict',
                 'schema': {
+                    'schema_version': {
+                        'type': 'integer',
+                    },
+                },
+            },
+            'cu_advanced_design_bundle': {
+                'type': 'dict',
+                'schema': {
+                    'schema_version': {
+                        'type': 'integer',
+                    },
+                },
+            },
+            'cu_advanced_layout_bundle': {
+                'type': 'dict',
+                'schema': {
+                    'schema_version': {
+                        'type': 'integer',
+                    },
+                },
+            },
+            'cu_events_bundle': {
+                'type': 'dict',
+                'schema': {
+                    'schema_version': {
+                        'type': 'integer',
+                    },
+                },
+            },
+            'cu_feeds_bundle': {
+                'type': 'dict',
+                'schema': {
+                    'schema_version': {
+                        'type': 'integer',
+                    },
+                },
+            },
+            'cu_forms_bundle': {
+                'type': 'dict',
+                'schema': {
+                    'schema_version': {
+                        'type': 'integer',
+                    },
+                },
+            },
+            'cu_news_bundle': {
+                'type': 'dict',
+                'schema': {
+                    'schema_version': {
+                        'type': 'integer',
+                    },
+                },
+            },
+            'cu_people_bundle': {
+                'type': 'dict',
+                'schema': {
+                    'schema_version': {
+                        'type': 'integer',
+                    },
+                },
+            },
+            'cu_photo_gallery_bundle': {
+                'type': 'dict',
+                'schema': {
+                    'schema_version': {
+                        'type': 'integer',
+                    },
+                },
+            },
+            'cu_seo_bundle': {
+                'type': 'dict',
+                'schema': {
+                    'schema_version': {
+                        'type': 'integer',
+                    },
+                },
+            },
+            'cu_social_media_bundle': {
+                'type': 'dict',
+                'schema': {
+                    'schema_version': {
+                        'type': 'integer',
+                    },
+                },
+            },
+            'cu_seo_admin_bundle': {
+                'type': 'dict',
+                'schema': {
+                    'schema_version': {
+                        'type': 'integer',
+                    },
+                },
+            },
+            'cu_test_content_admin_bundle': {
+                'type': 'dict',
+                'schema': {
+                    'schema_version': {
+                        'type': 'integer',
+                    },
+                },
+            },
+            'cu_debug_admin_bundle': {
+                'type': 'dict',
+                'schema': {
+                    'schema_version': {
+                        'type': 'integer',
+                    },
                 },
             },
         },

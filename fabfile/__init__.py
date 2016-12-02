@@ -511,7 +511,7 @@ def _create_settings_files(site, profile_name):
     status = site['status']
     id = site['_id']
     page_cache_maximum_age = site['settings']['page_cache_maximum_age']
-
+    atlas_url = '{0}/'.format(api_urls[environment])
     database_password = utilities.decrypt_string(site['db_key'])
 
     # Call the template file and render the variables into it.
@@ -520,7 +520,7 @@ def _create_settings_files(site, profile_name):
         profile=profile_name,
         sid=sid,
         id=id,
-        atlas_url=api_urls[environment],
+        atlas_url=atlas_url,
         path=path,
         status=status,
         pool_full=site['pool']

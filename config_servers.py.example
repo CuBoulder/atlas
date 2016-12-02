@@ -121,11 +121,12 @@ base_urls = {
     'local': 'http://express.local',
 }
 
+# Include trailing slash.
 api_urls = {
-    'production': 'http://atlas.example.com',
-    'test': 'http://atlas-test.example.com',
-    'development': 'http://atlas-development.example.com',
-    'local': 'http://inventory.local',
+    'production': 'http://atlas.example.com/',
+    'test': 'http://atlas-test.example.com/',
+    'development': 'http://atlas-development.example.com/',
+    'local': 'http://inventory.local/',
 }
 
 load_balancer_config_files = {

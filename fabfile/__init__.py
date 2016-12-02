@@ -520,6 +520,7 @@ def _create_settings_files(site, profile_name):
         profile=profile_name,
         sid=sid,
         id=id,
+        atlas_url=api_urls[environment],
         path=path,
         status=status,
         pool_full=site['pool']

@@ -67,6 +67,12 @@ code_schema = {
         'required': True,
         'unique': True
     },
+    '_created_by': {
+        'type': 'string',
+    },
+    '_modified_by': {
+        'type': 'string',
+    },
 }
 
 
@@ -198,6 +204,12 @@ sites_schema = {
             'unique': True,
         },
     },
+    '_created_by': {
+        'type': 'string',
+    },
+    '_modified_by': {
+        'type': 'string',
+    },
 }
 
 statistics_schema = {
@@ -318,6 +330,12 @@ commands_schema = {
         'type': 'boolean',
         'required': True,
         'default': True,
+    },
+    '_created_by': {
+        'type': 'string',
+    },
+    '_modified_by': {
+        'type': 'string',
     },
 }
 

@@ -12,7 +12,7 @@ from random import choice
 from string import lowercase
 from hashlib import sha1
 from eve.auth import BasicAuth
-from flask import current_app
+from flask import current_app, g
 from atlas.config import *
 
 path = '/data/code'
@@ -47,6 +47,9 @@ class AtlasBasicAuth(BasicAuth):
 
         ldap_distinguished_name = "uid={0},ou={1},{2}".format(username, ldap_org_unit, ldap_dns_domain_name)
         current_app.logger.debug(ldap_distinguished_name)
+
+        # Add the username as a Flask application global.
+        g.user = username
 
         try:
             # Try a synchronous bind (we want synchronous so that the command

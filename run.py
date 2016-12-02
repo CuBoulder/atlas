@@ -4,7 +4,7 @@ import random
 import json
 
 from eve import Eve
-from flask import abort, jsonify
+from flask import abort, jsonify, g
 from hashlib import sha1
 from atlas import tasks
 from atlas import utilities
@@ -285,6 +285,9 @@ app.on_update_code += on_update_code_callback
 app.on_update_sites += on_update_sites_callback
 app.on_update_commands += on_update_commands_callback
 app.on_delete_item_code += on_delete_item_code_callback
+app.on_insert += pre_insert
+app.on_replace += pre_replace
+
 
 
 @app.errorhandler(409)

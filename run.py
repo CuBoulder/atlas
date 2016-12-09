@@ -7,7 +7,6 @@ import ssl
 from eve import Eve
 from flask import abort, jsonify
 from hashlib import sha1
-from pprint import pprint
 from atlas import tasks
 from atlas import utilities
 from atlas.config import *
@@ -128,11 +127,10 @@ def on_insert_code_callback(items):
             # stores it as 'True'.
             query = '{{"meta.name":"{0}","meta.code_type":"{1}","meta.is_current": {2}}}'.format(item['meta']['name'], item['meta']['code_type'], str(item['meta']['is_current']).lower())
             code_get = utilities.get_eve('code', json.dumps(query))
-            app.logger.debug(pprint(code_get))
-            if int(code_get.headers.get('X-Total-Count')) != 0:
-                for code in code_get['_items']:
-                    request_payload = {'meta.is_current': False}
-                    utilities.patch_eve('code', code['_id'], request_payload)
+            app.logger.debug(code_get)
+            for code in code_get['_items']:
+                request_payload = {'meta.is_current': False}
+                utilities.patch_eve('code', code['_id'], request_payload)
         app.logger.debug('Ready to send to Celery\n{0}'.format(item))
         tasks.code_deploy.delay(item)
 

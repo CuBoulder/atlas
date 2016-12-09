@@ -315,6 +315,6 @@ def post_to_slack(message, title, link='', attachment_text='', level='good', use
         # any order. Using json=payload instead of data=json.dumps(payload) so that
         # we don't have to encode the dict ourselves. The Requests library will do
         # it for us.
-        r = requests.post(slack_url, json=payload, verify=False)
+        r = requests.post(slack_url, json=payload)
         if not r.ok:
             print r.text

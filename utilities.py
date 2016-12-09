@@ -12,7 +12,7 @@ from random import choice
 from string import lowercase
 from hashlib import sha1
 from eve.auth import BasicAuth
-from flask import current_app
+from flask import current_app as app
 from atlas.config import *
 
 path = '/data/code'
@@ -39,27 +39,27 @@ class AtlasBasicAuth(BasicAuth):
         try:
             l.start_tls_s()
         except ldap.LDAPError, e:
-            current_app.logger.error(e.message['info'])
+            app.logger.error(e.message['info'])
             if type(e.message) == dict and e.message.has_key('desc'):
-                current_app.logger.error(e.message['desc'])
+                app.logger.error(e.message['desc'])
             else:
-                current_app.logger.error(e)
+                app.logger.error(e)
 
         ldap_distinguished_name = "uid={0},ou={1},{2}".format(username, ldap_org_unit, ldap_dns_domain_name)
-        current_app.logger.debug(ldap_distinguished_name)
+        app.logger.debug(ldap_distinguished_name)
 
         try:
             # Try a synchronous bind (we want synchronous so that the command
             # is blocked until the bind gets a result. If you can bind, the
             # credentials are valid.
             result = l.simple_bind_s(ldap_distinguished_name, password)
-            current_app.logger.debug('LDAP - {0} - Bind successful'.format(username))
+            app.logger.debug('LDAP - {0} - Bind successful'.format(username))
             return True
         except ldap.INVALID_CREDENTIALS:
-            current_app.logger.debug('LDAP - {0} - Invalid credentials'.format(username))
+            app.logger.debug('LDAP - {0} - Invalid credentials'.format(username))
 
         # Apparently this was a bad login attempt
-        current_app.logger.info('LDAP - {0} - Bind failed'.format(username))
+        app.logger.info('LDAP - {0} - Bind failed'.format(username))
         return False
 
 

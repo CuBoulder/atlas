@@ -6,6 +6,7 @@ import requests
 import ldap
 import json
 
+from base64 import b64encode
 from re import compile, search
 from cryptography.fernet import Fernet
 from random import choice
@@ -62,6 +63,9 @@ class AtlasBasicAuth(BasicAuth):
         app.logger.info('LDAP - {0} - Bind failed'.format(username))
         return False
 
+def basic_auth_header(username=ldap_username, password=ldap_password):
+    return 'Basic ' + b64encode(username + ":" + password)
+
 
 def randomstring(length=14):
     """
@@ -107,12 +111,20 @@ def post_eve(resource, payload):
     :param payload: argument string
     """
     url = "{0}/{1}".format(api_urls[environment], resource)
-    headers = {"content-type": "application/json"}
-    r = requests.post(url, auth=(ldap_username, ldap_password), headers=headers, verify=False, data=json.dumps(payload))
-    if r.ok:
-        return r.json()
-    else:
-        return r.text
+    headers = {
+        'Content-Type': 'application/json',
+        'Authorization': basic_auth_header()
+    }
+    r = app.test_client().post(url, headers=headers, data=json.dumps(payload))
+    app.logger.debug(r.data)
+
+    result = r.data
+
+    if r._status_code == 200:
+        result = json.loads(r.data)
+
+    return result
+
 
 def get_eve(resource, query, single=False):
     """
@@ -151,7 +163,11 @@ def patch_eve(resource, id, request_payload):
     """
     url = "{0}/{1}/{2}".format(api_urls[environment], resource, id)
     get_etag = get_eve(resource, id, True)
-    headers = {'Content-Type': 'application/json', 'If-Match': get_etag['_etag']}
+    headers = {
+        'Content-Type': 'application/json',
+        'If-Match': get_etag['_etag'],
+        'Authorization': basic_auth_header()
+    }
     r = app.test_client().patch(url, headers=headers, data=json.dumps(request_payload))
     app.logger.debug(r.data)
 
@@ -173,12 +189,20 @@ def delete_eve(resource, id):
     """
     url = "{0}/{1}/{2}".format(api_urls[environment], resource, id)
     get_etag = get_eve(resource, id, True)
-    headers = {'Content-Type': 'application/json', 'If-Match': get_etag['_etag']}
-    r = requests.delete(url, headers=headers, auth=(ldap_username, ldap_password))
-    if r.ok:
-        return r.status_code
-    else:
-        return r.text
+    headers = {
+        'Content-Type': 'application/json',
+        'If-Match': get_etag['_etag'],
+        'Authorization': basic_auth_header()
+    }
+    r = app.test_client().delete(url, headers=headers, data=json.dumps(request_payload))
+    app.logger.debug(r.data)
+
+    result = r.data
+
+    if r._status_code == 200:
+        result = json.loads(r.data)
+
+    return result
 
 
 def get_current_code(name, type):

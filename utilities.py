@@ -136,7 +136,7 @@ def get_eve(resource, query, single=False):
     :return: dict of items that match the query string.
     """
 
-    url = "{0}/{1}?{2}".format(api_urls[environment], resource, query)
+    url = "{0}/{1}?where{2}".format(api_urls[environment], resource, query)
     if single:
         url = "{0}/{1}/{2}".format(api_urls[environment], resource, query)
     app.logger.debug(url)

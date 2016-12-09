@@ -215,7 +215,7 @@ def get_current_code(name, type):
     """
     query = 'where={{"meta.name":"{0}","meta.code_type":"{1}","meta.is_current":true}}'.format(name, type)
     current_get = get_eve('code', query)
-    print(current_get)
+    app.logger.debug(current_get)
     return current_get['_items'][0]['_id']
 
 
@@ -234,7 +234,7 @@ def get_code(name, code_type=''):
     else:
         query = 'where={{"meta.name":"{0}"}}'.format(name)
     code_get = get_eve('code', query)
-    print(code_get)
+    app.logger.debug(code_get)
     return code_get
 
 
@@ -246,7 +246,7 @@ def import_code(query):
     :param query: URL for JSON to import
     """
     r = requests.get(query)
-    print(r.json())
+    app.logger.debug(r.json())
     data = r.json()
     for code in data['_items']:
         payload = {

@@ -127,8 +127,8 @@ def on_insert_code_callback(items):
             # Need a lowercase string when querying boolean values. Python
             # stores it as 'True'.
             query = '{{"meta.name":"{0}","meta.code_type":"{1}","meta.is_current": {2}}}'.format(item['meta']['name'], item['meta']['code_type'], str(item['meta']['is_current']).lower())
-            code_get = app.test_client().get('/code', json.dumps(query))
-            app.logger.debug(pprint(vars(code_get)))
+            code_get = utilities.get_eve('code', json.dumps(query))
+            app.logger.debug(pprint(code_get))
             if int(code_get.headers.get('X-Total-Count')) != 0:
                 for code in code_get['_items']:
                     request_payload = {'meta.is_current': False}

@@ -152,11 +152,15 @@ def patch_eve(resource, id, request_payload):
     url = "{0}/{1}/{2}".format(api_urls[environment], resource, id)
     get_etag = get_eve(resource, id, True)
     headers = {'Content-Type': 'application/json', 'If-Match': get_etag['_etag']}
-    r = requests.patch(url, headers=headers, data=json.dumps(request_payload), auth=(ldap_username, ldap_password))
-    if r.ok:
-        return r.json()
-    else:
-        return r.text
+    r = app.test_client().patch(url, headers=headers, data=json.dumps(request_payload))
+    app.logger.debug(r.data)
+
+    result = r.data
+
+    if r._status_code == 200:
+        result = json.loads(r.data)
+
+    return result
 
 
 def delete_eve(resource, id):

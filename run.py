@@ -34,8 +34,9 @@ def pre_delete_code_callback(request, lookup):
     :param request: flask.request object
     :param lookup:
     """
-    code = utilities.get_single_eve('code', lookup['_id'])
-    app.logger.debug(code)
+    code = utilities.get_eve('code', lookup['_id'], True)
+    app.logger.info(code)
+    app.logger.debug(code['meta']['code_type'])
     if code['meta']['code_type'] in ['module', 'theme', 'library']:
         code_type = 'package'
     else:

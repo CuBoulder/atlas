@@ -145,7 +145,7 @@ def site_provision(site, install=True):
     web_directory_sid = '{0}/{1}'.format(
         web_directory_type,
         site['sid'])
-    profile = utilities.get_single_eve('code', site['code']['profile'])
+    profile = utilities.get_eve('code', site['code']['profile'], True)
     profile_name = profile['meta']['name']
 
     _create_database(site)
@@ -223,8 +223,8 @@ def site_core_update(site):
 def site_profile_update(site, original, updates):
     print('Site Profile Update\n{0}'.format(site))
     code_directory_sid = '{0}/{1}/{1}'.format(sites_code_root, site['sid'])
-    old_profile = utilities.get_single_eve('code', original['code']['profile'])
-    new_profile = utilities.get_single_eve('code', site['code']['profile'])
+    old_profile = utilities.get_eve('code', original['code']['profile'], True)
+    new_profile = utilities.get_eve('code', site['code']['profile'], True)
     new_profile_full_string = _get_code_name_version(site['code']['profile'])
 
     with cd(code_directory_sid + '/profiles'):
@@ -415,7 +415,7 @@ def update_settings_file(site):
     print('Update Settings Files\n{0}'.format(site))
     code_directory = '{0}/{1}'.format(sites_code_root, site['sid'])
     code_directory_current = '{0}/current'.format(code_directory)
-    profile = utilities.get_single_eve('code', site['code']['profile'])
+    profile = utilities.get_eve('code', site['code']['profile'], True)
     profile_name = profile['meta']['name']
 
     _create_settings_files(site, profile_name)
@@ -597,7 +597,7 @@ def _get_code_name_version(code_id):
     :param code_id: string '_id' for a code item
     :return: string 'label'-'version'
     """
-    code = utilities.get_single_eve('code', code_id)
+    code = utilities.get_eve('code', code_id, True)
     code_name = code['meta']['name']
     code_version = code['meta']['version']
     return '{0}-{1}'.format(code_name, code_version)

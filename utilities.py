@@ -114,39 +114,30 @@ def post_eve(resource, payload):
     else:
         return r.text
 
-
-def get_eve(resource, query):
+def get_eve(resource, query, single=False):
     """
     Make calls to the Atlas API.
 
-    :param resource:
+    :param resource: Atlas endpoint to access
     :param query: argument string
+    :param single: boolean - True if requesting a single items
     :return: dict of items that match the query string.
     """
+
     url = "{0}/{1}?{2}".format(api_urls[environment], resource, query)
-    print(url)
-    r = requests.get(url, auth=(ldap_username, ldap_password), verify=False)
-    if r.ok:
-        return r.json()
-    else:
-        return r.text
+    if single:
+        url = "{0}/{1}/{2}".format(api_urls[environment], resource, query)
+    app.logger.debug(url)
 
+    r = app.test_client().get(url)
+    app.logger.debug(r.data)
 
-def get_single_eve(resource, id):
-    """
-    Make calls to the Atlas API.
+    result = r.data
 
-    :param resource:
-    :param id: _id string
-    :return: dict of items that match the query string.
-    """
-    url = "{0}/{1}/{2}".format(api_urls[environment], resource, id)
-    print(url)
-    r = requests.get(url, auth=(ldap_username, ldap_password), verify=False)
-    if r.ok:
-        return r.json()
-    else:
-        return r.text
+    if r._status_code == 200:
+        result = json.loads(r.data)
+
+    return result
 
 
 def patch_eve(resource, id, request_payload):
@@ -159,7 +150,7 @@ def patch_eve(resource, id, request_payload):
     :return:
     """
     url = "{0}/{1}/{2}".format(api_urls[environment], resource, id)
-    get_etag = get_single_eve(resource, id)
+    get_etag = get_eve(resource, id, True)
     headers = {'Content-Type': 'application/json', 'If-Match': get_etag['_etag']}
     r = requests.patch(url, headers=headers, data=json.dumps(request_payload), auth=(ldap_username, ldap_password))
     if r.ok:
@@ -177,7 +168,7 @@ def delete_eve(resource, id):
     :return:
     """
     url = "{0}/{1}/{2}".format(api_urls[environment], resource, id)
-    get_etag = get_single_eve(resource, id)
+    get_etag = get_eve(resource, id, True)
     headers = {'Content-Type': 'application/json', 'If-Match': get_etag['_etag']}
     r = requests.delete(url, headers=headers, auth=(ldap_username, ldap_password))
     if r.ok:

@@ -11,6 +11,8 @@ from atlas import tasks
 from atlas import utilities
 from atlas.config import *
 
+from eve.methods.get import get, get_internal
+
 
 path = '/data/code'
 if path not in sys.path:
@@ -41,7 +43,7 @@ def pre_delete_code_callback(request, lookup):
     else:
         code_type = code['meta']['code_type']
     app.logger.debug(code_type)
-    site_query = 'where={{"code.{0}":"{1}"}}'.format(code_type, code['_id'])
+    site_query = '{{"code.{0}":"{1}"}}'.format(code_type, code['_id'])
     sites = utilities.get_eve('sites', site_query)
     app.logger.debug(sites)
     if not sites['_meta']['total'] == 0:
@@ -126,7 +128,9 @@ def on_insert_code_callback(items):
             # Need a lowercase string when querying boolean values. Python
             # stores it as 'True'.
             query = '{{"meta.name":"{0}","meta.code_type":"{1}","meta.is_current": {2}}}'.format(item['meta']['name'], item['meta']['code_type'], str(item['meta']['is_current']).lower())
-            code_get = utilities.get_eve('code', json.dumps(query))
+            app.logger.debug('Raw ' + query)
+            app.logger.debug('JSON ' + json.dumps(query))
+            code_get = utilities.get_eve('code', query)
             app.logger.debug(code_get)
             for code in code_get['_items']:
                 request_payload = {'meta.is_current': False}
@@ -166,15 +170,18 @@ def on_update_code_callback(updates, original):
     app.logger.debug(original)
     # If this 'is_current' PATCH code with the same name and code_type.
     if updates.get('meta') and updates['meta'].get('is_current') and updates['meta']['is_current'] == True:
+        app.logger.debug('New current version of code.')
         # If the name and code_type are not changing, we need to load them from
         # the original.
         name = updates['meta']['name'] if updates['meta'].get('name') else original['meta']['name']
         code_type = updates['meta']['code_type'] if updates['meta'].get('code_type') else original['meta']['code_type']
 
-        query = 'where={{"meta.name":"{0}","meta.code_type":"{1}","meta.is_current": {2}}}'.format(name, code_type, str(updates['meta']['is_current']).lower())
-        code_get = utilities.get_eve('code', query)
-        # TODO: Filter out the site we are updating.
-        app.logger.debug(code_get)
+        where = '{"$and": [{"name": "%s"}, {"code_type": "%s"}, {"is_current": "%s"}]}' % (name, code_type, updates['meta']['is_current'])
+        response, status = get('code', '?where=%s' % where)
+
+
+        app.logger.debug(response)
+        app.logger.debug(status)
 
         for code in code_get['_items']:
             request_payload = {'meta.is_current': False}

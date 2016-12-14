@@ -136,15 +136,22 @@ def get_eve(resource, query, single=False):
     :return: dict of items that match the query string.
     """
 
-    url = "{0}/{1}?where{2}".format(api_urls[environment], resource, query)
+    url = "/{0}?where={1}".format(resource, query)
     if single:
-        url = "{0}/{1}/{2}".format(api_urls[environment], resource, query)
-    app.logger.debug(url)
+        url = "/{0}/{1}".format(resource, query)
+    app.logger.debug(resource)
+    app.logger.debug(query)
+    # Eve's get
+    response, status = get_internal(resource, **query)
+    app.logger.debug(response)
+    app.logger.debug(status)
 
-    r = app.test_client().get(url)
-    app.logger.debug(r.data)
+    result = response
 
-    result = r.data
+    if r._status_code == 200:
+        result = json.loads(r.data)
+
+    return result
 
     if r._status_code == 200:
         result = json.loads(r.data)

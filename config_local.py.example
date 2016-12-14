@@ -28,9 +28,9 @@ site_down_path = '/data/code/down'
 default_core = 'drupal'
 default_profile = 'express'
 
-# Encryption variables
-encryption_password = 'astringtouseforapassword'
-encryption_salt = 'saltstring'
+# Encryption Key. See https://cryptography.io/en/latest/fernet/ to generate a
+# URL-safe base64-encoded 32-byte key.
+encryption_key = 'KEY'
 
 # LDAP configuration including service account credentials.
 ldap_server = 'ldap://URL:PORT'

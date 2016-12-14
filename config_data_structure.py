@@ -13,6 +13,9 @@ RESOURCE_METHODS = ['GET', 'POST']
 # individual items.
 ITEM_METHODS = ['GET', 'PATCH', 'PUT', 'DELETE']
 
+# Allow public GET by default can override for a specific resource or item.
+PUBLIC_METHODS = ['GET']
+
 # Add support for CORS
 X_DOMAINS = '*'
 X_HEADERS = ['Access-Control-Allow-Origin']

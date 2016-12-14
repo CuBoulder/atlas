@@ -37,3 +37,8 @@ if trailing_slash.search(sites_web_root):
 if trailing_slash.search(sites_web_root):
     raise Exception("'sites_web_root' should not have a trailing slash.")
 
+
+# This allows us to use a self signed cert for local dev.
+ssl_verification = True
+if environment == 'local':
+    ssl_verification = False

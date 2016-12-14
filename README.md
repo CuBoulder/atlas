@@ -51,8 +51,8 @@ Pull requests are always welcome. Project is under active development. We want t
 ## Sample requests
 ### Code items
 #### Drupal core 7.42
-```bashSW
-curl -i -v -X POST -d '{"git_url": "git@github.com:CuBoulder/drupal-7.x.git", "commit_hash": "9ee4a1a2fa3bedb3852d21f2198509c107c48890", "meta":{"version": "7.42", "code_type": "core", "name": "drupal", "is_current": true}}' -H 'Content-Type: application/json' -u 'USERNAME:PASORD' https://inventory.local/atlas/code
+```bash
+curl -i -v -X POST -d '{"git_url": "git@github.com:CuBoulder/drupal-7.x.git", "commit_hash": "9ee4a1a2fa3bedb3852d21f2198509c107c48890", "meta":{"version": "7.42", "code_type": "core", "name": "drupal", "is_current": true}}' -H 'Content-Type: application/json' -u 'USERNAME:PASSWORD' https://inventory.local/atlas/code
 ```
 
 #### Express 2.2.5

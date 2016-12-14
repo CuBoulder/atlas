@@ -5,12 +5,6 @@ All variable settings should go here so values can be propagated to the various
  functions from a central location.
 """
 import re
-import os
-import base64
-
-from cryptography.hazmat.primitives.kdf.pbkdf2 import PBKDF2HMAC
-from cryptography.hazmat.backends import default_backend
-from cryptography.hazmat.primitives import hashes
 
 
 # Import config_servers.py.
@@ -43,13 +37,3 @@ if trailing_slash.search(sites_web_root):
 if trailing_slash.search(sites_web_root):
     raise Exception("'sites_web_root' should not have a trailing slash.")
 
-
-# Encryption variables. See https://cryptography.io/en/latest/fernet/#implementation
-encryption_kdf = PBKDF2HMAC(
-    algorithm=hashes.SHA256(),
-    length=32,
-    salt=encryption_salt,
-    iterations=100000,
-    backend=default_backend()
-)
-encryption_key = base64.urlsafe_b64encode(encryption_kdf.derive(encryption_password))

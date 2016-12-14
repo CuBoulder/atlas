@@ -6,13 +6,14 @@ import requests
 import ldap
 import json
 
+from base64 import b64encode
 from re import compile, search
 from cryptography.fernet import Fernet
 from random import choice
 from string import lowercase
 from hashlib import sha1
 from eve.auth import BasicAuth
-from flask import current_app
+from flask import current_app as app
 from atlas.config import *
 
 path = '/data/code'
@@ -39,28 +40,31 @@ class AtlasBasicAuth(BasicAuth):
         try:
             l.start_tls_s()
         except ldap.LDAPError, e:
-            current_app.logger.error(e.message['info'])
+            app.logger.error(e.message['info'])
             if type(e.message) == dict and e.message.has_key('desc'):
-                current_app.logger.error(e.message['desc'])
+                app.logger.error(e.message['desc'])
             else:
-                current_app.logger.error(e)
+                app.logger.error(e)
 
         ldap_distinguished_name = "uid={0},ou={1},{2}".format(username, ldap_org_unit, ldap_dns_domain_name)
-        current_app.logger.debug(ldap_distinguished_name)
+        app.logger.debug(ldap_distinguished_name)
 
         try:
             # Try a synchronous bind (we want synchronous so that the command
             # is blocked until the bind gets a result. If you can bind, the
             # credentials are valid.
             result = l.simple_bind_s(ldap_distinguished_name, password)
-            current_app.logger.debug('LDAP - {0} - Bind successful'.format(username))
+            app.logger.debug('LDAP - {0} - Bind successful'.format(username))
             return True
         except ldap.INVALID_CREDENTIALS:
-            current_app.logger.debug('LDAP - {0} - Invalid credentials'.format(username))
+            app.logger.debug('LDAP - {0} - Invalid credentials'.format(username))
 
         # Apparently this was a bad login attempt
-        current_app.logger.info('LDAP - {0} - Bind failed'.format(username))
+        app.logger.info('LDAP - {0} - Bind failed'.format(username))
         return False
+
+def basic_auth_header(username=ldap_username, password=ldap_password):
+    return 'Basic ' + b64encode(username + ":" + password)
 
 
 def randomstring(length=14):
@@ -107,46 +111,52 @@ def post_eve(resource, payload):
     :param payload: argument string
     """
     url = "{0}/{1}".format(api_urls[environment], resource)
-    headers = {"content-type": "application/json"}
-    r = requests.post(url, auth=(ldap_username, ldap_password), headers=headers, verify=False, data=json.dumps(payload))
-    if r.ok:
-        return r.json()
-    else:
-        return r.text
+    headers = {
+        'Content-Type': 'application/json',
+        'Authorization': basic_auth_header()
+    }
+    r = app.test_client().post(url, headers=headers, data=json.dumps(payload))
+    app.logger.debug(r.data)
+
+    result = r.data
+
+    if r._status_code == 200:
+        result = json.loads(r.data)
+
+    return result
 
 
-def get_eve(resource, query):
+def get_eve(resource, query, single=False):
     """
     Make calls to the Atlas API.
 
-    :param resource:
+    :param resource: Atlas endpoint to access
     :param query: argument string
+    :param single: boolean - True if requesting a single items
     :return: dict of items that match the query string.
     """
-    url = "{0}/{1}?{2}".format(api_urls[environment], resource, query)
-    print(url)
-    r = requests.get(url, auth=(ldap_username, ldap_password), verify=False)
-    if r.ok:
-        return r.json()
-    else:
-        return r.text
 
+    url = "/{0}?where={1}".format(resource, query)
+    if single:
+        url = "/{0}/{1}".format(resource, query)
+    app.logger.debug(resource)
+    app.logger.debug(query)
+    # Eve's get
+    response, status = get_internal(resource, **query)
+    app.logger.debug(response)
+    app.logger.debug(status)
 
-def get_single_eve(resource, id):
-    """
-    Make calls to the Atlas API.
+    result = response
 
-    :param resource:
-    :param id: _id string
-    :return: dict of items that match the query string.
-    """
-    url = "{0}/{1}/{2}".format(api_urls[environment], resource, id)
-    print(url)
-    r = requests.get(url, auth=(ldap_username, ldap_password), verify=False)
-    if r.ok:
-        return r.json()
-    else:
-        return r.text
+    if r._status_code == 200:
+        result = json.loads(r.data)
+
+    return result
+
+    if r._status_code == 200:
+        result = json.loads(r.data)
+
+    return result
 
 
 def patch_eve(resource, id, request_payload):
@@ -159,13 +169,21 @@ def patch_eve(resource, id, request_payload):
     :return:
     """
     url = "{0}/{1}/{2}".format(api_urls[environment], resource, id)
-    get_etag = get_single_eve(resource, id)
-    headers = {'Content-Type': 'application/json', 'If-Match': get_etag['_etag']}
-    r = requests.patch(url, headers=headers, data=json.dumps(request_payload), auth=(ldap_username, ldap_password))
-    if r.ok:
-        return r.json()
-    else:
-        return r.text
+    get_etag = get_eve(resource, id, True)
+    headers = {
+        'Content-Type': 'application/json',
+        'If-Match': get_etag['_etag'],
+        'Authorization': basic_auth_header()
+    }
+    r = app.test_client().patch(url, headers=headers, data=json.dumps(request_payload))
+    app.logger.debug(r.data)
+
+    result = r.data
+
+    if r._status_code == 200:
+        result = json.loads(r.data)
+
+    return result
 
 
 def delete_eve(resource, id):
@@ -177,13 +195,21 @@ def delete_eve(resource, id):
     :return:
     """
     url = "{0}/{1}/{2}".format(api_urls[environment], resource, id)
-    get_etag = get_single_eve(resource, id)
-    headers = {'Content-Type': 'application/json', 'If-Match': get_etag['_etag']}
-    r = requests.delete(url, headers=headers, auth=(ldap_username, ldap_password))
-    if r.ok:
-        return r.status_code
-    else:
-        return r.text
+    get_etag = get_eve(resource, id, True)
+    headers = {
+        'Content-Type': 'application/json',
+        'If-Match': get_etag['_etag'],
+        'Authorization': basic_auth_header()
+    }
+    r = app.test_client().delete(url, headers=headers, data=json.dumps(request_payload))
+    app.logger.debug(r.data)
+
+    result = r.data
+
+    if r._status_code == 200:
+        result = json.loads(r.data)
+
+    return result
 
 
 def get_current_code(name, type):
@@ -196,7 +222,7 @@ def get_current_code(name, type):
     """
     query = 'where={{"meta.name":"{0}","meta.code_type":"{1}","meta.is_current":true}}'.format(name, type)
     current_get = get_eve('code', query)
-    print(current_get)
+    app.logger.debug(current_get)
     return current_get['_items'][0]['_id']
 
 
@@ -215,7 +241,7 @@ def get_code(name, code_type=''):
     else:
         query = 'where={{"meta.name":"{0}"}}'.format(name)
     code_get = get_eve('code', query)
-    print(code_get)
+    app.logger.debug(code_get)
     return code_get
 
 
@@ -227,7 +253,7 @@ def import_code(query):
     :param query: URL for JSON to import
     """
     r = requests.get(query)
-    print(r.json())
+    app.logger.debug(r.json())
     data = r.json()
     for code in data['_items']:
         payload = {
@@ -296,6 +322,6 @@ def post_to_slack(message, title, link='', attachment_text='', level='good', use
         # any order. Using json=payload instead of data=json.dumps(payload) so that
         # we don't have to encode the dict ourselves. The Requests library will do
         # it for us.
-        r = requests.post(slack_url, json=payload, verify=False)
+        r = requests.post(slack_url, json=payload)
         if not r.ok:
             print r.text

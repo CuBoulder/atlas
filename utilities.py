@@ -108,7 +108,7 @@ def post_eve(resource, payload):
     """
     url = "{0}/{1}".format(api_urls[environment], resource)
     headers = {"content-type": "application/json"}
-    r = requests.post(url, auth=(ldap_username, ldap_password), headers=headers, verify=False, data=json.dumps(payload))
+    r = requests.post(url, auth=(ldap_username, ldap_password), headers=headers, verify=ssl_verification, data=json.dumps(payload))
     if r.ok:
         return r.json()
     else:
@@ -125,7 +125,7 @@ def get_eve(resource, query):
     """
     url = "{0}/{1}?{2}".format(api_urls[environment], resource, query)
     print(url)
-    r = requests.get(url, auth=(ldap_username, ldap_password), verify=False)
+    r = requests.get(url, auth=(ldap_username, ldap_password), verify=ssl_verification)
     if r.ok:
         return r.json()
     else:
@@ -142,7 +142,7 @@ def get_single_eve(resource, id):
     """
     url = "{0}/{1}/{2}".format(api_urls[environment], resource, id)
     print(url)
-    r = requests.get(url, auth=(ldap_username, ldap_password), verify=False)
+    r = requests.get(url, auth=(ldap_username, ldap_password), verify=ssl_verification)
     if r.ok:
         return r.json()
     else:
@@ -161,7 +161,7 @@ def patch_eve(resource, id, request_payload):
     url = "{0}/{1}/{2}".format(api_urls[environment], resource, id)
     get_etag = get_single_eve(resource, id)
     headers = {'Content-Type': 'application/json', 'If-Match': get_etag['_etag']}
-    r = requests.patch(url, headers=headers, data=json.dumps(request_payload), auth=(ldap_username, ldap_password))
+    r = requests.patch(url, headers=headers, data=json.dumps(request_payload), auth=(ldap_username, ldap_password), verify=ssl_verification)
     if r.ok:
         return r.json()
     else:
@@ -179,7 +179,7 @@ def delete_eve(resource, id):
     url = "{0}/{1}/{2}".format(api_urls[environment], resource, id)
     get_etag = get_single_eve(resource, id)
     headers = {'Content-Type': 'application/json', 'If-Match': get_etag['_etag']}
-    r = requests.delete(url, headers=headers, auth=(ldap_username, ldap_password))
+    r = requests.delete(url, headers=headers, auth=(ldap_username, ldap_password), verify=ssl_verification)
     if r.ok:
         return r.status_code
     else:
@@ -296,6 +296,6 @@ def post_to_slack(message, title, link='', attachment_text='', level='good', use
         # any order. Using json=payload instead of data=json.dumps(payload) so that
         # we don't have to encode the dict ourselves. The Requests library will do
         # it for us.
-        r = requests.post(slack_url, json=payload, verify=False)
+        r = requests.post(slack_url, json=payload)
         if not r.ok:
             print r.text

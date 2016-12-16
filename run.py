@@ -5,7 +5,7 @@ import json
 import ssl
 
 from eve import Eve
-from flask import abort, jsonify
+from flask import abort, jsonify, g
 from hashlib import sha1
 from atlas import tasks
 from atlas import utilities
@@ -250,23 +250,29 @@ def on_update_commands_callback(updates, original):
     tasks.command_prepare.delay(item)
 
 
-# TODO: Set it up to mark what user updated the record.
-# auto fill _created_by and _modified_by user fields
-# created_by_field = '_created_by'
-# modified_by_field = '_modified_by'
-# for resource in settings['DOMAIN']:
-#     settings['DOMAIN'][resource]['schema'][created_by_field] = {'type': 'string'}
-#     settings['DOMAIN'][resource]['schema'][modified_by_field] = {'type': 'string'}
-# def pre_insert(resource, documents):
-#     user = g.get('user', None)
-#     if user is not None:
-#         for document in documents:
-#             document[created_by_field] = user
-#             document[modified_by_field] = user
-# def pre_replace(resource, document):
-#     user = g.get('user', None)
-#     if user is not None:
-#         document[modified_by_field] = user
+# Update user fields on all events. If the update is coming from Drupal, it
+# will use the client_username for authentication and include the field for
+# us. If someone is querying the API directly, they will user their own
+# username and we need to add that.
+def pre_insert(resource, items):
+    username = g.get('username', None)
+    if username is not None:
+        for item in items:
+            item['created_by'] = username
+            item['modified_by'] = username
+
+
+def pre_update(resource, updates, original):
+    username = g.get('username', None)
+    if username is not None:
+        if username is not service_account_username:
+            updates['modified_by'] = username
+
+def pre_replace(resource, item, original):
+    username = g.get('username', None)
+    if username is not None:
+        if username is not service_account_username:
+            item['modified_by'] = username
 
 
 """
@@ -290,6 +296,10 @@ app.on_update_code += on_update_code_callback
 app.on_update_sites += on_update_sites_callback
 app.on_update_commands += on_update_commands_callback
 app.on_delete_item_code += on_delete_item_code_callback
+app.on_insert += pre_insert
+app.on_update += pre_update
+app.on_replace += pre_replace
+
 
 
 @app.errorhandler(409)

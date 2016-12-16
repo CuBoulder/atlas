@@ -70,6 +70,12 @@ code_schema = {
         'required': True,
         'unique': True
     },
+    'created_by': {
+        'type': 'string',
+    },
+    'modified_by': {
+        'type': 'string',
+    },
 }
 
 
@@ -200,6 +206,12 @@ sites_schema = {
             'embeddable': True,
             'unique': True,
         },
+    },
+    'created_by': {
+        'type': 'string',
+    },
+    'modified_by': {
+        'type': 'string',
     },
 }
 
@@ -421,6 +433,12 @@ statistics_schema = {
             },
         },
     },
+    'created_by': {
+        'type': 'string',
+    },
+    'modified_by': {
+        'type': 'string',
+    },
 }
 
 commands_schema = {
@@ -443,6 +461,12 @@ commands_schema = {
         'type': 'boolean',
         'required': True,
         'default': True,
+    },
+    'created_by': {
+        'type': 'string',
+    },
+    'modified_by': {
+        'type': 'string',
     },
 }
 

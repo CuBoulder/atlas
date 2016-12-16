@@ -12,7 +12,7 @@ from random import choice
 from string import lowercase
 from hashlib import sha1
 from eve.auth import BasicAuth
-from flask import current_app
+from flask import current_app, g
 from atlas.config import *
 
 path = '/data/code'
@@ -47,6 +47,9 @@ class AtlasBasicAuth(BasicAuth):
 
         ldap_distinguished_name = "uid={0},ou={1},{2}".format(username, ldap_org_unit, ldap_dns_domain_name)
         current_app.logger.debug(ldap_distinguished_name)
+
+        # Add the username as a Flask application global.
+        g.username = username
 
         try:
             # Try a synchronous bind (we want synchronous so that the command
@@ -108,7 +111,7 @@ def post_eve(resource, payload):
     """
     url = "{0}/{1}".format(api_urls[environment], resource)
     headers = {"content-type": "application/json"}
-    r = requests.post(url, auth=(ldap_username, ldap_password), headers=headers, verify=ssl_verification, data=json.dumps(payload))
+    r = requests.post(url, auth=(service_account_username, service_account_password), headers=headers, verify=ssl_verification, data=json.dumps(payload))
     if r.ok:
         return r.json()
     else:
@@ -125,7 +128,7 @@ def get_eve(resource, query):
     """
     url = "{0}/{1}?{2}".format(api_urls[environment], resource, query)
     print(url)
-    r = requests.get(url, auth=(ldap_username, ldap_password), verify=ssl_verification)
+    r = requests.get(url, auth=(service_account_username, service_account_password), verify=ssl_verification)
     if r.ok:
         return r.json()
     else:
@@ -142,7 +145,7 @@ def get_single_eve(resource, id):
     """
     url = "{0}/{1}/{2}".format(api_urls[environment], resource, id)
     print(url)
-    r = requests.get(url, auth=(ldap_username, ldap_password), verify=ssl_verification)
+    r = requests.get(url, auth=(service_account_username, service_account_password), verify=ssl_verification)
     if r.ok:
         return r.json()
     else:
@@ -161,7 +164,7 @@ def patch_eve(resource, id, request_payload):
     url = "{0}/{1}/{2}".format(api_urls[environment], resource, id)
     get_etag = get_single_eve(resource, id)
     headers = {'Content-Type': 'application/json', 'If-Match': get_etag['_etag']}
-    r = requests.patch(url, headers=headers, data=json.dumps(request_payload), auth=(ldap_username, ldap_password), verify=ssl_verification)
+    r = requests.patch(url, headers=headers, data=json.dumps(request_payload), auth=(service_account_username, service_account_password), verify=ssl_verification)
     if r.ok:
         return r.json()
     else:
@@ -179,7 +182,7 @@ def delete_eve(resource, id):
     url = "{0}/{1}/{2}".format(api_urls[environment], resource, id)
     get_etag = get_single_eve(resource, id)
     headers = {'Content-Type': 'application/json', 'If-Match': get_etag['_etag']}
-    r = requests.delete(url, headers=headers, auth=(ldap_username, ldap_password), verify=ssl_verification)
+    r = requests.delete(url, headers=headers, auth=(service_account_username, service_account_password), verify=ssl_verification)
     if r.ok:
         return r.status_code
     else:

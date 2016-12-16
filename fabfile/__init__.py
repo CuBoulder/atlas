@@ -541,8 +541,10 @@ def _create_settings_files(site, profile_name):
     local_pre_settings = template.render(
         profile=profile_name,
         sid=sid,
-        id=id,
+        atlas_id=id,
         atlas_url=atlas_url,
+        atlas_username=service_account_username,
+        atlas_password=service_account_password,
         path=path,
         status=status,
         pool_full=site['pool']

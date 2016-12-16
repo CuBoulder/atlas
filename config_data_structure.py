@@ -70,10 +70,10 @@ code_schema = {
         'required': True,
         'unique': True
     },
-    '_created_by': {
+    'created_by': {
         'type': 'string',
     },
-    '_modified_by': {
+    'modified_by': {
         'type': 'string',
     },
 }
@@ -207,10 +207,10 @@ sites_schema = {
             'unique': True,
         },
     },
-    '_created_by': {
+    'created_by': {
         'type': 'string',
     },
-    '_modified_by': {
+    'modified_by': {
         'type': 'string',
     },
 }
@@ -433,10 +433,10 @@ statistics_schema = {
             },
         },
     },
-    '_created_by': {
+    'created_by': {
         'type': 'string',
     },
-    '_modified_by': {
+    'modified_by': {
         'type': 'string',
     },
 }
@@ -462,10 +462,10 @@ commands_schema = {
         'required': True,
         'default': True,
     },
-    '_created_by': {
+    'created_by': {
         'type': 'string',
     },
-    '_modified_by': {
+    'modified_by': {
         'type': 'string',
     },
 }

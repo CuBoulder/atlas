@@ -250,25 +250,29 @@ def on_update_commands_callback(updates, original):
     tasks.command_prepare.delay(item)
 
 
-# Update user fields on all events.
+# Update user fields on all events. If the update is coming from Drupal, it
+# will use the client_username for authentication and include the field for
+# us. If someone is querying the API directly, they will user their own
+# username and we need to add that.
 def pre_insert(resource, items):
     username = g.get('username', None)
     if username is not None:
         for item in items:
-            item['_created_by'] = username
-            item['_modified_by'] = username
+            item['created_by'] = username
+            item['modified_by'] = username
 
 
 def pre_update(resource, updates, original):
     username = g.get('username', None)
     if username is not None:
-        updates['_modified_by'] = username
-
+        if username is not service_account_username:
+            updates['modified_by'] = username
 
 def pre_replace(resource, item, original):
     username = g.get('username', None)
     if username is not None:
-        item['_modified_by'] = username
+        if username is not service_account_username:
+            item['modified_by'] = username
 
 
 """

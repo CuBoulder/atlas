@@ -209,6 +209,7 @@ def site_remove(site):
     :return:
     """
     logger.debug('Site delete\n{0}'.format(site))
+    execute(fabfile.site_backup, site=site)
     execute(fabfile.site_remove, site=site)
 
     delete = utilities.delete_eve('sites', site['_id'])

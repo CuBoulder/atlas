@@ -12,6 +12,7 @@ from fabric.api import *
 from jinja2 import Environment, PackageLoader
 from random import randint
 from time import time
+from datetime import datetime
 from atlas.config import *
 from atlas import utilities
 
@@ -261,6 +262,27 @@ def site_launch(site):
         _diff_f5()
         print ('Update f5')
         _update_f5()
+
+
+@roles('webserver_single')
+def site_backup(site):
+    """
+    Backup the database and files for an instance.
+    """
+    print('Site - Backup - {0}'.format(site['sid']))
+    web_directory = '{0}/{1}/{2}'.format(
+        sites_web_root,
+        site['type'],
+        site['sid'])
+    date_string = datetime.now().strftime("%Y-%m-%d")
+    backup_path = '{0}/{1}/{2}'.format(backup_directory, site['sid'], date_string)
+    database_result_file_path = '{0}/{1}_{2}.sql'.format(backup_path, site['sid'], date_string)
+    files_result_file_path = '{0}/{1}_{2}.tar.gz'.format(backup_path, site['sid'], date_string)
+    nfs_dir = nfs_mount_location[environment]
+    nfs_files_dir = '{0}/sitefiles/{1}/files'.format(nfs_dir, site['sid'])
+    with cd(web_directory):
+        run('drush mysql-dump --result-file={0}').format(database_result_file_path)
+        run("tar '--exclude={0}/css' '--exclude={0}/js' '--exclude={0}/styles' -cfz {1} {0}").format(nfs_files_dir, files_result_file_path)
 
 
 @roles('webservers')

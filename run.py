@@ -67,9 +67,12 @@ def on_insert_sites_callback(items):
     for item in items:
         app.logger.debug(item)
         if item['type'] == 'express':
-            item['sid'] = 'p1' + sha1(utilities.randomstring()).hexdigest()[0:10]
-            item['path'] = item['sid']
-            item['update_group'] = random.randint(0, 2)
+            if not item['sid']:
+                item['sid'] = 'p1' + sha1(utilities.randomstring()).hexdigest()[0:10]
+            if not item['path']:
+                item['path'] = item['sid']
+            if not item['update_group']:
+                item['update_group'] = random.randint(0, 2)
             # Add default core and profile if not set.
             # The 'get' method checks if the key exists.
             if item.get('code'):
@@ -81,9 +84,10 @@ def on_insert_sites_callback(items):
                 item['code'] = {}
                 item['code']['core'] = utilities.get_current_code(name=default_core, type='core')
                 item['code']['profile'] = utilities.get_current_code(name=default_profile, type='profile')
-            date_json = '{{"created":"{0} GMT"}}'.format(item['_created'])
-            item['dates'] = json.loads(date_json)
-            app.logger.debug('Ready to send to create item\n{0}'.format(item))
+            if not item['import_from_inventory']:
+                date_json = '{{"created":"{0} GMT"}}'.format(item['_created'])
+                item['dates'] = json.loads(date_json)
+            app.logger.debug('Ready to create item\n{0}'.format(item))
 
 
 
@@ -107,7 +111,10 @@ def on_inserted_sites_callback(items):
             app.logger.debug(statistics)
             item['statistics'] = str(statistics['_id'])
             app.logger.debug('Ready to send to Celery\n{0}'.format(item))
-            tasks.site_provision.delay(item)
+            if not item['import_from_inventory']:
+                tasks.site_provision.delay(item)
+            else:
+                tasks.site_import_from_inventory.delay(item)
 
 
 def on_insert_code_callback(items):

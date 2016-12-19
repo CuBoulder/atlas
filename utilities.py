@@ -15,6 +15,10 @@ from eve.auth import BasicAuth
 from flask import current_app, g
 from atlas.config import *
 
+# Only needed for importing from Inventory.
+from Crypto.Cipher import AES
+from Crypto import Random
+
 path = '/data/code'
 if path not in sys.path:
     sys.path.append(path)
@@ -85,6 +89,18 @@ def mysql_password():
     pass1 = sha1(start).digest()
     pass2 = sha1(pass1).hexdigest()
     return "*" + pass2.upper()
+
+
+def mod_encryption_string(string):
+    interm_string = decrypt_old(inventory_key, string)
+    encrypt_string(interm_string)
+
+
+def decrypt_old(key, encrypted):
+    iv = Random.new().read(AES.block_size)
+    cipher = AES.new(key, AES.MODE_CFB, iv)
+    decrypted = cipher.decrypt(encrypted.decode("hex"))[len(iv):]
+    return decrypted
 
 
 # See https://cryptography.io/en/latest/fernet/#implementation

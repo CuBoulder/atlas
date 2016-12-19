@@ -269,20 +269,32 @@ def site_backup(site):
     """
     Backup the database and files for an instance.
     """
-    print('Site - Backup - {0}'.format(site['sid']))
+    print('Site - Backup\m{0}'.format(site))
+    # Setup all the variables we will need.
     web_directory = '{0}/{1}/{2}'.format(
         sites_web_root,
         site['type'],
         site['sid'])
     date_string = datetime.now().strftime("%Y-%m-%d")
-    backup_path = '{0}/{1}/{2}'.format(backup_directory, site['sid'], date_string)
-    database_result_file_path = '{0}/{1}_{2}.sql'.format(backup_path, site['sid'], date_string)
-    files_result_file_path = '{0}/{1}_{2}.tar.gz'.format(backup_path, site['sid'], date_string)
+    backup_path = '{0}/{1}/{2}'.format(
+        backup_directory,
+        site['sid'],
+        date_string)
+    database_result_file_path = '{0}/{1}_{2}.sql'.format(
+        backup_path,
+        site['sid'],
+        date_string)
+    files_result_file_path = '{0}/{1}_{2}.tar.gz'.format(
+        backup_path,
+        site['sid'],
+        date_string)
     nfs_dir = nfs_mount_location[environment]
     nfs_files_dir = '{0}/sitefiles/{1}/files'.format(nfs_dir, site['sid'])
+    # Start the actual process.
+    _create_directory_structure(backup_path)
     with cd(web_directory):
-        run('drush mysql-dump --result-file={0}').format(database_result_file_path)
-        run("tar '--exclude={0}/css' '--exclude={0}/js' '--exclude={0}/styles' -cfz {1} {0}").format(nfs_files_dir, files_result_file_path)
+        run('drush sql-dump --result-file={0}').format(database_result_file_path)
+        run("tar -cfz {0} {1}").format(files_result_file_path, nfs_files_dir)
 
 
 @roles('webservers')

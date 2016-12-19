@@ -293,8 +293,8 @@ def site_backup(site):
     # Start the actual process.
     _create_directory_structure(backup_path)
     with cd(web_directory):
-        run('drush sql-dump --result-file={0}').format(database_result_file_path)
-        run("tar -cfz {0} {1}").format(files_result_file_path, nfs_files_dir)
+        run('drush sql-dump --result-file={0}'.format(database_result_file_path))
+        run('tar cfz {0} {1}'.format(files_result_file_path, nfs_files_dir))
 
 
 @roles('webservers')

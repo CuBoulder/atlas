@@ -170,6 +170,7 @@ def site_update(site, updates, original):
                 patch_payload = '{"status": "launched"}'
             elif updates['status'] == 'take_down':
                 logger.debug('Status changed to take_down')
+                execute(fabfile.site_backup, site=site)
                 execute(fabfile.site_take_down, site=site)
                 patch_payload = '{"status": "down"}'
             elif updates['status'] == 'restore':
@@ -209,7 +210,6 @@ def site_remove(site):
     :return:
     """
     logger.debug('Site delete\n{0}'.format(site))
-    execute(fabfile.site_backup, site=site)
     execute(fabfile.site_remove, site=site)
 
     delete = utilities.delete_eve('sites', site['_id'])

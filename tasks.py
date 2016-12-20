@@ -132,6 +132,43 @@ def site_provision(site):
 
 
 @celery.task
+def site_import_from_inventory(site):
+    """
+    Take over an instance with the given parameters.
+
+    :param site: A single site.
+    :return:
+    """
+    logger.debug('Site import - {0}'.format(site))
+    # Decrypt and re-encrypt DB key.
+    logger.debug('Original key - {0}'.format(site['db_key']))
+    site['db_key'] = utilities.replace_inventory_encryption_string(site['db_key'])
+    logger.debug('New key - {0}'.format(site['db_key']))
+
+    fab_task = execute(fabfile.update_settings_file, site=site)
+    logger.debug(fab_task)
+    logger.debug(fab_task.values)
+
+    patch_payload = {'db_key': site['db_key'], 'statistics': site['statistics']}
+    patch = utilities.patch_eve('sites', site['_id'], patch_payload)
+
+    logger.debug('Site has been imported\n{0}'.format(patch))
+
+    slack_title = '{0}/{1}'.format(base_urls[environment], site['sid'])
+    slack_link = '{0}/{1}'.format(base_urls[environment], site['sid'])
+    attachment_text = '{0}/sites/{1}'.format(api_urls[environment], site['_id'])
+    if False not in fab_task.values():
+        slack_message = 'Site import - Success'
+        slack_color = 'good'
+        utilities.post_to_slack(
+            message=slack_message,
+            title=slack_title,
+            link=slack_link,
+            attachment_text=attachment_text,
+            level=slack_color)
+
+
+@celery.task
 def site_update(site, updates, original):
     """
     Update an instance with the given parameters.

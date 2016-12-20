@@ -97,7 +97,6 @@ sites_schema = {
       'minlength': 9,
       'maxlength': 14,
       'unique': True,
-      'readonly': True,
     },
     'type': {
       'type': 'string',
@@ -120,6 +119,15 @@ sites_schema = {
         ],
         'default': 'pending',
     },
+    'environment': {
+        'type': 'string',
+        'allowed': [
+            'local',
+            'development',
+            'test',
+            'production'
+        ],
+    },
     'pool': {
         'type': 'string',
         'allowed': [
@@ -133,6 +141,10 @@ sites_schema = {
         'type': 'integer',
     },
     'f5only': {
+        'type': 'boolean',
+        'default': False
+    },
+    'import_from_inventory': {
         'type': 'boolean',
         'default': False
     },

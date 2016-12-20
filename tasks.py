@@ -142,6 +142,8 @@ def site_import_from_inventory(site):
     logger.debug('Site import - {0}'.format(site))
     # Decrypt and re-encrypt DB key.
     site['db_key'] = utilities.mod_encryption_string(site['db_key'])
+    logger.debug('Original key - {0}'.format(site['db_key']))
+    logger.debug('New key - {0}'.format(site['db_key']))
 
     fab_task = execute(fabfile.update_settings_file, site=site)
     logger.debug(fab_task)

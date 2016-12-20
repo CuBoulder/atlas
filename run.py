@@ -67,11 +67,11 @@ def on_insert_sites_callback(items):
     for item in items:
         app.logger.debug(item)
         if item['type'] == 'express':
-            if not item['sid']:
+            if not item.get('sid'):
                 item['sid'] = 'p1' + sha1(utilities.randomstring()).hexdigest()[0:10]
-            if not item['path']:
+            if not item.get('path'):
                 item['path'] = item['sid']
-            if not item['update_group']:
+            if not item.get('update_group'):
                 item['update_group'] = random.randint(0, 2)
             # Add default core and profile if not set.
             # The 'get' method checks if the key exists.

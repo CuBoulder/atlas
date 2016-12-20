@@ -91,9 +91,18 @@ def mysql_password():
     return "*" + pass2.upper()
 
 
-def mod_encryption_string(string):
+#TODO: Remove this function in Atlas v1.1.0
+def replace_inventory_encryption_string(string):
+    """
+    Use the hashing methodology from Inventory to decrypt the key, then
+    re-encrypt it using the new methodology.
+
+    :param string: Database key from Inventory
+    :return string: Database key for Atlas
+    """
     interm_string = decrypt_old(inventory_key, string)
-    encrypt_string(interm_string)
+    modified_key = encrypt_string(interm_string)
+    return modified_key
 
 
 def decrypt_old(key, encrypted):

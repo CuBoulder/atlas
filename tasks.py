@@ -170,6 +170,7 @@ def site_update(site, updates, original):
                 patch_payload = '{"status": "launched"}'
             elif updates['status'] == 'take_down':
                 logger.debug('Status changed to take_down')
+                execute(fabfile.site_backup, site=site)
                 execute(fabfile.site_take_down, site=site)
                 patch_payload = '{"status": "down"}'
             elif updates['status'] == 'restore':
@@ -244,14 +245,18 @@ def command_prepare(item):
         logger.debug('Ran query\n{0}'.format(sites))
         if not sites['_meta']['total'] == 0:
             for site in sites['_items']:
-                if item['command'] == ['correct_file_permissions']:
+                logger.debug('Command - {0}'.format(item['command']))
+                if item['command'] == 'correct_file_permissions':
                     execute(fabfile.correct_file_directory_permissions(site))
                     continue
-                if item['command'] == ['update_settings_file']:
+                if item['command'] == 'update_settings_file':
                     execute(fabfile.update_settings_file(site))
                     continue
-                if item['command'] == ['update_homepage_extra_files']:
+                if item['command'] == 'update_homepage_extra_files':
                     execute(fabfile.update_homepage_extra_files())
+                    continue
+                if item['command'] == 'site_backup':
+                    execute(fabfile.site_backup, site=site)
                     continue
                 command_run(site, item['command'], item['single_server'])
 

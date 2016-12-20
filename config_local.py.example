@@ -20,6 +20,7 @@ code_root = '/data/code'
 sites_web_root = '/data/atlas/web'
 sites_code_root = '/data/atlas/sites'
 site_down_path = '/data/code/down'
+backup_directory = '/data/backups'
 
 # Default core and profile names for site creation. If you do not set
 # default_profile, sites without a profile on POST will do a core install.

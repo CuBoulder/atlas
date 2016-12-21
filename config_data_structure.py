@@ -325,10 +325,26 @@ statistics_schema = {
         'type': 'dict',
         'schema': {
             'email_address': {
-                'type': 'list',
+                'type': 'dict',
+                'schema': {
+                    'all': {
+                        'type': 'list',
+                    },
+                    'site_contact': {
+                        'type': 'list',
+                    },
+                },
             },
             'username': {
-                'type': 'list',
+                'type': 'dict',
+                'schema': {
+                    'all': {
+                        'type': 'list',
+                    },
+                    'site_contact': {
+                        'type': 'list',
+                    },
+                },
             },
         },
     },

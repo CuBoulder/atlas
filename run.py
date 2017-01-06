@@ -141,7 +141,7 @@ def on_insert_code_callback(items):
         tasks.code_deploy.delay(item)
 
 
-def post_delete_site_callback(item):
+def pre_delete_site_callback(item):
     """
     Remove site from servers right before the item is removed.
 
@@ -295,7 +295,7 @@ app.debug = True
 # Use DB hooks if you want to modify data on the way in.
 app.on_pre_POST += pre_post_callback
 app.on_pre_DELETE_code += pre_delete_code_callback
-app.on_post_DELETE_site += post_delete_site_callback
+app.on_pre_DELETE_site += pre_delete_site_callback
 app.on_insert_code += on_insert_code_callback
 app.on_insert_sites += on_insert_sites_callback
 app.on_inserted_sites += on_inserted_sites_callback

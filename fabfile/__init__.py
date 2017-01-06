@@ -623,6 +623,7 @@ def _checkout_repo(checkout_item, destination):
         checkout_item))
     with cd(destination):
         run('git reset --hard')
+        run('git fetch --all')
         run('git checkout {0}'.format(checkout_item))
         run('git clean -f -f -d')
 

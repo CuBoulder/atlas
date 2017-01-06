@@ -150,16 +150,25 @@ def site_import_from_inventory(site):
     logger.debug(fab_task.values)
 
     patch_payload = {'db_key': site['db_key'], 'statistics': site['statistics']}
-    patch = utilities.patch_eve('sites', site['_id'], patch_payload)
+    patch_task = utilities.patch_eve('sites', site['_id'], patch_payload)
 
-    logger.debug('Site has been imported\n{0}'.format(patch))
+    logger.debug('Site has been imported\n{0}'.format(patch_task))
 
     slack_title = '{0}/{1}'.format(base_urls[environment], site['sid'])
     slack_link = '{0}/{1}'.format(base_urls[environment], site['sid'])
     attachment_text = '{0}/sites/{1}'.format(api_urls[environment], site['_id'])
-    if False not in fab_task.values():
+    if (False not in fab_task.values()) and (False not in patch_task.values()):
         slack_message = 'Site import - Success'
         slack_color = 'good'
+        utilities.post_to_slack(
+            message=slack_message,
+            title=slack_title,
+            link=slack_link,
+            attachment_text=attachment_text,
+            level=slack_color)
+    if (False in fab_task.values()) or (False in patch_task.values()):
+        slack_message = 'Site import - Failed'
+        slack_color = 'danger'
         utilities.post_to_slack(
             message=slack_message,
             title=slack_title,

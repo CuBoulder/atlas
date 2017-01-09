@@ -149,9 +149,13 @@ def site_import_from_inventory(site):
     settings_update_task = execute(fabfile.update_settings_file, site=site)
     logger.debug(settings_update_task)
     logger.debug(settings_update_task.values)
+    logger.debug(ownership_update_task)
+    logger.debug(ownership_update_task.values)
 
     patch_payload = {'db_key': site['db_key'], 'statistics': site['statistics']}
     patch_task = utilities.patch_eve('sites', site['_id'], patch_payload)
+    logger.debug(patch_task)
+    logger.debug(patch_task.values)
 
     logger.debug('Site has been imported\n{0}'.format(patch_task))
 

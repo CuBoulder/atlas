@@ -180,7 +180,7 @@ def site_import_from_inventory(site):
         if False in patch_task.values():
             attachment_text = patch_task.values()
         if False in ownership_update_task.values():
-            attachment_text = ownership_update_tasks.values()
+            attachment_text = ownership_update_task.values()
         utilities.post_to_slack(
             message=slack_message,
             title=slack_title,

@@ -450,13 +450,15 @@ def drush_cache_clear(sid):
 def change_files_owner(site):
     print('Change File Owners\n{0}'.format(site))
     code_directory = '{0}/{1}'.format(sites_code_root, site['sid'])
+    code_directory_current = '{0}/current'.format(code_directory)
     web_directory = '{0}/{1}/{2}'.format(sites_web_root, site['type'], site['sid'])
     # Change the owner when it matches the old deployment user.
     run("chown -R --from={0} {1}:{2} {3}".format(former_user, ssh_user, webserver_user_group, code_directory))
+    _update_symlink(code_directory_current, web_directory)
     run("chown -h --from={0} {1}:{2} {3}".format(former_user, ssh_user, webserver_user_group, web_directory))
     if site['status'] == 'launched':
         path_symlink = '{0}/{1}/{2}'.format(sites_web_root, site['type'], site['path'])
-        run("chown -h --from={0} {1}:{2} {3}".format(former_user, ssh_user, webserver_user_group, path_symlink))
+        _update_symlink(web_directory, path_symlink)
 
 
 @roles('webservers')

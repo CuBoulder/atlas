@@ -25,6 +25,8 @@ jinja_env = Environment(loader=PackageLoader('atlas', 'templates'))
 
 # Fabric environmental settings.
 env.user = ssh_user
+# TODO: Remove this after migration
+env.password = ssh_user_password
 # env.key_filename =
 
 # Allow ~/.ssh/config to be utilized.

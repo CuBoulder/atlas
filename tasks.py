@@ -146,11 +146,12 @@ def site_import_from_inventory(site):
     logger.debug('New key - {0}'.format(site['db_key']))
 
     ownership_update_task = execute(fabfile.change_files_owner, site=site)
+    logger.debug(ownership_update_task)
+    logger.debug(ownership_update_task.values)
     settings_update_task = execute(fabfile.update_settings_file, site=site)
     logger.debug(settings_update_task)
     logger.debug(settings_update_task.values)
-    logger.debug(ownership_update_task)
-    logger.debug(ownership_update_task.values)
+
 
     patch_payload = {'db_key': site['db_key'], 'statistics': site['statistics']}
     patch_task = utilities.patch_eve('sites', site['_id'], patch_payload)
@@ -174,6 +175,12 @@ def site_import_from_inventory(site):
     if (False in settings_update_task.values()) or (False in patch_task.values()) or (False in ownership_update_task.values()):
         slack_message = 'Site import - Failed'
         slack_color = 'danger'
+        if False in settings_update_task.values():
+            attachment_text = settings_update_task.values()
+        if False in patch_task.values():
+            attachment_text = patch_task.values()
+        if False in ownership_update_task.values():
+            attachment_text = ownership_update_tasks.values()
         utilities.post_to_slack(
             message=slack_message,
             title=slack_title,

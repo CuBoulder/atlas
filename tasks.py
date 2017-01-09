@@ -163,7 +163,7 @@ def site_import_from_inventory(site):
     slack_title = '{0}/{1}'.format(base_urls[environment], site['sid'])
     slack_link = '{0}/{1}'.format(base_urls[environment], site['sid'])
     attachment_text = '{0}/sites/{1}'.format(api_urls[environment], site['_id'])
-    if (False not in settings_update_task.values()) and (False not in patch_task.values()) and (False not in ownership_update_task.values()):
+    if ('Fail' not in settings_update_task.values()) and ('Fail' not in patch_task.values()) and ('Fail' not in ownership_update_task.values()):
         slack_message = 'Site import - Success'
         slack_color = 'good'
         utilities.post_to_slack(
@@ -172,14 +172,14 @@ def site_import_from_inventory(site):
             link=slack_link,
             attachment_text=attachment_text,
             level=slack_color)
-    if (False in settings_update_task.values()) or (False in patch_task.values()) or (False in ownership_update_task.values()):
+    if ('Fail' in settings_update_task.values()) or ('Fail' in patch_task.values()) or ('Fail' in ownership_update_task.values()):
         slack_message = 'Site import - Failed'
         slack_color = 'danger'
-        if False in settings_update_task.values():
+        if 'Fail' in settings_update_task.values():
             attachment_text = str(settings_update_task.values())
-        if False in patch_task.values():
+        if 'Fail' in patch_task.values():
             attachment_text = str(patch_task.values())
-        if False in ownership_update_task.values():
+        if 'Fail' in ownership_update_task.values():
             attachment_text = str(ownership_update_task.values())
         utilities.post_to_slack(
             message=slack_message,

@@ -176,11 +176,11 @@ def site_import_from_inventory(site):
         slack_message = 'Site import - Failed'
         slack_color = 'danger'
         if False in settings_update_task.values():
-            attachment_text = settings_update_task.values()
+            attachment_text = str(settings_update_task.values())
         if False in patch_task.values():
-            attachment_text = patch_task.values()
+            attachment_text = str(patch_task.values())
         if False in ownership_update_task.values():
-            attachment_text = ownership_update_task.values()
+            attachment_text = str(ownership_update_task.values())
         utilities.post_to_slack(
             message=slack_message,
             title=slack_title,

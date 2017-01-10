@@ -240,6 +240,7 @@ def site_profile_update(site, original, updates):
         run("drush rr")
 
 
+@roles('webservers')
 def site_profile_swap(site):
     print('Site Profile Update\n{0}'.format(site))
     code_directory_sid = '{0}/{1}/{1}'.format(sites_code_root, site['sid'])

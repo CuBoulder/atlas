@@ -153,7 +153,7 @@ def site_import_from_inventory(site):
     logger.debug(profile_update_task)
     logger.debug(profile_update_task.values)
 
-    settings_update_task = execute(fabfile.replace_settings_file, site=site)
+    settings_update_task = execute(fabfile.update_settings_file, site=site)
     logger.debug(settings_update_task)
     logger.debug(settings_update_task.values)
 

@@ -477,13 +477,12 @@ def rewrite_symlinks(site):
 @roles('webservers')
 def update_settings_file(site):
     print('Update Settings Files\n{0}'.format(site))
-    code_directory = '{0}/{1}'.format(sites_code_root, site['sid'])
-    code_directory_current = '{0}/current'.format(code_directory)
+    code_directory = '{0}/{1}/{1}'.format(sites_code_root, site['sid'])
     profile = utilities.get_single_eve('code', site['code']['profile'])
     profile_name = profile['meta']['name']
 
     _create_settings_files(site, profile_name)
-    _push_settings_files(site, code_directory_current)
+    _push_settings_files(site, code_directory)
 
 
 @roles('webservers')

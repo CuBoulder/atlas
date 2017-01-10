@@ -145,13 +145,25 @@ def site_import_from_inventory(site):
     site['db_key'] = utilities.replace_inventory_encryption_string(site['db_key'])
     logger.debug('New key - {0}'.format(site['db_key']))
 
-    ownership_update_task = execute(fabfile.change_files_owner, site=site)
-    logger.debug(ownership_update_task)
-    logger.debug(ownership_update_task.values)
+    core_update_task = execute(fabfile.site_core_update, site=site)
+    logger.debug(core_update_task)
+    logger.debug(core_update_task.values)
+
+    profile_update_task = execute(fabfile.site_profile_swap, site=site)
+    logger.debug(profile_update_task)
+    logger.debug(profile_update_task.values)
+
     settings_update_task = execute(fabfile.update_settings_file, site=site)
     logger.debug(settings_update_task)
     logger.debug(settings_update_task.values)
 
+    rewrite_symlinks_task = execute(fabfile.rewrite_symlinks, site=site)
+    logger.debug(rewrite_symlinks_task)
+    logger.debug(rewrite_symlinks_task.values)
+
+    database_update_task = execute(fabfile.update_database, site=site)
+    logger.debug(database_update_task)
+    logger.debug(database_update_task.values)
 
     patch_payload = {'db_key': site['db_key'], 'statistics': site['statistics']}
     patch_task = utilities.patch_eve('sites', site['_id'], patch_payload)
@@ -163,7 +175,7 @@ def site_import_from_inventory(site):
     slack_title = '{0}/{1}'.format(base_urls[environment], site['sid'])
     slack_link = '{0}/{1}'.format(base_urls[environment], site['sid'])
     attachment_text = '{0}/sites/{1}'.format(api_urls[environment], site['_id'])
-    if ('Fail' not in settings_update_task.values()) and ('Fail' not in patch_task.values()) and ('Fail' not in ownership_update_task.values()):
+    if ('Fail' not in core_update_task.values()) and ('Fail' not in profile_update_task.values()) and ('Fail' not in settings_update_task.values()) and ('Fail' not in rewrite_symlinks_task.values()) and ('Fail' not in database_update_task.values()) and ('Fail' not in patch_task.values()):
         slack_message = 'Site import - Success'
         slack_color = 'good'
         utilities.post_to_slack(
@@ -172,15 +184,9 @@ def site_import_from_inventory(site):
             link=slack_link,
             attachment_text=attachment_text,
             level=slack_color)
-    if ('Fail' in settings_update_task.values()) or ('Fail' in patch_task.values()) or ('Fail' in ownership_update_task.values()):
+    else:
         slack_message = 'Site import - Failed'
         slack_color = 'danger'
-        if 'Fail' in settings_update_task.values():
-            attachment_text = str(settings_update_task.values())
-        if 'Fail' in patch_task.values():
-            attachment_text = str(patch_task.values())
-        if 'Fail' in ownership_update_task.values():
-            attachment_text = str(ownership_update_task.values())
         utilities.post_to_slack(
             message=slack_message,
             title=slack_title,

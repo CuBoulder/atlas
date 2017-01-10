@@ -145,6 +145,10 @@ def site_import_from_inventory(site):
     site['db_key'] = utilities.replace_inventory_encryption_string(site['db_key'])
     logger.debug('New key - {0}'.format(site['db_key']))
 
+    ownership_update_task = execute(fabfile.change_files_owner, site=site)
+    logger.debug(ownership_update_task)
+    logger.debug(ownership_update_task.values)
+
     core_update_task = execute(fabfile.site_core_update, site=site)
     logger.debug(core_update_task)
     logger.debug(core_update_task.values)

@@ -623,7 +623,6 @@ def _push_settings_files(site, directory):
     print('Push settings\n{0}\n{1}'.format(site, directory))
     send_from = '/tmp/{0}'.format(site['sid'])
     send_to = "{0}/sites/default".format(directory)
-    run("chown -R {0}:{1} {2}".format(ssh_user, webserver_user_group, send_to))
     run("chmod -R 755 {0}".format(send_to))
     put("{0}.settings.local_pre.php".format(send_from),
         "{0}/settings.local_pre.php".format(send_to))

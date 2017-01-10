@@ -486,6 +486,18 @@ def update_settings_file(site):
 
 
 @roles('webservers')
+def replace_settings_file(site):
+    print('Replace Settings Files\n{0}'.format(site))
+    code_directory = '{0}/{1}/{1}'.format(sites_code_root, site['sid'])
+    profile = utilities.get_single_eve('code', site['code']['profile'])
+    profile_name = profile['meta']['name']
+
+    _create_settings_files(site, profile_name)
+    _remove_settings_files(site, code_directory)
+    _push_settings_files(site, code_directory)
+
+
+@roles('webservers')
 def update_homepage_extra_files():
     """
     SCP the homepage files to web heads.
@@ -619,11 +631,19 @@ def _create_settings_files(site, profile_name):
         ofile.write(settings_php)
 
 
+def _remove_settings_files(site, directory):
+    print('Remove settings\n{0}\n{1}'.format(site, directory))
+    destination = "{0}/sites/default".format(directory)
+    run("rm {0}/settings.local_pre.php".format(destination))
+    run("rm {0}/settings.local_post.php".format(destination))
+    run("rm {0}/settings.php".format(destination))
+    run("rm {0}/default.settings.php".format(destination))
+
+
 def _push_settings_files(site, directory):
     print('Push settings\n{0}\n{1}'.format(site, directory))
     send_from = '/tmp/{0}'.format(site['sid'])
     send_to = "{0}/sites/default".format(directory)
-    run("chown -R {0}:{1} {2}".format(ssh_user, webserver_user_group, send_to))
     run("chmod -R 755 {0}".format(send_to))
     put("{0}.settings.local_pre.php".format(send_from),
         "{0}/settings.local_pre.php".format(send_to))

@@ -251,8 +251,6 @@ def site_profile_swap(site):
             code_root,
             profile['meta']['name'],
             new_profile_full_string))
-        print('Rebuild registry.')
-        run("drush rr")
 
 
 @roles('webservers')
@@ -471,13 +469,15 @@ def change_files_owner(site):
 
 @roles('webservers')
 def rewrite_symlinks(site):
-    print('Change File Owners\n{0}'.format(site))
+    print('Rewrite symlinks\n{0}'.format(site))
     code_directory_current = '{0}/{1}/current'.format(sites_code_root, site['sid'])
     web_directory = '{0}/{1}/{2}'.format(sites_web_root, site['type'], site['sid'])
     _update_symlink(code_directory_current, web_directory)
     if site['status'] == 'launched':
         path_symlink = '{0}/{1}/{2}'.format(sites_web_root, site['type'], site['path'])
         _update_symlink(web_directory, path_symlink)
+    with cd(web_directory):
+        run("drush rr")
 
 
 @roles('webservers')

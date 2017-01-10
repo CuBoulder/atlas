@@ -620,6 +620,7 @@ def _create_settings_files(site, profile_name):
 
 
 def _push_settings_files(site, directory):
+    print('Push settings\n{0}\n{1}'.format(site, directory))
     send_from = '/tmp/{0}'.format(site['sid'])
     send_to = "{0}/sites/default".format(directory)
     run("chown -R {0}:{1} {2}".format(ssh_user, webserver_user_group, send_to))

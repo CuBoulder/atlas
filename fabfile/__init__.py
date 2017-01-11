@@ -291,6 +291,7 @@ def site_backup(site):
         site['type'],
         site['sid'])
     date_string = datetime.now().strftime("%Y-%m-%d")
+    date_time_string = datetime.now().strftime("%Y-%m-%d-%H:%M:%S")
     backup_path = '{0}/{1}/{2}'.format(
         backup_directory,
         site['sid'],
@@ -298,18 +299,18 @@ def site_backup(site):
     database_result_file_path = '{0}/{1}_{2}.sql'.format(
         backup_path,
         site['sid'],
-        date_string)
+        date_time_string)
     files_result_file_path = '{0}/{1}_{2}.tar.gz'.format(
         backup_path,
         site['sid'],
-        date_string)
+        date_time_string)
     nfs_dir = nfs_mount_location[environment]
     nfs_files_dir = '{0}/sitefiles/{1}/files'.format(nfs_dir, site['sid'])
     # Start the actual process.
     _create_directory_structure(backup_path)
     with cd(web_directory):
         run('drush sql-dump --result-file={0}'.format(database_result_file_path))
-        run('tar cfz {0} {1}'.format(files_result_file_path, nfs_files_dir))
+        run('tar -czf {0} {1}'.format(files_result_file_path, nfs_files_dir))
 
 
 @roles('webservers')

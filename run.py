@@ -90,7 +90,6 @@ def on_insert_sites_callback(items):
             app.logger.debug('Ready to create item\n{0}'.format(item))
 
 
-
 def on_inserted_sites_callback(items):
     """
     Provision Express instances.
@@ -141,14 +140,16 @@ def on_insert_code_callback(items):
         tasks.code_deploy.delay(item)
 
 
-def post_delete_site_callback(item):
+def pre_delete_sites_callback(request, lookup):
     """
     Remove site from servers right before the item is removed.
 
-    :param item:
+    :param request: flask.request object
+    :param lookup:
     """
-    app.logger.debug(item)
-    tasks.site_remove.delay(item)
+    app.logger.debug(lookup)
+    site = utilities.get_single_eve('sites', lookup['_id'])
+    tasks.site_remove.delay(site)
 
 
 def on_delete_item_code_callback(item):
@@ -236,10 +237,6 @@ def on_update_sites_callback(updates, original):
 
                 updates['dates'] = json.loads(date_json)
 
-            elif updates['status'] == 'delete':
-                app.logger.debug('Ready to hand to Celery\n{0}'.format(item))
-                tasks.site_remove.delay(item)
-                return
         app.logger.debug('Ready to hand to Celery\n{0}'.format(item))
         tasks.site_update.delay(item, updates, original)
 
@@ -295,7 +292,7 @@ app.debug = True
 # Use DB hooks if you want to modify data on the way in.
 app.on_pre_POST += pre_post_callback
 app.on_pre_DELETE_code += pre_delete_code_callback
-app.on_post_DELETE_site += post_delete_site_callback
+app.on_pre_DELETE_sites += pre_delete_sites_callback
 app.on_insert_code += on_insert_code_callback
 app.on_insert_sites += on_insert_sites_callback
 app.on_inserted_sites += on_inserted_sites_callback

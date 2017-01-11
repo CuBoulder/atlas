@@ -119,7 +119,6 @@ sites_schema = {
             'take_down',
             'down',
             'restore',
-            'delete'
         ],
         'default': 'pending',
     },

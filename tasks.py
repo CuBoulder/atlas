@@ -82,7 +82,7 @@ def code_remove(item):
     :param item: Item to be removed.
     :return:
     """
-    logger.debug('Code delete - {0}'.format(item))
+    logger.debug('Code remove - {0}'.format(item))
     fab_task = execute(fabfile.code_remove, item=item)
 
     slack_title = '{0} - {1}'.format(item['meta']['name'],
@@ -246,7 +246,7 @@ def site_remove(site):
     :param site: Item to be removed.
     :return:
     """
-    logger.debug('Site delete\n{0}'.format(site))
+    logger.debug('Site remove\n{0}'.format(site))
     execute(fabfile.site_remove, site=site)
 
     delete = utilities.delete_eve('sites', site['_id'])
@@ -405,8 +405,7 @@ def delete_stale_pending_sites():
         seconds_since_creation = time.time() - time.mktime(date_created)
         # 30 min * 60 sec = 1800 seconds
         if seconds_since_creation > 1800:
-            payload = {'status': 'delete'}
-            utilities.patch_eve('sites', site['_id'], payload)
+            utilities.delete_eve('sites', site['_id'])
 
 
 @celery.task
@@ -416,9 +415,8 @@ def delete_all_available_sites():
     """
     site_query = 'where={"status":"available"}'
     sites = utilities.get_eve('sites', site_query)
-    payload = {'status': 'delete'}
     for site in sites:
-        utilities.patch_eve('sites', site['_id'], payload)
+        utilities.delete_eve('sites', site['_id'])
 
 
 @celery.task

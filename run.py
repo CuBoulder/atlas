@@ -236,10 +236,6 @@ def on_update_sites_callback(updates, original):
 
                 updates['dates'] = json.loads(date_json)
 
-            elif updates['status'] == 'delete':
-                app.logger.debug('Ready to hand to Celery\n{0}'.format(item))
-                tasks.site_remove.delay(item)
-                return
         app.logger.debug('Ready to hand to Celery\n{0}'.format(item))
         tasks.site_update.delay(item, updates, original)
 

@@ -107,7 +107,7 @@ def on_inserted_sites_callback(items):
             # Need to get the string out of the ObjectID.
             statistics_payload['site'] = str(item['_id'])
             app.logger.debug('Create Statistics item\n{0}'.format(statistics_payload))
-            statistics = utilities.post_eve(resource='statistics', payload= statistics_payload)
+            statistics = utilities.post_eve(resource='statistics', payload=statistics_payload)
             app.logger.debug(statistics)
             item['statistics'] = str(statistics['_id'])
             app.logger.debug('Ready to send to Celery\n{0}'.format(item))

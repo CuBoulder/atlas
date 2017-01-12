@@ -873,14 +873,15 @@ def _diff_f5():
     site items.
 
     """
-    load_balancer_config_dir = '{0}/atlas/fabfile'.format(path)
+    load_balancer_config_dir = '/data/code/atlas/fabfile'
     load_balancer_config_file = '{0}/{1}'.format(
         load_balancer_config_dir,
         load_balancer_config_files[environment])
     # If an older config file exists, copy it to a backup folder.
     if os.path.isfile(load_balancer_config_file):
-        local('mv {0} /data/code/inventory/fabfile/backup/{1}.{2}'.format(
+        local('mv {0} {1}/backup/{2}.{3}'.format(
             load_balancer_config_file,
+            load_balancer_config_dir,
             load_balancer_config_files[environment],
             str(time()).split('.')[0]))
     # Copy config file from the f5 server to the Atlas server.

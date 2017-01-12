@@ -474,9 +474,12 @@ def rewrite_symlinks(site):
     code_directory_current = '{0}/{1}/current'.format(sites_code_root, site['sid'])
     web_directory = '{0}/{1}/{2}'.format(sites_web_root, site['type'], site['sid'])
     _update_symlink(code_directory_current, web_directory)
-    if site['status'] == 'launched':
+    if site['status'] == 'launched' and site['pool'] != 'poolb-homepage':
         path_symlink = '{0}/{1}/{2}'.format(sites_web_root, site['type'], site['path'])
         _update_symlink(web_directory, path_symlink)
+    if site['status'] == 'launched' and site['pool'] == 'poolb-homepage':
+        web_directory = '{0}/{1}'.format(sites_web_root, 'homepage')
+        _update_symlink(code_directory_current, web_directory)
     with cd(web_directory):
         run("drush rr")
 

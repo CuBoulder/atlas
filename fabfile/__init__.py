@@ -6,6 +6,7 @@ Commands that run on servers to do the actual work.
 import sys
 import requests
 import re
+import os
 
 from fabric.contrib.files import append, exists, sed
 from fabric.api import *

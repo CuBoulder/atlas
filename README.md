@@ -9,7 +9,7 @@ See [Express_local](https://github.com/CuBoulder/express_local) for setting up a
 ## Getting started
 
 Code items should be created first. Required fields are: git URL, commit hash, Name, Version, and Type (core, profile, module, theme, library). Optional fields are: is_current (allows you to indicate the preferred version of a code item) and a tagging field.
- 
+
 Site items are created with a 'pending' status and can be assigned a specific core and/or profile when created. If a core or profile is not specified, the 'current' version of the default is used.
 
 ## Features
@@ -35,7 +35,9 @@ Currently we use a `git pull` deployment. When code is changed, you need to rest
 Pull requests are always welcome. Project is under active development. We want to make sure that Express doesn't become dependant on Atlas.
 
 ## Sample requests
+
 ### Code items
+
 #### Drupal core 7.42
 ```bash
 curl -i -v -X POST -d '{"git_url": "git@github.com:CuBoulder/drupal-7.x.git", "commit_hash": "9ee4a1a2fa3bedb3852d21f2198509c107c48890", "meta":{"version": "7.42", "code_type": "core", "name": "drupal", "is_current": true}}' -H 'Content-Type: application/json' -u 'USERNAME:PASSWORD' http://inventory.local/atlas/code
@@ -47,6 +49,7 @@ curl -i -v -X POST -d '{"git_url": "git@github.com:CuBoulder/express.git", "comm
 ```
 
 ### Site items
+
 #### Create a Site
 ```bash
 curl -i -v -X POST -d '{"status": "pending"}' -H 'Content-Type: application/json' -u 'USERNAME:PASSWORD' http://inventory.local/atlas/sites

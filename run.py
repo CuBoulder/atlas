@@ -192,11 +192,13 @@ def on_update_code_callback(updates, original):
     # Copy 'original' to a new dict, then update it with values from 'updates'
     # to create an item to deploy. Need to do the same process for meta first,
     # otherwise the update will fully overwrite.
-    meta = original['meta'].copy()
-    meta.update(updates['meta'])
+    if updates.get('meta'):
+        meta = original['meta'].copy()
+        meta.update(updates['meta'])
     updated_item = original.copy()
     updated_item.update(updates)
-    updated_item['meta'] = meta
+    if updates.get('meta'):
+        updated_item['meta'] = meta
 
     app.logger.debug('Ready to hand to Celery\n{0}\n{1}'.format(updated_item, original))
     tasks.code_update.delay(updated_item, original)

@@ -1,1 +1,4 @@
-theme: jekyll-theme-cayman
+theme: jekyll-theme-leap-day
+title: Atlas
+description: RESTful API that interacts with servers to deploy and maintain Web Express
+google_analytics: UA-25752450-5

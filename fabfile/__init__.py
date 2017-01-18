@@ -899,7 +899,7 @@ def _diff_f5():
     # Iterate through sites found in f5 data
     for site in sites:
         f5only = False
-        if site[0] in f5exceptions:
+        if site[0] in load_balancer_exceptions:
             f5only = True
         # Get path without leading slash
         path = site[0][1:]

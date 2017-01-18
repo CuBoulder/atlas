@@ -377,6 +377,7 @@ def site_remove(site):
         _remove_directory(nfs_files_dir)
 
     _remove_directory(code_directory)
+    _update_f5()
 
 
 def correct_file_directory_permissions(site):
@@ -947,7 +948,7 @@ def _update_f5():
         load_balancer_config_files[environment],
         str(time()).split('.')[0])
     load_balancer_config_dir = '{0}/atlas/fabfile'.format(path)
-    sites = get_eve('sites', 'max_results=3000')
+    sites = utilities.get_eve('sites', 'max_results=3000')
 
     # TODO: delete old backups
 
@@ -956,8 +957,9 @@ def _update_f5():
               "w") as ofile:
         for site in sites['_items']:
             if 'path' in site:
-                # If a site is down, skip to the next site
-                if 'status' in site and site['status'] == 'down':
+                # If a site is down or scheduled for deletion, skip to the next
+                # site.
+                if 'status' in site and (site['status'] == 'down' or site['status'] == 'delete'):
                     continue
                 # In case a path was saved with a leading slash
                 path = site["path"] if site["path"][0] == '/' else '/' + site["path"]

@@ -10,6 +10,7 @@ import os
 
 from fabric.contrib.files import append, exists, sed
 from fabric.api import *
+from fabric.network import disconnect_all
 from jinja2 import Environment, PackageLoader
 from random import randint
 from time import time
@@ -984,3 +985,4 @@ def _exportf5(new_file_name, load_balancer_config_dir):
     # Load the new configuration.
     with cd("/config"):
         run("b load;")
+    disconnect_all()

@@ -916,9 +916,9 @@ def _diff_f5():
             type = 'custom'
 
         site_query = 'where={{"path":"{0}"}}'.format(path)
-        sites = utilities.get_eve('sites', site_query)
+        api_sites = utilities.get_eve('sites', site_query)
 
-        if not sites or len(sites['_items']) == 0:
+        if not api_sites or len(api_sites['_items']) == 0:
             payload = {
                 "name": path,
                 "path": path,
@@ -929,8 +929,8 @@ def _diff_f5():
             }
             utilities.post_eve('sites', payload)
             print ('Created site record based on f5.\n{0}'.format(payload))
-        elif pool != data['_items'][0]['pool']:
-            site = data['_items'][0]
+        elif pool != api_sites['_items'][0]['pool']:
+            site = api_sites['_items'][0]
             payload = {
                 "pool": pool,
                 "status": "launched",

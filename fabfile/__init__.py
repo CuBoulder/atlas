@@ -947,7 +947,7 @@ def _update_f5():
     new_file_name = "{0}.{1}.bac".format(
         load_balancer_config_files[environment],
         str(time()).split('.')[0])
-    load_balancer_config_dir = '{0}/atlas/fabfile'.format(path)
+    load_balancer_config_dir = '/data/code/atlas/fabfile'.format(path)
     sites = utilities.get_eve('sites', 'max_results=3000')
 
     # TODO: delete old backups

@@ -560,9 +560,8 @@ def _delete_database(site):
         # TODO: Make file location config.
         os.environ['MYSQL_TEST_LOGIN_FILE'] = '/home/{0}/.mylogin.cnf'.format(
             ssh_user)
-        mysql_login_path = "invsqlagnt_{0}_poolb".format(environment)
-        mysql_info = '/usr/local/mysql/bin/mysql --login-path={0} -e'.format(
-            mysql_login_path)
+        mysql_login_path = "{0}_{1}".format(database_user, environment)
+        mysql_info = '{0} --login-path={1} -e'.format(mysql_path, mysql_login_path)
         database_password = utilities.decrypt_string(site['db_key'])
         local('{0} \'DROP DATABASE IF EXISTS `{1}`;\''.format(mysql_info, site['sid']))
         # TODO: Make IP addresses config.

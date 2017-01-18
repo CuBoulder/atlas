@@ -277,7 +277,7 @@ def site_launch(site):
         print ('Diff f5')
         _diff_f5()
         print ('Update f5')
-        _update_f5()
+        update_f5()
 
 
 @roles('webserver_single')
@@ -377,7 +377,6 @@ def site_remove(site):
         _remove_directory(nfs_files_dir)
 
     _remove_directory(code_directory)
-    _update_f5()
 
 
 def correct_file_directory_permissions(site):
@@ -940,7 +939,7 @@ def _diff_f5():
             print 'Updated site based on f5.\n{0}'.format(payload)
 
 
-def _update_f5():
+def update_f5():
     # Like 'WWWNGProdDataGroup.dat'
     old_file_name = load_balancer_config_files[environment]
     # Like 'WWWNGDevDataGroup.dat.1402433484.bac'

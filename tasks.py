@@ -238,7 +238,7 @@ def site_update(site, updates, original):
                 patch_payload = '{"status": "launched"}'
             elif updates['status'] == 'take_down':
                 logger.debug('Status changed to take_down')
-                execute(fabfile.site_backup, site=site)
+                # execute(fabfile.site_backup, site=site)
                 execute(fabfile.site_take_down, site=site)
                 patch_payload = '{"status": "down"}'
             elif updates['status'] == 'restore':
@@ -279,7 +279,7 @@ def site_remove(site):
     """
     logger.debug('Site remove\n{0}'.format(site))
     if site['type'] == 'express':
-        execute(fabfile.site_backup, site=site)
+        # execute(fabfile.site_backup, site=site)
         utilities.delete_eve('statistics', site['statistics'])
         execute(fabfile.site_remove, site=site)
 
@@ -325,9 +325,9 @@ def command_prepare(item):
                 if item['command'] == 'update_homepage_extra_files':
                     execute(fabfile.update_homepage_extra_files())
                     continue
-                if item['command'] == 'site_backup':
-                    execute(fabfile.site_backup, site=site)
-                    continue
+                # if item['command'] == 'site_backup':
+                #     execute(fabfile.site_backup, site=site)
+                #     continue
                 command_run(site, item['command'], item['single_server'])
 
 

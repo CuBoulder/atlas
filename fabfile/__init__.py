@@ -879,7 +879,7 @@ def _diff_f5():
         load_balancer_config_files[environment])
     # If an older config file exists, copy it to a backup folder.
     if os.path.isfile(load_balancer_config_file):
-        local('mv {0} {1}/backup/{2}.{3}'.format(
+        local('mv {0} {1}/f5_backups/{2}.{3}'.format(
             load_balancer_config_file,
             load_balancer_config_dir,
             load_balancer_config_files[environment],

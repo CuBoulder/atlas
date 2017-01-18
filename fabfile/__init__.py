@@ -887,7 +887,7 @@ def _diff_f5():
             str(time()).split('.')[0]))
     # Copy config file from the f5 server to the Atlas server.
     local('scp {0}:/config/{1} {2}/'.format(
-        serverdefs[environment]['load_balancer'][0],
+        serverdefs[environment]['load_balancers'][0],
         load_balancer_config_files[environment],
         load_balancer_config_dir))
 

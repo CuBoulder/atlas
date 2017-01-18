@@ -6,12 +6,15 @@ Commands that run on servers to do the actual work.
 import sys
 import requests
 import re
+import os
 
 from fabric.contrib.files import append, exists, sed
 from fabric.api import *
+from fabric.network import disconnect_all
 from jinja2 import Environment, PackageLoader
 from random import randint
 from time import time
+from datetime import datetime
 from atlas.config import *
 from atlas import utilities
 
@@ -139,9 +142,11 @@ def site_provision(site, install=True):
     code_directory = '{0}/{1}'.format(sites_code_root, site['sid'])
     code_directory_sid = '{0}/{1}'.format(code_directory, site['sid'])
     code_directory_current = '{0}/current'.format(code_directory)
-    web_directory = '{0}/{1}/{2}'.format(
+    web_directory_type = '{0}/{1}'.format(
         sites_web_root,
-        site['type'],
+        site['type'])
+    web_directory_sid = '{0}/{1}'.format(
+        web_directory_type,
         site['sid'])
     profile = utilities.get_single_eve('code', site['code']['profile'])
     profile_name = profile['meta']['name']
@@ -151,6 +156,7 @@ def site_provision(site, install=True):
     _create_settings_files(site, profile_name)
 
     _create_directory_structure(code_directory)
+    _create_directory_structure(web_directory_type)
 
     with cd(code_directory):
         core = _get_code_name_version(site['code']['core'])
@@ -174,7 +180,7 @@ def site_provision(site, install=True):
 
     _push_settings_files(site, code_directory_current)
 
-    _update_symlink(code_directory_current, web_directory)
+    _update_symlink(code_directory_current, web_directory_sid)
     correct_file_directory_permissions(site)
 
     if install:
@@ -235,6 +241,21 @@ def site_profile_update(site, original, updates):
 
 
 @roles('webservers')
+def site_profile_swap(site):
+    print('Site Profile Update\n{0}'.format(site))
+    code_directory_sid = '{0}/{1}/{1}'.format(sites_code_root, site['sid'])
+    profile = utilities.get_single_eve('code', site['code']['profile'])
+    new_profile_full_string = _get_code_name_version(site['code']['profile'])
+
+    with cd(code_directory_sid + '/profiles'):
+        run("rm {0}; ln -s {1}/profiles/{2}/{3} {2}".format(
+            profile['meta']['name'],
+            code_root,
+            profile['meta']['name'],
+            new_profile_full_string))
+
+
+@roles('webservers')
 def site_launch(site):
     update_settings_file(site)
 
@@ -257,7 +278,41 @@ def site_launch(site):
         print ('Diff f5')
         _diff_f5()
         print ('Update f5')
-        _update_f5()
+        update_f5()
+
+
+@roles('webserver_single')
+def site_backup(site):
+    """
+    Backup the database and files for an instance.
+    """
+    print('Site - Backup\m{0}'.format(site))
+    # Setup all the variables we will need.
+    web_directory = '{0}/{1}/{2}'.format(
+        sites_web_root,
+        site['type'],
+        site['sid'])
+    date_string = datetime.now().strftime("%Y-%m-%d")
+    date_time_string = datetime.now().strftime("%Y-%m-%d-%H:%M:%S")
+    backup_path = '{0}/{1}/{2}'.format(
+        backup_directory,
+        site['sid'],
+        date_string)
+    database_result_file_path = '{0}/{1}_{2}.sql'.format(
+        backup_path,
+        site['sid'],
+        date_time_string)
+    files_result_file_path = '{0}/{1}_{2}.tar.gz'.format(
+        backup_path,
+        site['sid'],
+        date_time_string)
+    nfs_dir = nfs_mount_location[environment]
+    nfs_files_dir = '{0}/sitefiles/{1}/files'.format(nfs_dir, site['sid'])
+    # Start the actual process.
+    _create_directory_structure(backup_path)
+    with cd(web_directory):
+        run('drush sql-dump --result-file={0}'.format(database_result_file_path))
+        run('tar -czf {0} {1}'.format(files_result_file_path, nfs_files_dir))
 
 
 @roles('webservers')
@@ -408,15 +463,39 @@ def drush_cache_clear(sid):
 
 
 @roles('webservers')
+def change_files_owner(site):
+    print('Change File Owners\n{0}'.format(site))
+    code_directory = '{0}/{1}'.format(sites_code_root, site['sid'])
+    # Change the owner when it matches the old deployment user.
+    run("sudo chown -R --from={0} {1}:{2} {3}".format(former_user, ssh_user, webserver_user_group, code_directory))
+
+
+@roles('webservers')
+def rewrite_symlinks(site):
+    print('Rewrite symlinks\n{0}'.format(site))
+    code_directory_current = '{0}/{1}/current'.format(sites_code_root, site['sid'])
+    web_directory = '{0}/{1}/{2}'.format(sites_web_root, site['type'], site['sid'])
+    if site['pool'] != 'poolb-homepage':
+        _update_symlink(code_directory_current, web_directory)
+    if site['status'] == 'launched' and site['pool'] != 'poolb-homepage':
+        path_symlink = '{0}/{1}/{2}'.format(sites_web_root, site['type'], site['path'])
+        _update_symlink(web_directory, path_symlink)
+    if site['status'] == 'launched' and site['pool'] == 'poolb-homepage':
+        web_directory = '{0}/{1}'.format(sites_web_root, 'homepage')
+        _update_symlink(code_directory_current, web_directory)
+    with cd(web_directory):
+        run("drush rr")
+
+
+@roles('webservers')
 def update_settings_file(site):
     print('Update Settings Files\n{0}'.format(site))
-    code_directory = '{0}/{1}'.format(sites_code_root, site['sid'])
-    code_directory_current = '{0}/current'.format(code_directory)
+    code_directory = '{0}/{1}/{1}'.format(sites_code_root, site['sid'])
     profile = utilities.get_single_eve('code', site['code']['profile'])
     profile_name = profile['meta']['name']
 
     _create_settings_files(site, profile_name)
-    _push_settings_files(site, code_directory_current)
+    _push_settings_files(site, code_directory)
 
 
 @roles('webservers')
@@ -457,16 +536,14 @@ def _remove_symlink(symlink):
 # TODO: Add decorator to run on a single host.
 def _create_database(site):
     if environment != 'local':
-        # TODO: Make file location config.
         os.environ['MYSQL_TEST_LOGIN_FILE'] = '/home/{0}/.mylogin.cnf'.format(
             ssh_user)
-        mysql_login_path = "invsqlagnt_{0}_poolb".format(environment)
-        mysql_info = '/usr/local/mysql/bin/mysql --login-path={0} -e'.format(
-            mysql_login_path)
+        mysql_login_path = "{0}_{1}".format(database_user, environment)
+        mysql_info = '{0} --login-path={1} -e'.format(mysql_path, mysql_login_path)
         database_password = utilities.decrypt_string(site['db_key'])
-        local('{0} \'create database `{1}`;\''.format(mysql_info, site['sid']))
+        local('{0} \'CREATE DATABASE `{1}`;\''.format(mysql_info, site['sid']))
         # TODO: Make IP addresses config.
-        local("{0} \"create user '{1}'@'172.20.62.0/255.255.255.0' identified by '{2}';\"".format(
+        local("{0} \"CREATE USER '{1}'@'172.20.62.0/255.255.255.0' IDENTIFIED BY '{2}';\"".format(
             mysql_info,
             site['sid'],
             database_password))
@@ -484,19 +561,17 @@ def _delete_database(site):
         # TODO: Make file location config.
         os.environ['MYSQL_TEST_LOGIN_FILE'] = '/home/{0}/.mylogin.cnf'.format(
             ssh_user)
-        mysql_login_path = "invsqlagnt_{0}_poolb".format(environment)
-        mysql_info = '/usr/local/mysql/bin/mysql --login-path={0} -e'.format(
-            mysql_login_path)
+        mysql_login_path = "{0}_{1}".format(database_user, environment)
+        mysql_info = '{0} --login-path={1} -e'.format(mysql_path, mysql_login_path)
         database_password = utilities.decrypt_string(site['db_key'])
-        local('{0} \'drop database `{1}`;\''.format(mysql_info, site['sid']))
+        local('{0} \'DROP DATABASE IF EXISTS `{1}`;\''.format(mysql_info, site['sid']))
         # TODO: Make IP addresses config.
-        local("{0} \"drop user '{1}'@'172.20.62.0/255.255.255.0' identified by '{2}';\"".format(
+        local("{0} \"DROP USER '{1}'@'172.20.62.0/255.255.255.0';\"".format(
             mysql_info,
-            site['sid'],
-            database_password))
+            site['sid']))
     else:
         with settings(host_string='express.local'):
-            run("mysql -e 'drop database `{}`;'".format(site['sid']))
+            run("mysql -e 'DROP DATABASE IF EXISTS `{}`;'".format(site['sid']))
 
 
 def _create_settings_files(site, profile_name):
@@ -508,7 +583,9 @@ def _create_settings_files(site, profile_name):
     # If the site is launching or launched, we add 'cu_path' and redirect the
     # p1 URL.
     status = site['status']
-
+    id = site['_id']
+    page_cache_maximum_age = site['settings']['page_cache_maximum_age']
+    atlas_url = '{0}/'.format(api_urls[environment])
     database_password = utilities.decrypt_string(site['db_key'])
 
     # Call the template file and render the variables into it.
@@ -516,6 +593,10 @@ def _create_settings_files(site, profile_name):
     local_pre_settings = template.render(
         profile=profile_name,
         sid=sid,
+        atlas_id=id,
+        atlas_url=atlas_url,
+        atlas_username=service_account_username,
+        atlas_password=service_account_password,
         path=path,
         status=status,
         pool_full=site['pool']
@@ -528,6 +609,7 @@ def _create_settings_files(site, profile_name):
     local_post_settings = template.render(
         sid=sid,
         pw=database_password,
+        page_cache_maximum_age=page_cache_maximum_age,
         database_servers=env.roledefs['database_servers'],
         memcache_servers=env.roledefs['memcache_servers'],
         environment=environment if environment != 'prod' else '',
@@ -549,6 +631,7 @@ def _create_settings_files(site, profile_name):
 
 
 def _push_settings_files(site, directory):
+    print('Push settings\n{0}\n{1}'.format(site, directory))
     send_from = '/tmp/{0}'.format(site['sid'])
     send_to = "{0}/sites/default".format(directory)
     run("chmod -R 755 {0}".format(send_to))
@@ -581,6 +664,7 @@ def _checkout_repo(checkout_item, destination):
         checkout_item))
     with cd(destination):
         run('git reset --hard')
+        run('git fetch --all')
         run('git checkout {0}'.format(checkout_item))
         run('git clean -f -f -d')
 
@@ -788,24 +872,25 @@ def _diff_f5():
     site items.
 
     """
-    f5_config_dir = '{0}/atlas/fabfile'.format(path)
-    f5_config_file = '{0}/{1}'.format(
-        f5_config_dir,
-        f5_config_files[environment])
+    load_balancer_config_dir = '/data/code/atlas/fabfile'
+    load_balancer_config_file = '{0}/{1}'.format(
+        load_balancer_config_dir,
+        load_balancer_config_files[environment])
     # If an older config file exists, copy it to a backup folder.
-    if os.path.isfile(f5_config_file):
-        local('mv {0} /data/code/inventory/fabfile/backup/{1}.{2}'.format(
-            f5_config_file,
-            f5_config_files[environment],
+    if os.path.isfile(load_balancer_config_file):
+        local('mv {0} {1}/f5_backups/{2}.{3}'.format(
+            load_balancer_config_file,
+            load_balancer_config_dir,
+            load_balancer_config_files[environment],
             str(time()).split('.')[0]))
     # Copy config file from the f5 server to the Atlas server.
     local('scp {0}:/config/{1} {2}/'.format(
-        serverdefs[environment]['f5_servers'][0],
-        f5_config_files[environment],
-        f5_config_dir))
+        serverdefs[environment]['load_balancers'][0],
+        load_balancer_config_files[environment],
+        load_balancer_config_dir))
 
     # Open file from f5
-    with open(f5_config_file, "r") as ifile:
+    with open(load_balancer_config_file, "r") as ifile:
         data = ifile.read()
     # Use regex to parse out path values
     p = re.compile('"(.+/?)" := "(\w+(-\w+)?)",')
@@ -813,7 +898,7 @@ def _diff_f5():
     # Iterate through sites found in f5 data
     for site in sites:
         f5only = False
-        if site[0] in f5exceptions:
+        if site[0] in load_balancer_exceptions:
             f5only = True
         # Get path without leading slash
         path = site[0][1:]
@@ -829,9 +914,9 @@ def _diff_f5():
             type = 'custom'
 
         site_query = 'where={{"path":"{0}"}}'.format(path)
-        sites = utilities.get_eve('sites', site_query)
+        api_sites = utilities.get_eve('sites', site_query)
 
-        if not sites or len(sites['_items']) == 0:
+        if not api_sites or len(api_sites['_items']) == 0:
             payload = {
                 "name": path,
                 "path": path,
@@ -842,8 +927,8 @@ def _diff_f5():
             }
             utilities.post_eve('sites', payload)
             print ('Created site record based on f5.\n{0}'.format(payload))
-        elif pool != data['_items'][0]['pool']:
-            site = data['_items'][0]
+        elif pool != api_sites['_items'][0]['pool']:
+            site = api_sites['_items'][0]
             payload = {
                 "pool": pool,
                 "status": "launched",
@@ -853,25 +938,26 @@ def _diff_f5():
             print 'Updated site based on f5.\n{0}'.format(payload)
 
 
-def _update_f5():
+def update_f5():
     # Like 'WWWNGProdDataGroup.dat'
-    old_file_name = f5_config_file[environment]
+    old_file_name = load_balancer_config_files[environment]
     # Like 'WWWNGDevDataGroup.dat.1402433484.bac'
     new_file_name = "{0}.{1}.bac".format(
-        f5_config_file[environment],
+        load_balancer_config_files[environment],
         str(time()).split('.')[0])
-    f5_config_dir = '{0}/atlas/fabfile'.format(path)
-    sites = get_eve('sites', 'max_results=3000')
+    load_balancer_config_dir = '/data/code/atlas/fabfile'
+    sites = utilities.get_eve('sites', 'max_results=3000')
 
     # TODO: delete old backups
 
     # Write data to file
-    with open("{0}/{1}".format(f5_config_dir, f5_config_file[environment]),
+    with open("{0}/{1}".format(load_balancer_config_dir, load_balancer_config_files[environment]),
               "w") as ofile:
         for site in sites['_items']:
             if 'path' in site:
-                # If a site is down, skip to the next site
-                if 'status' in site and site['status'] == 'down':
+                # If a site is down or scheduled for deletion, skip to the next
+                # site.
+                if 'status' in site and (site['status'] == 'down' or site['status'] == 'delete'):
                     continue
                 # In case a path was saved with a leading slash
                 path = site["path"] if site["path"][0] == '/' else '/' + site["path"]
@@ -881,11 +967,11 @@ def _update_f5():
 
     execute(_exportf5,
             new_file_name=new_file_name,
-            f5_config_dir=f5_config_dir)
+            load_balancer_config_dir=load_balancer_config_dir)
 
 
-@hosts('f5_servers')
-def _exportf5(new_file_name, f5_config_dir):
+@roles('load_balancers')
+def _exportf5(new_file_name, load_balancer_config_dir):
     """
     Backup configuration file on f5 server, replace the active file, and reload
     the configuration.
@@ -893,9 +979,10 @@ def _exportf5(new_file_name, f5_config_dir):
     """
     # On an f5 server, backup the current configuration file.
     with cd("/config"):
-        run("cp {0} {1}".format(f5_config_file[environment], new_file_name))
+        run("cp {0} {1}".format(load_balancer_config_files[environment], new_file_name))
     # Copy the new configuration file to the server.
-    put("{0}/{1}".format(f5_config_dir, f5_config_file[environment]), "/config")
+    put("{0}/{1}".format(load_balancer_config_dir, load_balancer_config_files[environment]), "/config")
     # Load the new configuration.
     with cd("/config"):
         run("b load;")
+    disconnect_all()

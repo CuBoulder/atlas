@@ -82,7 +82,7 @@ def code_remove(item):
     :param item: Item to be removed.
     :return:
     """
-    logger.debug('Code delete - {0}'.format(item))
+    logger.debug('Code remove - {0}'.format(item))
     fab_task = execute(fabfile.code_remove, item=item)
 
     slack_title = '{0} - {1}'.format(item['meta']['name'],
@@ -112,17 +112,85 @@ def site_provision(site):
     logger.debug(fab_task)
     logger.debug(fab_task.values)
 
-    patch_payload = {'status': 'available', 'db_key': site['db_key']}
+    patch_payload = {'status': 'available', 'db_key': site['db_key'], 'statistics': site['statistics']}
     patch = utilities.patch_eve('sites', site['_id'], patch_payload)
 
     logger.debug('Site has been provisioned\n{0}'.format(patch))
 
-    slack_title = '{0}/{1}'.format(base_urls[environment], site['sid'])
-    slack_link = '{0}/{1}'.format(base_urls[environment], site['sid'])
-    attachment_text = '{0}/sites/{1}'.format(api_server, site['_id'])
+    slack_title = '{0}/{1}'.format(base_urls[environment], site['path'])
+    slack_link = '{0}/{1}'.format(base_urls[environment], site['path'])
+    attachment_text = '{0}/sites/{1}'.format(api_urls[environment], site['_id'])
     if False not in fab_task.values():
         slack_message = 'Site provision - Success'
         slack_color = 'good'
+        utilities.post_to_slack(
+            message=slack_message,
+            title=slack_title,
+            link=slack_link,
+            attachment_text=attachment_text,
+            level=slack_color)
+
+
+@celery.task
+def site_import_from_inventory(site):
+    """
+    Take over an instance with the given parameters.
+
+    :param site: A single site.
+    :return:
+    """
+    logger.debug('Site import - {0}'.format(site))
+    # Decrypt and re-encrypt DB key.
+    logger.debug('Original key - {0}'.format(site['db_key']))
+    site['db_key'] = utilities.replace_inventory_encryption_string(site['db_key'])
+    logger.debug('New key - {0}'.format(site['db_key']))
+
+    ownership_update_task = execute(fabfile.change_files_owner, site=site)
+    logger.debug(ownership_update_task)
+    logger.debug(ownership_update_task.values)
+
+    core_update_task = execute(fabfile.site_core_update, site=site)
+    logger.debug(core_update_task)
+    logger.debug(core_update_task.values)
+
+    profile_update_task = execute(fabfile.site_profile_swap, site=site)
+    logger.debug(profile_update_task)
+    logger.debug(profile_update_task.values)
+
+    settings_update_task = execute(fabfile.update_settings_file, site=site)
+    logger.debug(settings_update_task)
+    logger.debug(settings_update_task.values)
+
+    rewrite_symlinks_task = execute(fabfile.rewrite_symlinks, site=site)
+    logger.debug(rewrite_symlinks_task)
+    logger.debug(rewrite_symlinks_task.values)
+
+    database_update_task = execute(fabfile.update_database, site=site)
+    logger.debug(database_update_task)
+    logger.debug(database_update_task.values)
+
+    patch_payload = {'db_key': site['db_key'], 'statistics': site['statistics']}
+    patch_task = utilities.patch_eve('sites', site['_id'], patch_payload)
+    logger.debug(patch_task)
+    logger.debug(patch_task.values)
+
+    logger.debug('Site has been imported\n{0}'.format(patch_task))
+
+    slack_title = '{0}/{1}'.format(base_urls[environment], site['path'])
+    slack_link = '{0}/{1}'.format(base_urls[environment], site['path'])
+    attachment_text = '{0}/sites/{1}'.format(api_urls[environment], site['_id'])
+    if ('Fail' not in core_update_task.values()) and ('Fail' not in profile_update_task.values()) and ('Fail' not in settings_update_task.values()) and ('Fail' not in rewrite_symlinks_task.values()) and ('Fail' not in database_update_task.values()) and ('Fail' not in patch_task.values()):
+        slack_message = 'Site import - Success'
+        slack_color = 'good'
+        utilities.post_to_slack(
+            message=slack_message,
+            title=slack_title,
+            link=slack_link,
+            attachment_text=attachment_text,
+            level=slack_color)
+    else:
+        slack_message = 'Site import - Failed'
+        slack_color = 'danger'
         utilities.post_to_slack(
             message=slack_message,
             title=slack_title,
@@ -170,6 +238,7 @@ def site_update(site, updates, original):
                 patch_payload = '{"status": "launched"}'
             elif updates['status'] == 'take_down':
                 logger.debug('Status changed to take_down')
+                # execute(fabfile.site_backup, site=site)
                 execute(fabfile.site_take_down, site=site)
                 patch_payload = '{"status": "down"}'
             elif updates['status'] == 'restore':
@@ -181,9 +250,15 @@ def site_update(site, updates, original):
             patch = utilities.patch_eve('sites', site['_id'], patch_payload)
             logger.debug(patch)
 
-    slack_title = '{0}/{1}'.format(base_urls[environment], site['sid'])
-    slack_link = '{0}/{1}'.format(base_urls[environment], site['sid'])
-    attachment_text = '{0}/sites/{1}'.format(api_server, site['_id'])
+    if updates.get('settings'):
+        logger.debug('Found settings change.')
+        if updates['settings'].get('page_cache_maximum_age') != original['settings'].get('page_cache_maximum_age'):
+            logger.debug('Found page_cache_maximum_age change.')
+        execute(fabfile.update_settings_file, site=site)
+
+    slack_title = '{0}/{1}'.format(base_urls[environment], site['path'])
+    slack_link = '{0}/{1}'.format(base_urls[environment], site['path'])
+    attachment_text = '{0}/sites/{1}'.format(api_urls[environment], site['_id'])
     slack_message = 'Site Update - Success'
     slack_color = 'good'
     utilities.post_to_slack(
@@ -193,6 +268,7 @@ def site_update(site, updates, original):
         attachment_text=attachment_text,
         level=slack_color)
 
+
 @celery.task
 def site_remove(site):
     """
@@ -201,13 +277,15 @@ def site_remove(site):
     :param site: Item to be removed.
     :return:
     """
-    logger.debug('Site delete\n{0}'.format(site))
-    execute(fabfile.site_remove, site=site)
+    logger.debug('Site remove\n{0}'.format(site))
+    if site['type'] == 'express':
+        # execute(fabfile.site_backup, site=site)
+        utilities.delete_eve('statistics', site['statistics'])
+        execute(fabfile.site_remove, site=site)
 
-    delete = utilities.delete_eve('sites', site['_id'])
-    logger.debug(delete)
+    execute(fabfile.update_f5)
 
-    slack_title = '{0}/{1}'.format(base_urls[environment], site['sid'])
+    slack_title = '{0}/{1}'.format(base_urls[environment], site['path'])
     slack_message = 'Site Remove - Success'
     slack_color = 'good'
     utilities.post_to_slack(
@@ -225,8 +303,11 @@ def command_prepare(item):
     :return:
     """
     logger.debug('Prepare Command\n{0}'.format(item))
-    if item['command'] == ['clear_apc']:
+    if item['command'] == 'clear_apc':
         execute(fabfile.clear_apc())
+        return
+    if item['command'] == 'import_code':
+        utilities.import_code(item['query'])
         return
     if item['query']:
         site_query = 'where={0}'.format(item['query'])
@@ -234,15 +315,19 @@ def command_prepare(item):
         logger.debug('Ran query\n{0}'.format(sites))
         if not sites['_meta']['total'] == 0:
             for site in sites['_items']:
-                if item['command'] == ['correct_file_permissions']:
+                logger.debug('Command - {0}'.format(item['command']))
+                if item['command'] == 'correct_file_permissions':
                     execute(fabfile.correct_file_directory_permissions(site))
                     continue
-                if item['command'] == ['update_settings_file']:
+                if item['command'] == 'update_settings_file':
                     execute(fabfile.update_settings_file(site))
                     continue
-                if item['command'] == ['update_homepage_extra_files']:
+                if item['command'] == 'update_homepage_extra_files':
                     execute(fabfile.update_homepage_extra_files())
                     continue
+                # if item['command'] == 'site_backup':
+                #     execute(fabfile.site_backup, site=site)
+                #     continue
                 command_run(site, item['command'], item['single_server'])
 
 
@@ -262,8 +347,8 @@ def command_run(site, command, single_server):
     else:
         execute(fabfile.command_run, site=site, command=command)
 
-    slack_title = '{0}/{1}'.format(base_urls[environment], site['sid'])
-    slack_link = '{0}/{1}'.format(base_urls[environment], site['sid'])
+    slack_title = '{0}/{1}'.format(base_urls[environment], site['path'])
+    slack_link = '{0}/{1}'.format(base_urls[environment], site['path'])
     slack_message = 'Command - Success'
     slack_color = 'good'
     attachment_text = command
@@ -353,8 +438,7 @@ def delete_stale_pending_sites():
         seconds_since_creation = time.time() - time.mktime(date_created)
         # 30 min * 60 sec = 1800 seconds
         if seconds_since_creation > 1800:
-            payload = {'status': 'delete'}
-            utilities.patch_eve('sites', site['_id'], payload)
+            utilities.delete_eve('sites', site['_id'])
 
 
 @celery.task
@@ -364,9 +448,8 @@ def delete_all_available_sites():
     """
     site_query = 'where={"status":"available"}'
     sites = utilities.get_eve('sites', site_query)
-    payload = {'status': 'delete'}
     for site in sites:
-        utilities.patch_eve('sites', site['_id'], payload)
+        utilities.delete_eve('sites', site['_id'])
 
 
 @celery.task

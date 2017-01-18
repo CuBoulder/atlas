@@ -1,17 +1,15 @@
-# TODO: Verify that this is correct based on the latest configs.
-
 # config_local.py
 environment = 'ENVIRONMENT'
 
 # Usernames that are allowed to interact with the API
-allowed_users = ['USER']
+allowed_users = ['USER', 'USER2']
 
 # Symlink the files directory in from a NFS mount.
 # nfs_mount_location is set in config_server.py.
 nfs_mount_files_dir = True
 # Use f5 load balancer. You may need to override the configuration functions to
 # work with your environment.
-f5_load_balancer = True
+load_balancer = True
 
 # The directory where assets will be stored.
 # Path should be relative to the root and should NOT include a trailing slash.
@@ -19,22 +17,22 @@ f5_load_balancer = True
 # different vhosts for different types of sites and to make it easy to switch
 # to the down page.
 code_root = '/data/code'
-sites_web_root = '/data/web'
-sites_code_root = '/data/sites'
-site_down_path = '/data/web/down'
+sites_web_root = '/data/atlas/web'
+sites_code_root = '/data/atlas/sites'
+site_down_path = '/data/code/down'
+backup_directory = '/data/backups'
 
-# Default core and profile names for site creation.
+# Default core and profile names for site creation. If you do not set
+# default_profile, sites without a profile on POST will do a core install.
 default_core = 'drupal'
 default_profile = 'express'
 
-# Encryption variables
-encryption_password = 'astringtouseforapassword'
-encryption_salt = 'saltstring'
+# Encryption Key. See https://cryptography.io/en/latest/fernet/ to generate a
+# URL-safe base64-encoded 32-byte key.
+encryption_key = 'KEY'
 
-# LDAP configuration including service account credentials.
+# LDAP configuration
 ldap_server = 'ldap://URL:PORT'
-ldap_user = 'LDAP_USER'
-ldap_pw = 'LDAP_PASSWORD'
 ldap_org_unit = 'LDAP_OU'
 ldap_dns_domain_name = 'dc=DOMAIN,dc=TLD'
 
@@ -43,7 +41,14 @@ ssh_user = 'SSH_USER'
 ssh_user_group = 'SSH_USER_GROUP'
 webserver_user = 'WEBSERVER_USER'
 webserver_user_group = 'WEBSERVER_USER_GROUP'
-f5_ssh_user = 'F5_SSH_USER'
+database_user = 'DATABASE_USER'
+load_balancer_user = 'LOAD_BALANCER_USER'
+service_account_username = 'SERVICE_ACCOUNT'
+service_account_password = 'SERVICE_ACCOUNT_PASSWORD'
+
+# Paths
+# Path for mysql command.
+mysql_path = 'mysql'
 
 # Google Search Appliance credentials
 gsa_host = 'HOSTNAME'
@@ -55,3 +60,17 @@ gsa_password = 'PASSWORD'
 slack_notify = True
 slack_url = 'SLACK_URL'
 slack_username = 'SLACK_USERNAME'
+
+# Email notifications for failed tasks
+send_error_emails = True
+send_from_email = 'no-reply@example.com'
+email_host = 'smtp.example.com'
+email_port = 587
+email_use_tls = True
+email_username = 'no-reply@example.com'
+email_password = ''
+
+# Name and email addresses of recipients of notifications
+ADMINS = (
+    ('Admin User', 'admin@example.com'),
+)

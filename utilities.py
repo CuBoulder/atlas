@@ -12,8 +12,12 @@ from random import choice
 from string import lowercase
 from hashlib import sha1
 from eve.auth import BasicAuth
-from flask import current_app
+from flask import current_app, g
 from atlas.config import *
+
+# Only needed for importing from Inventory.
+from Crypto.Cipher import AES
+from Crypto import Random
 
 path = '/data/code'
 if path not in sys.path:
@@ -47,6 +51,9 @@ class AtlasBasicAuth(BasicAuth):
 
         ldap_distinguished_name = "uid={0},ou={1},{2}".format(username, ldap_org_unit, ldap_dns_domain_name)
         current_app.logger.debug(ldap_distinguished_name)
+
+        # Add the username as a Flask application global.
+        g.username = username
 
         try:
             # Try a synchronous bind (we want synchronous so that the command
@@ -84,6 +91,27 @@ def mysql_password():
     return "*" + pass2.upper()
 
 
+#TODO: Remove this function in Atlas v1.1.0
+def replace_inventory_encryption_string(string):
+    """
+    Use the hashing methodology from Inventory to decrypt the key, then
+    re-encrypt it using the new methodology.
+
+    :param string: Database key from Inventory
+    :return string: Database key for Atlas
+    """
+    interm_string = decrypt_old(inventory_key, string)
+    modified_key = encrypt_string(interm_string)
+    return modified_key
+
+
+def decrypt_old(key, encrypted):
+    iv = Random.new().read(AES.block_size)
+    cipher = AES.new(key, AES.MODE_CFB, iv)
+    decrypted = cipher.decrypt(encrypted.decode("hex"))[len(iv):]
+    return decrypted
+
+
 # See https://cryptography.io/en/latest/fernet/#implementation
 def encrypt_string(string):
     cipher = Fernet(encryption_key)
@@ -106,9 +134,9 @@ def post_eve(resource, payload):
     :param resource: A resource as defined in config_data_structure.py
     :param payload: argument string
     """
-    url = "{0}/{1}".format(api_server, resource)
+    url = "{0}/{1}".format(api_urls[environment], resource)
     headers = {"content-type": "application/json"}
-    r = requests.post(url, auth=(ldap_username, ldap_password), headers=headers, verify=False, data=json.dumps(payload))
+    r = requests.post(url, auth=(service_account_username, service_account_password), headers=headers, verify=ssl_verification, data=json.dumps(payload))
     if r.ok:
         return r.json()
     else:
@@ -123,9 +151,11 @@ def get_eve(resource, query):
     :param query: argument string
     :return: dict of items that match the query string.
     """
-    url = "{0}/{1}?{2}".format(api_server, resource, query)
-    r = requests.get(url, auth=(ldap_username, ldap_password), verify=False)
+    url = "{0}/{1}?{2}".format(api_urls[environment], resource, query)
+    print(url)
+    r = requests.get(url, auth=(service_account_username, service_account_password), verify=ssl_verification)
     if r.ok:
+        print(r.json())
         return r.json()
     else:
         return r.text
@@ -139,8 +169,9 @@ def get_single_eve(resource, id):
     :param id: _id string
     :return: dict of items that match the query string.
     """
-    url = "{0}/{1}/{2}".format(api_server, resource, id)
-    r = requests.get(url, auth=(ldap_username, ldap_password), verify=False)
+    url = "{0}/{1}/{2}".format(api_urls[environment], resource, id)
+    print(url)
+    r = requests.get(url, auth=(service_account_username, service_account_password), verify=ssl_verification)
     if r.ok:
         return r.json()
     else:
@@ -156,10 +187,10 @@ def patch_eve(resource, id, request_payload):
     :param request_payload:
     :return:
     """
-    url = "{0}/{1}/{2}".format(api_server, resource, id)
+    url = "{0}/{1}/{2}".format(api_urls[environment], resource, id)
     get_etag = get_single_eve(resource, id)
     headers = {'Content-Type': 'application/json', 'If-Match': get_etag['_etag']}
-    r = requests.patch(url, headers=headers, data=json.dumps(request_payload), auth=(ldap_username, ldap_password))
+    r = requests.patch(url, headers=headers, data=json.dumps(request_payload), auth=(service_account_username, service_account_password), verify=ssl_verification)
     if r.ok:
         return r.json()
     else:
@@ -174,10 +205,10 @@ def delete_eve(resource, id):
     :param id:
     :return:
     """
-    url = "{0}/{1}/{2}".format(api_server, resource, id)
+    url = "{0}/{1}/{2}".format(api_urls[environment], resource, id)
     get_etag = get_single_eve(resource, id)
     headers = {'Content-Type': 'application/json', 'If-Match': get_etag['_etag']}
-    r = requests.delete(url, headers=headers, auth=(ldap_username, ldap_password))
+    r = requests.delete(url, headers=headers, auth=(service_account_username, service_account_password), verify=ssl_verification)
     if r.ok:
         return r.status_code
     else:
@@ -215,6 +246,32 @@ def get_code(name, code_type=''):
     code_get = get_eve('code', query)
     print(code_get)
     return code_get
+
+
+def import_code(query):
+    """
+    Import code definitions from a URL. Should be a JSON file export from Atlas
+     or a live Atlas code endpoint.
+
+    :param query: URL for JSON to import
+    """
+    r = requests.get(query)
+    print(r.json())
+    data = r.json()
+    for code in data['_items']:
+        payload = {
+            'git_url': code['git_url'],
+            'commit_hash': code['commit_hash'],
+            'meta': {
+                'name': code['meta']['name'],
+                'version': code['meta']['version'],
+                'code_type': code['meta']['code_type'],
+                'is_current': code['meta']['is_current'],
+            },
+        }
+        if code['meta'].get('tag'):
+            payload['meta']['tag'] = code['meta']['tag']
+        post_eve('code', payload)
 
 
 def post_to_slack(message, title, link='', attachment_text='', level='good', user=slack_username):
@@ -268,6 +325,6 @@ def post_to_slack(message, title, link='', attachment_text='', level='good', use
         # any order. Using json=payload instead of data=json.dumps(payload) so that
         # we don't have to encode the dict ourselves. The Requests library will do
         # it for us.
-        r = requests.post(slack_url, json=payload, verify=False)
+        r = requests.post(slack_url, json=payload)
         if not r.ok:
             print r.text

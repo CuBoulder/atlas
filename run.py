@@ -2,9 +2,10 @@ import sys
 import logging
 import random
 import json
+import ssl
 
 from eve import Eve
-from flask import abort, jsonify
+from flask import abort, jsonify, g
 from hashlib import sha1
 from atlas import tasks
 from atlas import utilities
@@ -43,10 +44,10 @@ def pre_delete_code_callback(request, lookup):
     sites = utilities.get_eve('sites', site_query)
     app.logger.debug(sites)
     if not sites['_meta']['total'] == 0:
+        site_list = []
         for site in sites['_items']:
             # Create a list of sites that use this code item.
             # If 'sid' is a key in the site dict use it, otherwise use '_id'.
-            site_list = []
             if site.get('sid'):
                 site_list.append(site['sid'])
             else:
@@ -66,9 +67,12 @@ def on_insert_sites_callback(items):
     for item in items:
         app.logger.debug(item)
         if item['type'] == 'express':
-            item['sid'] = 'p1' + sha1(utilities.randomstring()).hexdigest()[0:10]
-            item['path'] = item['sid']
-            item['update_group'] = random.randint(0, 2)
+            if not item.get('sid'):
+                item['sid'] = 'p1' + sha1(utilities.randomstring()).hexdigest()[0:10]
+            if not item.get('path'):
+                item['path'] = item['sid']
+            if not item.get('update_group'):
+                item['update_group'] = random.randint(0, 2)
             # Add default core and profile if not set.
             # The 'get' method checks if the key exists.
             if item.get('code'):
@@ -80,9 +84,10 @@ def on_insert_sites_callback(items):
                 item['code'] = {}
                 item['code']['core'] = utilities.get_current_code(name=default_core, type='core')
                 item['code']['profile'] = utilities.get_current_code(name=default_profile, type='profile')
-            date_json = '{{"created":"{0} GMT"}}'.format(item['_created'])
-            item['dates'] = json.loads(date_json)
-            app.logger.debug('Ready to send to create item\n{0}'.format(item))
+            if not item['import_from_inventory']:
+                date_json = '{{"created":"{0} GMT"}}'.format(item['_created'])
+                item['dates'] = json.loads(date_json)
+            app.logger.debug('Ready to create item\n{0}'.format(item))
 
 
 def on_inserted_sites_callback(items):
@@ -95,8 +100,20 @@ def on_inserted_sites_callback(items):
     for item in items:
         app.logger.debug(item)
         if item['type'] == 'express':
+            app.logger.debug(item)
+            # Create statistics item
+            statistics_payload = {}
+            # Need to get the string out of the ObjectID.
+            statistics_payload['site'] = str(item['_id'])
+            app.logger.debug('Create Statistics item\n{0}'.format(statistics_payload))
+            statistics = utilities.post_eve(resource='statistics', payload=statistics_payload)
+            app.logger.debug(statistics)
+            item['statistics'] = str(statistics['_id'])
             app.logger.debug('Ready to send to Celery\n{0}'.format(item))
-            tasks.site_provision.delay(item)
+            if not item['import_from_inventory']:
+                tasks.site_provision.delay(item)
+            else:
+                tasks.site_import_from_inventory.delay(item)
 
 
 def on_insert_code_callback(items):
@@ -123,14 +140,16 @@ def on_insert_code_callback(items):
         tasks.code_deploy.delay(item)
 
 
-def post_delete_site_callback(item):
+def pre_delete_sites_callback(request, lookup):
     """
     Remove site from servers right before the item is removed.
 
-    :param item:
+    :param request: flask.request object
+    :param lookup:
     """
-    app.logger.debug(item)
-    tasks.site_remove.delay(item)
+    app.logger.debug(lookup)
+    site = utilities.get_single_eve('sites', lookup['_id'])
+    tasks.site_remove.delay(site)
 
 
 def on_delete_item_code_callback(item):
@@ -173,11 +192,13 @@ def on_update_code_callback(updates, original):
     # Copy 'original' to a new dict, then update it with values from 'updates'
     # to create an item to deploy. Need to do the same process for meta first,
     # otherwise the update will fully overwrite.
-    meta = original['meta'].copy()
-    meta.update(updates['meta'])
+    if updates.get('meta'):
+        meta = original['meta'].copy()
+        meta.update(updates['meta'])
     updated_item = original.copy()
     updated_item.update(updates)
-    updated_item['meta'] = meta
+    if updates.get('meta'):
+        updated_item['meta'] = meta
 
     app.logger.debug('Ready to hand to Celery\n{0}\n{1}'.format(updated_item, original))
     tasks.code_update.delay(updated_item, original)
@@ -218,10 +239,6 @@ def on_update_sites_callback(updates, original):
 
                 updates['dates'] = json.loads(date_json)
 
-            elif updates['status'] == 'delete':
-                app.logger.debug('Ready to hand to Celery\n{0}'.format(item))
-                tasks.site_remove.delay(item)
-                return
         app.logger.debug('Ready to hand to Celery\n{0}'.format(item))
         tasks.site_update.delay(item, updates, original)
 
@@ -239,23 +256,29 @@ def on_update_commands_callback(updates, original):
     tasks.command_prepare.delay(item)
 
 
-# TODO: Set it up to mark what user updated the record.
-# auto fill _created_by and _modified_by user fields
-# created_by_field = '_created_by'
-# modified_by_field = '_modified_by'
-# for resource in settings['DOMAIN']:
-#     settings['DOMAIN'][resource]['schema'][created_by_field] = {'type': 'string'}
-#     settings['DOMAIN'][resource]['schema'][modified_by_field] = {'type': 'string'}
-# def pre_insert(resource, documents):
-#     user = g.get('user', None)
-#     if user is not None:
-#         for document in documents:
-#             document[created_by_field] = user
-#             document[modified_by_field] = user
-# def pre_replace(resource, document):
-#     user = g.get('user', None)
-#     if user is not None:
-#         document[modified_by_field] = user
+# Update user fields on all events. If the update is coming from Drupal, it
+# will use the client_username for authentication and include the field for
+# us. If someone is querying the API directly, they will user their own
+# username and we need to add that.
+def pre_insert(resource, items):
+    username = g.get('username', None)
+    if username is not None:
+        for item in items:
+            item['created_by'] = username
+            item['modified_by'] = username
+
+
+def pre_update(resource, updates, original):
+    username = g.get('username', None)
+    if username is not None:
+        if username is not service_account_username:
+            updates['modified_by'] = username
+
+def pre_replace(resource, item, original):
+    username = g.get('username', None)
+    if username is not None:
+        if username is not service_account_username:
+            item['modified_by'] = username
 
 
 """
@@ -271,7 +294,7 @@ app.debug = True
 # Use DB hooks if you want to modify data on the way in.
 app.on_pre_POST += pre_post_callback
 app.on_pre_DELETE_code += pre_delete_code_callback
-app.on_post_DELETE_site += post_delete_site_callback
+app.on_pre_DELETE_sites += pre_delete_sites_callback
 app.on_insert_code += on_insert_code_callback
 app.on_insert_sites += on_insert_sites_callback
 app.on_inserted_sites += on_inserted_sites_callback
@@ -279,6 +302,10 @@ app.on_update_code += on_update_code_callback
 app.on_update_sites += on_update_sites_callback
 app.on_update_commands += on_update_commands_callback
 app.on_delete_item_code += on_delete_item_code_callback
+app.on_insert += pre_insert
+app.on_update += pre_update
+app.on_replace += pre_replace
+
 
 
 @app.errorhandler(409)

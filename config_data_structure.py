@@ -13,6 +13,13 @@ RESOURCE_METHODS = ['GET', 'POST']
 # individual items.
 ITEM_METHODS = ['GET', 'PATCH', 'PUT', 'DELETE']
 
+# Allow public GET by default can override for a specific resource or item.
+PUBLIC_METHODS = ['GET']
+
+# Default to return 500 results per page. Allow up to 2000.
+PAGINATION_LIMIT = 2000
+PAGINATION_DEFAULT = 500
+
 # Add support for CORS
 X_DOMAINS = '*'
 X_HEADERS = ['Access-Control-Allow-Origin']
@@ -30,7 +37,6 @@ X_HEADERS = ['Access-Control-Allow-Origin']
 code_schema = {
     'meta': {
         'type': 'dict',
-        'required': True,
         'unique': True,
         'schema': {
             'name': {
@@ -51,6 +57,7 @@ code_schema = {
             'is_current': {
                 'type': 'boolean',
                 'default': False,
+                'required': True,
             },
             'tag': {
                 'type': 'list',
@@ -66,6 +73,12 @@ code_schema = {
         'type': 'string',
         'required': True,
         'unique': True
+    },
+    'created_by': {
+        'type': 'string',
+    },
+    'modified_by': {
+        'type': 'string',
     },
 }
 
@@ -88,7 +101,6 @@ sites_schema = {
       'minlength': 9,
       'maxlength': 14,
       'unique': True,
-      'readonly': True,
     },
     'type': {
       'type': 'string',
@@ -107,9 +119,17 @@ sites_schema = {
             'take_down',
             'down',
             'restore',
-            'delete'
         ],
         'default': 'pending',
+    },
+    'environment': {
+        'type': 'string',
+        'allowed': [
+            'local',
+            'development',
+            'test',
+            'production'
+        ],
     },
     'pool': {
         'type': 'string',
@@ -126,6 +146,19 @@ sites_schema = {
     'f5only': {
         'type': 'boolean',
         'default': False
+    },
+    'import_from_inventory': {
+        'type': 'boolean',
+        'default': False
+    },
+    'settings': {
+        'type': 'dict',
+        'schema': {
+            'page_cache_maximum_age': {
+                'type': 'integer',
+                'default': 300,
+            },
+        },
     },
     'tag': {
         'type': 'list',
@@ -180,6 +213,263 @@ sites_schema = {
             },
         },
     },
+    'statistics': {
+        'type': 'objectid',
+        'data_relation': {
+            'resource': 'statistics',
+            'field': '_id',
+            'embeddable': True,
+            'unique': True,
+        },
+    },
+    'created_by': {
+        'type': 'string',
+    },
+    'modified_by': {
+        'type': 'string',
+    },
+}
+
+statistics_schema = {
+    'site': {
+        'type': 'objectid',
+        'data_relation': {
+            'resource': 'sites',
+            'field': '_id',
+        },
+        'required': True,
+        'unique': True,
+    },
+    'nodes_total': {
+        'type': 'integer',
+    },
+    'nodes_by_type': {
+        'type': 'dict',
+        'schema': {
+            'page': {'type': 'integer'},
+            'file': {'type': 'integer'},
+            'faqs': {'type': 'integer'},
+            'content_list_page': {'type': 'integer'},
+            'webform': {'type': 'integer'},
+            'article': {'type': 'integer'},
+            'article_list_page': {'type': 'integer'},
+            'person': {'type': 'integer'},
+            'person_list_page': {'type': 'integer'},
+            'photo_gallery': {'type': 'integer'},
+        },
+    },
+    'days_since_last_edit': {
+        'type': 'integer',
+    },
+    'beans_total': {
+        'type': 'integer',
+    },
+    'beans_by_type': {
+        'type': 'dict',
+        'schema': {
+            'hero_unit': {'type': 'integer'},
+            'slider': {'type': 'integer'},
+            'block': {'type': 'integer'},
+            'content_list': {'type': 'integer'},
+            'feature_callout': {'type': 'integer'},
+            'quicktab': {'type': 'integer'},
+            'video_reveal': {'type': 'integer'},
+            'block_row': {'type': 'integer'},
+            'block_section': {'type': 'integer'},
+            'cu_events_calendar_block': {'type': 'integer'},
+            'events_calendar_grid': {'type': 'integer'},
+            'rss': {'type': 'integer'},
+            'articles': {'type': 'integer'},
+            'article_feature': {'type': 'integer'},
+            'article_grid': {'type': 'integer'},
+            'article_slider': {'type': 'integer'},
+            'people_list_block': {'type': 'integer'},
+            'social_links': {'type': 'integer'},
+            'facebook_activity': {'type': 'integer'},
+            'facebook_like_button': {'type': 'integer'},
+            'twitter_block': {'type': 'integer'},
+        },
+    },
+    'variable_cron_last': {
+        'type': 'integer',
+    },
+    'variable_site_403': {
+        'type': 'string',
+    },
+    'variable_site_404': {
+        'type': 'string',
+    },
+    'variable_theme_default': {
+        'type': 'string',
+    },
+    'variable_ga_account': {
+        'type': 'string',
+    },
+    'profile_module_manager': {
+        'type': 'string',
+    },
+    'express_code_version': {
+        'type': 'string',
+    },
+    'express_core_schema_version': {
+        'type': 'integer',
+    },
+    'theme_is_responsive': {
+        'type': 'boolean',
+    },
+    'overridden_features': {
+        'type': 'dict',
+    },
+    'users': {
+        'type': 'dict',
+        'schema': {
+            'email_address': {
+                'type': 'dict',
+                'schema': {
+                    'all': {
+                        'type': 'list',
+                    },
+                    'site_contact': {
+                        'type': 'list',
+                    },
+                },
+            },
+            'username': {
+                'type': 'dict',
+                'schema': {
+                    'all': {
+                        'type': 'list',
+                    },
+                    'site_contact': {
+                        'type': 'list',
+                    },
+                },
+            },
+        },
+    },
+    'bundles': {
+        'type': 'dict',
+        'schema': {
+            'cu_advanced_content_bundle': {
+                'type': 'dict',
+                'schema': {
+                    'schema_version': {
+                        'type': 'integer',
+                    },
+                },
+            },
+            'cu_advanced_design_bundle': {
+                'type': 'dict',
+                'schema': {
+                    'schema_version': {
+                        'type': 'integer',
+                    },
+                },
+            },
+            'cu_advanced_layout_bundle': {
+                'type': 'dict',
+                'schema': {
+                    'schema_version': {
+                        'type': 'integer',
+                    },
+                },
+            },
+            'cu_events_bundle': {
+                'type': 'dict',
+                'schema': {
+                    'schema_version': {
+                        'type': 'integer',
+                    },
+                },
+            },
+            'cu_feeds_bundle': {
+                'type': 'dict',
+                'schema': {
+                    'schema_version': {
+                        'type': 'integer',
+                    },
+                },
+            },
+            'cu_forms_bundle': {
+                'type': 'dict',
+                'schema': {
+                    'schema_version': {
+                        'type': 'integer',
+                    },
+                },
+            },
+            'cu_news_bundle': {
+                'type': 'dict',
+                'schema': {
+                    'schema_version': {
+                        'type': 'integer',
+                    },
+                },
+            },
+            'cu_people_bundle': {
+                'type': 'dict',
+                'schema': {
+                    'schema_version': {
+                        'type': 'integer',
+                    },
+                },
+            },
+            'cu_photo_gallery_bundle': {
+                'type': 'dict',
+                'schema': {
+                    'schema_version': {
+                        'type': 'integer',
+                    },
+                },
+            },
+            'cu_seo_bundle': {
+                'type': 'dict',
+                'schema': {
+                    'schema_version': {
+                        'type': 'integer',
+                    },
+                },
+            },
+            'cu_social_media_bundle': {
+                'type': 'dict',
+                'schema': {
+                    'schema_version': {
+                        'type': 'integer',
+                    },
+                },
+            },
+            'cu_seo_admin_bundle': {
+                'type': 'dict',
+                'schema': {
+                    'schema_version': {
+                        'type': 'integer',
+                    },
+                },
+            },
+            'cu_test_content_admin_bundle': {
+                'type': 'dict',
+                'schema': {
+                    'schema_version': {
+                        'type': 'integer',
+                    },
+                },
+            },
+            'cu_debug_admin_bundle': {
+                'type': 'dict',
+                'schema': {
+                    'schema_version': {
+                        'type': 'integer',
+                    },
+                },
+            },
+        },
+    },
+    'created_by': {
+        'type': 'string',
+    },
+    'modified_by': {
+        'type': 'string',
+    },
 }
 
 commands_schema = {
@@ -202,6 +492,12 @@ commands_schema = {
         'type': 'boolean',
         'required': True,
         'default': True,
+    },
+    'created_by': {
+        'type': 'string',
+    },
+    'modified_by': {
+        'type': 'string',
     },
 }
 
@@ -227,12 +523,21 @@ sites = {
         'url': 'regex("[\w]+")',
         'field': 'sid'
     },
-    'embedded_fields': ['code.core','code.profile','code.package'],
     'public_methods': ['GET'],
     'public_item_methods': ['GET'],
     'versioning': True,
     'soft_delete': True,
     'schema': sites_schema,
+}
+
+# Statistics resource
+statistics = {
+    'item_title': 'statistics',
+    'public_methods': ['GET'],
+    'public_item_methods': ['GET'],
+    'versioning': True,
+    'soft_delete': True,
+    'schema': statistics_schema,
 }
 
 # Command resource
@@ -254,4 +559,5 @@ DOMAIN = {
     'sites': sites,
     'code': code,
     'commands': commands,
+    'statistics': statistics,
 }

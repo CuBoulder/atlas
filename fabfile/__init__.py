@@ -565,10 +565,9 @@ def _delete_database(site):
         database_password = utilities.decrypt_string(site['db_key'])
         local('{0} \'DROP DATABASE IF EXISTS `{1}`;\''.format(mysql_info, site['sid']))
         # TODO: Make IP addresses config.
-        local("{0} \"DROP USER '{1}'@'172.20.62.0/255.255.255.0' IDENTIFIED BY '{2}';\"".format(
+        local("{0} \"DROP USER '{1}'@'172.20.62.0/255.255.255.0';\"".format(
             mysql_info,
-            site['sid'],
-            database_password))
+            site['sid']))
     else:
         with settings(host_string='express.local'):
             run("mysql -e 'DROP DATABASE IF EXISTS `{}`;'".format(site['sid']))

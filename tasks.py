@@ -278,10 +278,11 @@ def site_remove(site):
     :return:
     """
     logger.debug('Site remove\n{0}'.format(site))
-    execute(fabfile.site_backup, site=site)
-    execute(fabfile.site_remove, site=site)
+    if site['type'] == 'express':
+        execute(fabfile.site_backup, site=site)
+        utilities.delete_eve('statistics', site['statistics'])
 
-    utilities.delete_eve('statistics', site['statistics'])
+    execute(fabfile.site_remove, site=site)
 
     slack_title = '{0}/{1}'.format(base_urls[environment], site['path'])
     slack_message = 'Site Remove - Success'

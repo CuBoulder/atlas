@@ -6,9 +6,11 @@ Commands that run on servers to do the actual work.
 import sys
 import requests
 import re
+import os
 
 from fabric.contrib.files import append, exists, sed
 from fabric.api import *
+from fabric.network import disconnect_all
 from jinja2 import Environment, PackageLoader
 from random import randint
 from time import time
@@ -276,7 +278,7 @@ def site_launch(site):
         print ('Diff f5')
         _diff_f5()
         print ('Update f5')
-        _update_f5()
+        update_f5()
 
 
 @roles('webserver_single')
@@ -473,10 +475,14 @@ def rewrite_symlinks(site):
     print('Rewrite symlinks\n{0}'.format(site))
     code_directory_current = '{0}/{1}/current'.format(sites_code_root, site['sid'])
     web_directory = '{0}/{1}/{2}'.format(sites_web_root, site['type'], site['sid'])
-    _update_symlink(code_directory_current, web_directory)
-    if site['status'] == 'launched':
+    if site['pool'] != 'poolb-homepage':
+        _update_symlink(code_directory_current, web_directory)
+    if site['status'] == 'launched' and site['pool'] != 'poolb-homepage':
         path_symlink = '{0}/{1}/{2}'.format(sites_web_root, site['type'], site['path'])
         _update_symlink(web_directory, path_symlink)
+    if site['status'] == 'launched' and site['pool'] == 'poolb-homepage':
+        web_directory = '{0}/{1}'.format(sites_web_root, 'homepage')
+        _update_symlink(code_directory_current, web_directory)
     with cd(web_directory):
         run("drush rr")
 
@@ -555,16 +561,14 @@ def _delete_database(site):
         # TODO: Make file location config.
         os.environ['MYSQL_TEST_LOGIN_FILE'] = '/home/{0}/.mylogin.cnf'.format(
             ssh_user)
-        mysql_login_path = "invsqlagnt_{0}_poolb".format(environment)
-        mysql_info = '/usr/local/mysql/bin/mysql --login-path={0} -e'.format(
-            mysql_login_path)
+        mysql_login_path = "{0}_{1}".format(database_user, environment)
+        mysql_info = '{0} --login-path={1} -e'.format(mysql_path, mysql_login_path)
         database_password = utilities.decrypt_string(site['db_key'])
         local('{0} \'DROP DATABASE IF EXISTS `{1}`;\''.format(mysql_info, site['sid']))
         # TODO: Make IP addresses config.
-        local("{0} \"DROP USER '{1}'@'172.20.62.0/255.255.255.0' IDENTIFIED BY '{2}';\"".format(
+        local("{0} \"DROP USER '{1}'@'172.20.62.0/255.255.255.0';\"".format(
             mysql_info,
-            site['sid'],
-            database_password))
+            site['sid']))
     else:
         with settings(host_string='express.local'):
             run("mysql -e 'DROP DATABASE IF EXISTS `{}`;'".format(site['sid']))
@@ -868,19 +872,20 @@ def _diff_f5():
     site items.
 
     """
-    load_balancer_config_dir = '{0}/atlas/fabfile'.format(path)
+    load_balancer_config_dir = '/data/code/atlas/fabfile'
     load_balancer_config_file = '{0}/{1}'.format(
         load_balancer_config_dir,
         load_balancer_config_files[environment])
     # If an older config file exists, copy it to a backup folder.
     if os.path.isfile(load_balancer_config_file):
-        local('mv {0} /data/code/inventory/fabfile/backup/{1}.{2}'.format(
+        local('mv {0} {1}/f5_backups/{2}.{3}'.format(
             load_balancer_config_file,
+            load_balancer_config_dir,
             load_balancer_config_files[environment],
             str(time()).split('.')[0]))
     # Copy config file from the f5 server to the Atlas server.
     local('scp {0}:/config/{1} {2}/'.format(
-        serverdefs[environment]['load_balancer'][0],
+        serverdefs[environment]['load_balancers'][0],
         load_balancer_config_files[environment],
         load_balancer_config_dir))
 
@@ -893,7 +898,7 @@ def _diff_f5():
     # Iterate through sites found in f5 data
     for site in sites:
         f5only = False
-        if site[0] in f5exceptions:
+        if site[0] in load_balancer_exceptions:
             f5only = True
         # Get path without leading slash
         path = site[0][1:]
@@ -909,9 +914,9 @@ def _diff_f5():
             type = 'custom'
 
         site_query = 'where={{"path":"{0}"}}'.format(path)
-        sites = utilities.get_eve('sites', site_query)
+        api_sites = utilities.get_eve('sites', site_query)
 
-        if not sites or len(sites['_items']) == 0:
+        if not api_sites or len(api_sites['_items']) == 0:
             payload = {
                 "name": path,
                 "path": path,
@@ -922,8 +927,8 @@ def _diff_f5():
             }
             utilities.post_eve('sites', payload)
             print ('Created site record based on f5.\n{0}'.format(payload))
-        elif pool != data['_items'][0]['pool']:
-            site = data['_items'][0]
+        elif pool != api_sites['_items'][0]['pool']:
+            site = api_sites['_items'][0]
             payload = {
                 "pool": pool,
                 "status": "launched",
@@ -933,15 +938,15 @@ def _diff_f5():
             print 'Updated site based on f5.\n{0}'.format(payload)
 
 
-def _update_f5():
+def update_f5():
     # Like 'WWWNGProdDataGroup.dat'
     old_file_name = load_balancer_config_files[environment]
     # Like 'WWWNGDevDataGroup.dat.1402433484.bac'
     new_file_name = "{0}.{1}.bac".format(
         load_balancer_config_files[environment],
         str(time()).split('.')[0])
-    load_balancer_config_dir = '{0}/atlas/fabfile'.format(path)
-    sites = get_eve('sites', 'max_results=3000')
+    load_balancer_config_dir = '/data/code/atlas/fabfile'
+    sites = utilities.get_eve('sites', 'max_results=3000')
 
     # TODO: delete old backups
 
@@ -950,8 +955,9 @@ def _update_f5():
               "w") as ofile:
         for site in sites['_items']:
             if 'path' in site:
-                # If a site is down, skip to the next site
-                if 'status' in site and site['status'] == 'down':
+                # If a site is down or scheduled for deletion, skip to the next
+                # site.
+                if 'status' in site and (site['status'] == 'down' or site['status'] == 'delete'):
                     continue
                 # In case a path was saved with a leading slash
                 path = site["path"] if site["path"][0] == '/' else '/' + site["path"]
@@ -964,7 +970,7 @@ def _update_f5():
             load_balancer_config_dir=load_balancer_config_dir)
 
 
-@hosts('load_balancer')
+@roles('load_balancers')
 def _exportf5(new_file_name, load_balancer_config_dir):
     """
     Backup configuration file on f5 server, replace the active file, and reload
@@ -979,3 +985,4 @@ def _exportf5(new_file_name, load_balancer_config_dir):
     # Load the new configuration.
     with cd("/config"):
         run("b load;")
+    disconnect_all()

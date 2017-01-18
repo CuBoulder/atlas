@@ -155,6 +155,7 @@ def get_eve(resource, query):
     print(url)
     r = requests.get(url, auth=(service_account_username, service_account_password), verify=ssl_verification)
     if r.ok:
+        print(r.json())
         return r.json()
     else:
         return r.text

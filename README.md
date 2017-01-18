@@ -75,5 +75,5 @@ curl -i -v -X PATCH -d '{"code": {"profile": "57adffc389b0dc1631822bce"}}' -H "I
 
 #### Delete a site
 ```bash
-curl -i -v -X PATCH -d '{"status":"delete"}' -H "If-Match: 5b3bc91045cca9fdc9a8b50bfb4095ecceb2dcbe" -H 'Content-Type: application/json' -u 'USERNAME:PASSWORD' https://inventory.local/atlas/sites/57adfdb789b0dc1612c23a90
+curl -i -v -X DELETE -H "If-Match: 5b3bc91045cca9fdc9a8b50bfb4095ecceb2dcbe" -H 'Content-Type: application/json' -u 'USERNAME:PASSWORD' https://inventory.local/atlas/sites/57adfdb789b0dc1612c23a90
 ```

@@ -972,7 +972,7 @@ def _update_f5():
             load_balancer_config_dir=load_balancer_config_dir)
 
 
-@hosts('load_balancer')
+@roles('load_balancers')
 def _exportf5(new_file_name, load_balancer_config_dir):
     """
     Backup configuration file on f5 server, replace the active file, and reload

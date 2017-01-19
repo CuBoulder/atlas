@@ -35,12 +35,17 @@ Currently we use a `git pull` deployment. When code is changed, you need to rest
 
 Celery Flower is available via to command line to inspect tasks.
 ```bash
-/data/environments/atlas/bin/celery -A celery flower --conf=/data/code/atlas/config_flower.py
+ /data/environments/atlas/bin/celery -A celery flower --conf=/data/code/atlas/config_flower.py
+```
+
+Celery will return a url in the first part of a long response.
+```bash
+[I 170118 22:33:35 command:136] Visit me at http://[YOUR-URL]:5555
 ```
 
 ## Contributing
 
-Pull requests are always welcome. Project is under active development. We want to make sure that Express doesn't become dependant on Atlas.
+Pull requests are always welcome. Project is under active development. We are committed to keeping the Express Drupal install profile and Atlas independent of each other.
 
 ## Sample requests
 

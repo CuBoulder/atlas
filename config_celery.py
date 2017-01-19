@@ -35,7 +35,7 @@ CELERY_ROUTES = {
 CELERYBEAT_SCHEDULE = {
     'launched-cron': {
         'task': 'atlas.tasks.cron',
-        'schedule': timedelta(minutes=5),
+        'schedule': timedelta(minutes=60),
         'kwargs': {
             "status": "launched",
             "exclude_packages": ["cu_classes_bundle"]
@@ -43,12 +43,12 @@ CELERYBEAT_SCHEDULE = {
     },
     'classes-cron': {
         'task': 'atlas.tasks.cron',
-        'schedule': timedelta(minutes=60),
+        'schedule': timedelta(hours=2),
         'kwargs': {"include_packages": ["cu_classes_bundle"]},
     },
     'installed-cron': {
         'task': 'atlas.tasks.cron',
-        'schedule': timedelta(minutes=120),
+        'schedule': timedelta(hours=3),
         'kwargs': {
             "status": "installed",
             "exclude_packages": ["cu_classes_bundle"]

@@ -66,7 +66,7 @@ def on_insert_sites_callback(items):
     app.logger.debug(items)
     for item in items:
         app.logger.debug(item)
-        if item['type'] == 'express':
+        if item['type'] == 'express' and not item['f5only']:
             if not item.get('sid'):
                 item['sid'] = 'p1' + sha1(utilities.randomstring()).hexdigest()[0:10]
             if not item.get('path'):
@@ -99,7 +99,7 @@ def on_inserted_sites_callback(items):
     app.logger.debug(items)
     for item in items:
         app.logger.debug(item)
-        if item['type'] == 'express':
+        if item['type'] == 'express' and not item['f5only']:
             app.logger.debug(item)
             # Create statistics item
             statistics_payload = {}

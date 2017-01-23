@@ -828,7 +828,7 @@ def _launch_site(site, gsa_collection=False):
     code_directory = '{0}/{1}'.format(sites_code_root, site['sid'])
     code_directory_current = '{0}/current'.format(code_directory)
 
-    if site['pool'] in ['poolb-express', 'poolb-homepage']:
+    if site['pool'] in ['poolb-express', 'poolb-homepage'] and site['type'] == 'express':
         if site['pool'] == 'poolb-express':
             web_directory = '{0}/{1}'.format(sites_web_root, site['type'])
             web_directory_path = '{0}/{1}'.format(web_directory, site['path'])

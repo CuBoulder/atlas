@@ -333,17 +333,18 @@ def command_prepare(item):
                 # if item['command'] == 'site_backup':
                 #     execute(fabfile.site_backup, site=site)
                 #     continue
-                command_run(site, item['command'], item['single_server'])
+                command_run(site, item['command'], item['single_server'], item['modified_by'])
 
 
 @celery.task
-def command_run(site, command, single_server):
+def command_run(site, command, single_server, user=None):
     """
     Run the appropriate command.
 
     :param site: A complete site item.
     :param command: Command to run.
     :param single_server: boolean Run a single server or all servers.
+    :param user: string Username that called the command.
     :return:
     """
     logger.debug('Run Command - {0} - {1}\n{2}'.format(site['sid'], single_server, command))
@@ -352,17 +353,28 @@ def command_run(site, command, single_server):
     else:
         execute(fabfile.command_run, site=site, command=command)
 
-    slack_title = '{0}/{1}'.format(base_urls[environment], site['path'])
-    slack_link = '{0}/{1}'.format(base_urls[environment], site['path'])
-    slack_message = 'Command - Success'
-    slack_color = 'good'
-    attachment_text = command
+    if command == 'drush cron':
+        slack_title = '{0}/{1}'.format(base_urls[environment], site['path'])
+        slack_link = '{0}/{1}'.format(base_urls[environment], site['path'])
+        slack_message = 'Command - Success'
+        slack_color = 'good'
+        attachment_text = command
+        user = None
+    else:
+        slack_title = '{0}/{1}'.format(base_urls[environment], site['path'])
+        slack_link = '{0}/{1}'.format(base_urls[environment], site['path'])
+        slack_message = 'Command - Success'
+        slack_color = 'good'
+        attachment_text = command
+        user = user
+
     utilities.post_to_slack(
         message=slack_message,
         title=slack_title,
         link=slack_link,
         attachment_text=attachment_text,
-        level=slack_color)
+        level=slack_color,
+        user=user)
 
 
 @celery.task

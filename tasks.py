@@ -269,7 +269,8 @@ def site_update(site, updates, original):
         title=slack_title,
         link=slack_link,
         attachment_text=attachment_text,
-        level=slack_color)
+        level=slack_color,
+        user=updates['modified_by'])
 
 
 @celery.task
@@ -294,7 +295,8 @@ def site_remove(site):
     utilities.post_to_slack(
         message=slack_message,
         title=slack_title,
-        level=slack_color)
+        level=slack_color,
+        user=site['modified_by'])
 
 
 @celery.task

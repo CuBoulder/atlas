@@ -62,6 +62,17 @@ code_schema = {
             'tag': {
                 'type': 'list',
             },
+            'dependency': {
+                'type': 'list',
+                'schema': {
+                    'type': 'objectid',
+                    'data_relation': {
+                        'resource': 'code',
+                        'field': '_id',
+                        'embeddable': True,
+                    },
+                }
+            }
         },
     },
     'git_url': {

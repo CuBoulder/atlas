@@ -7,6 +7,7 @@ import ssl
 from eve import Eve
 from flask import abort, jsonify, g
 from hashlib import sha1
+from bson import ObjectId
 from atlas import tasks
 from atlas import utilities
 from atlas.config import *
@@ -35,6 +36,21 @@ def pre_delete_code_callback(request, lookup):
     """
     code = utilities.get_single_eve('code', lookup['_id'])
     app.logger.debug(code)
+
+    # Check for code that declares this as a dependency.
+    code_query = 'where={{"meta.dependency":"{0}"}}'.format(code['_id'])
+    code_items = utilities.get_eve('code', code_query)
+    app.logger.debug(code_items)
+    if not code_items['_meta']['total'] == 0:
+        code_list = []
+        for item in code_items['_items']:
+            # Create a list of sites that use this code item.
+            code_list.append(item['_id'])
+        code_list_full = ', '.join(code_list)
+        app.logger.error('Code item is a dependency of one or more code items:\n{0}'.format(code_list_full))
+        abort(409, 'A conflict happened while processing the request. Code item is a dependency of one or more code items.')
+
+    # Check for sites using this piece of code.
     if code['meta']['code_type'] in ['module', 'theme', 'library']:
         code_type = 'package'
     else:
@@ -180,7 +196,7 @@ def on_update_code_callback(updates, original):
 
         query = 'where={{"meta.name":"{0}","meta.code_type":"{1}","meta.is_current": {2}}}'.format(name, code_type, str(updates['meta']['is_current']).lower())
         code_get = utilities.get_eve('code', query)
-        # TODO: Filter out the site we are updating.
+        # TODO: Filter out the item we are updating.
         app.logger.debug(code_get)
 
         for code in code_get['_items']:
@@ -214,17 +230,44 @@ def on_update_sites_callback(updates, original):
     app.logger.debug('Update Site\n{0}\n\n{1}'.format(updates, original))
     site_type = updates['type'] if updates.get('type') else original['type']
     if site_type == 'express':
-        item = original.copy()
-        item.update(updates)
+        site = original.copy()
+        site.update(updates)
         # Only need to rewrite the nested dicts if they got updated.
         if updates.get('code'):
             code = original['code'].copy()
             code.update(updates['code'])
-            item['code'] = code
+            site['code'] = code
+            dependencies_list = []
+            id_list = []
+            for key, value in updates['code'].iteritems():
+                if key == 'package':
+                    if value not in dependencies_list:
+                        # Use 'extend' vs 'append' to prevent nested list.
+                        dependencies_list.extend(value)
+                app.logger.debug(dependencies_list)
+            # List of declared dependencies is built, now we need to recurse.
+            if dependencies_list:
+                for value in dependencies_list:
+                    # Need to convert ObjectID to string for lookup.
+                    code_item = utilities.get_single_eve('code', value)
+                    app.logger.debug(code_item)
+                    if code_item['meta'].get('dependency'):
+                        for key, value in code_item['meta'].iteritems():
+                            if key == 'dependency':
+                                if value not in dependencies_list:
+                                    for list_item in value:
+                                        # Convert each id string to a proper
+                                        # ObjectID.
+                                        id_list.append(ObjectId(list_item))
+                                    dependencies_list.extend(id_list)
+                app.logger.debug(dependencies_list)
+                # Time to replace the package list.
+                updates['code']['package'] = dependencies_list
+
         if updates.get('dates'):
             dates = original['dates'].copy()
             dates.update(updates['dates'])
-            item['dates'] = dates
+            site['dates'] = dates
 
         if updates.get('status'):
             if updates['status'] in ['installing', 'launching', 'take_down','restore']:
@@ -239,8 +282,8 @@ def on_update_sites_callback(updates, original):
 
                 updates['dates'] = json.loads(date_json)
 
-        app.logger.debug('Ready to hand to Celery\n{0}'.format(item))
-        tasks.site_update.delay(item, updates, original)
+        app.logger.debug('Ready to hand to Celery\n{0}\n{1}'.format(site, updates))
+        tasks.site_update.delay(site, updates, original)
 
 
 def on_update_commands_callback(updates, original):
@@ -289,12 +332,15 @@ app = Eve(auth=utilities.AtlasBasicAuth, settings="/data/code/atlas/config_data_
 # TODO: Remove debug mode.
 app.debug = True
 
-# Specific callbacks. Pattern is: `atlas.on_{Hook}_{Method}_{Resource}`
+# Specific callbacks.
 # Use pre event hooks if there is a chance you want to abort.
 # Use DB hooks if you want to modify data on the way in.
+
+# Request event hooks.
 app.on_pre_POST += pre_post_callback
 app.on_pre_DELETE_code += pre_delete_code_callback
 app.on_pre_DELETE_sites += pre_delete_sites_callback
+# Database event hooks.
 app.on_insert_code += on_insert_code_callback
 app.on_insert_sites += on_insert_sites_callback
 app.on_inserted_sites += on_inserted_sites_callback

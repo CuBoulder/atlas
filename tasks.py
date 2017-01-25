@@ -209,21 +209,26 @@ def site_update(site, updates, original):
     :param original: Complete original site item.
     :return:
     """
-    logger.debug('Site update - {0}\n{1}\n\n{2}'.format(site['_id'], site, updates))
+    logger.debug('Site update - {0}\n{1}\n\n{2}\n\n{3}'.format(site['_id'], site, updates, original))
 
     if updates.get('code'):
         logger.debug('Found code changes.')
+        core_change = False
+        profile_change = False
+        package_change = False
+        if 'core' in updates['code']:
+            logger.debug('Found core change.')
+            core_change = True
+            execute(fabfile.site_core_update, site=site)
+        if 'profile' in updates['code']:
+            logger.debug('Found profile change.')
+            profile_change = True
+            execute(fabfile.site_profile_update, site=site, original=original, updates=updates)
         if 'package' in updates['code']:
             logger.debug('Found package changes.')
+            package_change = True
             execute(fabfile.site_package_update, site=site)
-            execute(fabfile.update_database, site=site)
-        if updates['code'].get('core') != original['code'].get('core'):
-            logger.debug('Found core change.')
-            execute(fabfile.site_core_update, site=site)
-            execute(fabfile.update_database, site=site)
-        if updates['code'].get('profile') != original['code'].get('profile'):
-            logger.debug('Found profile change.')
-            execute(fabfile.site_profile_update, site=site, original=original, updates=updates)
+        if core_change or profile_change or package_change:
             execute(fabfile.update_database, site=site)
 
     if updates.get('status'):

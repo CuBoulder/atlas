@@ -495,7 +495,8 @@ def update_settings_file(site):
     profile_name = profile['meta']['name']
 
     _create_settings_files(site, profile_name)
-    _push_settings_files(site, code_directory)
+    # Use execute to pass role.
+    execute(_push_settings_files, site=site, directory=code_directory)
 
 
 @roles('webservers')

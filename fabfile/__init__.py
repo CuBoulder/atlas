@@ -191,6 +191,7 @@ def site_install(site):
     profile_name = profile['meta']['name']
 
     _install_site(profile_name, code_directory_current)
+    correct_file_directory_permissions(site)
 
 
 @roles('webservers')

@@ -169,7 +169,9 @@ def site_provision(site):
         run('drush dslm-add-profile {0}'.format(profile))
 
     if nfs_mount_files_dir:
-        _create_nfs_files_dir(nfs_mount_location[environment], site['sid'])
+        nfs_dir = nfs_mount_location[environment]
+        nfs_files_dir = '{0}/sitefiles/{1}/files'.format(nfs_dir, site_sid)
+        _create_nfs_files_dir(nfs_dir, site['sid'])
         # Replace default files dir with this one
         site_files_dir = code_directory_current + '/sites/default/files'
         _replace_files_directory(nfs_files_dir, site_files_dir)

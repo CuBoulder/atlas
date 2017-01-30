@@ -170,7 +170,7 @@ def site_provision(site):
 
     if nfs_mount_files_dir:
         nfs_dir = nfs_mount_location[environment]
-        nfs_files_dir = '{0}/sitefiles/{1}/files'.format(nfs_dir, site_sid)
+        nfs_files_dir = '{0}/sitefiles/{1}/files'.format(nfs_dir, site['sid'])
         _create_nfs_files_dir(nfs_dir, site['sid'])
         # Replace default files dir with this one
         site_files_dir = code_directory_current + '/sites/default/files'

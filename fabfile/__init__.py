@@ -137,7 +137,7 @@ def site_provision(site):
     :param install: Boolean. Indicates if the install command will run.
     :return:
     """
-    print('Site Provision - Install: {0}\n{1}'.format(install, site))
+    print('Site Provision\n{0}'.format(site))
 
     code_directory = '{0}/{1}'.format(sites_code_root, site['sid'])
     code_directory_sid = '{0}/{1}'.format(code_directory, site['sid'])

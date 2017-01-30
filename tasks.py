@@ -327,13 +327,14 @@ def command_prepare(item):
             for site in sites['_items']:
                 logger.debug('Command - {0}'.format(item['command']))
                 if item['command'] == 'correct_file_permissions':
-                    execute(fabfile.correct_file_directory_permissions(site))
+                    execute(fabfile.correct_file_directory_permissions, site=site)
                     continue
                 if item['command'] == 'update_settings_file':
-                    execute(fabfile.update_settings_file(site))
+                    logger.debug('Update site\n{0}'.format(site))
+                    execute(fabfile.update_settings_file, site=site)
                     continue
                 if item['command'] == 'update_homepage_extra_files':
-                    execute(fabfile.update_homepage_extra_files())
+                    execute(fabfile.update_homepage_extra_files)
                     continue
                 # if item['command'] == 'site_backup':
                 #     execute(fabfile.site_backup, site=site)

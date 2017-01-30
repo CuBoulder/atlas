@@ -169,11 +169,7 @@ def site_provision(site):
         run('drush dslm-add-profile {0}'.format(profile))
 
     if nfs_mount_files_dir:
-        nfs_dir = nfs_mount_location[environment]
-        nfs_files_dir = '{0}/sitefiles/{1}/files'.format(nfs_dir, site['sid'])
-        nfs_tmp_dir = '{0}/sitefiles/{1}/tmp'.format(nfs_dir, site['sid'])
-        _create_directory_structure(nfs_files_dir)
-        _create_directory_structure(nfs_tmp_dir)
+        _create_nfs_files_dir(nfs_mount_location[environment], site['sid'])
         # Replace default files dir with this one
         site_files_dir = code_directory_current + '/sites/default/files'
         _replace_files_directory(nfs_files_dir, site_files_dir)
@@ -514,6 +510,14 @@ def update_homepage_extra_files():
     run("rm -f {0}/.htaccess".format(send_to))
     put(send_from_htaccess, "{0}/.htaccess".format(send_to))
     run("chmod -R u+w {}".format(send_to))
+
+
+@runs_once
+def _create_nfs_files_dir(nfs_dir, site_sid):
+    nfs_files_dir = '{0}/sitefiles/{1}/files'.format(nfs_dir, site_sid)
+    nfs_tmp_dir = '{0}/sitefiles/{1}/tmp'.format(nfs_dir, site_sid)
+    _create_directory_structure(nfs_files_dir)
+    _create_directory_structure(nfs_tmp_dir)
 
 
 # Fabric utility functions.

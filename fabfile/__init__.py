@@ -129,7 +129,7 @@ def code_remove(item):
 
 
 @roles('webservers')
-def site_provision(site, install=True):
+def site_provision(site):
     """
     Responds to POSTs to provision a site to the right places on the server.
 
@@ -183,9 +183,16 @@ def site_provision(site, install=True):
     _update_symlink(code_directory_current, web_directory_sid)
     correct_file_directory_permissions(site)
 
-    if install:
-        _install_site(profile_name, code_directory_current)
-        correct_file_directory_permissions(site)
+
+
+@roles('webserver_single')
+def site_install(site):
+    code_directory = '{0}/{1}'.format(sites_code_root, site['sid'])
+    code_directory_current = '{0}/current'.format(code_directory)
+    profile = utilities.get_single_eve('code', site['code']['profile'])
+    profile_name = profile['meta']['name']
+
+    _install_site(profile_name, code_directory_current)
 
 
 @roles('webservers')
@@ -273,12 +280,6 @@ def site_launch(site):
     else:
         print ('Site launch - No GSA')
         _launch_site(site=site)
-
-    if environment is not 'local':
-        print ('Diff f5')
-        _diff_f5()
-        print ('Update f5')
-        update_f5()
 
 
 @roles('webserver_single')
@@ -533,7 +534,7 @@ def _remove_symlink(symlink):
     run('rm -f {0}'.format(symlink))
 
 
-# TODO: Add decorator to run on a single host.
+@runs_once
 def _create_database(site):
     if environment != 'local':
         os.environ['MYSQL_TEST_LOGIN_FILE'] = '/home/{0}/.mylogin.cnf'.format(
@@ -555,7 +556,7 @@ def _create_database(site):
             run("mysql -e 'create database `{}`;'".format(site['sid']))
 
 
-# TODO: Add decorator to run on a single host.
+@runs_once
 def _delete_database(site):
     if environment != 'local':
         # TODO: Make file location config.
@@ -643,7 +644,7 @@ def _push_settings_files(site, directory):
         "{0}/settings.php".format(send_to))
 
 
-# TODO: Add decorator to run on a single host.
+@runs_once
 def _install_site(profile_name, code_directory_current):
     with cd(code_directory_current):
         run('drush site-install -y {0}'.format(profile_name))
@@ -866,7 +867,7 @@ def _launch_site(site, gsa_collection=False):
         utilities.patch_eve('sites', site['_id'], payload)
 
 
-def _diff_f5():
+def diff_f5():
     """
     Copy f5 configuration file to local sever, parse txt and create or update
     site items.

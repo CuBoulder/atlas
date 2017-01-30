@@ -108,9 +108,16 @@ def site_provision(site):
     # 'db_key' needs to be added here and not in Eve so that the encryption
     # works properly.
     site['db_key'] = utilities.encrypt_string(utilities.mysql_password())
-    fab_task = execute(fabfile.site_provision, site=site)
-    logger.debug(fab_task)
-    logger.debug(fab_task.values)
+
+    provision_task = execute(fabfile.site_provision, site=site)
+
+    logger.debug(provision_task)
+    logger.debug(provision_task.values)
+
+    install_task = execute(fabfile.site_install, site=site)
+
+    logger.debug(install_task)
+    logger.debug(install_task.values)
 
     patch_payload = {'status': 'available', 'db_key': site['db_key'], 'statistics': site['statistics']}
     patch = utilities.patch_eve('sites', site['_id'], patch_payload)
@@ -120,7 +127,7 @@ def site_provision(site):
     slack_title = '{0}/{1}'.format(base_urls[environment], site['path'])
     slack_link = '{0}/{1}'.format(base_urls[environment], site['path'])
     attachment_text = '{0}/sites/{1}'.format(api_urls[environment], site['_id'])
-    if False not in fab_task.values():
+    if False not in (provision_task.values() or install_task.values()):
         slack_message = 'Site provision - Success'
         slack_color = 'good'
         utilities.post_to_slack(
@@ -240,6 +247,9 @@ def site_update(site, updates, original):
             elif updates['status'] == 'launching':
                 logger.debug('Status changed to launching')
                 execute(fabfile.site_launch, site=site)
+                if environment is not 'local':
+                    execute(fabfile.diff_f5)
+                    execute(fabfile.update_f5)
                 patch_payload = '{"status": "launched"}'
             elif updates['status'] == 'take_down':
                 logger.debug('Status changed to take_down')

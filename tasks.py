@@ -413,6 +413,7 @@ def cron(status=None, include_packages=None, exclude_packages=None):
             include_packages_ids = []
             if not packages['_meta']['total'] == 0:
                 for item in packages:
+                    logger.debug('Cron - include_packages item \n{0}'.format(item))
                     include_packages_ids.append(item['_id'])
                 logger.debug('Cron - include_packages list \n{0}'.format(include_packages_ids))
                 site_query_string.append('"code.package": {{"$in": {0}}},'.format(include_packages_ids))
@@ -423,6 +424,7 @@ def cron(status=None, include_packages=None, exclude_packages=None):
             exclude_packages_ids = []
             if not packages['_meta']['total'] == 0:
                 for item in packages:
+                    logger.debug('Cron - exclude_packages item \n{0}'.format(item))
                     exclude_packages_ids.append(item['_id'])
                 logger.debug('Cron - exclude_packages list \n{0}'.format(exclude_packages_ids))
                 site_query_string.append('"code.package": {{"$in": {0}}},'.format(exclude_packages_ids))

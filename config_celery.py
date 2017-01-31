@@ -28,10 +28,6 @@ EMAIL_HOST_USER = email_username
 EMAIL_HOST_PASSWORD = email_password
 
 
-CELERY_ROUTES = {
-    'inventory.tasks.express_launched_cron': {'queue': 'expresscrons'},
-}
-
 CELERYBEAT_SCHEDULE = {
     'launched-cron': {
         'task': 'atlas.tasks.cron',

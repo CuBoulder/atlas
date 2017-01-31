@@ -29,7 +29,7 @@ EMAIL_HOST_PASSWORD = email_password
 
 
 CELERYBEAT_SCHEDULE = {
-    'launched-cron': {
+    'launched_cron': {
         'task': 'atlas.tasks.cron',
         'schedule': timedelta(minutes=60),
         'kwargs': {
@@ -37,12 +37,14 @@ CELERYBEAT_SCHEDULE = {
             "exclude_packages": ["cu_classes_bundle"]
         },
     },
-    'classes-cron': {
+    'classes_cron': {
         'task': 'atlas.tasks.cron',
         'schedule': timedelta(hours=2),
-        'kwargs': {"include_packages": ["cu_classes_bundle"]},
+        'kwargs': {
+            "include_packages": ["cu_classes_bundle"]
+        },
     },
-    'installed-cron': {
+    'installed_cron': {
         'task': 'atlas.tasks.cron',
         'schedule': timedelta(hours=3),
         'kwargs': {

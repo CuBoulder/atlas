@@ -6,6 +6,7 @@ Celery tasks for Atlas.
 import sys
 import fabfile
 import time
+import json
 
 from celery import Celery
 from celery import group
@@ -412,22 +413,22 @@ def cron(status=None, include_packages=None, exclude_packages=None):
             packages = utilities.get_code(name=package_name)
             include_packages_ids = []
             if not packages['_meta']['total'] == 0:
-                for item in packages:
+                for item in packages['_items']:
                     logger.debug('Cron - include_packages item \n{0}'.format(item))
-                    include_packages_ids.append(item['_id'])
-                logger.debug('Cron - include_packages list \n{0}'.format(include_packages_ids))
-                site_query_string.append('"code.package": {{"$in": {0}}},'.format(include_packages_ids))
+                    include_packages_ids.append(str(item['_id']))
+                logger.debug('Cron - include_packages list \n{0}'.format(json.dumps(include_packages_ids)))
+                site_query_string.append('"code.package": {{"$in": {0}}},'.format(json.dumps(include_packages_ids)))
     if exclude_packages:
         logger.debug('Cron - found exclude_packages')
         for package_name in exclude_packages:
             packages = utilities.get_code(name=package_name)
             exclude_packages_ids = []
             if not packages['_meta']['total'] == 0:
-                for item in packages:
+                for item in packages['_items']:
                     logger.debug('Cron - exclude_packages item \n{0}'.format(item))
-                    exclude_packages_ids.append(item['_id'])
-                logger.debug('Cron - exclude_packages list \n{0}'.format(exclude_packages_ids))
-                site_query_string.append('"code.package": {{"$in": {0}}},'.format(exclude_packages_ids))
+                    exclude_packages_ids.append(str(item['_id']))
+                logger.debug('Cron - exclude_packages list \n{0}'.format(json.dumps(exclude_packages_ids)))
+                site_query_string.append('"code.package": {{"$nin": {0}}},'.format(json.dumps(exclude_packages_ids)))
 
     site_query = ''.join(site_query_string)
     logger.debug('Query after join - {0}'.format(site_query))

@@ -300,10 +300,13 @@ def site_remove(site):
     logger.debug('Site remove\n{0}'.format(site))
     if site['type'] == 'express':
         # execute(fabfile.site_backup, site=site)
-        utilities.delete_eve('statistics', site['statistics'])
+        # Check if stats object exists first.
+        if site.get('statistics'):
+            utilities.delete_eve('statistics', site['statistics'])
         execute(fabfile.site_remove, site=site)
 
-    execute(fabfile.update_f5)
+    if environment != 'local':
+        execute(fabfile.update_f5)
 
     slack_title = '{0}/{1}'.format(base_urls[environment], site['path'])
     slack_message = 'Site Remove - Success'

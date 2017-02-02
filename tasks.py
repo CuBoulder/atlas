@@ -366,7 +366,8 @@ def command_run(site, command, single_server, user=None):
     """
     logger.debug('Run Command - {0} - {1}\n{2}'.format(site['sid'], single_server, command))
     if single_server:
-        execute(fabfile.command_run_single, site=site, command=command)
+        fabric_single = execute(fabfile.command_run_single, site=site, command=command, warn_only=True)
+        logger.debug(fabric_single)
     else:
         execute(fabfile.command_run, site=site, command=command)
 
@@ -406,7 +407,7 @@ def cron(status=None, include_packages=None, exclude_packages=None):
         site_query_string.append('"status":"{0}",'.format(status))
     else:
         logger.debug('Cron - No status found')
-        site_query_string.append('"status":{"$in":["installed","launched"],')
+        site_query_string.append('"status":{"$in":["installed","launched"]},')
     if include_packages:
         logger.debug('Cron - found include_packages')
         for package_name in include_packages:
@@ -435,6 +436,7 @@ def cron(status=None, include_packages=None, exclude_packages=None):
     site_query = site_query.rstrip('\,')
     logger.debug('Query after rstrip - {0}'.format(site_query))
     site_query += '}'
+    logger.debug('Query final - {0}'.format(site_query))
 
     sites = utilities.get_eve('sites', site_query)
     if not sites['_meta']['total'] == 0:

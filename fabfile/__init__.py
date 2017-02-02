@@ -403,7 +403,7 @@ def correct_file_directory_permissions(site):
 
 
 @roles('webserver_single')
-def command_run_single(site, command):
+def command_run_single(site, command, warn_only=False):
     """
     Run a command on a single server
 
@@ -416,8 +416,9 @@ def command_run_single(site, command):
         sites_web_root,
         site['type'],
         site['sid'])
-    with cd(web_directory):
-        run('{0}'.format(command))
+    with settings(warn_only=warn_only):
+        with cd(web_directory):
+            run('{0}'.format(command))
 
 
 @roles('webservers')

@@ -596,6 +596,7 @@ def _create_settings_files(site, profile_name):
     # p1 URL.
     status = site['status']
     id = site['_id']
+    statistics = site['statistics']
     page_cache_maximum_age = site['settings']['page_cache_maximum_age']
     atlas_url = '{0}/'.format(api_urls[environment])
     database_password = utilities.decrypt_string(site['db_key'])
@@ -611,7 +612,8 @@ def _create_settings_files(site, profile_name):
         atlas_password=service_account_password,
         path=path,
         status=status,
-        pool_full=site['pool']
+        pool=site['pool'],
+        atlas_statistics_id=statistics
     )
     # Write the file to a temporary location.
     with open("/tmp/{0}.settings.local_pre.php".format(sid), "w") as ofile:

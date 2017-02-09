@@ -354,6 +354,10 @@ def command_prepare(item):
                 #     execute(fabfile.site_backup, site=site)
                 #     continue
                 command_run(site, item['command'], item['single_server'], item['modified_by'])
+            # After all the commands run, flush APC.
+            if item['command'] == 'update_settings_file':
+                logger.debug('Clear APC')
+                execute(fabfile.clear_apc)
 
 
 @celery.task

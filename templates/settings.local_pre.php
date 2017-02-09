@@ -14,7 +14,7 @@ $conf["atlas_id"] = "{{atlas_id}}";
 $conf["atlas_url"] = "{{atlas_url}}";
 $conf["atlas_username"] = "{{atlas_username}}";
 $conf["atlas_password"] = "{{atlas_password}}";
-$conf["atlas_status"] = "{{status}}"
+$conf["atlas_status"] = "{{status}}";
 $conf["atlas_statistics_id"] = "{{atlas_statistics_id}}";
 
 $path = "{{path}}";

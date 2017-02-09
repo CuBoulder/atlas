@@ -409,7 +409,7 @@ def cron(type=None, status=None, include_packages=None, exclude_packages=None):
     site_query_string = ['max_results=2000']
     logger.debug('Cron - found argument')
     # Start by eliminating f5 records.
-    site_query_string.append('&where={"f5only":false')
+    site_query_string.append('&where={"f5only":false,')
     if type:
         logger.debug('Cron - found type')
         site_query_string.append('"type":"{0}",'.format(type))

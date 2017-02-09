@@ -399,12 +399,15 @@ def command_run(site, command, single_server, user=None):
 
 
 @celery.task
-def cron(status=None, include_packages=None, exclude_packages=None):
+def cron(type=None, status=None, include_packages=None, exclude_packages=None):
     logger.debug('Cron | Status - {0} | Include - {1} | Exclude - {2}'.format(status, include_packages, exclude_packages))
     # Build query.
     site_query_string = ['max_results=2000']
     logger.debug('Cron - found argument')
     site_query_string.append('&where={')
+    if type:
+        logger.debug('Cron - found type')
+        site_query_string.append('"type":"{0}",'.format(type))
     if status:
         logger.debug('Cron - found status')
         site_query_string.append('"status":"{0}",'.format(status))

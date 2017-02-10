@@ -452,7 +452,7 @@ def cron(type=None, status=None, include_packages=None, exclude_packages=None):
     sites = utilities.get_eve('sites', site_query)
     if not sites['_meta']['total'] == 0:
         for site in sites['_items']:
-            command_run(site, 'drush cron', True)
+            command_run.delay(site, 'drush cron', True)
 
 
 @celery.task

@@ -27,6 +27,10 @@ EMAIL_USE_TLS = email_use_tls
 EMAIL_HOST_USER = email_username
 EMAIL_HOST_PASSWORD = email_password
 
+# Setup routing so that we don't overwhelm the server wh.
+CELERY_ROUTES = {
+    'atlas.tasks.command_run': {'queue': 'command_queue'},
+}
 
 CELERYBEAT_SCHEDULE = {
     'launched_cron': {

@@ -505,7 +505,7 @@ def delete_all_available_sites():
 
 @celery.task
 def take_down_installed_35_day_old_sites():
-    if environment != 'prod':
+    if environment != 'production':
         site_query = 'where={"status":"installed"}'
         sites = utilities.get_eve('sites', site_query)
         # Loop through and remove sites that are more than 35 days old.

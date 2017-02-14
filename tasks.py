@@ -353,7 +353,7 @@ def command_prepare(item):
                 # if item['command'] == 'site_backup':
                 #     execute(fabfile.site_backup, site=site)
                 #     continue
-                command_run(site, item['command'], item['single_server'], item['modified_by'])
+                command_run.delay(site, item['command'], item['single_server'], item['modified_by'])
             # After all the commands run, flush APC.
             if item['command'] == 'update_settings_file':
                 logger.debug('Clear APC')

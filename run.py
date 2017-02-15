@@ -263,11 +263,14 @@ def on_update_sites_callback(updates, original):
                 app.logger.debug(dependencies_list)
                 # Time to replace the package list.
                 updates['code']['package'] = dependencies_list
-
         if updates.get('dates'):
             dates = original['dates'].copy()
             dates.update(updates['dates'])
             site['dates'] = dates
+        if updates.get('settings'):
+            settings = original['settings'].copy()
+            settings.update(updates['settings'])
+            site['settings'] = settings
 
         if updates.get('status'):
             if updates['status'] in ['installing', 'launching', 'take_down','restore']:

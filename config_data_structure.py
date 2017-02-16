@@ -172,6 +172,12 @@ sites_schema = {
                 'type': 'integer',
                 'default': 300,
             },
+            'siteimprove_site': {
+                'type': 'integer',
+            },
+            'siteimprove_group': {
+                'type': 'integer',
+            },
         },
     },
     'tag': {

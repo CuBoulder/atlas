@@ -17,6 +17,9 @@ $conf["atlas_password"] = "{{atlas_password}}";
 $conf["atlas_status"] = "{{status}}";
 $conf["atlas_statistics_id"] = "{{atlas_statistics_id}}";
 
+$conf["siteimprove_site"] = "{{siteimprove_site}}";
+$conf["siteimprove_group"] = "{{siteimprove_group}}";
+
 $path = "{{path}}";
 $pool = "{{pool}}";
 

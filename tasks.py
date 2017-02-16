@@ -353,7 +353,11 @@ def command_prepare(item):
                 # if item['command'] == 'site_backup':
                 #     execute(fabfile.site_backup, site=site)
                 #     continue
-                command_run(site, item['command'], item['single_server'], item['modified_by'])
+                command_run.delay(site, item['command'], item['single_server'], item['modified_by'])
+            # After all the commands run, flush APC.
+            if item['command'] == 'update_settings_file':
+                logger.debug('Clear APC')
+                execute(fabfile.clear_apc)
 
 
 @celery.task
@@ -399,12 +403,16 @@ def command_run(site, command, single_server, user=None):
 
 
 @celery.task
-def cron(status=None, include_packages=None, exclude_packages=None):
+def cron(type=None, status=None, include_packages=None, exclude_packages=None):
     logger.debug('Cron | Status - {0} | Include - {1} | Exclude - {2}'.format(status, include_packages, exclude_packages))
     # Build query.
     site_query_string = ['max_results=2000']
     logger.debug('Cron - found argument')
-    site_query_string.append('&where={')
+    # Start by eliminating f5 records.
+    site_query_string.append('&where={"f5only":false,')
+    if type:
+        logger.debug('Cron - found type')
+        site_query_string.append('"type":"{0}",'.format(type))
     if status:
         logger.debug('Cron - found status')
         site_query_string.append('"status":"{0}",'.format(status))
@@ -444,7 +452,7 @@ def cron(status=None, include_packages=None, exclude_packages=None):
     sites = utilities.get_eve('sites', site_query)
     if not sites['_meta']['total'] == 0:
         for site in sites['_items']:
-            command_run(site, 'drush cron', True)
+            command_run.delay(site, 'drush cron', True)
 
 
 @celery.task
@@ -497,7 +505,7 @@ def delete_all_available_sites():
 
 @celery.task
 def take_down_installed_35_day_old_sites():
-    if environment != 'prod':
+    if environment != 'production':
         site_query = 'where={"status":"installed"}'
         sites = utilities.get_eve('sites', site_query)
         # Loop through and remove sites that are more than 35 days old.

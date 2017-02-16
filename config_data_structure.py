@@ -23,7 +23,10 @@ PAGINATION_DEFAULT = 500
 # Add support for CORS
 X_DOMAINS = '*'
 X_HEADERS = ['Access-Control-Allow-Origin']
-#
+
+# Allow $regex filtering. Default config blocks where and regex.
+MONGO_QUERY_BLACKLIST = ['$where']
+
 # Definitions of schemas for Items. Schema is based on Cerberus grammar
 # https://github.com/nicolaiarocci/cerberus.
 #
@@ -168,6 +171,12 @@ sites_schema = {
             'page_cache_maximum_age': {
                 'type': 'integer',
                 'default': 300,
+            },
+            'siteimprove_site': {
+                'type': 'integer',
+            },
+            'siteimprove_group': {
+                'type': 'integer',
             },
         },
     },

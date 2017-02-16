@@ -62,6 +62,17 @@ code_schema = {
             'tag': {
                 'type': 'list',
             },
+            'dependency': {
+                'type': 'list',
+                'schema': {
+                    'type': 'objectid',
+                    'data_relation': {
+                        'resource': 'code',
+                        'field': '_id',
+                        'embeddable': True,
+                    },
+                }
+            }
         },
     },
     'git_url': {
@@ -258,6 +269,9 @@ statistics_schema = {
             'photo_gallery': {'type': 'integer'},
         },
     },
+    'nodes_other': {
+        'type': 'string',
+    },
     'days_since_last_edit': {
         'type': 'integer',
     },
@@ -289,6 +303,9 @@ statistics_schema = {
             'facebook_like_button': {'type': 'integer'},
             'twitter_block': {'type': 'integer'},
         },
+    },
+    'beans_other': {
+        'type': 'string',
     },
     'variable_cron_last': {
         'type': 'integer',

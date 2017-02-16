@@ -129,7 +129,7 @@ def code_remove(item):
 
 
 @roles('webservers')
-def site_provision(site, install=True):
+def site_provision(site):
     """
     Responds to POSTs to provision a site to the right places on the server.
 
@@ -137,7 +137,7 @@ def site_provision(site, install=True):
     :param install: Boolean. Indicates if the install command will run.
     :return:
     """
-    print('Site Provision - Install: {0}\n{1}'.format(install, site))
+    print('Site Provision\n{0}'.format(site))
 
     code_directory = '{0}/{1}'.format(sites_code_root, site['sid'])
     code_directory_sid = '{0}/{1}'.format(code_directory, site['sid'])
@@ -171,9 +171,7 @@ def site_provision(site, install=True):
     if nfs_mount_files_dir:
         nfs_dir = nfs_mount_location[environment]
         nfs_files_dir = '{0}/sitefiles/{1}/files'.format(nfs_dir, site['sid'])
-        nfs_tmp_dir = '{0}/sitefiles/{1}/tmp'.format(nfs_dir, site['sid'])
-        _create_directory_structure(nfs_files_dir)
-        _create_directory_structure(nfs_tmp_dir)
+        _create_nfs_files_dir(nfs_dir, site['sid'])
         # Replace default files dir with this one
         site_files_dir = code_directory_current + '/sites/default/files'
         _replace_files_directory(nfs_files_dir, site_files_dir)
@@ -183,9 +181,17 @@ def site_provision(site, install=True):
     _update_symlink(code_directory_current, web_directory_sid)
     correct_file_directory_permissions(site)
 
-    if install:
-        _install_site(profile_name, code_directory_current)
-        correct_file_directory_permissions(site)
+
+
+@roles('webserver_single')
+def site_install(site):
+    code_directory = '{0}/{1}'.format(sites_code_root, site['sid'])
+    code_directory_current = '{0}/current'.format(code_directory)
+    profile = utilities.get_single_eve('code', site['code']['profile'])
+    profile_name = profile['meta']['name']
+
+    _install_site(profile_name, code_directory_current)
+    correct_file_directory_permissions(site)
 
 
 @roles('webservers')
@@ -205,6 +211,8 @@ def site_package_update(site):
         package_name_string))
 
     with cd(packages_directory):
+        #TODO: Remove after import from Inventory is done.
+        run("rm -rf modules/custom modules/contrib")
         run("drush dslm-remove-all-packages")
         run("drush dslm-add-package {0}".format(package_name_string))
         if len(package_name_string) > 0:
@@ -273,12 +281,6 @@ def site_launch(site):
     else:
         print ('Site launch - No GSA')
         _launch_site(site=site)
-
-    if environment is not 'local':
-        print ('Diff f5')
-        _diff_f5()
-        print ('Update f5')
-        update_f5()
 
 
 @roles('webserver_single')
@@ -401,7 +403,7 @@ def correct_file_directory_permissions(site):
 
 
 @roles('webserver_single')
-def command_run_single(site, command):
+def command_run_single(site, command, warn_only=False):
     """
     Run a command on a single server
 
@@ -414,8 +416,9 @@ def command_run_single(site, command):
         sites_web_root,
         site['type'],
         site['sid'])
-    with cd(web_directory):
-        run('{0}'.format(command))
+    with settings(warn_only=warn_only):
+        with cd(web_directory):
+            run('{0}'.format(command))
 
 
 @roles('webservers')
@@ -495,7 +498,8 @@ def update_settings_file(site):
     profile_name = profile['meta']['name']
 
     _create_settings_files(site, profile_name)
-    _push_settings_files(site, code_directory)
+    # Use execute to pass role.
+    execute(_push_settings_files, site=site, directory=code_directory)
 
 
 @roles('webservers')
@@ -513,6 +517,14 @@ def update_homepage_extra_files():
     run("rm -f {0}/.htaccess".format(send_to))
     put(send_from_htaccess, "{0}/.htaccess".format(send_to))
     run("chmod -R u+w {}".format(send_to))
+
+
+@runs_once
+def _create_nfs_files_dir(nfs_dir, site_sid):
+    nfs_files_dir = '{0}/sitefiles/{1}/files'.format(nfs_dir, site_sid)
+    nfs_tmp_dir = '{0}/sitefiles/{1}/tmp'.format(nfs_dir, site_sid)
+    _create_directory_structure(nfs_files_dir)
+    _create_directory_structure(nfs_tmp_dir)
 
 
 # Fabric utility functions.
@@ -533,7 +545,7 @@ def _remove_symlink(symlink):
     run('rm -f {0}'.format(symlink))
 
 
-# TODO: Add decorator to run on a single host.
+@runs_once
 def _create_database(site):
     if environment != 'local':
         os.environ['MYSQL_TEST_LOGIN_FILE'] = '/home/{0}/.mylogin.cnf'.format(
@@ -555,7 +567,7 @@ def _create_database(site):
             run("mysql -e 'create database `{}`;'".format(site['sid']))
 
 
-# TODO: Add decorator to run on a single host.
+@runs_once
 def _delete_database(site):
     if environment != 'local':
         # TODO: Make file location config.
@@ -643,7 +655,7 @@ def _push_settings_files(site, directory):
         "{0}/settings.php".format(send_to))
 
 
-# TODO: Add decorator to run on a single host.
+@runs_once
 def _install_site(profile_name, code_directory_current):
     with cd(code_directory_current):
         run('drush site-install -y {0}'.format(profile_name))
@@ -828,7 +840,7 @@ def _launch_site(site, gsa_collection=False):
     code_directory = '{0}/{1}'.format(sites_code_root, site['sid'])
     code_directory_current = '{0}/current'.format(code_directory)
 
-    if site['pool'] in ['poolb-express', 'poolb-homepage']:
+    if site['pool'] in ['poolb-express', 'poolb-homepage'] and site['type'] == 'express':
         if site['pool'] == 'poolb-express':
             web_directory = '{0}/{1}'.format(sites_web_root, site['type'])
             web_directory_path = '{0}/{1}'.format(web_directory, site['path'])
@@ -866,7 +878,7 @@ def _launch_site(site, gsa_collection=False):
         utilities.patch_eve('sites', site['_id'], payload)
 
 
-def _diff_f5():
+def diff_f5():
     """
     Copy f5 configuration file to local sever, parse txt and create or update
     site items.

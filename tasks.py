@@ -6,6 +6,7 @@ Celery tasks for Atlas.
 import sys
 import fabfile
 import time
+import json
 
 from celery import Celery
 from celery import group
@@ -108,9 +109,16 @@ def site_provision(site):
     # 'db_key' needs to be added here and not in Eve so that the encryption
     # works properly.
     site['db_key'] = utilities.encrypt_string(utilities.mysql_password())
-    fab_task = execute(fabfile.site_provision, site=site)
-    logger.debug(fab_task)
-    logger.debug(fab_task.values)
+
+    provision_task = execute(fabfile.site_provision, site=site)
+
+    logger.debug(provision_task)
+    logger.debug(provision_task.values)
+
+    install_task = execute(fabfile.site_install, site=site)
+
+    logger.debug(install_task)
+    logger.debug(install_task.values)
 
     patch_payload = {'status': 'available', 'db_key': site['db_key'], 'statistics': site['statistics']}
     patch = utilities.patch_eve('sites', site['_id'], patch_payload)
@@ -120,7 +128,7 @@ def site_provision(site):
     slack_title = '{0}/{1}'.format(base_urls[environment], site['path'])
     slack_link = '{0}/{1}'.format(base_urls[environment], site['path'])
     attachment_text = '{0}/sites/{1}'.format(api_urls[environment], site['_id'])
-    if False not in fab_task.values():
+    if False not in (provision_task.values() or install_task.values()):
         slack_message = 'Site provision - Success'
         slack_color = 'good'
         utilities.post_to_slack(
@@ -209,21 +217,26 @@ def site_update(site, updates, original):
     :param original: Complete original site item.
     :return:
     """
-    logger.debug('Site update - {0}\n{1}\n\n{2}'.format(site['_id'], site, updates))
+    logger.debug('Site update - {0}\n{1}\n\n{2}\n\n{3}'.format(site['_id'], site, updates, original))
 
     if updates.get('code'):
         logger.debug('Found code changes.')
+        core_change = False
+        profile_change = False
+        package_change = False
+        if 'core' in updates['code']:
+            logger.debug('Found core change.')
+            core_change = True
+            execute(fabfile.site_core_update, site=site)
+        if 'profile' in updates['code']:
+            logger.debug('Found profile change.')
+            profile_change = True
+            execute(fabfile.site_profile_update, site=site, original=original, updates=updates)
         if 'package' in updates['code']:
             logger.debug('Found package changes.')
+            package_change = True
             execute(fabfile.site_package_update, site=site)
-            execute(fabfile.update_database, site=site)
-        if updates['code'].get('core') != original['code'].get('core'):
-            logger.debug('Found core change.')
-            execute(fabfile.site_core_update, site=site)
-            execute(fabfile.update_database, site=site)
-        if updates['code'].get('profile') != original['code'].get('profile'):
-            logger.debug('Found profile change.')
-            execute(fabfile.site_profile_update, site=site, original=original, updates=updates)
+        if core_change or profile_change or package_change:
             execute(fabfile.update_database, site=site)
 
     if updates.get('status'):
@@ -235,6 +248,9 @@ def site_update(site, updates, original):
             elif updates['status'] == 'launching':
                 logger.debug('Status changed to launching')
                 execute(fabfile.site_launch, site=site)
+                if environment is not 'local':
+                    execute(fabfile.diff_f5)
+                    execute(fabfile.update_f5)
                 patch_payload = '{"status": "launched"}'
             elif updates['status'] == 'take_down':
                 logger.debug('Status changed to take_down')
@@ -258,6 +274,9 @@ def site_update(site, updates, original):
 
     slack_title = '{0}/{1}'.format(base_urls[environment], site['path'])
     slack_link = '{0}/{1}'.format(base_urls[environment], site['path'])
+    if site['pool'] == 'poolb-homepage' and site['type'] == 'express' and site['status'] in ['launching', 'launched']:
+        slack_title = base_urls[environment]
+        slack_link = base_urls[environment]
     attachment_text = '{0}/sites/{1}'.format(api_urls[environment], site['_id'])
     slack_message = 'Site Update - Success'
     slack_color = 'good'
@@ -266,7 +285,8 @@ def site_update(site, updates, original):
         title=slack_title,
         link=slack_link,
         attachment_text=attachment_text,
-        level=slack_color)
+        level=slack_color,
+        user=updates['modified_by'])
 
 
 @celery.task
@@ -280,10 +300,13 @@ def site_remove(site):
     logger.debug('Site remove\n{0}'.format(site))
     if site['type'] == 'express':
         # execute(fabfile.site_backup, site=site)
-        utilities.delete_eve('statistics', site['statistics'])
+        # Check if stats object exists first.
+        if site.get('statistics'):
+            utilities.delete_eve('statistics', site['statistics'])
         execute(fabfile.site_remove, site=site)
 
-    execute(fabfile.update_f5)
+    if environment != 'local':
+        execute(fabfile.update_f5)
 
     slack_title = '{0}/{1}'.format(base_urls[environment], site['path'])
     slack_message = 'Site Remove - Success'
@@ -291,7 +314,8 @@ def site_remove(site):
     utilities.post_to_slack(
         message=slack_message,
         title=slack_title,
-        level=slack_color)
+        level=slack_color,
+        user=site['modified_by'])
 
 
 @celery.task
@@ -317,47 +341,61 @@ def command_prepare(item):
             for site in sites['_items']:
                 logger.debug('Command - {0}'.format(item['command']))
                 if item['command'] == 'correct_file_permissions':
-                    execute(fabfile.correct_file_directory_permissions(site))
+                    execute(fabfile.correct_file_directory_permissions, site=site)
                     continue
                 if item['command'] == 'update_settings_file':
-                    execute(fabfile.update_settings_file(site))
+                    logger.debug('Update site\n{0}'.format(site))
+                    execute(fabfile.update_settings_file, site=site)
                     continue
                 if item['command'] == 'update_homepage_extra_files':
-                    execute(fabfile.update_homepage_extra_files())
+                    execute(fabfile.update_homepage_extra_files)
                     continue
                 # if item['command'] == 'site_backup':
                 #     execute(fabfile.site_backup, site=site)
                 #     continue
-                command_run(site, item['command'], item['single_server'])
+                command_run(site, item['command'], item['single_server'], item['modified_by'])
 
 
 @celery.task
-def command_run(site, command, single_server):
+def command_run(site, command, single_server, user=None):
     """
     Run the appropriate command.
 
     :param site: A complete site item.
     :param command: Command to run.
     :param single_server: boolean Run a single server or all servers.
+    :param user: string Username that called the command.
     :return:
     """
     logger.debug('Run Command - {0} - {1}\n{2}'.format(site['sid'], single_server, command))
     if single_server:
-        execute(fabfile.command_run_single, site=site, command=command)
+        fabric_single = execute(fabfile.command_run_single, site=site, command=command, warn_only=True)
+        logger.debug(fabric_single)
     else:
         execute(fabfile.command_run, site=site, command=command)
 
-    slack_title = '{0}/{1}'.format(base_urls[environment], site['path'])
-    slack_link = '{0}/{1}'.format(base_urls[environment], site['path'])
-    slack_message = 'Command - Success'
-    slack_color = 'good'
-    attachment_text = command
+    if command == 'drush cron':
+        slack_title = '{0}/{1}'.format(base_urls[environment], site['path'])
+        slack_link = '{0}/{1}'.format(base_urls[environment], site['path'])
+        slack_message = 'Command - Success'
+        slack_color = 'good'
+        attachment_text = command
+        user = None
+    else:
+        slack_title = '{0}/{1}'.format(base_urls[environment], site['path'])
+        slack_link = '{0}/{1}'.format(base_urls[environment], site['path'])
+        slack_message = 'Command - Success'
+        slack_color = 'good'
+        attachment_text = command
+        user = user
+
     utilities.post_to_slack(
         message=slack_message,
         title=slack_title,
         link=slack_link,
         attachment_text=attachment_text,
-        level=slack_color)
+        level=slack_color,
+        user=user)
 
 
 @celery.task
@@ -372,31 +410,36 @@ def cron(status=None, include_packages=None, exclude_packages=None):
         site_query_string.append('"status":"{0}",'.format(status))
     else:
         logger.debug('Cron - No status found')
-        site_query_string.append('"status":{"$in":["installed","launched"],')
+        site_query_string.append('"status":{"$in":["installed","launched"]},')
     if include_packages:
         logger.debug('Cron - found include_packages')
         for package_name in include_packages:
             packages = utilities.get_code(name=package_name)
             include_packages_ids = []
             if not packages['_meta']['total'] == 0:
-                for item in packages:
-                    include_packages_ids.append(item['_id'])
-                site_query_string.append('"code.package": {{"$in": {0}}},'.format(include_packages_ids))
+                for item in packages['_items']:
+                    logger.debug('Cron - include_packages item \n{0}'.format(item))
+                    include_packages_ids.append(str(item['_id']))
+                logger.debug('Cron - include_packages list \n{0}'.format(json.dumps(include_packages_ids)))
+                site_query_string.append('"code.package": {{"$in": {0}}},'.format(json.dumps(include_packages_ids)))
     if exclude_packages:
         logger.debug('Cron - found exclude_packages')
         for package_name in exclude_packages:
             packages = utilities.get_code(name=package_name)
             exclude_packages_ids = []
             if not packages['_meta']['total'] == 0:
-                for item in packages:
-                    exclude_packages_ids.append(item['_id'])
-                site_query_string.append('"code.package": {{"$in": {0}}},'.format(exclude_packages_ids))
+                for item in packages['_items']:
+                    logger.debug('Cron - exclude_packages item \n{0}'.format(item))
+                    exclude_packages_ids.append(str(item['_id']))
+                logger.debug('Cron - exclude_packages list \n{0}'.format(json.dumps(exclude_packages_ids)))
+                site_query_string.append('"code.package": {{"$nin": {0}}},'.format(json.dumps(exclude_packages_ids)))
 
     site_query = ''.join(site_query_string)
     logger.debug('Query after join - {0}'.format(site_query))
     site_query = site_query.rstrip('\,')
     logger.debug('Query after rstrip - {0}'.format(site_query))
     site_query += '}'
+    logger.debug('Query final - {0}'.format(site_query))
 
     sites = utilities.get_eve('sites', site_query)
     if not sites['_meta']['total'] == 0:

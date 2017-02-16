@@ -5,7 +5,7 @@ import json
 import ssl
 
 from eve import Eve
-from flask import abort, jsonify, g
+from flask import abort, jsonify, g, make_response
 from hashlib import sha1
 from bson import ObjectId
 from atlas import tasks
@@ -361,6 +361,12 @@ app.on_replace += pre_replace
 def custom409(error):
     response = jsonify({'message': error.description})
     response.status_code = 409
+    return response
+
+
+@app.route('/version')
+def version():
+    response = make_response(version_number)
     return response
 
 

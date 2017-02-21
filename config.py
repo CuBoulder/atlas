@@ -42,4 +42,4 @@ ssl_verification = True
 if environment == 'local':
     ssl_verification = False
 
-version_number = '1.0.2'
+version_number = '1.0.3'

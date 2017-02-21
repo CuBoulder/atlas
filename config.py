@@ -41,3 +41,5 @@ if trailing_slash.search(sites_web_root):
 ssl_verification = True
 if environment == 'local':
     ssl_verification = False
+
+version_number = '1.0.2'

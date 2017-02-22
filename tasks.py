@@ -109,6 +109,8 @@ def site_provision(site):
     # 'db_key' needs to be added here and not in Eve so that the encryption
     # works properly.
     site['db_key'] = utilities.encrypt_string(utilities.mysql_password())
+    # Set future site status for settings file creation.
+    site['status'] = 'available'
 
     provision_task = execute(fabfile.site_provision, site=site)
 
@@ -244,13 +246,13 @@ def site_update(site, updates, original):
         if updates['status'] in ['installing', 'launching', 'take_down', 'restore']:
             if updates['status'] == 'installing':
                 logger.debug('Status changed to installing')
-                patch_payload = '{"status": "installed"}'
                 # Set new status on site record for update to settings files.
-                site['status'] == 'installed'
+                site['status'] = 'installed'
                 execute(fabfile.update_settings_file, site=site)
+                patch_payload = '{"status": "installed"}'
             elif updates['status'] == 'launching':
                 logger.debug('Status changed to launching')
-                site['status'] == 'launched'
+                site['status'] = 'launched'
                 execute(fabfile.update_settings_file, site=site)
                 execute(fabfile.site_launch, site=site)
                 if environment is not 'local':
@@ -259,14 +261,14 @@ def site_update(site, updates, original):
                 # Let fab send patch since it is changing update group.
             elif updates['status'] == 'take_down':
                 logger.debug('Status changed to take_down')
-                site['status'] == 'down'
+                site['status'] = 'down'
                 execute(fabfile.update_settings_file, site=site)
                 # execute(fabfile.site_backup, site=site)
                 execute(fabfile.site_take_down, site=site)
                 patch_payload = '{"status": "down"}'
             elif updates['status'] == 'restore':
                 logger.debug('Status changed to restore')
-                site['status'] == 'installed'
+                site['status'] = 'installed'
                 execute(fabfile.update_settings_file, site=site)
                 execute(fabfile.site_restore, site=site)
                 execute(fabfile.update_database, site=site)

@@ -258,7 +258,7 @@ def site_update(site, updates, original):
                 if environment is not 'local':
                     execute(fabfile.diff_f5)
                     execute(fabfile.update_f5)
-                # Let fab send patch since it is changing update group.
+                # Let fabric send patch since it is changing update group.
             elif updates['status'] == 'take_down':
                 logger.debug('Status changed to take_down')
                 site['status'] = 'down'

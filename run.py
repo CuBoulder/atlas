@@ -149,9 +149,10 @@ def on_insert_code_callback(items):
             query = 'where={{"meta.name":"{0}","meta.code_type":"{1}","meta.is_current": {2}}}'.format(item['meta']['name'], item['meta']['code_type'], str(item['meta']['is_current']).lower())
             code_get = utilities.get_eve('code', query)
             app.logger.debug(code_get)
-            for code in code_get['_items']:
-                request_payload = {'meta.is_current': False}
-                utilities.patch_eve('code', code['_id'], request_payload)
+            if code_get['_meta']['total'] != 0:
+                for code in code_get['_items']:
+                    request_payload = {'meta.is_current': False}
+                    utilities.patch_eve('code', code['_id'], request_payload)
         app.logger.debug('Ready to send to Celery\n{0}'.format(item))
         tasks.code_deploy.delay(item)
 

@@ -274,8 +274,9 @@ def site_update(site, updates, original):
                 execute(fabfile.update_database, site=site)
                 patch_payload = '{"status": "installed"}'
 
-            patch = utilities.patch_eve('sites', site['_id'], patch_payload)
-            logger.debug(patch)
+            if updates['status'] != 'launching':
+                patch = utilities.patch_eve('sites', site['_id'], patch_payload)
+                logger.debug(patch)
 
     if updates.get('settings'):
         logger.debug('Found settings change.')

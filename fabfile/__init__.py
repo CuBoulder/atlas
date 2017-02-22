@@ -134,7 +134,6 @@ def site_provision(site):
     Responds to POSTs to provision a site to the right places on the server.
 
     :param site: The flask.request object, JSON encoded
-    :param install: Boolean. Indicates if the install command will run.
     :return:
     """
     print('Site Provision\n{0}'.format(site))

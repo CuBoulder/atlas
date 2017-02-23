@@ -353,14 +353,14 @@ def command_prepare(item):
             for site in sites['_items']:
                 logger.debug('Command - {0}'.format(item['command']))
                 if item['command'] == 'correct_file_permissions':
-                    execute(fabfile.correct_file_directory_permissions, site=site)
+                    command_wrapper.delay(execute(fabfile.correct_file_directory_permissions, site=site))
                     continue
                 if item['command'] == 'update_settings_file':
                     logger.debug('Update site\n{0}'.format(site))
-                    execute(fabfile.update_settings_file, site=site)
+                    command_wrapper.delay(execute(fabfile.update_settings_file, site=site))
                     continue
                 if item['command'] == 'update_homepage_extra_files':
-                    execute(fabfile.update_homepage_extra_files)
+                    command_wrapper.delay(execute(fabfile.update_homepage_extra_files))
                     continue
                 # if item['command'] == 'site_backup':
                 #     execute(fabfile.site_backup, site=site)
@@ -369,7 +369,18 @@ def command_prepare(item):
             # After all the commands run, flush APC.
             if item['command'] == 'update_settings_file':
                 logger.debug('Clear APC')
-                execute(fabfile.clear_apc)
+                command_wrapper.delay(execute(fabfile.clear_apc))
+
+
+@celery.task
+def command_wrapper(fabric_command):
+    """
+    Wrapper to run specific commands as delegate tasks.
+    :param fabric_command: Fabric command to call
+    :return:
+    """
+    logger.debug('Command wrapper')
+    return fabric_command
 
 
 @celery.task

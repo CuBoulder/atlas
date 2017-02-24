@@ -51,11 +51,10 @@ Pull requests are always welcome. Project is under active development. We are co
 Describe which methods to use in which situations. *The safest option is always to use **POST** to create a new item and then to **PATCH** the site over.*
 
 ### Code maintenance
-* Code has no current version - **POST**
-* Code has current stable version - **POST**
-* Code has current version with fatal error and new version does not require an update hook - **PATCH** existing item
-* Code has current version with fatal error and new version *does* require an update hook - **POST**
-
+* No current version - **POST** new code item
+* Stable version - **POST** new code item
+* Version with error and new version does not require an update hook - **PATCH** existing code item
+* Version with error and new version *does* require an update hook - **POST** new code item
 
 ## Sample requests
 

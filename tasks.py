@@ -396,10 +396,12 @@ def command_run(site, command, single_server, user=None):
     """
     logger.debug('Run Command - {0} - {1}\n{2}'.format(site['sid'], single_server, command))
     if single_server:
-        fabric_single = execute(fabfile.command_run_single, site=site, command=command, warn_only=True)
+        fabric_task = execute(fabfile.command_run_single, site=site, command=command, warn_only=True)
         logger.debug(fabric_single)
     else:
-        execute(fabfile.command_run, site=site, command=command)
+        fabric_task = execute(fabfile.command_run, site=site, command=command)
+
+
 
     if command == 'drush cron':
         slack_title = '{0}/{1}'.format(base_urls[environment], site['path'])

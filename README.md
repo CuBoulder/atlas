@@ -47,6 +47,16 @@ Celery will return a url in the first part of a long response.
 
 Pull requests are always welcome. Project is under active development. We are committed to keeping the Express Drupal install profile and Atlas independent of each other.
 
+## Best Practices
+Describe which methods to use in which situations. *The safest option is always to use **POST** to create a new item and then to **PATCH** the site over.*
+
+### Code maintenance
+* Code has no current version - **POST**
+* Code has current stable version - **POST**
+* Code has current version with fatal error and new version does not require an update hook - **PATCH** existing item
+* Code has current version with fatal error and new version *does* require an update hook - **POST**
+
+
 ## Sample requests
 
 ### Code items

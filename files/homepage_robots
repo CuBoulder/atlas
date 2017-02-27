@@ -71,6 +71,7 @@ Disallow: /gsearch
 Disallow: /?=gsearch
 Disallow: /cgi-bin/finger
 Disallow: /physics/phet/dev
+Disallow: /physics/phet/dev/*
 
 # FIT-1785 - 06/06/2016
 Disallow: /*?quicktabs_*

@@ -47,14 +47,31 @@ Celery will return a url in the first part of a long response.
 
 Pull requests are always welcome. Project is under active development. We are committed to keeping the Express Drupal install profile and Atlas independent of each other.
 
-## Best Practices
-Describe which methods to use in which situations. *The safest option is always to use **POST** to create a new item and then to **PATCH** the site over.*
+## Best Practices and Notes
 
 ### Code maintenance
+*The safest option is always to use **POST** to create a new item and then to **PATCH** the site over.*
 * No current version - **POST** new code item
 * Stable version - **POST** new code item
 * Version with error and new version does not require an update hook - **PATCH** existing code item
 * Version with error and new version *does* require an update hook - **POST** new code item
+
+### Using Commands
+* Schema notes:
+  * `name` is an end user facing field that should describe the command.
+  * `command` is the string that is run on the server(s). Commands do not support prompts and should exit with a `0` exit code, this means end drush commands like `drush en [module_name] -y` with `-y`.
+  * `query` appended to `?where` in a call to the Atlas API. Special characters, including all symbols, need to be unicode encoded ([Unicode Character table](https://unicode-table.com/)).
+  * `single_server` is useful for commands that affect only the database layer like _module enable_ or _Drupal cache clear_.
+* There are several commands that have hooks that interrupt the normal command flow. They are:
+  * `clear_apc`
+  * `import_code`
+  * `correct_file_permissions`
+  * `update_settings_file`
+  * `update_homepage_extra_files`
+* To use a command, first **POST** to create the command. Then **PATCH** the item to 'run' the command. 
+  * This is not the most intuitive pattern, but not sure what a better pattern in at the moment. Considering using an authenticated **GET** to the command item, but that would be a different pattern than all other endpoints. Also considering defining our own method.
+ 
+  
 
 ## Sample requests
 

@@ -490,6 +490,14 @@ statistics_schema = {
             },
         },
     },
+    'webforms': {
+        'type': 'dict',
+        'schema': {
+            'total_submissions': {'type': 'integer'},
+            'active_forms': {'type': 'integer'},
+            'inactive_forms': {'type': 'integer'},
+        },
+    },
     'created_by': {
         'type': 'string',
     },

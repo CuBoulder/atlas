@@ -478,31 +478,58 @@ def cron(type=None, status=None, include_packages=None, exclude_packages=None):
 @celery.task
 def check_cron_result(payload):
     logger.debug('Check cron result')
-    # Expand the list to the varaibles we need.
-    fabric_result, path = payload
+    # Expand the list to the variables we need.
+    fabric_result, site_path = payload
 
-    # Fabric will return {[host]: None} if the command completes successfully.
     errors = filter(None, fabric_result)
 
-    slack_title = '{0}/{1}'.format(base_urls[environment], path)
-    slack_link = '{0}/{1}'.format(base_urls[environment], path)
-    attachment_text = 'drush cron'
-    user = None
+    instance_url = '{0}/{1}'.format(base_urls[environment], site_path)
+    title = 'Run Command'
+    instance_link = '<' + instance_url + '|' + instance_url + '>'
+    command = 'drush cron'
+    user = 'Celerybeat'
 
     if errors:
-        slack_message = 'Command - Failed'
-        slack_color = 'warning'
+        text = 'Error'
+        slack_color = 'danger'
     else:
-        slack_message = 'Command - Success'
+        text = 'Success'
         slack_color = 'good'
 
-    utilities.post_to_slack(
-        message=slack_message,
-        title=slack_title,
-        link=slack_link,
-        attachment_text=attachment_text,
-        level=slack_color,
-        user=user)
+    slack_fallback = instance_url + ' - ' + environment + ' - ' + command
+
+    slack_payload = {
+        "text": text,
+        "username": 'Atlas',
+        "attachments": [
+            {
+                "fallback": slack_fallback,
+                "color": slack_color,
+                "author_name": user,
+                "title": title,
+                "fields": [
+                    {
+                        "title": "Instance",
+                        "value": instance_link,
+                        "short": True
+                    },
+                    {
+                        "title": "Environment",
+                        "value": environment,
+                        "short": True
+                    },
+                    {
+                        "title": "Command",
+                        "value": command,
+                        "short": True
+                    }
+                ],
+            }
+        ],
+        "user": user
+    }
+
+    utilities.post_to_slack_payload(slack_payload)
 
 
 @celery.task

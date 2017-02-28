@@ -481,7 +481,13 @@ def check_cron_result(payload):
     # Expand the list to the variables we need.
     fabric_result, site_path = payload
 
-    errors = filter(None, fabric_result)
+    logger.debug(fabric_result)
+    # The fabric_result is a dict of hosts and the result from the fabric
+    # command.
+    # This loops through key:value and adds them to a new dict if value is not
+    # None.
+    errors = {k: v for k, v in fabric_result.iteritems() if v is not None}
+    logger.debug(errors)
 
     instance_url = '{0}/{1}'.format(base_urls[environment], site_path)
     title = 'Run Command'

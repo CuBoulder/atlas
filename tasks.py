@@ -482,10 +482,10 @@ def check_cron_result(payload):
     fabric_result, site_path = payload
 
     logger.debug(fabric_result)
-    # The fabric_result is a dict of hosts and the result from the fabric
-    # command.
-    # This loops through key:value and adds them to a new dict if value is not
+    # The fabric_result is a dict of {hosts: result} from fabric.
+    # We loop through each row and add it to a new dict if value is not
     # None.
+    # This uses constructor syntax https://doughellmann.com/blog/2012/11/12/the-performance-impact-of-using-dict-instead-of-in-cpython-2-7-2/.
     errors = {k: v for k, v in fabric_result.iteritems() if v is not None}
     logger.debug(errors)
 

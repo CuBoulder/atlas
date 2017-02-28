@@ -394,23 +394,16 @@ def command_run(site, command, single_server, user=None):
     :param user: string Username that called the command.
     :return:
     """
-    logger.debug('Run Command - {0} - {1}\n{2}'.format(site['sid'], single_server, command))
+    logger.debug('Run Command - {0} - {1} - {2}'.format(site['sid'], single_server, command))
     if single_server:
-        fabric_task = execute(fabfile.command_run_single, site=site, command=command, warn_only=True)
-        logger.debug(fabric_single)
+        fabric_task_result = execute(fabfile.command_run_single, site=site, command=command, warn_only=True)
     else:
-        fabric_task = execute(fabfile.command_run, site=site, command=command)
+        fabric_task_result = execute(fabfile.command_run, site=site, command=command, warn_only=True)
 
+    logger.debug('Command result - {0}'.format(fabric_task_result))
 
-
-    if command == 'drush cron':
-        slack_title = '{0}/{1}'.format(base_urls[environment], site['path'])
-        slack_link = '{0}/{1}'.format(base_urls[environment], site['path'])
-        slack_message = 'Command - Success'
-        slack_color = 'good'
-        attachment_text = command
-        user = None
-    else:
+    # Cron handles its own messages.
+    if command != 'drush cron':
         slack_title = '{0}/{1}'.format(base_urls[environment], site['path'])
         slack_link = '{0}/{1}'.format(base_urls[environment], site['path'])
         slack_message = 'Command - Success'
@@ -418,13 +411,15 @@ def command_run(site, command, single_server, user=None):
         attachment_text = command
         user = user
 
-    utilities.post_to_slack(
-        message=slack_message,
-        title=slack_title,
-        link=slack_link,
-        attachment_text=attachment_text,
-        level=slack_color,
-        user=user)
+        utilities.post_to_slack(
+            message=slack_message,
+            title=slack_title,
+            link=slack_link,
+            attachment_text=attachment_text,
+            level=slack_color,
+            user=user)
+    else:
+        return fabric_task_result, site['path']
 
 
 @celery.task
@@ -477,7 +472,37 @@ def cron(type=None, status=None, include_packages=None, exclude_packages=None):
     sites = utilities.get_eve('sites', site_query)
     if not sites['_meta']['total'] == 0:
         for site in sites['_items']:
-            command_run.delay(site, 'drush cron', True)
+            command_run.apply_async((site, 'drush cron', True), link=check_cron_result.s())
+
+
+@celery.task
+def check_cron_result(payload):
+    logger.debug('Check cron result')
+    # Expand the list to the varaibles we need.
+    fabric_result, path = payload
+
+    # Fabric will return {[host]: None} if the command completes successfully.
+    errors = filter(None, fabric_result)
+
+    slack_title = '{0}/{1}'.format(base_urls[environment], path)
+    slack_link = '{0}/{1}'.format(base_urls[environment], path)
+    attachment_text = 'drush cron'
+    user = None
+
+    if errors:
+        slack_message = 'Command - Failed'
+        slack_color = 'warning'
+    else:
+        slack_message = 'Command - Success'
+        slack_color = 'good'
+
+    utilities.post_to_slack(
+        message=slack_message,
+        title=slack_title,
+        link=slack_link,
+        attachment_text=attachment_text,
+        level=slack_color,
+        user=user)
 
 
 @celery.task

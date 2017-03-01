@@ -417,7 +417,10 @@ def command_run_single(site, command, warn_only=False):
         site['sid'])
     with settings(warn_only=warn_only):
         with cd(web_directory):
-            run('{0}'.format(command))
+            command_result = run("{0}".format(command), pty=False)
+            # Return the failure if there is one.
+            if command_result.failed:
+                return command_result
 
 
 @roles('webservers')

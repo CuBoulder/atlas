@@ -487,7 +487,6 @@ def check_cron_result(payload):
     # None.
     # This uses constructor syntax https://doughellmann.com/blog/2012/11/12/the-performance-impact-of-using-dict-instead-of-in-cpython-2-7-2/.
     errors = {k: v for k, v in fabric_result.iteritems() if v is not None}
-    logger.debug(errors)
 
     instance_url = '{0}/{1}'.format(base_urls[environment], site_path)
     title = 'Run Command'
@@ -538,6 +537,24 @@ def check_cron_result(payload):
         ],
         "user": user
     }
+
+    if errors:
+        error_json = json.dumps(errors)
+        slack_payload['attachments'].append(
+            {
+                "fallback": 'Error message',
+                # A lighter red.
+                "color": '#ee9999',
+                "fields": [
+                    {
+                        "title": "Error message",
+                        "value": error_json,
+                        "short": False
+                    }
+                ]
+            }
+        )
+
 
     utilities.post_to_slack_payload(slack_payload)
 

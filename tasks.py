@@ -498,13 +498,17 @@ def check_cron_result(payload):
     if errors:
         text = 'Error'
         slack_color = 'danger'
+        slack_channel = 'cron-errors'
     else:
         text = 'Success'
         slack_color = 'good'
+        slack_channel = 'cron'
 
     slack_fallback = instance_url + ' - ' + environment + ' - ' + command
 
     slack_payload = {
+        # Channel will be overridden on local environments.
+        "channel": slack_channel,
         "text": text,
         "username": 'Atlas',
         "attachments": [

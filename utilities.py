@@ -350,8 +350,6 @@ def post_to_slack_payload(payload):
     if slack_notify:
         if environment == 'local':
             payload['channel'] = '@{0}'.format(slack_username)
-        elif 'cron' in attachment_text:
-            payload['channel'] = 'cron'
 
         # We need 'json=payload' vs. 'payload' because arguments can be passed in
         # any order. Using json=payload instead of data=json.dumps(payload) so that

@@ -677,11 +677,23 @@ def _install_site(profile_name, code_directory_current):
 
 
 def _clone_repo(git_url, checkout_item, destination):
-    print('Clone Repo: {0}\n Checkout: {1}'.format(git_url, checkout_item))
-    run('git clone {0} {1}'.format(git_url, destination))
-    with cd(destination):
-        run('git checkout {0}'.format(checkout_item))
-        run('git clean -f -f -d')
+    with settings(warn_only=True):
+        print('Clone Repo: {0}\n Checkout: {1}'.format(git_url, checkout_item))
+        clone_result = run('git clone {0} {1}'.format(git_url, destination), pty=False)
+
+        if clone_result.failed:
+            print ('Git clone failed\n{0}'.format(clone_result))
+            return clone_result
+
+        with cd(destination):
+            checkout_result = run('git checkout {0}'.format(checkout_item), pty=False)
+            if checkout_result.failed:
+                print ('Git checkout failed\n{0}'.format(checkout_result))
+                return checkout_result
+            clean_result = run('git clean -f -f -d', pty=False)
+            if .failed:
+                print ('Git clean failed\n{0}'.format(clean_result))
+                return clean_result
 
 
 def _checkout_repo(checkout_item, destination):

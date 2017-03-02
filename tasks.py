@@ -38,17 +38,74 @@ def code_deploy(item):
     :return:
     """
     logger.debug('Code deploy - {0}'.format(item))
-    fab_task = execute(fabfile.code_deploy, item=item)
+    code_deploy_fabric_task_result = execute(fabfile.code_deploy, item=item)
+    logger.debug('Code Deploy - Fabric Result\n{0}'.format(code_deploy_fabric_task_result))
 
-    slack_title = '{0} - {1}'.format(item['meta']['name'],
-                                     item['meta']['version'])
-    if False not in fab_task.values():
-        slack_message = 'Code Deploy - Success'
+    # The fabric_result is a dict of {hosts: result} from fabric.
+    # We loop through each row and add it to a new dict if value is not
+    # None.
+    # This uses constructor syntax https://doughellmann.com/blog/2012/11/12/the-performance-impact-of-using-dict-instead-of-in-cpython-2-7-2/.
+    errors = {k: v for k, v in code_deploy_fabric_task_result.iteritems() if v is not None}
+
+    if errors:
+        text = 'Error'
+        slack_color = 'danger'
+    else:
+        text = 'Success'
         slack_color = 'good'
-        utilities.post_to_slack(
-            message=slack_message,
-            title=slack_title,
-            level=slack_color)
+
+    slack_fallback = '{0} - {1}'.format(item['meta']['name'], item['meta']['version'])
+
+    slack_payload = {
+
+        "text": 'Code Deploy',
+        "username": 'Atlas',
+        "attachments": [
+            {
+                "fallback": slack_fallback,
+                "color": slack_color,
+                "author_name": item['created_by'],
+                "title": text,
+                "fields": [
+                    {
+                        "title": "Name",
+                        "value": item['meta']['name'],
+                        "short": True
+                    },
+                    {
+                        "title": "Environment",
+                        "value": environment,
+                        "short": True
+                    },
+                    {
+                        "title": "Version",
+                        "value": item['meta']['version'],
+                        "short": True
+                    }
+                ],
+            }
+        ],
+        "user": item['created_by']
+    }
+
+    if errors:
+        error_json = json.dumps(errors)
+        slack_payload['attachments'].append(
+            {
+                "fallback": 'Error message',
+                # A lighter red.
+                "color": '#ee9999',
+                "fields": [
+                    {
+                        "title": "Error message",
+                        "value": error_json,
+                        "short": False
+                    }
+                ]
+            }
+        )
+
+    utilities.post_to_slack_payload(slack_payload)
 
 
 @celery.task

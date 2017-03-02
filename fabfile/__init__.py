@@ -214,9 +214,6 @@ def site_package_update(site):
         run("rm -rf modules/custom modules/contrib")
         run("drush dslm-remove-all-packages")
         run("drush dslm-add-package {0}".format(package_name_string))
-        if len(package_name_string) > 0:
-            print('Rebuild registry.')
-            run("drush rr")
 
 
 @roles('webservers')
@@ -243,8 +240,6 @@ def site_profile_update(site, original, updates):
             code_root,
             new_profile['meta']['name'],
             new_profile_full_string))
-        print('Rebuild registry.')
-        run("drush rr")
 
 
 @roles('webservers')
@@ -453,6 +448,20 @@ def update_database(site):
         run("drush updb -y")
 
 
+@roles('webserver_single')
+def registry_rebuild(site):
+    """
+    Run a drush rr
+
+    :param site: Site to run command on
+    :return:
+    """
+    print('Drush registry rebuild\n{0}'.format(site))
+    code_directory_sid = '{0}/{1}/{1}'.format(sites_code_root, site['sid'])
+    with cd(code_directory_sid):
+        run("drush rr")
+
+
 @roles('webservers')
 def clear_apc():
     run("wget -q -O - http://localhost/sysadmintools/apc/clearapc.php")
@@ -485,8 +494,6 @@ def rewrite_symlinks(site):
     if site['status'] == 'launched' and site['pool'] == 'poolb-homepage':
         web_directory = '{0}/{1}'.format(sites_web_root, 'homepage')
         _update_symlink(code_directory_current, web_directory)
-    with cd(web_directory):
-        run("drush rr")
 
 
 @roles('webservers')

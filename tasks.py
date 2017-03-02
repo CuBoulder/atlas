@@ -249,6 +249,7 @@ def site_update(site, updates, original):
                 # Set new status on site record for update to settings files.
                 site['status'] = 'installed'
                 execute(fabfile.update_settings_file, site=site)
+                execute(fabfile.clear_apc)
                 patch_payload = '{"status": "installed"}'
             elif updates['status'] == 'launching':
                 logger.debug('Status changed to launching')

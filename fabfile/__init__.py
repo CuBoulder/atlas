@@ -47,24 +47,31 @@ def code_deploy(item):
     :param item:
     :return:
     """
-    print('Code - Deploy\n{0}'.format(item))
-    if item['meta']['code_type'] == 'library':
-        code_type_dir = 'libraries'
-    else:
-        code_type_dir = item['meta']['code_type'] + 's'
-    code_folder = '{0}/{1}/{2}/{2}-{3}'.format(
-        code_root,
-        code_type_dir,
-        item['meta']['name'],
-        item['meta']['version'])
-    _create_directory_structure(code_folder)
-    _clone_repo(item["git_url"], item["commit_hash"], code_folder)
-    if item['meta']['is_current']:
-        code_folder_current = '{0}/{1}/{2}/{2}-current'.format(
+    # Need warn only to allow the error to pass to celery.
+    with settings(warn_only=True):
+        print('Code - Deploy\n{0}'.format(item))
+        if item['meta']['code_type'] == 'library':
+            code_type_dir = 'libraries'
+        else:
+            code_type_dir = item['meta']['code_type'] + 's'
+        code_folder = '{0}/{1}/{2}/{2}-{3}'.format(
             code_root,
             code_type_dir,
-            item['meta']['name'])
-        _update_symlink(code_folder, code_folder_current)
+            item['meta']['name'],
+            item['meta']['version'])
+        _create_directory_structure(code_folder)
+        clone_task = _clone_repo(item["git_url"], item["commit_hash"], code_folder)
+        print('Got clone response')
+        print(clone_task)
+        if clone_task == True:
+            if item['meta']['is_current']:
+                code_folder_current = '{0}/{1}/{2}/{2}-current'.format(
+                    code_root,
+                    code_type_dir,
+                    item['meta']['name'])
+                _update_symlink(code_folder, code_folder_current)
+        else:
+            return clone_task
 
 
 @roles('webservers')
@@ -691,9 +698,10 @@ def _clone_repo(git_url, checkout_item, destination):
                 print ('Git checkout failed\n{0}'.format(checkout_result))
                 return checkout_result
             clean_result = run('git clean -f -f -d', pty=False)
-            if .failed:
+            if clean_result.failed:
                 print ('Git clean failed\n{0}'.format(clean_result))
                 return clean_result
+            return True
 
 
 def _checkout_repo(checkout_item, destination):

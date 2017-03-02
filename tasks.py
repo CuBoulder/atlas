@@ -175,6 +175,10 @@ def site_import_from_inventory(site):
     logger.debug(rewrite_symlinks_task)
     logger.debug(rewrite_symlinks_task.values)
 
+    rewrite_symlinks_task = execute(fabfile.registry_rebuild, site=site)
+    logger.debug(rewrite_symlinks_task)
+    logger.debug(rewrite_symlinks_task.values)
+
     database_update_task = execute(fabfile.update_database, site=site)
     logger.debug(database_update_task)
     logger.debug(database_update_task.values)
@@ -239,6 +243,7 @@ def site_update(site, updates, original):
             package_change = True
             execute(fabfile.site_package_update, site=site)
         if core_change or profile_change or package_change:
+            execute(fabfile.registry_rebuild, site=site)
             execute(fabfile.update_database, site=site)
 
     if updates.get('status'):

@@ -71,6 +71,8 @@ Disallow: /gsearch
 Disallow: /?=gsearch
 Disallow: /cgi-bin/finger
 Disallow: /physics/phet/dev
+# INC0331010 - 2017-03-02
+Disallow: /physics/phet/dev/*
 
 # FIT-1785 - 06/06/2016
 Disallow: /*?quicktabs_*

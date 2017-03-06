@@ -346,6 +346,9 @@ statistics_schema = {
     'overridden_features': {
         'type': 'dict',
     },
+    'drupal_system_status': {
+        'type': 'boolean',
+    },
     'users': {
         'type': 'dict',
         'schema': {

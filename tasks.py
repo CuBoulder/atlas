@@ -38,17 +38,74 @@ def code_deploy(item):
     :return:
     """
     logger.debug('Code deploy - {0}'.format(item))
-    fab_task = execute(fabfile.code_deploy, item=item)
+    code_deploy_fabric_task_result = execute(fabfile.code_deploy, item=item)
+    logger.debug('Code Deploy - Fabric Result\n{0}'.format(code_deploy_fabric_task_result))
 
-    slack_title = '{0} - {1}'.format(item['meta']['name'],
-                                     item['meta']['version'])
-    if False not in fab_task.values():
-        slack_message = 'Code Deploy - Success'
+    # The fabric_result is a dict of {hosts: result} from fabric.
+    # We loop through each row and add it to a new dict if value is not
+    # None.
+    # This uses constructor syntax https://doughellmann.com/blog/2012/11/12/the-performance-impact-of-using-dict-instead-of-in-cpython-2-7-2/.
+    errors = {k: v for k, v in code_deploy_fabric_task_result.iteritems() if v is not None}
+
+    if errors:
+        text = 'Error'
+        slack_color = 'danger'
+    else:
+        text = 'Success'
         slack_color = 'good'
-        utilities.post_to_slack(
-            message=slack_message,
-            title=slack_title,
-            level=slack_color)
+
+    slack_fallback = '{0} - {1}'.format(item['meta']['name'], item['meta']['version'])
+
+    slack_payload = {
+
+        "text": 'Code Deploy',
+        "username": 'Atlas',
+        "attachments": [
+            {
+                "fallback": slack_fallback,
+                "color": slack_color,
+                "author_name": item['created_by'],
+                "title": text,
+                "fields": [
+                    {
+                        "title": "Name",
+                        "value": item['meta']['name'],
+                        "short": True
+                    },
+                    {
+                        "title": "Environment",
+                        "value": environment,
+                        "short": True
+                    },
+                    {
+                        "title": "Version",
+                        "value": item['meta']['version'],
+                        "short": True
+                    }
+                ],
+            }
+        ],
+        "user": item['created_by']
+    }
+
+    if errors:
+        error_json = json.dumps(errors)
+        slack_payload['attachments'].append(
+            {
+                "fallback": 'Error message',
+                # A lighter red.
+                "color": '#ee9999',
+                "fields": [
+                    {
+                        "title": "Error message",
+                        "value": error_json,
+                        "short": False
+                    }
+                ]
+            }
+        )
+
+    utilities.post_to_slack_payload(slack_payload)
 
 
 @celery.task
@@ -175,6 +232,10 @@ def site_import_from_inventory(site):
     logger.debug(rewrite_symlinks_task)
     logger.debug(rewrite_symlinks_task.values)
 
+    rewrite_symlinks_task = execute(fabfile.registry_rebuild, site=site)
+    logger.debug(rewrite_symlinks_task)
+    logger.debug(rewrite_symlinks_task.values)
+
     database_update_task = execute(fabfile.update_database, site=site)
     logger.debug(database_update_task)
     logger.debug(database_update_task.values)
@@ -239,6 +300,7 @@ def site_update(site, updates, original):
             package_change = True
             execute(fabfile.site_package_update, site=site)
         if core_change or profile_change or package_change:
+            execute(fabfile.registry_rebuild, site=site)
             execute(fabfile.update_database, site=site)
 
     if updates.get('status'):
@@ -249,6 +311,7 @@ def site_update(site, updates, original):
                 # Set new status on site record for update to settings files.
                 site['status'] = 'installed'
                 execute(fabfile.update_settings_file, site=site)
+                execute(fabfile.clear_apc)
                 patch_payload = '{"status": "installed"}'
             elif updates['status'] == 'launching':
                 logger.debug('Status changed to launching')
@@ -353,14 +416,14 @@ def command_prepare(item):
             for site in sites['_items']:
                 logger.debug('Command - {0}'.format(item['command']))
                 if item['command'] == 'correct_file_permissions':
-                    execute(fabfile.correct_file_directory_permissions, site=site)
+                    command_wrapper.delay(execute(fabfile.correct_file_directory_permissions, site=site))
                     continue
                 if item['command'] == 'update_settings_file':
                     logger.debug('Update site\n{0}'.format(site))
-                    execute(fabfile.update_settings_file, site=site)
+                    command_wrapper.delay(execute(fabfile.update_settings_file, site=site))
                     continue
                 if item['command'] == 'update_homepage_extra_files':
-                    execute(fabfile.update_homepage_extra_files)
+                    command_wrapper.delay(execute(fabfile.update_homepage_extra_files))
                     continue
                 # if item['command'] == 'site_backup':
                 #     execute(fabfile.site_backup, site=site)
@@ -369,7 +432,18 @@ def command_prepare(item):
             # After all the commands run, flush APC.
             if item['command'] == 'update_settings_file':
                 logger.debug('Clear APC')
-                execute(fabfile.clear_apc)
+                command_wrapper.delay(execute(fabfile.clear_apc))
+
+
+@celery.task
+def command_wrapper(fabric_command):
+    """
+    Wrapper to run specific commands as delegate tasks.
+    :param fabric_command: Fabric command to call
+    :return:
+    """
+    logger.debug('Command wrapper')
+    return fabric_command
 
 
 @celery.task
@@ -383,21 +457,16 @@ def command_run(site, command, single_server, user=None):
     :param user: string Username that called the command.
     :return:
     """
-    logger.debug('Run Command - {0} - {1}\n{2}'.format(site['sid'], single_server, command))
+    logger.debug('Run Command - {0} - {1} - {2}'.format(site['sid'], single_server, command))
     if single_server:
-        fabric_single = execute(fabfile.command_run_single, site=site, command=command, warn_only=True)
-        logger.debug(fabric_single)
+        fabric_task_result = execute(fabfile.command_run_single, site=site, command=command, warn_only=True)
     else:
-        execute(fabfile.command_run, site=site, command=command)
+        fabric_task_result = execute(fabfile.command_run, site=site, command=command, warn_only=True)
 
-    if command == 'drush cron':
-        slack_title = '{0}/{1}'.format(base_urls[environment], site['path'])
-        slack_link = '{0}/{1}'.format(base_urls[environment], site['path'])
-        slack_message = 'Command - Success'
-        slack_color = 'good'
-        attachment_text = command
-        user = None
-    else:
+    logger.debug('Command result - {0}'.format(fabric_task_result))
+
+    # Cron handles its own messages.
+    if command != 'drush cron':
         slack_title = '{0}/{1}'.format(base_urls[environment], site['path'])
         slack_link = '{0}/{1}'.format(base_urls[environment], site['path'])
         slack_message = 'Command - Success'
@@ -405,13 +474,15 @@ def command_run(site, command, single_server, user=None):
         attachment_text = command
         user = user
 
-    utilities.post_to_slack(
-        message=slack_message,
-        title=slack_title,
-        link=slack_link,
-        attachment_text=attachment_text,
-        level=slack_color,
-        user=user)
+        utilities.post_to_slack(
+            message=slack_message,
+            title=slack_title,
+            link=slack_link,
+            attachment_text=attachment_text,
+            level=slack_color,
+            user=user)
+    else:
+        return fabric_task_result, site['path']
 
 
 @celery.task
@@ -464,7 +535,91 @@ def cron(type=None, status=None, include_packages=None, exclude_packages=None):
     sites = utilities.get_eve('sites', site_query)
     if not sites['_meta']['total'] == 0:
         for site in sites['_items']:
-            command_run.delay(site, 'drush cron', True)
+            command_run.apply_async((site, 'drush cron', True), link=check_cron_result.s())
+
+
+@celery.task
+def check_cron_result(payload):
+    logger.debug('Check cron result')
+    # Expand the list to the variables we need.
+    fabric_result, site_path = payload
+
+    logger.debug(fabric_result)
+    # The fabric_result is a dict of {hosts: result} from fabric.
+    # We loop through each row and add it to a new dict if value is not
+    # None.
+    # This uses constructor syntax https://doughellmann.com/blog/2012/11/12/the-performance-impact-of-using-dict-instead-of-in-cpython-2-7-2/.
+    errors = {k: v for k, v in fabric_result.iteritems() if v is not None}
+
+    instance_url = '{0}/{1}'.format(base_urls[environment], site_path)
+    title = 'Run Command'
+    instance_link = '<' + instance_url + '|' + instance_url + '>'
+    command = 'drush cron'
+    user = 'Celerybeat'
+
+    if errors:
+        text = 'Error'
+        slack_color = 'danger'
+        slack_channel = 'cron-errors'
+    else:
+        text = 'Success'
+        slack_color = 'good'
+        slack_channel = 'cron'
+
+    slack_fallback = instance_url + ' - ' + environment + ' - ' + command
+
+    slack_payload = {
+        # Channel will be overridden on local environments.
+        "channel": slack_channel,
+        "text": text,
+        "username": 'Atlas',
+        "attachments": [
+            {
+                "fallback": slack_fallback,
+                "color": slack_color,
+                "author_name": user,
+                "title": title,
+                "fields": [
+                    {
+                        "title": "Instance",
+                        "value": instance_link,
+                        "short": True
+                    },
+                    {
+                        "title": "Environment",
+                        "value": environment,
+                        "short": True
+                    },
+                    {
+                        "title": "Command",
+                        "value": command,
+                        "short": True
+                    }
+                ],
+            }
+        ],
+        "user": user
+    }
+
+    if errors:
+        error_json = json.dumps(errors)
+        slack_payload['attachments'].append(
+            {
+                "fallback": 'Error message',
+                # A lighter red.
+                "color": '#ee9999',
+                "fields": [
+                    {
+                        "title": "Error message",
+                        "value": error_json,
+                        "short": False
+                    }
+                ]
+            }
+        )
+
+
+    utilities.post_to_slack_payload(slack_payload)
 
 
 @celery.task

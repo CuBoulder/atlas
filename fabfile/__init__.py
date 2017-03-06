@@ -47,24 +47,31 @@ def code_deploy(item):
     :param item:
     :return:
     """
-    print('Code - Deploy\n{0}'.format(item))
-    if item['meta']['code_type'] == 'library':
-        code_type_dir = 'libraries'
-    else:
-        code_type_dir = item['meta']['code_type'] + 's'
-    code_folder = '{0}/{1}/{2}/{2}-{3}'.format(
-        code_root,
-        code_type_dir,
-        item['meta']['name'],
-        item['meta']['version'])
-    _create_directory_structure(code_folder)
-    _clone_repo(item["git_url"], item["commit_hash"], code_folder)
-    if item['meta']['is_current']:
-        code_folder_current = '{0}/{1}/{2}/{2}-current'.format(
+    # Need warn only to allow the error to pass to celery.
+    with settings(warn_only=True):
+        print('Code - Deploy\n{0}'.format(item))
+        if item['meta']['code_type'] == 'library':
+            code_type_dir = 'libraries'
+        else:
+            code_type_dir = item['meta']['code_type'] + 's'
+        code_folder = '{0}/{1}/{2}/{2}-{3}'.format(
             code_root,
             code_type_dir,
-            item['meta']['name'])
-        _update_symlink(code_folder, code_folder_current)
+            item['meta']['name'],
+            item['meta']['version'])
+        _create_directory_structure(code_folder)
+        clone_task = _clone_repo(item["git_url"], item["commit_hash"], code_folder)
+        print('Got clone response')
+        print(clone_task)
+        if clone_task == True:
+            if item['meta']['is_current']:
+                code_folder_current = '{0}/{1}/{2}/{2}-current'.format(
+                    code_root,
+                    code_type_dir,
+                    item['meta']['name'])
+                _update_symlink(code_folder, code_folder_current)
+        else:
+            return clone_task
 
 
 @roles('webservers')
@@ -214,9 +221,6 @@ def site_package_update(site):
         run("rm -rf modules/custom modules/contrib")
         run("drush dslm-remove-all-packages")
         run("drush dslm-add-package {0}".format(package_name_string))
-        if len(package_name_string) > 0:
-            print('Rebuild registry.')
-            run("drush rr")
 
 
 @roles('webservers')
@@ -243,8 +247,6 @@ def site_profile_update(site, original, updates):
             code_root,
             new_profile['meta']['name'],
             new_profile_full_string))
-        print('Rebuild registry.')
-        run("drush rr")
 
 
 @roles('webservers')
@@ -417,7 +419,10 @@ def command_run_single(site, command, warn_only=False):
         site['sid'])
     with settings(warn_only=warn_only):
         with cd(web_directory):
-            run('{0}'.format(command))
+            command_result = run("{0}".format(command), pty=False)
+            # Return the failure if there is one.
+            if command_result.failed:
+                return command_result
 
 
 @roles('webservers')
@@ -453,6 +458,20 @@ def update_database(site):
         run("drush updb -y")
 
 
+@roles('webserver_single')
+def registry_rebuild(site):
+    """
+    Run a drush rr
+
+    :param site: Site to run command on
+    :return:
+    """
+    print('Drush registry rebuild\n{0}'.format(site))
+    code_directory_sid = '{0}/{1}/{1}'.format(sites_code_root, site['sid'])
+    with cd(code_directory_sid):
+        run("drush rr")
+
+
 @roles('webservers')
 def clear_apc():
     run("wget -q -O - http://localhost/sysadmintools/apc/clearapc.php")
@@ -485,8 +504,6 @@ def rewrite_symlinks(site):
     if site['status'] == 'launched' and site['pool'] == 'poolb-homepage':
         web_directory = '{0}/{1}'.format(sites_web_root, 'homepage')
         _update_symlink(code_directory_current, web_directory)
-    with cd(web_directory):
-        run("drush rr")
 
 
 @roles('webservers')
@@ -674,11 +691,24 @@ def _install_site(profile_name, code_directory_current):
 
 
 def _clone_repo(git_url, checkout_item, destination):
-    print('Clone Repo: {0}\n Checkout: {1}'.format(git_url, checkout_item))
-    run('git clone {0} {1}'.format(git_url, destination))
-    with cd(destination):
-        run('git checkout {0}'.format(checkout_item))
-        run('git clean -f -f -d')
+    with settings(warn_only=True):
+        print('Clone Repo: {0}\n Checkout: {1}'.format(git_url, checkout_item))
+        clone_result = run('git clone {0} {1}'.format(git_url, destination), pty=False)
+
+        if clone_result.failed:
+            print ('Git clone failed\n{0}'.format(clone_result))
+            return clone_result
+
+        with cd(destination):
+            checkout_result = run('git checkout {0}'.format(checkout_item), pty=False)
+            if checkout_result.failed:
+                print ('Git checkout failed\n{0}'.format(checkout_result))
+                return checkout_result
+            clean_result = run('git clean -f -f -d', pty=False)
+            if clean_result.failed:
+                print ('Git clean failed\n{0}'.format(clean_result))
+                return clean_result
+            return True
 
 
 def _checkout_repo(checkout_item, destination):

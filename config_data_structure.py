@@ -499,7 +499,6 @@ statistics_schema = {
             'total_submissions': {'type': 'integer'},
             'active_forms': {'type': 'integer'},
             'inactive_forms': {'type': 'integer'},
-            'site_without_forms': {'type': 'boolean'},
         },
     },
     'created_by': {

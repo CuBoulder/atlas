@@ -349,6 +349,9 @@ statistics_schema = {
     'drupal_system_status': {
         'type': 'boolean',
     },
+    'custom_logo_settings': {
+        'type': 'boolean',
+    },
     'users': {
         'type': 'dict',
         'schema': {

@@ -524,8 +524,8 @@ def update_homepage_extra_files():
     SCP the homepage files to web heads.
     :return:
     """
-    send_from_robots = '{0}/atlas/files/homepage_robots'.format(sys.path)
-    send_from_htaccess = '{0}/atlas/files/homepage_htaccess'.format(sys.path)
+    send_from_robots = '/data/code/atlas/files/homepage_robots'
+    send_from_htaccess = '/data/code/atlas/files/homepage_htaccess'
     send_to = '{0}/homepage'.format(sites_web_root)
     run("chmod -R u+w {}".format(send_to))
     run("rm -f {0}/robots.txt".format(send_to))

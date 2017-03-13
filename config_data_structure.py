@@ -99,10 +99,6 @@ code_schema = {
 
 # Site schema.
 sites_schema = {
-    'name': {
-      'type': 'string',
-      'minlength': 1,
-    },
     'path': {
       'type': 'string',
       'unique': True,
@@ -259,6 +255,10 @@ statistics_schema = {
         },
         'required': True,
         'unique': True,
+    },
+    'name': {
+        'type': 'string',
+        'minlength': 1,
     },
     'nodes_total': {
         'type': 'integer',

@@ -408,6 +408,9 @@ def command_prepare(item):
     if item['command'] == 'import_code':
         utilities.import_code(item['query'])
         return
+    if item['command'] == 'rebalance_update_groups':
+        utilities.rebalance_update_groups(item)
+        return
     if item['query']:
         site_query = 'where={0}'.format(item['query'])
         sites = utilities.get_eve('sites', site_query)

@@ -377,6 +377,9 @@ statistics_schema = {
                     },
                 },
             },
+            'no_valid_owner': {
+                'type': 'boolean',
+            },
         },
     },
     'bundles': {
@@ -509,9 +512,6 @@ statistics_schema = {
     },
     'modified_by': {
         'type': 'string',
-    },
-    'no_valid_owner': {
-        'type': 'boolean',
     },
 }
 

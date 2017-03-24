@@ -937,13 +937,13 @@ def diff_f5():
             load_balancer_config_files[environment],
             str(time()).split('.')[0]))
     # Copy config file from the f5 server to the Atlas server.
-    local('scp {0}:/config/filestore/files_d/Common_d/data_group_d/\:Common\:{1} {2}/'.format(
+    local('scp {0}:/config/filestore/files_d/Common_d/data_group_d/\:Common\:{1}* {2}/{1}.tmp'.format(
         serverdefs[environment]['load_balancers'][0],
         load_balancer_config_files[environment],
         load_balancer_config_dir))
 
     # Open file from f5
-    with open(load_balancer_config_file, "r") as ifile:
+    with open('{0}.tmp'.format(load_balancer_config_file), "r") as ifile:
         data = ifile.read()
     # Use regex to parse out path values
     p = re.compile('"(.+/?)" := "(\w+(-\w+)?)",')

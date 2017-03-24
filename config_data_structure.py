@@ -510,6 +510,9 @@ statistics_schema = {
     'modified_by': {
         'type': 'string',
     },
+    'no_valid_owner': {
+        'type': 'boolean',
+    },
 }
 
 commands_schema = {

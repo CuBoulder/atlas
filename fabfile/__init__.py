@@ -1033,7 +1033,7 @@ def _exportf5(new_file_name, load_balancer_config_dir):
     # Copy the new configuration file to the server.
     put("{0}/{1}".format(load_balancer_config_dir, load_balancer_config_files[environment]), "/tmp")
     # Load the new configuration.
-    run("tmsh sys file data-group {0} source-path file:/tmp/{0}".format(load_balancer_config_files[environment]))
+    run("tmsh modify sys file data-group {0} source-path file:/tmp/{0}".format(load_balancer_config_files[environment]))
     run("tmsh save sys config")
     run("tmsh run cm config-sync to-group its6-7")
     disconnect_all()

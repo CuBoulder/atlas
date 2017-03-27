@@ -316,6 +316,54 @@ statistics_schema = {
     'beans_other': {
         'type': 'string',
     },
+    'context': {
+        'type': 'dict',
+        'schema': {
+            'condition': {
+                'type': 'dict',
+                'schema': {
+                    'context': {'type': 'integer'},
+                    'context_all': {'type': 'integer'},
+                    'default': {'type': 'integer'},
+                    'layout': {'type': 'integer'},
+                    'menu': {'type': 'integer'},
+                    'node': {'type': 'integer'},
+                    'node_taxonomy': {'type': 'integer'},
+                    'path': {'type': 'integer'},
+                    'query_param': {'type': 'integer'},
+                    'query_string': {'type': 'integer'},
+                    'sitewide': {'type': 'integer'},
+                    'sitewide_public': {'type': 'integer'},
+                    'taxonomy_term': {'type': 'integer'},
+                    'user': {'type': 'integer'},
+                    'user_page': {'type': 'integer'},
+                    'views': {'type': 'integer'},
+                },
+            },
+            'reaction': {
+                'type': 'dict',
+                'schema': {
+                    'backstretch': {'type': 'integer'},
+                    'block': {'type': 'integer'},
+                    'breadcrumb': {'type': 'integer'},
+                    'column_override': {'type': 'integer'},
+                    'cu_share': {'type': 'integer'},
+                    'menu': {'type': 'integer'},
+                    'region': {'type': 'integer'},
+                    'template_suggestions': {'type': 'integer'},
+                    'theme': {'type': 'integer'},
+                    'theme_html': {'type': 'integer'},
+                    'title_image': {'type': 'integer'},
+                },
+            },
+        },
+    },
+    'context_other_conditions': {
+        'type': 'string',
+    },
+    'context_other_reactions': {
+        'type': 'string',
+    },
     'variable_cron_last': {
         'type': 'integer',
     },
@@ -349,6 +397,9 @@ statistics_schema = {
     'drupal_system_status': {
         'type': 'boolean',
     },
+    'custom_logo_settings': {
+        'type': 'boolean',
+    },
     'users': {
         'type': 'dict',
         'schema': {
@@ -373,6 +424,9 @@ statistics_schema = {
                         'type': 'list',
                     },
                 },
+            },
+            'no_valid_owner': {
+                'type': 'boolean',
             },
         },
     },
@@ -491,6 +545,14 @@ statistics_schema = {
                     },
                 },
             },
+        },
+    },
+    'webforms': {
+        'type': 'dict',
+        'schema': {
+            'total_submissions': {'type': 'integer'},
+            'active_forms': {'type': 'integer'},
+            'inactive_forms': {'type': 'integer'},
         },
     },
     'created_by': {

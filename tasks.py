@@ -163,6 +163,7 @@ def site_provision(site):
     :return:
     """
     logger.debug('Site provision - {0}'.format(site))
+    start_time = time.time()
     # 'db_key' needs to be added here and not in Eve so that the encryption
     # works properly.
     site['db_key'] = utilities.encrypt_string(utilities.mysql_password())
@@ -182,13 +183,21 @@ def site_provision(site):
     patch_payload = {'status': 'available', 'db_key': site['db_key'], 'statistics': site['statistics']}
     patch = utilities.patch_eve('sites', site['_id'], patch_payload)
 
+    profile = utilities.get_single_eve('code', site['code']['profile'])
+    profile_string = profile['meta']['name'] + '-' + profile['meta']['version']
+
+    core = utilities.get_single_eve('code', site['code']['core'])
+    core_string = core['meta']['name'] + '-' + core['meta']['version']
+
+    provision_time = time.time() - start_time
+    logger.info('Atlas operational statistic | Site Provision - {0} - {1} | {2} '.format(core_string, profile_string, provision_time))
     logger.debug('Site has been provisioned\n{0}'.format(patch))
 
     slack_title = '{0}/{1}'.format(base_urls[environment], site['path'])
     slack_link = '{0}/{1}'.format(base_urls[environment], site['path'])
     attachment_text = '{0}/sites/{1}'.format(api_urls[environment], site['_id'])
     if False not in (provision_task.values() or install_task.values()):
-        slack_message = 'Site provision - Success'
+        slack_message = 'Site provision - Success - {0} seconds'.format(provision_time)
         slack_color = 'good'
         utilities.post_to_slack(
             message=slack_message,

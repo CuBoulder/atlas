@@ -5,6 +5,10 @@ All variable settings should go here so values can be propagated to the various
  functions from a central location.
 """
 import re
+import os
+
+# Set Atlas location
+atlas_location = os.path.dirname(os.path.realpath(__file__))
 
 # Import config_servers.py.
 try:

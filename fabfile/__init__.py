@@ -524,8 +524,8 @@ def update_homepage_extra_files():
     SCP the homepage files to web heads.
     :return:
     """
-    send_from_robots = '/data/code/atlas/files/homepage_robots'
-    send_from_htaccess = '/data/code/atlas/files/homepage_htaccess'
+    send_from_robots = '{0}/files/homepage_robots'.format(atlas_location)
+    send_from_htaccess = '{0}/files/homepage_htaccess'.format(atlas_location)
     send_to = '{0}/homepage'.format(sites_web_root)
     run("chmod -R u+w {}".format(send_to))
     run("rm -f {0}/robots.txt".format(send_to))
@@ -925,7 +925,7 @@ def diff_f5():
     site items.
 
     """
-    load_balancer_config_dir = '/data/code/atlas/fabfile'
+    load_balancer_config_dir = '{0}/fabfile'.format(atlas_location)
     load_balancer_config_file = '{0}/{1}'.format(
         load_balancer_config_dir,
         load_balancer_config_files[environment])
@@ -998,7 +998,7 @@ def update_f5():
     new_file_name = "{0}.{1}.bac".format(
         load_balancer_config_files[environment],
         str(time()).split('.')[0])
-    load_balancer_config_dir = '/data/code/atlas/fabfile'
+    load_balancer_config_dir = '{0}/fabfile'.format(atlas_location)
     sites = utilities.get_eve('sites', 'max_results=3000')
 
     # TODO: delete old backups

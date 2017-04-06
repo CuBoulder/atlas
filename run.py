@@ -332,7 +332,8 @@ def pre_replace(resource, item, original):
 Setup the application and logging.
 """
 # Tell Eve to use Basic Auth and where our data structure is defined.
-app = Eve(auth=utilities.AtlasBasicAuth, settings="/data/code/atlas/config_data_structure.py")
+settings = '{0}/config_data_structure.py'.format(atlas_location)
+app = Eve(auth=utilities.AtlasBasicAuth, settings=settings)
 # TODO: Remove debug mode.
 app.debug = True
 

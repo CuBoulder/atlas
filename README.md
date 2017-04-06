@@ -35,7 +35,7 @@ Currently we use a `git pull` deployment. When code is changed, you need to rest
 
 Celery Flower is available via to command line to inspect tasks.
 ```bash
- /data/environments/atlas/bin/celery -A celery flower --conf=/data/code/atlas/config_flower.py
+ /data/environments/atlas/bin/celery -A celery flower --conf=path/to/atlas/config_flower.py
 ```
 
 Celery will return a url in the first part of a long response.

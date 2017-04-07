@@ -57,6 +57,11 @@ code_schema = {
                 'allowed': ['library', 'theme', 'module', 'core', 'profile'],
                 'required': True,
             },
+            'label': {
+                'type': 'string',
+                'minlength': 3,
+                'required': True,
+            },
             'is_current': {
                 'type': 'boolean',
                 'default': False,

@@ -306,6 +306,7 @@ def rebalance_update_groups(item):
                     patch_eve('sites', site['_id'], patch_payload)
 
 
+# Deprecated use 'post_to_slack_payload'
 def post_to_slack(message, title, link='', attachment_text='', level='good', user=slack_username):
     """
     Posts a message to a given channel using the Slack Incoming Webhooks API.
@@ -355,25 +356,18 @@ def post_to_slack(message, title, link='', attachment_text='', level='good', use
         elif 'cron' in attachment_text:
             payload['channel'] = 'cron'
 
-        # We need 'json=payload' vs. 'payload' because arguments can be passed in
-        # any order. Using json=payload instead of data=json.dumps(payload) so that
-        # we don't have to encode the dict ourselves. The Requests library will do
-        # it for us.
+        # We need 'json=payload' vs. 'payload' because arguments can be passed
+        # in any order. Using json=payload instead of data=json.dumps(payload)
+        # so that we don't have to encode the dict ourselves. The Requests
+        # library will do it for us.
         r = requests.post(slack_url, json=payload)
         if not r.ok:
             print r.text
 
 def post_to_slack_payload(payload):
     """
-    Posts a message to a given channel using the Slack Incoming Webhooks API.
-    Links should be in the message or attachment_text in the format:
-    `<https://www.colorado.edu/p1234|New Website>`.
-
-    Message Output Format:
-        Atlas [BOT] - 3:00 PM
-        `message`
-        # `title` (with `link`)
-        # `attachment_text`
+    Posts a message to a given channel using the Slack Incoming Webhooks API. 
+    See https://api.slack.com/docs/message-formatting.
 
     :param payload: Payload suitable for POSTing to Slack.
     """
@@ -381,10 +375,10 @@ def post_to_slack_payload(payload):
         if environment == 'local':
             payload['channel'] = '@{0}'.format(slack_username)
 
-        # We need 'json=payload' vs. 'payload' because arguments can be passed in
-        # any order. Using json=payload instead of data=json.dumps(payload) so that
-        # we don't have to encode the dict ourselves. The Requests library will do
-        # it for us.
+        # We need 'json=payload' vs. 'payload' because arguments can be passed
+        # in any order. Using json=payload instead of data=json.dumps(payload)
+        # so that we don't have to encode the dict ourselves. The Requests
+        # library will do it for us.
         r = requests.post(slack_url, json=payload)
         if not r.ok:
             print r.text

@@ -980,15 +980,6 @@ def diff_f5():
             }
             utilities.post_eve('sites', payload)
             print ('Created site record based on f5.\n{0}'.format(payload))
-        elif pool != api_sites['_items'][0]['pool']:
-            site = api_sites['_items'][0]
-            payload = {
-                "pool": pool,
-                "status": "launched",
-                "type": type,
-            }
-            utilities.patch_eve('sites', site['_id'], payload)
-            print 'Updated site based on f5.\n{0}'.format(payload)
 
 
 def update_f5():

@@ -5,6 +5,7 @@ import sys
 import requests
 import ldap
 import json
+import smtplib
 
 from re import compile, search
 from cryptography.fernet import Fernet
@@ -13,6 +14,7 @@ from string import lowercase
 from hashlib import sha1
 from eve.auth import BasicAuth
 from flask import current_app, g
+from email.mime.text import MIMEText
 from atlas.config import *
 
 # Only needed for importing from Inventory.
@@ -382,3 +384,25 @@ def post_to_slack_payload(payload):
         r = requests.post(slack_url, json=payload)
         if not r.ok:
             print r.text
+
+
+def send_email(message, subject, you):
+    """
+    Sends email
+    :param message: content of the email to be sent.
+    :param subject: content of the subject line
+    :param me: the user sending the email
+    :param you: list of email address(es) the email will be sent to
+    """
+    # We only send plaintext to prevent abuse.
+    msg = MIMEText(message, 'plain')
+    msg['Subject'] = subject
+    msg['From'] = send_from_email
+    msg['To'] = ", ".join(you)
+
+    s = smtplib.SMTP(email_host, email_port)
+    s.starttls()
+    s.login(email_username, email_password)
+    s.sendmail(send_from_email, you, msg.as_string())
+    s.quit()
+

@@ -221,6 +221,15 @@ def site_package_update(site):
         run("rm -rf modules/custom modules/contrib")
         run("drush dslm-remove-all-packages")
         run("drush dslm-add-package {0}".format(package_name_string))
+    if len(package_name_string) > 0:
+        subject = 'Site package added'
+        message = "Requested packages have been added to http://www.colorado.edu/{0}.\n\n{1}\n\n - Web Express Team.".format(site['path'], package_name_string)
+    else:
+        subject = 'Site packages removed'
+        message = "All packages have been removed from http://www.colorado.edu/{0}.\n\n - Web Express Team.".format(
+            site['path'])
+    to = ['{0}@colorado.edu'.format(site['modified_by'])]
+    utilities.send_email(message=message, subject=subject, you=to)
 
 
 @roles('webservers')

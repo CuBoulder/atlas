@@ -311,6 +311,22 @@ def site_update(site, updates, original):
         if core_change or profile_change or package_change:
             execute(fabfile.registry_rebuild, site=site)
             execute(fabfile.update_database, site=site)
+        # Email notification if we updated packages.
+        if 'package' in updates['code']:
+            package_name_string = ""
+            for package in site['code']['package']:
+                # Append the package name and a space.
+                package_name_string += utilities.get_code_name_version(package) + " "
+            # Strip the trailing space off the end.
+            package_name_string = package_name_string.rstrip()
+            if len(package_name_string) > 0:
+                subject = 'Package added - {0}/{1}'.format(base_urls[environment], site['path'])
+                message = "Requested packages have been added to {0}/{1}.\n\n{2}\n\n - Web Express Team\n\nLogin to the site: {0}/{1}/user?destination=admin/settings/admin/bundle/list".format(base_urls[environment], site['path'], package_name_string)
+            else:
+                subject = 'Packages removed - {0}/{1}'.format(base_urls[environment], site['path'])
+                message = "All packages have been removed from {0}/{1}.\n\n - Web Express Team.".format(base_urls[environment], site['path'])
+            to = ['{0}@colorado.edu'.format(site['modified_by'])]
+            utilities.send_email(message=message, subject=subject, you=to)
 
     if updates.get('status'):
         logger.debug('Found status change.')

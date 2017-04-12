@@ -252,6 +252,18 @@ def get_code(name, code_type=''):
     return code_get
 
 
+def get_code_name_version(code_id):
+    """
+    Get the label and version for a code item.
+    :param code_id: string '_id' for a code item
+    :return: string 'label'-'version'
+    """
+    code = get_single_eve('code', code_id)
+    code_name = code['meta']['name']
+    code_version = code['meta']['version']
+    return '{0}-{1}'.format(code_name, code_version)
+
+
 def import_code(query):
     """
     Import code definitions from a URL. Should be a JSON file export from Atlas

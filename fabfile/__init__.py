@@ -165,13 +165,13 @@ def site_provision(site):
     _create_directory_structure(web_directory_type)
 
     with cd(code_directory):
-        core = _get_code_name_version(site['code']['core'])
+        core = utilities.get_code_name_version(site['code']['core'])
         run('drush dslm-new {0} {1}'.format(site['sid'], core))
 
     _update_symlink(code_directory_sid, code_directory_current)
 
     with cd(code_directory_current):
-        profile = _get_code_name_version(site['code']['profile'])
+        profile = utilities.get_code_name_version(site['code']['profile'])
         run('drush dslm-add-profile {0}'.format(profile))
 
     if nfs_mount_files_dir:
@@ -209,7 +209,7 @@ def site_package_update(site):
     package_name_string = ""
     for package in site['code']['package']:
         # Append the package name and a space.
-        package_name_string += _get_code_name_version(package) + " "
+        package_name_string += utilities.get_code_name_version(package) + " "
     # Strip the trailing space off the end.
     package_name_string = package_name_string.rstrip()
     print("Ready to add packages - {0}\n{1}".format(
@@ -248,7 +248,7 @@ def site_profile_update(site, original, updates):
     code_directory_sid = '{0}/{1}/{1}'.format(sites_code_root, site['sid'])
     old_profile = utilities.get_single_eve('code', original['code']['profile'])
     new_profile = utilities.get_single_eve('code', site['code']['profile'])
-    new_profile_full_string = _get_code_name_version(site['code']['profile'])
+    new_profile_full_string = utilities.get_code_name_version(site['code']['profile'])
 
     with cd(code_directory_sid + '/profiles'):
         run("rm {0}; ln -s {1}/profiles/{2}/{3} {2}".format(
@@ -263,7 +263,7 @@ def site_profile_swap(site):
     print('Site Profile Update\n{0}'.format(site))
     code_directory_sid = '{0}/{1}/{1}'.format(sites_code_root, site['sid'])
     profile = utilities.get_single_eve('code', site['code']['profile'])
-    new_profile_full_string = _get_code_name_version(site['code']['profile'])
+    new_profile_full_string = utilities.get_code_name_version(site['code']['profile'])
 
     with cd(code_directory_sid + '/profiles'):
         run("rm {0}; ln -s {1}/profiles/{2}/{3} {2}".format(
@@ -729,18 +729,6 @@ def _checkout_repo(checkout_item, destination):
         run('git fetch --all')
         run('git checkout {0}'.format(checkout_item))
         run('git clean -f -f -d')
-
-
-def _get_code_name_version(code_id):
-    """
-    Get the label and version for a code item.
-    :param code_id: string '_id' for a code item
-    :return: string 'label'-'version'
-    """
-    code = utilities.get_single_eve('code', code_id)
-    code_name = code['meta']['name']
-    code_version = code['meta']['version']
-    return '{0}-{1}'.format(code_name, code_version)
 
 
 def _replace_files_directory(source, destination):

@@ -960,7 +960,7 @@ def diff_f5():
             subject = 'Site record missing'
             message = "Path '{0}' is in the f5, but does not have a site record.".format(path)
             utilities.send_email(message=message, subject=subject, to=devops_team)
-            print ('Site record missing based on f5.\n{0}'.format(payload))
+            print ("The f5 has an entry for '{0}' without a corresponding site record.".format(path))
 
 
 def update_f5():

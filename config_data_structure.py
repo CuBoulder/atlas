@@ -597,6 +597,62 @@ commands_schema = {
     },
 }
 
+routing_schema = {
+    'site': {
+        'type': 'objectid',
+        'data_relation': {
+            'resource': 'sites',
+            'field': '_id',
+        },
+    },
+    'source': {
+        'type': 'string',
+        'required': True,
+    },
+    'destination': {
+        'type': 'string',
+        'required': True,
+    },
+    'regex': {
+        'type': 'bolean',
+        'required': True,
+        'default': False,
+    },
+    'path_preserving': {
+        'type': 'bolean',
+        'required': True,
+        'default': True,
+    },
+    'response_code': {
+        'type': 'string',
+        'allowed_values': [
+            301,
+            302,
+            307
+        ],
+        'default': 301,
+        'required': True,
+    },
+    'dates': {
+        'type': 'dict',
+        'schema': {
+            # See https://docs.python.org/2/library/datetime.html#datetime.datetime for datetime format.
+            'created': {
+                'type': 'datetime',
+            },
+        },
+    },
+    'tag': {
+        'type': 'list',
+    },
+    'created_by': {
+        'type': 'string',
+    },
+    'modified_by': {
+        'type': 'string',
+    },
+}
+
 """
 Definitions of Resources.
 Tells Eve what methods and schemas apply to a given resource.
@@ -645,6 +701,16 @@ commands = {
     'public_item_methods': [],
     'versioning': True,
     'schema': commands_schema,
+}
+
+# Command resource
+routes = {
+    'item_title': 'routes',
+    'public_methods': ['GET'],
+    'public_item_methods': [],
+    'versioning': True,
+    'soft_delete': True,
+    'schema': routing_schema,
 }
 
 #

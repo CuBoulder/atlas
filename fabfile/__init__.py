@@ -220,7 +220,8 @@ def site_package_update(site):
         #TODO: Remove after import from Inventory is done.
         run("rm -rf modules/custom modules/contrib")
         run("drush dslm-remove-all-packages")
-        run("drush dslm-add-package {0}".format(package_name_string))
+        if len(package_name_string) > 0:
+            run("drush dslm-add-package {0}".format(package_name_string))
 
 
 @roles('webservers')
@@ -925,13 +926,13 @@ def diff_f5():
             load_balancer_config_files[environment],
             str(time()).split('.')[0]))
     # Copy config file from the f5 server to the Atlas server.
-    local('scp {0}:/config/filestore/files_d/Common_d/data_group_d/\:Common\:{1}* {2}/{1}.tmp'.format(
+    local('scp {0}:/config/{1} {2}/'.format(
         serverdefs[environment]['load_balancers'][0],
         load_balancer_config_files[environment],
         load_balancer_config_dir))
 
     # Open file from f5
-    with open('{0}.tmp'.format(load_balancer_config_file), "r") as ifile:
+    with open(load_balancer_config_file, "r") as ifile:
         data = ifile.read()
     # Use regex to parse out path values
     p = re.compile('"(.+/?)" := "(\w+(-\w+)?)",')
@@ -948,7 +949,7 @@ def diff_f5():
             subject = 'Site record missing'
             message = "Path '{0}' is in the f5, but does not have a site record.".format(path)
             utilities.send_email(message=message, subject=subject, to=devops_team)
-            print ('Site record missing based on f5.\n{0}'.format(payload))
+            print ("The f5 has an entry for '{0}' without a corresponding site record.".format(path))
 
 
 def update_f5():
@@ -990,10 +991,12 @@ def _exportf5(new_file_name, load_balancer_config_dir):
     the configuration.
 
     """
+    # On an f5 server, backup the current configuration file.
+    with cd("/config"):
+        run("cp {0} {1}".format(load_balancer_config_files[environment], new_file_name))
     # Copy the new configuration file to the server.
-    put("{0}/{1}".format(load_balancer_config_dir, load_balancer_config_files[environment]), "/tmp")
+    put("{0}/{1}".format(load_balancer_config_dir, load_balancer_config_files[environment]), "/config")
     # Load the new configuration.
-    run("tmsh modify sys file data-group {0} source-path file:/tmp/{0}".format(load_balancer_config_files[environment]))
-    run("tmsh save sys config")
-    run("tmsh run cm config-sync to-group its6-7")
+    with cd("/config"):
+        run("b load;")
     disconnect_all()

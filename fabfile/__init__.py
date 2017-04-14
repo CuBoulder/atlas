@@ -951,45 +951,17 @@ def diff_f5():
     sites = p.findall(data)
     # Iterate through sites found in f5 data
     for site in sites:
-        f5only = False
-        if site[0] in load_balancer_exceptions:
-            f5only = True
         # Get path without leading slash
         path = site[0][1:]
-        pool = site[1]
-        # Set a type value based on pool
-        if pool == 'WWWLegacy':
-            type = 'legacy'
-        elif pool == 'poola-homepage' or pool == 'poolb-homepage':
-            type = 'homepage'
-        elif pool == 'poolb-express':
-            type = 'express'
-        else:
-            type = 'custom'
 
         site_query = 'where={{"path":"{0}"}}'.format(path)
         api_sites = utilities.get_eve('sites', site_query)
 
         if not api_sites or len(api_sites['_items']) == 0:
-            payload = {
-                "name": path,
-                "path": path,
-                "pool": pool,
-                "status": "launched",
-                "type": type,
-                "f5only": f5only,
-            }
-            utilities.post_eve('sites', payload)
-            print ('Created site record based on f5.\n{0}'.format(payload))
-        elif pool != api_sites['_items'][0]['pool']:
-            site = api_sites['_items'][0]
-            payload = {
-                "pool": pool,
-                "status": "launched",
-                "type": type,
-            }
-            utilities.patch_eve('sites', site['_id'], payload)
-            print 'Updated site based on f5.\n{0}'.format(payload)
+            subject = 'Site record missing'
+            message = "Path '{0}' is in the f5, but does not have a site record.".format(path)
+            utilities.send_email(message=message, subject=subject, to=devops_team)
+            print ("The f5 has an entry for '{0}' without a corresponding site record.".format(path))
 
 
 def update_f5():

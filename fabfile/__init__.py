@@ -220,7 +220,8 @@ def site_package_update(site):
         #TODO: Remove after import from Inventory is done.
         run("rm -rf modules/custom modules/contrib")
         run("drush dslm-remove-all-packages")
-        run("drush dslm-add-package {0}".format(package_name_string))
+        if len(package_name_string) > 0:
+            run("drush dslm-add-package {0}".format(package_name_string))
 
 
 @roles('webservers')

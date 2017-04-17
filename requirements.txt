@@ -19,7 +19,7 @@ itsdangerous==0.24
 Jinja2==2.8
 kombu==3.0.37
 MarkupSafe==0.23
-paramiko==1.17.2
+paramiko==1.18.2
 pyasn1==0.1.9
 pycparser==2.14
 pycrypto==2.6.1

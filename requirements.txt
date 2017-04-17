@@ -10,7 +10,7 @@ ecdsa==0.13
 enum34==1.1.6
 Eve==0.6.4
 Events==0.2.1
-Fabric==1.11.1
+Fabric==1.13.1
 Flask==0.10.1
 Flask-PyMongo==0.4.1
 idna==2.1

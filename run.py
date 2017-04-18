@@ -316,16 +316,20 @@ def pre_insert(resource, items):
 
 
 def pre_update(resource, updates, original):
-    username = g.get('username', None)
-    if username is not None:
-        if username is not service_account_username:
-            updates['modified_by'] = username
+    # Only update if a username was not provided.
+    if not updates.get('modified_by'):
+        username = g.get('username', None)
+        if username is not None:
+            if username is not service_account_username:
+                updates['modified_by'] = username
 
 def pre_replace(resource, item, original):
-    username = g.get('username', None)
-    if username is not None:
-        if username is not service_account_username:
-            item['modified_by'] = username
+    # Only update if a username was not provided.
+    if not item.get('modified_by'):
+        username = g.get('username', None)
+        if username is not None:
+            if username is not service_account_username:
+                item['modified_by'] = username
 
 
 """

@@ -61,8 +61,12 @@ slack_notify = True
 slack_url = 'SLACK_URL'
 slack_username = 'SLACK_USERNAME'
 
-# Email notifications for failed tasks
+# Email notifications:
+## For failed tasks
 send_error_emails = True
+## Notifications - BETA
+send_notification_emails = False
+
 send_from_email = 'no-reply@example.com'
 email_host = 'smtp.example.com'
 email_port = 587
@@ -70,7 +74,18 @@ email_use_tls = True
 email_username = 'no-reply@example.com'
 email_password = ''
 
-# Name and email addresses of recipients of notifications
+# Name and email addresses of recipients of error messages.
 ADMINS = (
     ('Admin User', 'admin@example.com'),
 )
+
+######### BETA CONFIG #########
+# Currently only used for invalid f5 entries
+devops_team = ['ops@example.com']
+
+# Email message variables
+email_signature = '- Atlas Team'
+takedown_email_closing = 'We can restore a site for a limited time. There may be a fee associated with restoring a site.\n\n'
+
+# Logstash URL for reporting Atlas data
+logstash_url = 'http://wlogstash.colorado.edu:8080'

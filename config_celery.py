@@ -62,8 +62,8 @@ CELERYBEAT_SCHEDULE = {
         'task': 'atlas.tasks.available_sites_check',
         'schedule': timedelta(minutes=5),
     },
-    'delete_stale_pending_sites': {
-        'task': 'atlas.tasks.delete_stale_pending_sites',
+    'delete_stuck_pending_sites': {
+        'task': 'atlas.tasks.delete_stuck_pending_sites',
         'schedule': timedelta(minutes=5),
     },
     'remove_stale_available_sites': {

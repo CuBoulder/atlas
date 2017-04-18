@@ -654,18 +654,21 @@ def available_sites_check():
 
 
 @celery.task
-def delete_stale_pending_sites():
+def delete_stuck_pending_sites():
     site_query = 'where={"status":"pending"}'
     sites = utilities.get_eve('sites', site_query)
     # Loop through and remove sites that are more than 30 minutes old.
     for site in sites['_items']:
         # Parse date string into structured time.
         # See https://docs.python.org/2/library/datetime.html#strftime-and-strptime-behavior for mask format.
-        date_created = time.strptime(
-            site['_created'], "%Y-%m-%d %H:%M:%S %Z")
+        date_created = time.strptime(site['_created'], "%Y-%m-%d %H:%M:%S %Z")
         # Get time now, Convert date_created to seconds from epoch and
         # calculate the age of the site.
         seconds_since_creation = time.time() - time.mktime(date_created)
+        logger.debug('{0} is {1} seconds old'.format(
+            site['sid'],
+            seconds_since_creation)
+        )
         # 30 min * 60 sec = 1800 seconds
         if seconds_since_creation > 1800:
             utilities.delete_eve('sites', site['_id'])
@@ -697,7 +700,7 @@ def take_down_installed_35_day_old_sites():
             # Get time now, Convert date_created to seconds from epoch and
             # calculate the age of the site.
             seconds_since_creation = time.time() - time.mktime(date_created)
-            print('{0} is {1} seconds old'.format(
+            logger.debug('{0} is {1} seconds old'.format(
                 site['sid'],
                 seconds_since_creation)
             )

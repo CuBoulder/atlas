@@ -662,12 +662,17 @@ def delete_stuck_pending_sites():
         # Parse date string into structured time.
         # See https://docs.python.org/2/library/datetime.html#strftime-and-strptime-behavior for mask format.
         date_created = time.strptime(site['_created'], "%Y-%m-%d %H:%M:%S %Z")
+        now = time.time()
         # Get time now, Convert date_created to seconds from epoch and
-        # calculate the age of the site.
-        seconds_since_creation = time.time() - time.mktime(date_created)
-        logger.debug('{0} is {1} seconds old'.format(
+        # calculate the age of the site. Because this is time, and python knows
+        # it, we need to order the math past - present to get age, if we do it
+        # the other way, we get a negative age.
+        seconds_since_creation = time.mktime(date_created) - now
+        logger.debug('{0} is {1} seconds old. Created: {2} Current: {3}'.format(
             site['sid'],
-            seconds_since_creation)
+            seconds_since_creation,
+            time.mktime(date_created),
+            now)
         )
         # 30 min * 60 sec = 1800 seconds
         if seconds_since_creation > 1800:
@@ -693,16 +698,21 @@ def take_down_installed_35_day_old_sites():
         # Loop through and remove sites that are more than 35 days old.
         for site in sites['_items']:
             # Parse date string into structured time.
-            # See https://docs.python.org/2/library/datetime.html#strftime-and-strptime-behavior
-            # for mask format.
-            date_created = time.strptime(
-                site['_created'], "%Y-%m-%d %H:%M:%S %Z")
+            # See https://docs.python.org/2/library/datetime.html#strftime-and-strptime-behavior for mask format.
+            date_created = time.strptime(site['_created'],
+                                         "%Y-%m-%d %H:%M:%S %Z")
+            now = time.time()
             # Get time now, Convert date_created to seconds from epoch and
-            # calculate the age of the site.
-            seconds_since_creation = time.time() - time.mktime(date_created)
-            logger.debug('{0} is {1} seconds old'.format(
-                site['sid'],
-                seconds_since_creation)
+            # calculate the age of the site. Because this is time, and python 
+            # knows it, we need to order the math past - present to get age,
+            # if we do it the other way, we get a negative age.
+            seconds_since_creation = time.mktime(date_created) - now
+            logger.debug(
+                '{0} is {1} seconds old. Created: {2} Current: {3}'.format(
+                    site['sid'],
+                    seconds_since_creation,
+                    time.mktime(date_created),
+                    now)
             )
             # 35 days * 24 hrs * 60 min * 60 sec = 302400 seconds
             if seconds_since_creation > 3024000:

@@ -80,8 +80,12 @@ ADMINS = (
 )
 
 ######### BETA CONFIG #########
+# Currently only used for invalid f5 entries
 devops_team = ['ops@example.com']
 
 # Email message variables
 email_signature = '- Atlas Team'
 takedown_email_closing = 'We can restore a site for a limited time. There may be a fee associated with restoring a site.\n\n'
+
+# Logstash URL for reporting Atlas data
+logstash_url = 'http://wlogstash.colorado.edu:8080'

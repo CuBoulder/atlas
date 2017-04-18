@@ -386,6 +386,18 @@ def post_to_slack_payload(payload):
             print r.text
 
 
+def post_to_logstash_payload(payload):
+    """
+    Posts a message to our logstash instance.
+
+    :param payload: JSON encoded payload.
+    """
+    r = requests.post(logstash_url, json=payload)
+    if not r.ok:
+        print r.text
+
+
+
 def send_email(message, subject, you):
     """
     Sends email

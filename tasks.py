@@ -585,51 +585,47 @@ def check_cron_result(payload):
     command = 'drush cron'
     user = 'Celerybeat'
 
+    # Only post if an error
     if errors:
         text = 'Error'
         slack_color = 'danger'
         slack_channel = 'cron-errors'
-    else:
-        text = 'Success'
-        slack_color = 'good'
-        slack_channel = 'cron'
 
-    slack_fallback = instance_url + ' - ' + environment + ' - ' + command
+        slack_fallback = instance_url + ' - ' + environment + ' - ' + command
 
-    slack_payload = {
-        # Channel will be overridden on local environments.
-        "channel": slack_channel,
-        "text": text,
-        "username": 'Atlas',
-        "attachments": [
-            {
-                "fallback": slack_fallback,
-                "color": slack_color,
-                "author_name": user,
-                "title": title,
-                "fields": [
-                    {
-                        "title": "Instance",
-                        "value": instance_link,
-                        "short": True
-                    },
-                    {
-                        "title": "Environment",
-                        "value": environment,
-                        "short": True
-                    },
-                    {
-                        "title": "Command",
-                        "value": command,
-                        "short": True
-                    }
-                ],
-            }
-        ],
-        "user": user
-    }
+        slack_payload = {
+            # Channel will be overridden on local environments.
+            "channel": slack_channel,
+            "text": text,
+            "username": 'Atlas',
+            "attachments": [
+                {
+                    "fallback": slack_fallback,
+                    "color": slack_color,
+                    "author_name": user,
+                    "title": title,
+                    "fields": [
+                        {
+                            "title": "Instance",
+                            "value": instance_link,
+                            "short": True
+                        },
+                        {
+                            "title": "Environment",
+                            "value": environment,
+                            "short": True
+                        },
+                        {
+                            "title": "Command",
+                            "value": command,
+                            "short": True
+                        }
+                    ],
+                }
+            ],
+            "user": user
+        }
 
-    if errors:
         error_json = json.dumps(errors)
         slack_payload['attachments'].append(
             {
@@ -645,9 +641,7 @@ def check_cron_result(payload):
                 ]
             }
         )
-
-
-    utilities.post_to_slack_payload(slack_payload)
+        utilities.post_to_slack_payload(slack_payload)
 
 
 @celery.task

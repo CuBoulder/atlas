@@ -205,7 +205,8 @@ def site_provision(site):
             link=slack_link,
             attachment_text=attachment_text,
             level=slack_color)
-        logstash_payload = "{{'provision_time':{0},'logsource':'atlas','environment':{1}}}".format(provision_time, environment)
+        logstash_payload = {'provision_time': provision_time,
+                            'logsource': 'atlas'}
         utilities.post_to_logstash_payload(payload=logstash_payload)
 
 
@@ -496,7 +497,11 @@ def command_run(site, command, single_server, user=None):
 
     logger.debug('Command result - {0}'.format(fabric_task_result))
     command_time = time.time() - start_time
-    logstash_payload = "{{'command_time':{0},'logsource':'atlas','environment':{1},'command':'{2}','instance':'{3}'}}".format(command_time, environment, command, site['sid'])
+    logstash_payload = {'command_time': command_time,
+                        'logsource': 'atlas',
+                        'command': command,
+                        'instance': site['sid']
+                        }
     utilities.post_to_logstash_payload(payload=logstash_payload)
 
     # Cron handles its own messages.

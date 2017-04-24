@@ -217,8 +217,6 @@ def site_package_update(site):
         package_name_string))
 
     with cd(packages_directory):
-        #TODO: Remove after import from Inventory is done.
-        run("rm -rf modules/custom modules/contrib")
         run("drush dslm-remove-all-packages")
         if len(package_name_string) > 0:
             run("drush dslm-add-package {0}".format(package_name_string))
@@ -482,14 +480,6 @@ def drush_cache_clear(sid):
     code_directory_current = '{0}/{1}/current'.format(sites_code_root, sid)
     with cd(code_directory_current):
         run("drush cc all")
-
-
-@roles('webservers')
-def change_files_owner(site):
-    print('Change File Owners\n{0}'.format(site))
-    code_directory = '{0}/{1}'.format(sites_code_root, site['sid'])
-    # Change the owner when it matches the old deployment user.
-    run("sudo chown -R --from={0} {1}:{2} {3}".format(former_user, ssh_user, webserver_user_group, code_directory))
 
 
 @roles('webservers')

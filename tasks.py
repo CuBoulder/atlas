@@ -205,6 +205,8 @@ def site_provision(site):
             link=slack_link,
             attachment_text=attachment_text,
             level=slack_color)
+        logstash_payload = "{{'provision_time':{0},'logsource':'atlas'}}".format(provision_time)
+        utilities.post_to_logstash_payload(payload=logstash_payload)
 
 
 @celery.task

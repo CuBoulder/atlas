@@ -390,9 +390,10 @@ def post_to_logstash_payload(payload):
 
     :param payload: JSON encoded payload.
     """
-    r = requests.post(logstash_url, json=payload)
-    if not r.ok:
-        print r.text
+    if environment != 'local':
+        r = requests.post(logstash_url, json=payload)
+        if not r.ok:
+            print r.text
 
 
 

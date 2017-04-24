@@ -205,6 +205,9 @@ def site_provision(site):
             link=slack_link,
             attachment_text=attachment_text,
             level=slack_color)
+        logstash_payload = {'provision_time': provision_time,
+                            'logsource': 'atlas'}
+        utilities.post_to_logstash_payload(payload=logstash_payload)
 
 
 @celery.task
@@ -414,12 +417,20 @@ def command_run(site, command, single_server, user=None):
     :return:
     """
     logger.debug('Run Command - {0} - {1} - {2}'.format(site['sid'], single_server, command))
+    start_time = time.time()
     if single_server:
         fabric_task_result = execute(fabfile.command_run_single, site=site, command=command, warn_only=True)
     else:
         fabric_task_result = execute(fabfile.command_run, site=site, command=command, warn_only=True)
 
     logger.debug('Command result - {0}'.format(fabric_task_result))
+    command_time = time.time() - start_time
+    logstash_payload = {'command_time': command_time,
+                        'logsource': 'atlas',
+                        'command': command,
+                        'instance': site['sid']
+                        }
+    utilities.post_to_logstash_payload(payload=logstash_payload)
 
     # Cron handles its own messages.
     if command != 'drush cron':

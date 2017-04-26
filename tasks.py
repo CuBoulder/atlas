@@ -205,78 +205,9 @@ def site_provision(site):
             link=slack_link,
             attachment_text=attachment_text,
             level=slack_color)
-
-
-@celery.task
-def site_import_from_inventory(site):
-    """
-    Take over an instance with the given parameters.
-
-    :param site: A single site.
-    :return:
-    """
-    logger.debug('Site import - {0}'.format(site))
-    # Decrypt and re-encrypt DB key.
-    logger.debug('Original key - {0}'.format(site['db_key']))
-    site['db_key'] = utilities.replace_inventory_encryption_string(site['db_key'])
-    logger.debug('New key - {0}'.format(site['db_key']))
-
-    ownership_update_task = execute(fabfile.change_files_owner, site=site)
-    logger.debug(ownership_update_task)
-    logger.debug(ownership_update_task.values)
-
-    core_update_task = execute(fabfile.site_core_update, site=site)
-    logger.debug(core_update_task)
-    logger.debug(core_update_task.values)
-
-    profile_update_task = execute(fabfile.site_profile_swap, site=site)
-    logger.debug(profile_update_task)
-    logger.debug(profile_update_task.values)
-
-    settings_update_task = execute(fabfile.update_settings_file, site=site)
-    logger.debug(settings_update_task)
-    logger.debug(settings_update_task.values)
-
-    rewrite_symlinks_task = execute(fabfile.rewrite_symlinks, site=site)
-    logger.debug(rewrite_symlinks_task)
-    logger.debug(rewrite_symlinks_task.values)
-
-    rewrite_symlinks_task = execute(fabfile.registry_rebuild, site=site)
-    logger.debug(rewrite_symlinks_task)
-    logger.debug(rewrite_symlinks_task.values)
-
-    database_update_task = execute(fabfile.update_database, site=site)
-    logger.debug(database_update_task)
-    logger.debug(database_update_task.values)
-
-    patch_payload = {'db_key': site['db_key'], 'statistics': site['statistics']}
-    patch_task = utilities.patch_eve('sites', site['_id'], patch_payload)
-    logger.debug(patch_task)
-    logger.debug(patch_task.values)
-
-    logger.debug('Site has been imported\n{0}'.format(patch_task))
-
-    slack_title = '{0}/{1}'.format(base_urls[environment], site['path'])
-    slack_link = '{0}/{1}'.format(base_urls[environment], site['path'])
-    attachment_text = '{0}/sites/{1}'.format(api_urls[environment], site['_id'])
-    if ('Fail' not in core_update_task.values()) and ('Fail' not in profile_update_task.values()) and ('Fail' not in settings_update_task.values()) and ('Fail' not in rewrite_symlinks_task.values()) and ('Fail' not in database_update_task.values()) and ('Fail' not in patch_task.values()):
-        slack_message = 'Site import - Success'
-        slack_color = 'good'
-        utilities.post_to_slack(
-            message=slack_message,
-            title=slack_title,
-            link=slack_link,
-            attachment_text=attachment_text,
-            level=slack_color)
-    else:
-        slack_message = 'Site import - Failed'
-        slack_color = 'danger'
-        utilities.post_to_slack(
-            message=slack_message,
-            title=slack_title,
-            link=slack_link,
-            attachment_text=attachment_text,
-            level=slack_color)
+        logstash_payload = {'provision_time': provision_time,
+                            'logsource': 'atlas'}
+        utilities.post_to_logstash_payload(payload=logstash_payload)
 
 
 @celery.task
@@ -311,6 +242,22 @@ def site_update(site, updates, original):
         if core_change or profile_change or package_change:
             execute(fabfile.registry_rebuild, site=site)
             execute(fabfile.update_database, site=site)
+        # Email notification if we updated packages.
+        if 'package' in updates['code']:
+            package_name_string = ""
+            for package in site['code']['package']:
+                # Append the package name and a space.
+                package_name_string += utilities.get_code_name_version(package) + " "
+            # Strip the trailing space off the end.
+            package_name_string = package_name_string.rstrip()
+            if len(package_name_string) > 0:
+                subject = 'Package added - {0}/{1}'.format(base_urls[environment], site['path'])
+                message = "Requested packages have been added to {0}/{1}.\n\n{2}\n\n - Web Express Team\n\nLogin to the site: {0}/{1}/user?destination=admin/settings/admin/bundle/list".format(base_urls[environment], site['path'], package_name_string)
+            else:
+                subject = 'Packages removed - {0}/{1}'.format(base_urls[environment], site['path'])
+                message = "All packages have been removed from {0}/{1}.\n\n - Web Express Team.".format(base_urls[environment], site['path'])
+            to = ['{0}@colorado.edu'.format(site['modified_by'])]
+            utilities.send_email(message=message, subject=subject, you=to)
 
     if updates.get('status'):
         logger.debug('Found status change.')
@@ -470,12 +417,20 @@ def command_run(site, command, single_server, user=None):
     :return:
     """
     logger.debug('Run Command - {0} - {1} - {2}'.format(site['sid'], single_server, command))
+    start_time = time.time()
     if single_server:
         fabric_task_result = execute(fabfile.command_run_single, site=site, command=command, warn_only=True)
     else:
         fabric_task_result = execute(fabfile.command_run, site=site, command=command, warn_only=True)
 
     logger.debug('Command result - {0}'.format(fabric_task_result))
+    command_time = time.time() - start_time
+    logstash_payload = {'command_time': command_time,
+                        'logsource': 'atlas',
+                        'command': command,
+                        'instance': site['sid']
+                        }
+    utilities.post_to_logstash_payload(payload=logstash_payload)
 
     # Cron handles its own messages.
     if command != 'drush cron':
@@ -569,51 +524,47 @@ def check_cron_result(payload):
     command = 'drush cron'
     user = 'Celerybeat'
 
+    # Only post if an error
     if errors:
         text = 'Error'
         slack_color = 'danger'
         slack_channel = 'cron-errors'
-    else:
-        text = 'Success'
-        slack_color = 'good'
-        slack_channel = 'cron'
 
-    slack_fallback = instance_url + ' - ' + environment + ' - ' + command
+        slack_fallback = instance_url + ' - ' + environment + ' - ' + command
 
-    slack_payload = {
-        # Channel will be overridden on local environments.
-        "channel": slack_channel,
-        "text": text,
-        "username": 'Atlas',
-        "attachments": [
-            {
-                "fallback": slack_fallback,
-                "color": slack_color,
-                "author_name": user,
-                "title": title,
-                "fields": [
-                    {
-                        "title": "Instance",
-                        "value": instance_link,
-                        "short": True
-                    },
-                    {
-                        "title": "Environment",
-                        "value": environment,
-                        "short": True
-                    },
-                    {
-                        "title": "Command",
-                        "value": command,
-                        "short": True
-                    }
-                ],
-            }
-        ],
-        "user": user
-    }
+        slack_payload = {
+            # Channel will be overridden on local environments.
+            "channel": slack_channel,
+            "text": text,
+            "username": 'Atlas',
+            "attachments": [
+                {
+                    "fallback": slack_fallback,
+                    "color": slack_color,
+                    "author_name": user,
+                    "title": title,
+                    "fields": [
+                        {
+                            "title": "Instance",
+                            "value": instance_link,
+                            "short": True
+                        },
+                        {
+                            "title": "Environment",
+                            "value": environment,
+                            "short": True
+                        },
+                        {
+                            "title": "Command",
+                            "value": command,
+                            "short": True
+                        }
+                    ],
+                }
+            ],
+            "user": user
+        }
 
-    if errors:
         error_json = json.dumps(errors)
         slack_payload['attachments'].append(
             {
@@ -629,9 +580,7 @@ def check_cron_result(payload):
                 ]
             }
         )
-
-
-    utilities.post_to_slack_payload(slack_payload)
+        utilities.post_to_slack_payload(slack_payload)
 
 
 @celery.task
@@ -654,18 +603,23 @@ def available_sites_check():
 
 
 @celery.task
-def delete_stale_pending_sites():
+def delete_stuck_pending_sites():
     site_query = 'where={"status":"pending"}'
     sites = utilities.get_eve('sites', site_query)
     # Loop through and remove sites that are more than 30 minutes old.
     for site in sites['_items']:
         # Parse date string into structured time.
         # See https://docs.python.org/2/library/datetime.html#strftime-and-strptime-behavior for mask format.
-        date_created = time.strptime(
-            site['_created'], "%Y-%m-%d %H:%M:%S %Z")
+        date_created = time.strptime(site['_created'], "%Y-%m-%d %H:%M:%S %Z")
         # Get time now, Convert date_created to seconds from epoch and
         # calculate the age of the site.
         seconds_since_creation = time.time() - time.mktime(date_created)
+        logger.debug('{0} is {1} seconds old. Created: {2} Current: {3}'.format(
+            site['sid'],
+            seconds_since_creation,
+            time.mktime(date_created),
+            now)
+        )
         # 30 min * 60 sec = 1800 seconds
         if seconds_since_creation > 1800:
             utilities.delete_eve('sites', site['_id'])
@@ -690,16 +644,18 @@ def take_down_installed_35_day_old_sites():
         # Loop through and remove sites that are more than 35 days old.
         for site in sites['_items']:
             # Parse date string into structured time.
-            # See https://docs.python.org/2/library/datetime.html#strftime-and-strptime-behavior
-            # for mask format.
-            date_created = time.strptime(
-                site['_created'], "%Y-%m-%d %H:%M:%S %Z")
+            # See https://docs.python.org/2/library/datetime.html#strftime-and-strptime-behavior for mask format.
+            date_created = time.strptime(site['_created'],
+                                         "%Y-%m-%d %H:%M:%S %Z")
             # Get time now, Convert date_created to seconds from epoch and
             # calculate the age of the site.
             seconds_since_creation = time.time() - time.mktime(date_created)
-            print('{0} is {1} seconds old'.format(
-                site['sid'],
-                seconds_since_creation)
+            logger.debug(
+                '{0} is {1} seconds old. Created: {2} Current: {3}'.format(
+                    site['sid'],
+                    seconds_since_creation,
+                    time.mktime(date_created),
+                    now)
             )
             # 35 days * 24 hrs * 60 min * 60 sec = 302400 seconds
             if seconds_since_creation > 3024000:

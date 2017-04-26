@@ -165,13 +165,13 @@ def site_provision(site):
     _create_directory_structure(web_directory_type)
 
     with cd(code_directory):
-        core = _get_code_name_version(site['code']['core'])
+        core = utilities.get_code_name_version(site['code']['core'])
         run('drush dslm-new {0} {1}'.format(site['sid'], core))
 
     _update_symlink(code_directory_sid, code_directory_current)
 
     with cd(code_directory_current):
-        profile = _get_code_name_version(site['code']['profile'])
+        profile = utilities.get_code_name_version(site['code']['profile'])
         run('drush dslm-add-profile {0}'.format(profile))
 
     if nfs_mount_files_dir:
@@ -209,7 +209,7 @@ def site_package_update(site):
     package_name_string = ""
     for package in site['code']['package']:
         # Append the package name and a space.
-        package_name_string += _get_code_name_version(package) + " "
+        package_name_string += utilities.get_code_name_version(package) + " "
     # Strip the trailing space off the end.
     package_name_string = package_name_string.rstrip()
     print("Ready to add packages - {0}\n{1}".format(
@@ -217,17 +217,16 @@ def site_package_update(site):
         package_name_string))
 
     with cd(packages_directory):
-        #TODO: Remove after import from Inventory is done.
-        run("rm -rf modules/custom modules/contrib")
         run("drush dslm-remove-all-packages")
-        run("drush dslm-add-package {0}".format(package_name_string))
+        if len(package_name_string) > 0:
+            run("drush dslm-add-package {0}".format(package_name_string))
 
 
 @roles('webservers')
 def site_core_update(site):
     print('Site Core Update\n{0}'.format(site))
     code_directory_sid = '{0}/{1}/{1}'.format(sites_code_root, site['sid'])
-    core_string = _get_code_name_version(site['code']['core'])
+    core_string = utilities.get_code_name_version(site['code']['core'])
 
     with cd(code_directory_sid):
         run("drush dslm-switch-core {0}".format(core_string))
@@ -239,7 +238,7 @@ def site_profile_update(site, original, updates):
     code_directory_sid = '{0}/{1}/{1}'.format(sites_code_root, site['sid'])
     old_profile = utilities.get_single_eve('code', original['code']['profile'])
     new_profile = utilities.get_single_eve('code', site['code']['profile'])
-    new_profile_full_string = _get_code_name_version(site['code']['profile'])
+    new_profile_full_string = utilities.get_code_name_version(site['code']['profile'])
 
     with cd(code_directory_sid + '/profiles'):
         run("rm {0}; ln -s {1}/profiles/{2}/{3} {2}".format(
@@ -254,7 +253,7 @@ def site_profile_swap(site):
     print('Site Profile Update\n{0}'.format(site))
     code_directory_sid = '{0}/{1}/{1}'.format(sites_code_root, site['sid'])
     profile = utilities.get_single_eve('code', site['code']['profile'])
-    new_profile_full_string = _get_code_name_version(site['code']['profile'])
+    new_profile_full_string = utilities.get_code_name_version(site['code']['profile'])
 
     with cd(code_directory_sid + '/profiles'):
         run("rm {0}; ln -s {1}/profiles/{2}/{3} {2}".format(
@@ -481,14 +480,6 @@ def drush_cache_clear(sid):
     code_directory_current = '{0}/{1}/current'.format(sites_code_root, sid)
     with cd(code_directory_current):
         run("drush cc all")
-
-
-@roles('webservers')
-def change_files_owner(site):
-    print('Change File Owners\n{0}'.format(site))
-    code_directory = '{0}/{1}'.format(sites_code_root, site['sid'])
-    # Change the owner when it matches the old deployment user.
-    run("sudo chown -R --from={0} {1}:{2} {3}".format(former_user, ssh_user, webserver_user_group, code_directory))
 
 
 @roles('webservers')
@@ -722,18 +713,6 @@ def _checkout_repo(checkout_item, destination):
         run('git clean -f -f -d')
 
 
-def _get_code_name_version(code_id):
-    """
-    Get the label and version for a code item.
-    :param code_id: string '_id' for a code item
-    :return: string 'label'-'version'
-    """
-    code = utilities.get_single_eve('code', code_id)
-    code_name = code['meta']['name']
-    code_version = code['meta']['version']
-    return '{0}-{1}'.format(code_name, code_version)
-
-
 def _replace_files_directory(source, destination):
     if exists(destination):
         run('rm -rf {0}'.format(destination))
@@ -950,45 +929,17 @@ def diff_f5():
     sites = p.findall(data)
     # Iterate through sites found in f5 data
     for site in sites:
-        f5only = False
-        if site[0] in load_balancer_exceptions:
-            f5only = True
         # Get path without leading slash
         path = site[0][1:]
-        pool = site[1]
-        # Set a type value based on pool
-        if pool == 'WWWLegacy':
-            type = 'legacy'
-        elif pool == 'poola-homepage' or pool == 'poolb-homepage':
-            type = 'homepage'
-        elif pool == 'poolb-express':
-            type = 'express'
-        else:
-            type = 'custom'
 
         site_query = 'where={{"path":"{0}"}}'.format(path)
         api_sites = utilities.get_eve('sites', site_query)
 
         if not api_sites or len(api_sites['_items']) == 0:
-            payload = {
-                "name": path,
-                "path": path,
-                "pool": pool,
-                "status": "launched",
-                "type": type,
-                "f5only": f5only,
-            }
-            utilities.post_eve('sites', payload)
-            print ('Created site record based on f5.\n{0}'.format(payload))
-        elif pool != api_sites['_items'][0]['pool']:
-            site = api_sites['_items'][0]
-            payload = {
-                "pool": pool,
-                "status": "launched",
-                "type": type,
-            }
-            utilities.patch_eve('sites', site['_id'], payload)
-            print 'Updated site based on f5.\n{0}'.format(payload)
+            subject = 'Site record missing'
+            message = "Path '{0}' is in the f5, but does not have a site record.".format(path)
+            utilities.send_email(message=message, subject=subject, to=devops_team)
+            print ("The f5 has an entry for '{0}' without a corresponding site record.".format(path))
 
 
 def update_f5():

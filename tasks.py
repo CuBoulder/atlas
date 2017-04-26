@@ -618,7 +618,7 @@ def delete_stuck_pending_sites():
             site['sid'],
             seconds_since_creation,
             time.mktime(date_created),
-            now)
+            time.time())
         )
         # 30 min * 60 sec = 1800 seconds
         if seconds_since_creation > 1800:
@@ -655,7 +655,7 @@ def take_down_installed_35_day_old_sites():
                     site['sid'],
                     seconds_since_creation,
                     time.mktime(date_created),
-                    now)
+                    time.time())
             )
             # 35 days * 24 hrs * 60 min * 60 sec = 302400 seconds
             if seconds_since_creation > 3024000:

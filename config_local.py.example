@@ -64,8 +64,6 @@ slack_username = 'SLACK_USERNAME'
 # Email notifications:
 ## For failed tasks
 send_error_emails = True
-## Notifications - BETA
-send_notification_emails = False
 
 send_from_email = 'no-reply@example.com'
 email_host = 'smtp.example.com'
@@ -80,12 +78,12 @@ ADMINS = (
 )
 
 ######### BETA CONFIG #########
+## Notifications
+send_notification_emails = True
+send_notification_from_email = ('Dev Ops', 'ops@example.com')
+service_name = 'Drupal by Atlas'
 # Currently only used for invalid f5 entries
 devops_team = ['ops@example.com']
 
-# Email message variables
-email_signature = '- Atlas Team'
-takedown_email_closing = 'We can restore a site for a limited time. There may be a fee associated with restoring a site.\n\n'
-
 # Logstash URL for reporting Atlas data
-logstash_url = 'http://wlogstash.colorado.edu:8080'
+logstash_url = 'http://logstash.example.com:81'

@@ -29,7 +29,7 @@ def pre_post_callback(resource, request):
 
 def pre_delete_code_callback(request, lookup):
     """
-    Make sure no sites are using the code.
+    Make sure no instances are using the code.
 
     :param request: flask.request object
     :param lookup:
@@ -44,36 +44,36 @@ def pre_delete_code_callback(request, lookup):
     if not code_items['_meta']['total'] == 0:
         code_list = []
         for item in code_items['_items']:
-            # Create a list of sites that use this code item.
+            # List of code items that declare this one as a dependency.
             code_list.append(item['_id'])
         code_list_full = ', '.join(code_list)
         app.logger.error('Code item is a dependency of one or more code items:\n{0}'.format(code_list_full))
         abort(409, 'A conflict happened while processing the request. Code item is a dependency of one or more code items.')
 
-    # Check for sites using this piece of code.
+    # Check for instances using this piece of code.
     if code['meta']['code_type'] in ['module', 'theme', 'library']:
         code_type = 'package'
     else:
         code_type = code['meta']['code_type']
     app.logger.debug(code_type)
-    site_query = 'where={{"code.{0}":"{1}"}}'.format(code_type, code['_id'])
-    sites = utilities.get_eve('sites', site_query)
-    app.logger.debug(sites)
-    if not sites['_meta']['total'] == 0:
-        site_list = []
-        for site in sites['_items']:
-            # Create a list of sites that use this code item.
-            # If 'sid' is a key in the site dict use it, otherwise use '_id'.
-            if site.get('sid'):
-                site_list.append(site['sid'])
+    instance_query = 'where={{"code.{0}":"{1}"}}'.format(code_type, code['_id'])
+    instances = utilities.get_eve('instances', instance_query)
+    app.logger.debug(instances)
+    if not instances['_meta']['total'] == 0:
+        instance_list = []
+        for instance in instances['_items']:
+            # Create a list of instances that use this code item.
+            # If 'sid' is a key in the instance dict use it, otherwise use '_id'.
+            if instance.get('sid'):
+                instance_list.append(instance['sid'])
             else:
-                site_list.append(site['_id'])
-        site_list_full = ', '.join(site_list)
-        app.logger.error('Code item is in use by one or more sites:\n{0}'.format(site_list_full))
-        abort(409, 'A conflict happened while processing the request. Code item is in use by one or more sites.')
+                instance_list.append(instance['_id'])
+        instance_list_full = ', '.join(instance_list)
+        app.logger.error('Code item is in use by one or more instances:\n{0}'.format(instance_list_full))
+        abort(409, 'A conflict happened while processing the request. Code item is in use by one or more instances.')
 
 
-def on_insert_sites_callback(items):
+def on_insert_instances_callback(items):
     """
     Assign a sid, an update group, db_key, any missing code, and date fields.
 
@@ -106,7 +106,7 @@ def on_insert_sites_callback(items):
             app.logger.debug('Ready to create item\n{0}'.format(item))
 
 
-def on_inserted_sites_callback(items):
+def on_inserted_instances_callback(items):
     """
     Provision Express instances.
 
@@ -120,7 +120,7 @@ def on_inserted_sites_callback(items):
             # Create statistics item
             statistics_payload = {}
             # Need to get the string out of the ObjectID.
-            statistics_payload['site'] = str(item['_id'])
+            statistics_payload['instance'] = str(item['_id'])
             app.logger.debug('Create Statistics item\n{0}'.format(statistics_payload))
             statistics = utilities.post_eve(resource='statistics', payload=statistics_payload)
             app.logger.debug(statistics)
@@ -157,16 +157,16 @@ def on_insert_code_callback(items):
         tasks.code_deploy.delay(item)
 
 
-def pre_delete_sites_callback(request, lookup):
+def pre_delete_instance_callback(request, lookup):
     """
-    Remove site from servers right before the item is removed.
+    Remove instance from servers right before the item is removed.
 
     :param request: flask.request object
     :param lookup:
     """
     app.logger.debug(lookup)
-    site = utilities.get_single_eve('sites', lookup['_id'])
-    tasks.site_remove.delay(site)
+    instance = utilities.get_single_eve('instances', lookup['_id'])
+    tasks.site_remove.delay(instance)
 
 
 def on_delete_item_code_callback(item):
@@ -221,23 +221,23 @@ def on_update_code_callback(updates, original):
     tasks.code_update.delay(updated_item, original)
 
 
-def on_update_sites_callback(updates, original):
+def on_update_instances_callback(updates, original):
     """
     Update an instance.
 
     :param updates:
     :param original:
     """
-    app.logger.debug('Update Site\n{0}\n\n{1}'.format(updates, original))
-    site_type = updates['type'] if updates.get('type') else original['type']
-    if site_type == 'express':
-        site = original.copy()
-        site.update(updates)
+    app.logger.debug('Update instance\n{0}\n\n{1}'.format(updates, original))
+    instance_type = updates['type'] if updates.get('type') else original['type']
+    if instance_type == 'express':
+        instance = original.copy()
+        instance.update(updates)
         # Only need to rewrite the nested dicts if they got updated.
         if updates.get('code'):
             code = original['code'].copy()
             code.update(updates['code'])
-            site['code'] = code
+            instance['code'] = code
             dependencies_list = []
             id_list = []
             for key, value in updates['code'].iteritems():
@@ -267,11 +267,11 @@ def on_update_sites_callback(updates, original):
         if updates.get('dates'):
             dates = original['dates'].copy()
             dates.update(updates['dates'])
-            site['dates'] = dates
+            instance['dates'] = dates
         if updates.get('settings'):
             settings = original['settings'].copy()
             settings.update(updates['settings'])
-            site['settings'] = settings
+            instance['settings'] = settings
 
         if updates.get('status'):
             if updates['status'] in ['installing', 'launching', 'take_down','restore']:
@@ -286,8 +286,8 @@ def on_update_sites_callback(updates, original):
 
                 updates['dates'] = json.loads(date_json)
 
-        app.logger.debug('Ready to hand to Celery\n{0}\n{1}'.format(site, updates))
-        tasks.site_update.delay(site, updates, original)
+        app.logger.debug('Ready to hand to Celery\n{0}\n{1}'.format(instance, updates))
+        tasks.site_update.delay(instance, updates, original)
 
 
 def on_update_commands_callback(updates, original):
@@ -323,6 +323,7 @@ def pre_update(resource, updates, original):
             if username is not service_account_username:
                 updates['modified_by'] = username
 
+
 def pre_replace(resource, item, original):
     # Only update if a username was not provided.
     if not item.get('modified_by'):
@@ -348,13 +349,13 @@ app.debug = True
 # Request event hooks.
 app.on_pre_POST += pre_post_callback
 app.on_pre_DELETE_code += pre_delete_code_callback
-app.on_pre_DELETE_sites += pre_delete_sites_callback
+app.on_pre_DELETE_instances += pre_delete_instance_callback
 # Database event hooks.
 app.on_insert_code += on_insert_code_callback
-app.on_insert_sites += on_insert_sites_callback
-app.on_inserted_sites += on_inserted_sites_callback
+app.on_insert_instances += on_insert_instances_callback
+app.on_inserted_instances += on_inserted_instances_callback
 app.on_update_code += on_update_code_callback
-app.on_update_sites += on_update_sites_callback
+app.on_update_instances += on_update_instances_callback
 app.on_update_commands += on_update_commands_callback
 app.on_delete_item_code += on_delete_item_code_callback
 app.on_insert += pre_insert

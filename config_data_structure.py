@@ -35,7 +35,7 @@ MONGO_QUERY_BLACKLIST = ['$where']
 # We don't use those fields in our logic because want to be able to move or
 # recreate a record without losing any information.
 
-# Code schema. Defines a code asset that can be applied to a site.
+# Code schema. Defines a code asset that can be applied to an instance.
 # We nest in 'meta' to allow us to check for a unique combo
 code_schema = {
     'meta': {
@@ -102,8 +102,8 @@ code_schema = {
 }
 
 
-# Site schema.
-sites_schema = {
+# Instance schema.
+instance_schema = {
     'path': {
       'type': 'string',
       'unique': True,
@@ -252,10 +252,10 @@ sites_schema = {
 }
 
 statistics_schema = {
-    'site': {
+    'instance': {
         'type': 'objectid',
         'data_relation': {
-            'resource': 'sites',
+            'resource': 'instance',
             'field': '_id',
         },
         'required': True,
@@ -611,9 +611,9 @@ code = {
     'schema': code_schema,
 }
 
-# Sites resource
-sites = {
-    'item_title': 'site',
+# Instance resource
+instance = {
+    'item_title': 'instance',
     # Allow lookup by 'sid' in addition to '_id'
     'additional_lookup': {
         'url': 'regex("[\w]+")',
@@ -623,7 +623,7 @@ sites = {
     'public_item_methods': ['GET'],
     'versioning': True,
     'soft_delete': True,
-    'schema': sites_schema,
+    'schema': instance_schema,
 }
 
 # Statistics resource
@@ -650,9 +650,8 @@ commands = {
 #
 # Domain definition. Tells Eve what resources are available on this domain.
 #
-
 DOMAIN = {
-    'sites': sites,
+    'instance': instance,
     'code': code,
     'commands': commands,
     'statistics': statistics,

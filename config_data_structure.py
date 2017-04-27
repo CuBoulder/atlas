@@ -102,8 +102,75 @@ code_schema = {
 }
 
 
+# site schema.
+site_schema = {
+    'instance': {
+        'type': 'list',
+        'schema': {
+            'type': 'objectid',
+            'data_relation': {
+                'resource': 'instance',
+                'field': '_id',
+                'embeddable': True,
+            },
+        }
+    },
+    'siteimprove': {
+        'type': 'dict',
+        'schema': {
+            'site': {
+                'type': 'integer',
+            },
+            'group': {
+                'type': 'integer',
+            },
+        },
+    },
+    'site_type': {
+        'type': 'string',
+        'allowed': [
+            # Magazines and Journals
+            'magazine',
+            'committee',
+            # Labs and Research Groups
+            'lab',
+            'faculty',
+            'event',
+            'sports_club',
+            'student_group',
+            # Internal sandboxes and other throw away sites
+            'internal',
+            # Initiative and Promotional
+            'initiative',
+            'academic_department',
+            'administrative_department',
+            # Centers and Institutes
+            'center',
+            # Museums and Collections
+            'museum',
+            'college',
+            'other'
+        ],
+    },
+    'created_by': {
+        'type': 'string',
+    },
+    'modified_by': {
+        'type': 'string',
+    },
+}
+
+
 # Instance schema.
 instance_schema = {
+    'site': {
+        'type': 'objectid',
+        'data_relation': {
+            'resource': 'site',
+            'field': '_id',
+            'embeddable': True,
+        },
+    },
     'path': {
       'type': 'string',
       'unique': True,
@@ -172,12 +239,6 @@ instance_schema = {
             'page_cache_maximum_age': {
                 'type': 'integer',
                 'default': 300,
-            },
-            'siteimprove_site': {
-                'type': 'integer',
-            },
-            'siteimprove_group': {
-                'type': 'integer',
             },
         },
     },
@@ -626,6 +687,16 @@ instance = {
     'schema': instance_schema,
 }
 
+# Site resource
+site = {
+    'item_title': 'site',
+    'public_methods': ['GET'],
+    'public_item_methods': ['GET'],
+    'versioning': True,
+    'soft_delete': True,
+    'schema': site_schema,
+}
+
 # Statistics resource
 statistics = {
     'item_title': 'statistics',
@@ -651,6 +722,7 @@ commands = {
 # Domain definition. Tells Eve what resources are available on this domain.
 #
 DOMAIN = {
+    'site': site,
     'instance': instance,
     'code': code,
     'commands': commands,

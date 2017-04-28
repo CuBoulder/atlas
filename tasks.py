@@ -170,12 +170,12 @@ def instance_provision(instance):
     # Set future instance status for settings file creation.
     instance['status'] = 'available'
 
-    provision_task = execute(fabfile.site_provision, site=instance)
+    provision_task = execute(fabfile.instance_provision, instance=instance)
 
     logger.debug(provision_task)
     logger.debug(provision_task.values)
 
-    install_task = execute(fabfile.site_install, site=instance)
+    install_task = execute(fabfile.instance_install, instance=instance)
 
     logger.debug(install_task)
     logger.debug(install_task.values)
@@ -230,18 +230,18 @@ def instance_update(instance, updates, original):
         if 'core' in updates['code']:
             logger.debug('Found core change.')
             core_change = True
-            execute(fabfile.site_core_update, site=instance)
+            execute(fabfile.instance_core_update, instance=instance)
         if 'profile' in updates['code']:
             logger.debug('Found profile change.')
             profile_change = True
-            execute(fabfile.site_profile_update, site=instance, original=original, updates=updates)
+            execute(fabfile.instance_profile_update, instance=instance, original=original, updates=updates)
         if 'package' in updates['code']:
             logger.debug('Found package changes.')
             package_change = True
-            execute(fabfile.site_package_update, site=instance)
+            execute(fabfile.instance_package_update, instance=instance)
         if core_change or profile_change or package_change:
-            execute(fabfile.registry_rebuild, site=instance)
-            execute(fabfile.update_database, site=instance)
+            execute(fabfile.registry_rebuild, instance=instance)
+            execute(fabfile.update_database, instance=instance)
         # Email notification if we updated packages.
         if 'package' in updates['code']:
             package_name_string = ""
@@ -266,14 +266,14 @@ def instance_update(instance, updates, original):
                 logger.debug('Status changed to installing')
                 # Set new status on instance record for update to settings files.
                 instance['status'] = 'installed'
-                execute(fabfile.update_settings_file, site=instance)
+                execute(fabfile.update_settings_file, instance=instance)
                 execute(fabfile.clear_apc)
                 patch_payload = '{"status": "installed"}'
             elif updates['status'] == 'launching':
                 logger.debug('Status changed to launching')
                 instance['status'] = 'launched'
-                execute(fabfile.update_settings_file, site=instance)
-                execute(fabfile.site_launch, site=instance)
+                execute(fabfile.update_settings_file, instance=instance)
+                execute(fabfile.instance_launch, instance=instance)
                 if environment is not 'local':
                     execute(fabfile.diff_f5)
                     execute(fabfile.update_f5)
@@ -281,16 +281,16 @@ def instance_update(instance, updates, original):
             elif updates['status'] == 'take_down':
                 logger.debug('Status changed to take_down')
                 instance['status'] = 'down'
-                execute(fabfile.update_settings_file, site=instance)
-                # execute(fabfile.site_backup, instance=instance)
-                execute(fabfile.site_take_down, site=instance)
+                execute(fabfile.update_settings_file, instance=instance)
+                # execute(fabfile.instance_backup, instance=instance)
+                execute(fabfile.instance_take_down, instance=instance)
                 patch_payload = '{"status": "down"}'
             elif updates['status'] == 'restore':
                 logger.debug('Status changed to restore')
                 instance['status'] = 'installed'
-                execute(fabfile.update_settings_file, site=instance)
-                execute(fabfile.site_restore, site=instance)
-                execute(fabfile.update_database, site=instance)
+                execute(fabfile.update_settings_file, instance=instance)
+                execute(fabfile.instance_restore, instance=instance)
+                execute(fabfile.update_database, instance=instance)
                 patch_payload = '{"status": "installed"}'
 
             if updates['status'] != 'launching':
@@ -301,7 +301,7 @@ def instance_update(instance, updates, original):
         logger.debug('Found settings change.')
         if updates['settings'].get('page_cache_maximum_age') != original['settings'].get('page_cache_maximum_age'):
             logger.debug('Found page_cache_maximum_age change.')
-        execute(fabfile.update_settings_file, site=instance)
+        execute(fabfile.update_settings_file, instance=instance)
 
     slack_title = '{0}/{1}'.format(base_urls[environment], instance['path'])
     slack_link = '{0}/{1}'.format(base_urls[environment], instance['path'])
@@ -330,11 +330,11 @@ def instance_remove(instance):
     """
     logger.debug('Instance remove\n{0}'.format(instance))
     if instance['type'] == 'express':
-        # execute(fabfile.site_backup, site=instance)
+        # execute(fabfile.instance_backup, instance=instance)
         # Check if stats object exists first.
         if instance.get('statistics'):
             utilities.delete_eve('statistics', instance['statistics'])
-        execute(fabfile.site_remove, site=instance)
+        execute(fabfile.instance_remove, instance=instance)
 
     if environment != 'local':
         execute(fabfile.update_f5)
@@ -352,7 +352,7 @@ def instance_remove(instance):
 @celery.task
 def command_prepare(item):
     """
-    Prepare sites to run the appropriate command.
+    Prepare instances to run the appropriate command.
 
     :param item: A complete command item, including new values.
     :return:
@@ -375,17 +375,17 @@ def command_prepare(item):
             for instance in instances['_items']:
                 logger.debug('Command - {0}'.format(item['command']))
                 if item['command'] == 'correct_file_permissions':
-                    command_wrapper.delay(execute(fabfile.correct_file_directory_permissions, site=instance))
+                    command_wrapper.delay(execute(fabfile.correct_file_directory_permissions, instance=instance))
                     continue
                 if item['command'] == 'update_settings_file':
                     logger.debug('Update instance\n{0}'.format(instance))
-                    command_wrapper.delay(execute(fabfile.update_settings_file, site=instance))
+                    command_wrapper.delay(execute(fabfile.update_settings_file, instance=instance))
                     continue
                 if item['command'] == 'update_homepage_extra_files':
                     command_wrapper.delay(execute(fabfile.update_homepage_extra_files))
                     continue
-                # if item['command'] == 'site_backup':
-                #     execute(fabfile.site_backup, site=instance)
+                # if item['command'] == 'instance_backup':
+                #     execute(fabfile.instance_backup, instance=instance)
                 #     continue
                 command_run.delay(instance, item['command'], item['single_server'], item['modified_by'])
             # After all the commands run, flush APC.
@@ -419,9 +419,9 @@ def command_run(instance, command, single_server, user=None):
     logger.debug('Run Command - {0} - {1} - {2}'.format(instance['sid'], single_server, command))
     start_time = time.time()
     if single_server:
-        fabric_task_result = execute(fabfile.command_run_single, site=instance, command=command, warn_only=True)
+        fabric_task_result = execute(fabfile.command_run_single, instance=instance, command=command, warn_only=True)
     else:
-        fabric_task_result = execute(fabfile.command_run, site=instance, command=command, warn_only=True)
+        fabric_task_result = execute(fabfile.command_run, instance=instance, command=command, warn_only=True)
 
     logger.debug('Command result - {0}'.format(fabric_task_result))
     command_time = time.time() - start_time

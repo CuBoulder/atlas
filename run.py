@@ -127,9 +127,9 @@ def on_inserted_instances_callback(items):
             item['statistics'] = str(statistics['_id'])
             app.logger.debug('Ready to send to Celery\n{0}'.format(item))
             if not item['import_from_inventory']:
-                tasks.site_provision.delay(item)
+                tasks.instance_provision.delay(item)
             else:
-                tasks.site_import_from_inventory.delay(item)
+                tasks.instance_import_from_inventory.delay(item)
 
 
 def on_insert_code_callback(items):
@@ -166,7 +166,7 @@ def pre_delete_instance_callback(request, lookup):
     """
     app.logger.debug(lookup)
     instance = utilities.get_single_eve('instances', lookup['_id'])
-    tasks.site_remove.delay(instance)
+    tasks.instance_remove.delay(instance)
 
 
 def on_delete_item_code_callback(item):
@@ -287,7 +287,7 @@ def on_update_instances_callback(updates, original):
                 updates['dates'] = json.loads(date_json)
 
         app.logger.debug('Ready to hand to Celery\n{0}\n{1}'.format(instance, updates))
-        tasks.site_update.delay(instance, updates, original)
+        tasks.instance_update.delay(instance, updates, original)
 
 
 def on_update_commands_callback(updates, original):

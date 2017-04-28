@@ -283,7 +283,7 @@ def rebalance_update_groups(item):
     :return:
     """
     instance_query = 'where={0}'.format(item['query'])
-    instances = get_eve('instances', instance_query)
+    instances = get_eve('instance', instance_query)
     installed_update_group = 0
     launched_update_group = 0
     if not instances['_meta']['total'] == 0:

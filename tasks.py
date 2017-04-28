@@ -369,7 +369,7 @@ def command_prepare(item):
         return
     if item['query']:
         instance_query = 'where={0}'.format(item['query'])
-        instances = utilities.get_eve('instances', instance_query)
+        instances = utilities.get_eve('instance', instance_query)
         logger.debug('Ran query\n{0}'.format(instances))
         if not instances['_meta']['total'] == 0:
             for instance in instances['_items']:
@@ -499,7 +499,7 @@ def cron(type=None, status=None, include_packages=None, exclude_packages=None):
     instance_query += '}'
     logger.debug('Query final - {0}'.format(instance_query))
 
-    instances = utilities.get_eve('instances', instance_query)
+    instances = utilities.get_eve('instance', instance_query)
     if not instances['_meta']['total'] == 0:
         for instance in instances['_items']:
             command_run.apply_async((instance, 'drush cron', True), link=check_cron_result.s())
@@ -586,7 +586,7 @@ def check_cron_result(payload):
 @celery.task
 def available_instances_check():
     instance_query = 'where={"status":{"$in":["pending","available"]}}'
-    instances = utilities.get_eve('instances', instance_query)
+    instances = utilities.get_eve('instance', instance_query)
     actual_instance_count = instances['_meta']['total']
     if environment == "local":
         desired_instance_count = 2

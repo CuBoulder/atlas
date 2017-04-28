@@ -57,7 +57,7 @@ def pre_delete_code_callback(request, lookup):
         code_type = code['meta']['code_type']
     app.logger.debug(code_type)
     instance_query = 'where={{"code.{0}":"{1}"}}'.format(code_type, code['_id'])
-    instances = utilities.get_eve('instances', instance_query)
+    instances = utilities.get_eve('instance', instance_query)
     app.logger.debug(instances)
     if not instances['_meta']['total'] == 0:
         instance_list = []
@@ -73,7 +73,7 @@ def pre_delete_code_callback(request, lookup):
         abort(409, 'A conflict happened while processing the request. Code item is in use by one or more instances.')
 
 
-def on_insert_instances_callback(items):
+def on_insert_instance_callback(items):
     """
     Assign a sid, an update group, db_key, any missing code, and date fields.
 
@@ -106,7 +106,7 @@ def on_insert_instances_callback(items):
             app.logger.debug('Ready to create item\n{0}'.format(item))
 
 
-def on_inserted_instances_callback(items):
+def on_inserted_instance_callback(items):
     """
     Provision Express instances.
 
@@ -221,7 +221,7 @@ def on_update_code_callback(updates, original):
     tasks.code_update.delay(updated_item, original)
 
 
-def on_update_instances_callback(updates, original):
+def on_update_instance_callback(updates, original):
     """
     Update an instance.
 
@@ -349,13 +349,13 @@ app.debug = True
 # Request event hooks.
 app.on_pre_POST += pre_post_callback
 app.on_pre_DELETE_code += pre_delete_code_callback
-app.on_pre_DELETE_instances += pre_delete_instance_callback
+app.on_pre_DELETE_instance += pre_delete_instance_callback
 # Database event hooks.
 app.on_insert_code += on_insert_code_callback
-app.on_insert_instances += on_insert_instances_callback
-app.on_inserted_instances += on_inserted_instances_callback
+app.on_insert_instance += on_insert_instance_callback
+app.on_inserted_instance += on_inserted_instance_callback
 app.on_update_code += on_update_code_callback
-app.on_update_instances += on_update_instances_callback
+app.on_update_instance += on_update_instance_callback
 app.on_update_commands += on_update_commands_callback
 app.on_delete_item_code += on_delete_item_code_callback
 app.on_insert += pre_insert

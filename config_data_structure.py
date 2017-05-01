@@ -654,10 +654,17 @@ commands_schema = {
 }
 
 routing_schema = {
+    'instance': {
+        'type': 'objectid',
+        'data_relation': {
+            'resource': 'instance',
+            'field': '_id',
+        },
+    },
     'site': {
         'type': 'objectid',
         'data_relation': {
-            'resource': 'sites',
+            'resource': 'site',
             'field': '_id',
         },
     },

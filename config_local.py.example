@@ -17,9 +17,9 @@ load_balancer = True
 # different vhosts for different types of sites and to make it easy to switch
 # to the down page.
 code_root = '/data/code'
-sites_web_root = '/data/atlas/web'
-sites_code_root = '/data/atlas/sites'
-site_down_path = '/data/code/down'
+instances_web_root = '/data/atlas/web'
+instances_code_root = '/data/atlas/sites'
+instances_down_path = '/data/code/down'
 backup_directory = '/data/backups'
 
 # Default core and profile names for site creation. If you do not set
@@ -61,8 +61,10 @@ slack_notify = True
 slack_url = 'SLACK_URL'
 slack_username = 'SLACK_USERNAME'
 
-# Email notifications for failed tasks
+# Email notifications:
+## For failed tasks
 send_error_emails = True
+
 send_from_email = 'no-reply@example.com'
 email_host = 'smtp.example.com'
 email_port = 587
@@ -70,7 +72,18 @@ email_use_tls = True
 email_username = 'no-reply@example.com'
 email_password = ''
 
-# Name and email addresses of recipients of notifications
+# Name and email addresses of recipients of error messages.
 ADMINS = (
     ('Admin User', 'admin@example.com'),
 )
+
+######### BETA CONFIG #########
+## Notifications
+send_notification_emails = True
+send_notification_from_email = ('Dev Ops', 'ops@example.com')
+service_name = 'Drupal by Atlas'
+# Currently only used for invalid f5 entries
+devops_team = ['ops@example.com']
+
+# Logstash URL for reporting Atlas data
+logstash_url = 'http://logstash.example.com:81'

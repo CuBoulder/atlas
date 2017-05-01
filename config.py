@@ -28,17 +28,17 @@ trailing_slash = re.compile("/$")
 # Uses re.match primitive to look from the beginning.
 if not begin_with_slash.match(code_root):
     raise Exception("'code_root' should begin with a slash.")
-if not begin_with_slash.match(sites_web_root):
-    raise Exception("'sites_web_root' should begin with a slash.")
-if not begin_with_slash.match(sites_code_root):
-    raise Exception("'sites_code_root' should begin with a slash.")
+if not begin_with_slash.match(instances_web_root):
+    raise Exception("'instances_web_root' should begin with a slash.")
+if not begin_with_slash.match(instances_code_root):
+    raise Exception("'instances_code_root' should begin with a slash.")
 # Uses re.search primitive to look anywhere in the string.
 if trailing_slash.search(code_root):
     raise Exception("'code_root' should not have a trailing slash.")
-if trailing_slash.search(sites_web_root):
-    raise Exception("'sites_web_root' should not have a trailing slash.")
-if trailing_slash.search(sites_web_root):
-    raise Exception("'sites_web_root' should not have a trailing slash.")
+if trailing_slash.search(instances_web_root):
+    raise Exception("'instances_web_root' should not have a trailing slash.")
+if trailing_slash.search(instances_web_root):
+    raise Exception("'instances_web_root' should not have a trailing slash.")
 
 
 # This allows us to use a self signed cert for local dev.
@@ -46,4 +46,4 @@ ssl_verification = True
 if environment == 'local':
     ssl_verification = False
 
-version_number = '1.0.8'
+version_number = '1.0.11'

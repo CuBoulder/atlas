@@ -115,17 +115,6 @@ site_schema = {
             },
         }
     },
-    'siteimprove': {
-        'type': 'dict',
-        'schema': {
-            'site': {
-                'type': 'integer',
-            },
-            'group': {
-                'type': 'integer',
-            },
-        },
-    },
     'site_type': {
         'type': 'string',
         'allowed': [
@@ -239,6 +228,12 @@ instance_schema = {
             'page_cache_maximum_age': {
                 'type': 'integer',
                 'default': 300,
+            },
+            'siteimprove_site': {
+                'type': 'integer',
+            },
+            'siteimprove_group': {
+                'type': 'integer',
             },
         },
     },

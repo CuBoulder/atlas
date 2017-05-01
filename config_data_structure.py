@@ -624,7 +624,7 @@ statistics_schema = {
     },
 }
 
-commands_schema = {
+command_schema = {
     'name': {
         'type': 'string',
         'minlength': 3,
@@ -653,7 +653,7 @@ commands_schema = {
     },
 }
 
-routing_schema = {
+route_schema = {
     'instance': {
         'type': 'objectid',
         'data_relation': {
@@ -773,17 +773,17 @@ commands = {
     'public_methods': ['GET'],
     'public_item_methods': [],
     'versioning': True,
-    'schema': commands_schema,
+    'schema': command_schema,
 }
 
-# Command resource
-routes = {
-    'item_title': 'routes',
+# Route resource
+route = {
+    'item_title': 'route',
     'public_methods': ['GET'],
     'public_item_methods': [],
     'versioning': True,
     'soft_delete': True,
-    'schema': routing_schema,
+    'schema': route_schema,
 }
 
 #

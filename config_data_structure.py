@@ -160,13 +160,18 @@ instance_schema = {
             'embeddable': True,
         },
     },
-    'path': {
-      'type': 'string',
-      'unique': True,
+    'route': {
+        'type': 'objectid',
+        'data_relation': {
+            'resource': 'route',
+            'field': '_id',
+            'embeddable': True,
+        },
     },
     'db_key': {
       'type': 'string',
     },
+    # Leave in 'instance' since value would not be moved between instances.
     'sid': {
       'type': 'string',
       'minlength': 9,
@@ -213,10 +218,6 @@ instance_schema = {
     },
     'update_group': {
         'type': 'integer',
-    },
-    'f5only': {
-        'type': 'boolean',
-        'default': False
     },
     'import_from_inventory': {
         'type': 'boolean',
@@ -654,6 +655,37 @@ command_schema = {
 }
 
 route_schema = {
+    'route_type': {
+        'type': 'string',
+        'required': True,
+        'allowed': [
+            'poolb-express',
+            'poolb-homepage',
+            'legacy',
+            'redirect'],
+    },
+    'source': {
+        'type': 'string',
+        'required': True,
+        'unique': True,
+    },
+    'destination': {
+        'type': 'string',
+    },
+    'regex': {
+        'type': 'boolean',
+    },
+    'path_preserving': {
+        'type': 'boolean',
+    },
+    'response_code': {
+        'type': 'string',
+        'allowed_values': [
+            301,
+            302,
+            307
+        ],
+    },
     'instance': {
         'type': 'objectid',
         'data_relation': {
@@ -667,34 +699,6 @@ route_schema = {
             'resource': 'site',
             'field': '_id',
         },
-    },
-    'source': {
-        'type': 'string',
-        'required': True,
-    },
-    'destination': {
-        'type': 'string',
-        'required': True,
-    },
-    'regex': {
-        'type': 'bolean',
-        'required': True,
-        'default': False,
-    },
-    'path_preserving': {
-        'type': 'bolean',
-        'required': True,
-        'default': True,
-    },
-    'response_code': {
-        'type': 'string',
-        'allowed_values': [
-            301,
-            302,
-            307
-        ],
-        'default': 301,
-        'required': True,
     },
     'dates': {
         'type': 'dict',

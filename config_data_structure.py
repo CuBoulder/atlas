@@ -568,6 +568,38 @@ statistics_schema = {
     },
 }
 
+backup_schema = {
+    'site': {
+        'type': 'objectid',
+        'data_relation': {
+            'resource': 'sites',
+            'field': '_id',
+        },
+        'required': True,
+        'unique': True,
+    },
+    'backups': {
+        'type': 'list',
+        'schema': {
+            'backup': {
+                'type': 'dict',
+                'schema': {
+                    'files': {'type': 'string'},
+                    'database': {'type': 'string'},
+                    'date': {'type': 'datetime'},
+                    'instance_version': {'type': 'integer'},
+                },
+            },
+        },
+    },
+    'created_by': {
+        'type': 'string',
+    },
+    'modified_by': {
+        'type': 'string',
+    },
+}
+
 commands_schema = {
     'name': {
         'type': 'string',
@@ -636,6 +668,16 @@ statistics = {
     'schema': statistics_schema,
 }
 
+# Backup resource
+backup = {
+    'item_title': 'backup',
+    'public_methods': ['GET'],
+    'public_item_methods': ['GET'],
+    'versioning': True,
+    'soft_delete': True,
+    'schema': backup_schema,
+}
+
 # Command resource
 # Empty public_item_methods means that you can't call actual commands without
 # authentication. Anonymous users can list the commands, but not call them.
@@ -656,4 +698,5 @@ DOMAIN = {
     'code': code,
     'commands': commands,
     'statistics': statistics,
+    'backup': backup,
 }

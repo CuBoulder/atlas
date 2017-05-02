@@ -316,6 +316,12 @@ def site_backup(site):
         run('drush sql-dump --result-file={0}'.format(database_result_file_path))
         run('tar -czf {0} {1}'.format(files_result_file_path, nfs_files_dir))
 
+    result = {
+        'database': database_result_file_path,
+        'files': files_result_file_path
+    }
+    return result
+
 
 @roles('webservers')
 def site_take_down(site):

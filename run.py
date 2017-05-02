@@ -117,14 +117,19 @@ def on_inserted_sites_callback(items):
         app.logger.debug(item)
         if item['type'] == 'express' and not item['f5only']:
             app.logger.debug(item)
-            # Create statistics item
-            statistics_payload = {}
-            # Need to get the string out of the ObjectID.
-            statistics_payload['site'] = str(item['_id'])
-            app.logger.debug('Create Statistics item\n{0}'.format(statistics_payload))
-            statistics = utilities.post_eve(resource='statistics', payload=statistics_payload)
+            # Create statistics and backup items
+            payload = {
+               'site': str(item['_id'])
+            }
+            app.logger.debug(
+                'Create Statistics and Backup items\n{0}'.format(payload))
+            statistics = utilities.post_eve(resource='statistics',
+                                            payload=payload)
+            backup = utilities.post_eve(resource='backup', payload=payload)
             app.logger.debug(statistics)
+            app.logger.debug(backup)
             item['statistics'] = str(statistics['_id'])
+            item['backup'] = str(backup['_id'])
             app.logger.debug('Ready to send to Celery\n{0}'.format(item))
             if not item['import_from_inventory']:
                 tasks.site_provision.delay(item)
@@ -143,7 +148,7 @@ def on_insert_code_callback(items):
     """
     app.logger.debug(items)
     for item in items:
-        if item.get('meta') and item['meta'].get('is_current') and item['meta']['is_current'] == True:
+        if item.get('meta') and item['meta'].get('is_current') and item['meta']['is_current'] is True:
             # Need a lowercase string when querying boolean values. Python
             # stores it as 'True'.
             query = 'where={{"meta.name":"{0}","meta.code_type":"{1}","meta.is_current": {2}}}'.format(item['meta']['name'], item['meta']['code_type'], str(item['meta']['is_current']).lower())

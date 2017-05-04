@@ -569,28 +569,31 @@ statistics_schema = {
 }
 
 backup_schema = {
-    'site': {
+    'instance': {
+        'type': 'dict',
+        'schema': {
+            '_id': {'type': 'objectid'},
+            '_version': {'type': 'integer'}
+        },
         'type': 'objectid',
         'data_relation': {
             'resource': 'sites',
             'field': '_id',
+            'version': True,
         },
         'required': True,
-        'unique': True,
     },
-    'backups': {
-        'type': 'list',
-        'schema': {
-            'backup': {
-                'type': 'dict',
-                'schema': {
-                    'files': {'type': 'string'},
-                    'database': {'type': 'string'},
-                    'date': {'type': 'datetime'},
-                    'instance_version': {'type': 'integer'},
-                },
-            },
-        },
+    'files': {
+        'type': 'media',
+        'required': True,
+    },
+    'database': {
+        'type': 'media',
+        'required': True,
+    },
+    'date': {
+        'type': 'datetime',
+        'required': True,
     },
     'created_by': {
         'type': 'string',

@@ -282,7 +282,7 @@ def site_update(site, updates, original):
                 logger.debug('Status changed to take_down')
                 site['status'] = 'down'
                 execute(fabfile.update_settings_file, site=site)
-                # execute(fabfile.site_backup, site=site)
+                # execute(fabfile.instance_backup, site=site)
                 execute(fabfile.site_take_down, site=site)
                 patch_payload = '{"status": "down"}'
             elif updates['status'] == 'restore':
@@ -330,7 +330,7 @@ def site_remove(site):
     """
     logger.debug('Site remove\n{0}'.format(site))
     if site['type'] == 'express':
-        # execute(fabfile.site_backup, site=site)
+        # execute(fabfile.instance_backup, site=site)
         # Check if stats object exists first.
         if site.get('statistics'):
             utilities.delete_eve('statistics', site['statistics'])
@@ -384,8 +384,8 @@ def command_prepare(item):
                 if item['command'] == 'update_homepage_extra_files':
                     command_wrapper.delay(execute(fabfile.update_homepage_extra_files))
                     continue
-                # if item['command'] == 'site_backup':
-                #     execute(fabfile.site_backup, site=site)
+                # if item['command'] == 'instance_backup':
+                #     execute(fabfile.instance_backup, site=site)
                 #     continue
                 command_run.delay(site, item['command'], item['single_server'], item['modified_by'])
             # After all the commands run, flush APC.
@@ -582,6 +582,18 @@ def check_cron_result(payload):
         )
         utilities.post_to_slack_payload(slack_payload)
 
+
+@celery.task
+def instance_backup(instance_id):
+    """
+    Create a new backup of an instance.
+    
+    :param instance_id: instance to backup
+    :return: 
+    """
+    instance = utilities.get_single_eve('sites', instance_id)
+
+    backup_task = execute(fabfile.instance_backup, instance=instance)
 
 @celery.task
 def available_sites_check():

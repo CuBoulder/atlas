@@ -1,9 +1,12 @@
 # Change log
-## v1.0.11
+## v1.1.0 
 This release requires a MongoDB command to migrate from Site to Instance
 ```
 db.sites.renameCollection("instance")
 ```
+
+## v1.0.11
+Hot fix to resolve bug in sending email.
 
 ## v1.0.10
 This release requires updating Python packages and `config_local.py` (see `config_local.py.example`).

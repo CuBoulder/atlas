@@ -27,6 +27,12 @@ X_HEADERS = ['Access-Control-Allow-Origin']
 # Allow $regex filtering. Default config blocks where and regex.
 MONGO_QUERY_BLACKLIST = ['$where']
 
+# Media Handling
+# disable default behaviour
+RETURN_MEDIA_AS_BASE64_STRING = False
+# return media as URL instead
+RETURN_MEDIA_AS_URL = True
+
 # Definitions of schemas for Items. Schema is based on Cerberus grammar
 # https://github.com/nicolaiarocci/cerberus.
 #
@@ -571,16 +577,15 @@ statistics_schema = {
 backup_schema = {
     'instance': {
         'type': 'dict',
-        'schema': {
-            '_id': {'type': 'objectid'},
-            '_version': {'type': 'integer'}
-        },
         'type': 'objectid',
         'data_relation': {
             'resource': 'sites',
             'field': '_id',
-            'version': True,
         },
+        'required': True,
+    },
+    'instance_version': {
+        'type': 'integer',
         'required': True,
     },
     'files': {

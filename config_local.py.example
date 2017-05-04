@@ -21,6 +21,8 @@ sites_web_root = '/data/atlas/web'
 sites_code_root = '/data/atlas/sites'
 site_down_path = '/data/code/down'
 backup_directory = '/data/backups'
+atlas_backup_directory = '/data/backups'
+atlas_backup_directory_tmp = '/data/backups/tmp'
 
 # Default core and profile names for site creation. If you do not set
 # default_profile, sites without a profile on POST will do a core install.

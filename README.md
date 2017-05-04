@@ -18,6 +18,8 @@ Atlas is a RESTful API that interacts with servers to deploy and maintain [Web E
 
 See [Express_local](https://github.com/CuBoulder/express_local) for setting up a local development environment.
 
+On servers, you will need to create the backups directory
+
 ### Configuration
 
 Configuration is split between various files `config_*.py`. You need to create `config_local.py` and `config_servers.py` files.

@@ -289,11 +289,6 @@ def instance_backup(instance):
     Backup the database and files for an instance.
     """
     print('Instance | Backup | {0}'.format(instance))
-
-    instance_data = {
-        '_id': instance['_id'],
-        '_version': instance['_version']
-    }
     # Setup all the variables we will need.
     web_directory = '{0}/{1}/{2}'.format(
         sites_web_root,
@@ -307,14 +302,24 @@ def instance_backup(instance):
         backup_directory,
         instance['sid'],
         date_string)
-    database_result_file_path = '{0}/{1}_{2}.sql'.format(
-        backup_path,
+    database_result_file = '{0}_{1}.sql'.format(
         instance['sid'],
         date_time_string)
-    files_result_file_path = '{0}/{1}_{2}.tar.gz'.format(
+    database_result_file_path = '{0}/{1}'.format(
         backup_path,
+        database_result_file)
+    files_result_file = '{0}_{1}.tar.gz'.format(
         instance['sid'],
         date_time_string)
+    files_result_file_path = '{0}/{1}'.format(
+        backup_path,
+        files_result_file)
+    atlas_database_path = '{0}/{1}'.format(
+        atlas_backup_directory_tmp,
+        files_result_file)
+    atlas_file_path = '{0}/{1}'.format(
+        atlas_backup_directory_tmp,
+        database_result_file)
     nfs_dir = nfs_mount_location[environment]
     nfs_files_dir = '{0}/sitefiles/{1}/files'.format(nfs_dir, instance['sid'])
     # Start the actual process.
@@ -322,17 +327,31 @@ def instance_backup(instance):
     with cd(web_directory):
         run('drush sql-dump --result-file={0}'.format(database_result_file_path))
         run('tar -czf {0} {1}'.format(files_result_file_path, nfs_files_dir))
+    get(database_result_file_path, local_path=atlas_database_path)
+    get(files_result_file_path, local_path=atlas_file_path)
 
-    run('curl -k -u {0}:{1} -F "instance={2}" -F "files=@{3}" -F "database=@{4}" -F "date={5}" {6}/backup'.format(service_account_username, re.escape(service_account_password), instance_data, files_result_file_path, database_result_file_path, datetime_string, api_urls[environment]))
-
-
-
-
-    result = {
-        'database': database_result_file_path,
-        'files': files_result_file_path
+    payload = {
+        'instance': instance['_id'],
+        'instance_version': instance['_version'],
+        'date': datetime_string
     }
-    return result
+    payload_database = open(atlas_database_path, 'rb')
+    payload_files = open(atlas_file_path, 'rb')
+    request_url = '{0}/backup'.format(api_urls[environment])
+    headers = {"content-type": "application/json"}
+
+    r = requests.post(
+        request_url,
+        data=payload,
+        files={'database': payload_database, 'files': payload_files},
+        auth=(service_account_username, service_account_password),
+        verify=ssl_verification,
+        #headers=headers
+    )
+    if r.ok:
+        print r.json()
+    else:
+        print r.text
 
 
 @roles('webservers')

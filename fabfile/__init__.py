@@ -338,7 +338,6 @@ def instance_backup(instance):
     payload_database = open(atlas_database_path, 'rb')
     payload_files = open(atlas_file_path, 'rb')
     request_url = '{0}/backup'.format(api_urls[environment])
-    headers = {"content-type": "application/json"}
 
     r = requests.post(
         request_url,
@@ -346,7 +345,6 @@ def instance_backup(instance):
         files={'database': payload_database, 'files': payload_files},
         auth=(service_account_username, service_account_password),
         verify=ssl_verification,
-        #headers=headers
     )
     if r.ok:
         print r.json()

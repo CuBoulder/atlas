@@ -367,6 +367,9 @@ def command_prepare(item):
     if item['command'] == 'rebalance_update_groups':
         utilities.rebalance_update_groups(item)
         return
+    if item['command'] == 'update_homepage_extra_files':
+        command_wrapper.delay(execute(fabfile.update_homepage_extra_files))
+        return
     if item['query']:
         site_query = 'where={0}'.format(item['query'])
         sites = utilities.get_eve('sites', site_query)
@@ -381,8 +384,6 @@ def command_prepare(item):
                     logger.debug('Update site\n{0}'.format(site))
                     command_wrapper.delay(execute(fabfile.update_settings_file, site=site))
                     continue
-                if item['command'] == 'update_homepage_extra_files':
-                    command_wrapper.delay(execute(fabfile.update_homepage_extra_files))
                     continue
                 # if item['command'] == 'instance_backup':
                 #     execute(fabfile.instance_backup, site=site)

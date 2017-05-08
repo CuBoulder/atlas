@@ -385,7 +385,10 @@ def command_prepare(item):
                     command_wrapper.delay(execute(fabfile.update_settings_file, site=site))
                     continue
                 if item['command'] == 'instance_backup':
-                    execute(fabfile.instance_backup, instance=site)
+                    command_wrapper.delay(execute(fabfile.instance_backup, instance=site))
+                    continue
+                if item['command'] == 'instance_restore':
+                    command_wrapper.delay(execute(fabfile.instance_restore, instance=site))
                     continue
                 command_run.delay(site, item['command'], item['single_server'], item['modified_by'])
             # After all the commands run, flush APC.

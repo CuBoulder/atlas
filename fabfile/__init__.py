@@ -348,8 +348,199 @@ def instance_backup(instance):
     )
     if r.ok:
         print r.json()
+        text = 'Success'
+        slack_color = 'good'
+
     else:
         print r.text
+        text = 'Error'
+        slack_color = 'danger'
+
+    instance_url = '{0}/{1}'.format(base_urls[environment], instance['path'])
+    title = 'Instance Backup'
+    instance_link = '<' + instance_url + '|' + instance_url + '>'
+    command = 'backup'
+
+    slack_channel = 'general'
+
+    slack_fallback = instance_url + ' - ' + environment + ' - ' + command
+
+    slack_payload = {
+        # Channel will be overridden on local environments.
+        "channel": slack_channel,
+        "text": text,
+        "username": 'Atlas',
+        "attachments": [
+            {
+                "fallback": slack_fallback,
+                "color": slack_color,
+                "title": title,
+                "fields": [
+                    {
+                        "title": "Instance",
+                        "value": instance_link,
+                        "short": True
+                    },
+                    {
+                        "title": "Environment",
+                        "value": environment,
+                        "short": True
+                    },
+                    {
+                        "title": "Command",
+                        "value": command,
+                        "short": True
+                    }
+                ],
+            }
+        ],
+    }
+    if not r.ok:
+        slack_payload['attachments'].append(
+            {
+                "fallback": 'Error message',
+                # A lighter red.
+                "color": '#ee9999',
+                "fields": [
+                    {
+                        "title": "Error message",
+                        "value": r.text,
+                        "short": False
+                    }
+                ]
+            }
+        )
+    utilities.post_to_slack_payload(slack_payload)
+
+
+@roles('webserver_single')
+def instance_restore(instance):
+    """
+    Backup the database and files for an instance.
+    """
+    print('Instance | Restore | {0}'.format(instance))
+    # Setup all the variables we will need.
+    web_directory = '{0}/{1}/{2}'.format(
+        sites_web_root,
+        instance['type'],
+        instance['sid'])
+    date = datetime.now()
+    date_string = date.strftime("%Y-%m-%d")
+    date_time_string = date.strftime("%Y-%m-%d-%H-%M-%S")
+    datetime_string = date.strftime("%Y-%m-%d %H:%M:%S GMT")
+    backup_path = '{0}/{1}/{2}'.format(
+        backup_directory,
+        instance['sid'],
+        date_string)
+    database_result_file = '{0}_{1}.sql'.format(
+        instance['sid'],
+        date_time_string)
+    database_result_file_path = '{0}/{1}'.format(
+        backup_path,
+        database_result_file)
+    files_result_file = '{0}_{1}.tar.gz'.format(
+        instance['sid'],
+        date_time_string)
+    files_result_file_path = '{0}/{1}'.format(
+        backup_path,
+        files_result_file)
+    atlas_database_path = '{0}/{1}'.format(
+        atlas_backup_directory_tmp,
+        files_result_file)
+    atlas_file_path = '{0}/{1}'.format(
+        atlas_backup_directory_tmp,
+        database_result_file)
+    nfs_dir = nfs_mount_location[environment]
+    nfs_files_dir = '{0}/sitefiles/{1}/files'.format(nfs_dir, instance['sid'])
+    # Start the actual process.
+    _create_directory_structure(backup_path)
+    with cd(web_directory):
+        run('drush sql-dump --result-file={0}'.format(database_result_file_path))
+        run('tar -czf {0} {1}'.format(files_result_file_path, nfs_files_dir))
+    get(database_result_file_path, local_path=atlas_database_path)
+    get(files_result_file_path, local_path=atlas_file_path)
+
+    payload = {
+        'instance': instance['_id'],
+        'instance_version': instance['_version'],
+        'date': datetime_string
+    }
+    payload_database = open(atlas_database_path, 'rb')
+    payload_files = open(atlas_file_path, 'rb')
+    request_url = '{0}/backup'.format(api_urls[environment])
+
+    r = requests.post(
+        request_url,
+        data=payload,
+        files={'database': payload_database, 'files': payload_files},
+        auth=(service_account_username, service_account_password),
+        verify=ssl_verification,
+    )
+    if r.ok:
+        print r.json()
+        text = 'Success'
+        slack_color = 'good'
+
+    else:
+        print r.text
+        text = 'Error'
+        slack_color = 'danger'
+
+    instance_url = '{0}/{1}'.format(base_urls[environment], instance['path'])
+    title = 'Instance Backup'
+    instance_link = '<' + instance_url + '|' + instance_url + '>'
+    command = 'backup'
+
+    slack_channel = 'general'
+
+    slack_fallback = instance_url + ' - ' + environment + ' - ' + command
+
+    slack_payload = {
+        # Channel will be overridden on local environments.
+        "channel": slack_channel,
+        "text": text,
+        "username": 'Atlas',
+        "attachments": [
+            {
+                "fallback": slack_fallback,
+                "color": slack_color,
+                "title": title,
+                "fields": [
+                    {
+                        "title": "Instance",
+                        "value": instance_link,
+                        "short": True
+                    },
+                    {
+                        "title": "Environment",
+                        "value": environment,
+                        "short": True
+                    },
+                    {
+                        "title": "Command",
+                        "value": command,
+                        "short": True
+                    }
+                ],
+            }
+        ],
+    }
+    if not r.ok:
+        slack_payload['attachments'].append(
+            {
+                "fallback": 'Error message',
+                # A lighter red.
+                "color": '#ee9999',
+                "fields": [
+                    {
+                        "title": "Error message",
+                        "value": r.text,
+                        "short": False
+                    }
+                ]
+            }
+        )
+    utilities.post_to_slack_payload(slack_payload)
 
 
 @roles('webservers')

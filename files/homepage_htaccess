@@ -93,9 +93,6 @@ DirectoryIndex index.php index.html index.htm
   # Implement custom redirects for honors.
   RewriteRule ^Honors(.*)$ /honors$1 [R=301,L]
 
-  # Implement custom redirects for flagship2030
-  RewriteRule ^flagship(.*)$ /flagship2030$1 [R=301,L]
-
   # Implement custom redirects for vcr
   RewriteRule ^VCResearch/integrity/animalcare(.*)$ /vcr/iacuc$1 [R=301,L]
   RewriteRule ^VCResearch/integrity/exportcontrols(.*)$ /vcr/export-controls$1 [R=301,L]

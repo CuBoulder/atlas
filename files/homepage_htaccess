@@ -151,6 +151,9 @@ DirectoryIndex index.php index.html index.htm
   # Implement custom redirects for Bulletin.
   RewriteRule ^bulletin/(.*)$ http://bulletin.colorado.edu/ [R=301,L]
 
+  # Implement custom redirects for Health Center.
+  RewriteRule ^lab/biochemcore/(.*)$ /lab/biochem-instruments/$1 [R=301,L]
+
   # Block access to "hidden" directories whose names begin with a period. This
   # includes directories used by version control systems such as Subversion or
   # Git to store control files. Files whose names begin with a period, as well

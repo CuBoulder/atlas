@@ -1,4 +1,10 @@
 # Change log
+## v1.1.0 
+This release requires a MongoDB command to migrate from Site to Instance
+```
+db.sites.renameCollection("instance")
+```
+
 ## v1.0.11
 Hot fix to resolve bug in sending email.
 

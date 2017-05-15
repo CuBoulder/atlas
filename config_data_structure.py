@@ -27,6 +27,9 @@ X_HEADERS = ['Access-Control-Allow-Origin']
 # Allow $regex filtering. Default config blocks where and regex.
 MONGO_QUERY_BLACKLIST = ['$where']
 
+# Require etags
+ENFORCE_IF_MATCH = True
+
 # Definitions of schemas for Items. Schema is based on Cerberus grammar
 # https://github.com/nicolaiarocci/cerberus.
 #

@@ -1,0 +1,1 @@
+# Hold dir open for files. They should be managaged by another repo so that you don't have to deploy Atlas to update them.

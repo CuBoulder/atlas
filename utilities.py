@@ -397,23 +397,22 @@ def post_to_logstash_payload(payload):
 
 
 
-def send_email(message, subject, you):
+def send_email(message, subject, to):
     """
     Sends email
     :param message: content of the email to be sent.
     :param subject: content of the subject line
-    :param me: the user sending the email
-    :param you: list of email address(es) the email will be sent to
+    :param to: list of email address(es) the email will be sent to
     """
     # We only send plaintext to prevent abuse.
     msg = MIMEText(message, 'plain')
     msg['Subject'] = subject
     msg['From'] = send_from_email
-    msg['To'] = ", ".join(you)
+    msg['To'] = ", ".join(to)
 
     s = smtplib.SMTP(email_host, email_port)
     s.starttls()
     s.login(email_username, email_password)
-    s.sendmail(send_from_email, you, msg.as_string())
+    s.sendmail(send_from_email, to, msg.as_string())
     s.quit()
 

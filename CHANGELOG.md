@@ -1,14 +1,17 @@
 # Change log
+
 ## v1.1.0
+
 1. Pull new code.
 1. Rename `site` collection to `instance`.
-    ```
+    ```shell
     db.sites.renameCollection("instance")
     ```
 1. Update python packages via `requirements.txt`.
 1. Restart `celery`, `celerybeat`, and `apache`.
 
 ## v1.0.12
+
 Resolves:
 
 - Removed Celery email variables as that functionality is dprecated in 4.x
@@ -16,12 +19,15 @@ Resolves:
 - &#35;234 Update Eve to 0.7.x
 
 ## v1.0.11
+
 Hot fix to resolve bug in sending email.
 
 ## v1.0.10
+
 This release requires updating Python packages and `config_local.py` (see `config_local.py.example`).
 
 Resolves:
+
 - &#35;224 - POST cron time to elasticsearch Improvement
 - &#35;135 - Remove code to import from Inventory
 - &#35;223 - Do not post to Slack on cron success.

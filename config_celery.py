@@ -14,19 +14,6 @@ CELERY_ENABLE_UTC = True
 # Time in seconds
 CELERYD_TASK_TIME_LIMIT = 600
 
-# Enables error emails.
-CELERY_SEND_TASK_ERROR_EMAILS = send_error_emails
-
-# Email address used as sender (From field).
-SERVER_EMAIL = send_from_email
-
-# Mailserver configuration
-EMAIL_HOST = email_host
-EMAIL_PORT = email_port
-EMAIL_USE_TLS = email_use_tls
-EMAIL_HOST_USER = email_username
-EMAIL_HOST_PASSWORD = email_password
-
 # Setup routing so that we don't overwhelm the server wh.
 CELERY_ROUTES = {
     'atlas.tasks.command_run': {'queue': 'command_queue'},

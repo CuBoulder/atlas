@@ -5,6 +5,13 @@ This release requires a MongoDB command to migrate from Site to Instance
 db.sites.renameCollection("instance")
 ```
 
+## v1.0.12
+Resolves:
+
+- Removed Celery email variables as that functionality is dprecated in 4.x
+- &#35;244 Remove homepage files from Atlas
+- &#35;234 Update Eve to 0.7.x
+
 ## v1.0.11
 Hot fix to resolve bug in sending email.
 

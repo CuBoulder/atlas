@@ -32,6 +32,8 @@ MONGO_QUERY_BLACKLIST = ['$where']
 RETURN_MEDIA_AS_BASE64_STRING = False
 # return media as URL instead
 RETURN_MEDIA_AS_URL = True
+# Require etags
+ENFORCE_IF_MATCH = True
 
 # Definitions of schemas for Items. Schema is based on Cerberus grammar
 # https://github.com/nicolaiarocci/cerberus.

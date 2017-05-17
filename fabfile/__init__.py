@@ -986,5 +986,5 @@ def _exportf5(new_file_name, load_balancer_config_dir):
     # Load the new configuration.
     run("tmsh modify sys file data-group {0} source-path file:/tmp/{0}".format(load_balancer_config_files[environment]))
     run("tmsh save sys config")
-    run("tmsh run cm config-sync to-group its6-7")
+    run("tmsh run cm config-sync to-group {0}".format(load_balancer_config_group[environment]))
     disconnect_all()

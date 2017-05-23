@@ -257,7 +257,7 @@ def site_update(site, updates, original):
                 subject = 'Packages removed - {0}/{1}'.format(base_urls[environment], site['path'])
                 message = "All packages have been removed from {0}/{1}.\n\n - Web Express Team.".format(base_urls[environment], site['path'])
             to = ['{0}@colorado.edu'.format(site['modified_by'])]
-            utilities.send_email(message=message, subject=subject, you=to)
+            utilities.send_email(message=message, subject=subject, to=to)
 
     if updates.get('status'):
         logger.debug('Found status change.')

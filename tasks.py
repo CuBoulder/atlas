@@ -632,8 +632,11 @@ def delete_all_available_sites():
     """
     site_query = 'where={"status":"available"}'
     sites = utilities.get_eve('sites', site_query)
-    for site in sites:
-        utilities.delete_eve('sites', site['_id'])
+    logger.debug('Sites\n {0}'.format(sites))
+    if not sites['_meta']['total'] == 0:
+        for site in sites['_items']:
+            logger.debug('Site\n {0}'.format(site))
+            utilities.delete_eve('sites', site['_id'])
 
 
 @celery.task

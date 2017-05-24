@@ -164,22 +164,22 @@ instance_schema = {
         },
     },
     'path': {
-      'type': 'string',
-      'unique': True,
+        'type': 'string',
+        'unique': True,
     },
     'db_key': {
-      'type': 'string',
+        'type': 'string',
     },
     'sid': {
-      'type': 'string',
-      'minlength': 9,
-      'maxlength': 14,
-      'unique': True,
+        'type': 'string',
+        'minlength': 9,
+        'maxlength': 14,
+        'unique': True,
     },
     'type': {
-      'type': 'string',
-      'allowed':  ['custom', 'express', 'legacy', 'homepage'],
-      'default': 'express',
+        'type': 'string',
+        'allowed':  ['custom', 'express', 'legacy', 'homepage'],
+        'default': 'express',
     },
     'status': {
         'type': 'string',
@@ -278,7 +278,8 @@ instance_schema = {
     'dates': {
         'type': 'dict',
         'schema': {
-            # See https://docs.python.org/2/library/datetime.html#datetime.datetime for datetime format.
+            # See https://docs.python.org/2/library/datetime.html#datetime.datetime for datetime
+            # format.
             'created': {
                 'type': 'datetime',
             },

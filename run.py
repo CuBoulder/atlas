@@ -165,7 +165,7 @@ def pre_delete_instance_callback(request, lookup):
     :param lookup:
     """
     app.logger.debug(lookup)
-    instance = utilities.get_single_eve('instances', lookup['_id'])
+    instance = utilities.get_single_eve('instance', lookup['_id'])
     tasks.instance_remove.delay(instance)
 
 
@@ -282,7 +282,7 @@ def on_update_instance_callback(updates, original):
                 elif updates['status'] == 'take_down':
                     date_json = '{{"taken_down":"{0} GMT"}}'.format(updates['_updated'])
                 elif updates['status'] == 'restore':
-                    date_json = '{{"taken_down":""}}'.format(updates['_updated'])
+                    date_json = '{{"taken_down":"{0}"}}'.format(updates['_updated'])
 
                 updates['dates'] = json.loads(date_json)
 

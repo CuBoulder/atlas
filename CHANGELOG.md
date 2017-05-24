@@ -2,10 +2,10 @@
 
 ## v1.1.0
 
-This release migrates 'sites' to 'instances'. This will setup future work to allow multiple instance of a single website.
+This release migrates 'sites' to 'instance' and re-adds 'site' as an optional wrapper for instances. This will setup future work to allow multiple instances of a single website.
 
 1. Pull new code.
-1. Rename `site` collection to `instance`.
+1. Rename `site` collection to `instance` in your MongoDB database.
     ```shell
     db.sites.renameCollection("instance")
     ```

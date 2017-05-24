@@ -254,10 +254,10 @@ def instance_update(instance, updates, original):
                 subject = 'Package added - {0}/{1}'.format(base_urls[environment], instance['path'])
                 message = "Requested packages have been added to {0}/{1}.\n\n{2}\n\n - Web Express Team\n\nLogin to the instance: {0}/{1}/user?destination=admin/settings/admin/bundle/list".format(base_urls[environment], instance['path'], package_name_string)
             else:
-                subject = 'Packages removed - {0}/{1}'.format(base_urls[environment], instance['path'])
-                message = "All packages have been removed from {0}/{1}.\n\n - Web Express Team.".format(base_urls[environment], instance['path'])
-            to = ['{0}@colorado.edu'.format(instance['modified_by'])]
-            utilities.send_email(message=message, subject=subject, you=to)
+                subject = 'Packages removed - {0}/{1}'.format(base_urls[environment], site['path'])
+                message = "All packages have been removed from {0}/{1}.\n\n - Web Express Team.".format(base_urls[environment], site['path'])
+            to = ['{0}@colorado.edu'.format(site['modified_by'])]
+            utilities.send_email(message=message, subject=subject, to=to)
 
     if updates.get('status'):
         logger.debug('Found status change.')

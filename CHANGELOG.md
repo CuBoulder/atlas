@@ -2,6 +2,8 @@
 
 ## v1.1.0
 
+This release migrates 'sites' to 'instances'. This will setup future work to allow multiple instance of a single website.
+
 1. Pull new code.
 1. Rename `site` collection to `instance`.
     ```shell
@@ -9,6 +11,12 @@
     ```
 1. Update python packages via `requirements.txt`.
 1. Restart `celery`, `celerybeat`, and `apache`.
+
+Resolves:
+
+- &#35230 - Convert site to instance
+- &#35231 - Add site
+- &#35232 - Fix Siteimprove parameters
 
 ## v1.0.13
 

@@ -407,12 +407,12 @@ def send_email(message, subject, to):
     # We only send plaintext to prevent abuse.
     msg = MIMEText(message, 'plain')
     msg['Subject'] = subject
-    msg['From'] = send_from_email
+    msg['From'] = send_notification_from_email
     msg['To'] = ", ".join(to)
 
     s = smtplib.SMTP(email_host, email_port)
     s.starttls()
     s.login(email_username, email_password)
-    s.sendmail(send_from_email, to, msg.as_string())
+    s.sendmail(send_notification_from_email, to, msg.as_string())
     s.quit()
 

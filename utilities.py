@@ -271,28 +271,28 @@ def rebalance_update_groups(item):
     :param item: command item
     :return:
     """
-    site_query = 'where={0}'.format(item['query'])
-    sites = get_eve('sites', site_query)
+    instance_query = 'where={0}'.format(item['query'])
+    instances = get_eve('instance', instance_query)
     installed_update_group = 0
     launched_update_group = 0
-    if not sites['_meta']['total'] == 0:
-        for site in sites['_items']:
+    if not instances['_meta']['total'] == 0:
+        for instance in instances['_items']:
             # Only update if the group is less than 11.
-            if site['update_group'] < 11:
-                if site['status'] == 'launched':
+            if instance['update_group'] < 11:
+                if instance['status'] == 'launched':
                     patch_payload = '{{"update_group": {0}}}'.format(launched_update_group)
                     if launched_update_group < 10:
                         launched_update_group += 1
                     else:
                         launched_update_group = 0
-                if site['status'] == 'installed':
+                if instance['status'] == 'installed':
                     patch_payload = '{{"update_group": {0}}}'.format(installed_update_group)
                     if installed_update_group < 2:
                         installed_update_group += 1
                     else:
                         installed_update_group = 0
                 if patch_payload:
-                    patch_eve('sites', site['_id'], patch_payload)
+                    patch_eve('instances', instance['_id'], patch_payload)
 
 
 # Deprecated use 'post_to_slack_payload'

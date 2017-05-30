@@ -2,11 +2,21 @@
 
 ## v1.1.0
 
-This release requires a MongoDB command to migrate from Site to Instance
+This release migrates 'sites' to 'instance' and re-adds 'site' as an optional wrapper for instances. This will setup future work to allow multiple instances of a single website.
 
-```shell
-db.sites.renameCollection("instance")
-```
+1. Pull new code.
+1. Rename `site` collection to `instance` in your MongoDB database.
+    ```shell
+    db.sites.renameCollection("instance")
+    ```
+1. Update python packages via `requirements.txt`.
+1. Restart `celery`, `celerybeat`, and `apache`.
+
+Resolves:
+
+- &#35230 - Convert site to instance
+- &#35231 - Add site
+- &#35232 - Fix Siteimprove parameters
 
 ## v1.0.14
 

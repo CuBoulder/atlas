@@ -45,20 +45,20 @@ CELERYBEAT_SCHEDULE = {
             "exclude_packages": ["cu_classes_bundle"]
         },
     },
-    'available_sites_check': {
-        'task': 'atlas.tasks.available_sites_check',
+    'available_instances_check': {
+        'task': 'atlas.tasks.available_instances_check',
         'schedule': timedelta(minutes=5),
     },
-    'delete_stuck_pending_sites': {
-        'task': 'atlas.tasks.delete_stuck_pending_sites',
+    'delete_stuck_pending_instances': {
+        'task': 'atlas.tasks.delete_stuck_pending_instances',
         'schedule': timedelta(minutes=5),
     },
     'remove_stale_available_sites': {
-        'task': 'atlas.tasks.delete_all_available_sites',
+        'task': 'atlas.tasks.delete_all_available_instances',
         'schedule': crontab(minute=0, hour=3),
     },
     'remove_stale_installed_sites': {
-        'task': 'atlas.tasks.take_down_installed_35_day_old_sites',
+        'task': 'atlas.tasks.take_down_installed_35_day_old_instances',
         'schedule': crontab(minute=0, hour=2),
     },
 }

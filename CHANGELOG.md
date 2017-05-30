@@ -12,8 +12,13 @@ This release migrates 'sites' to 'instance' and re-adds 'site' as an optional wr
 1. Update python packages via `requirements.txt`.
 1. Restart `celery`, `celerybeat`, and `apache`.
 
+New features:
+
+- Backup and restore an instance
+
 Resolves:
 
+- &#3590 - Create resource for backups
 - &#35230 - Convert site to instance
 - &#35231 - Add site
 - &#35232 - Fix Siteimprove parameters

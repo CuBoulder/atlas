@@ -7,6 +7,7 @@ Atlas is a RESTful API that interacts with servers to deploy and maintain [Web E
 * POST to create additional instances on demand.
 * Available instances are replaced every night.
 * All items are versioned.
+* Backups and restore to new instance.
 
 ### API
 * Prefers to receive JSON encoded POST request.

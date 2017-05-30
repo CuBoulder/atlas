@@ -5,15 +5,19 @@
 This release migrates 'sites' to 'instance' and re-adds 'site' as an optional wrapper for instances. This will setup future work to allow multiple instances of a single website.
 
 1. Pull new code.
-1. Rename `site` collection to `instance` in your MongoDB database.
+1. Modify MongoDB collections and field names. `site` becomes `instance`.
     ```shell
+    # Rename the sites collection
     db.sites.renameCollection("instance")
+    # Rename the reference field in statistics
+    db.statistics.updateMany( {}, { $rename: { "site": "instance" } } )
     ```
 1. Update python packages via `requirements.txt`.
 1. Restart `celery`, `celerybeat`, and `apache`.
 
 Resolves:
 
+- &#3590 - Create resource for backups
 - &#35230 - Convert site to instance
 - &#35231 - Add site
 - &#35232 - Fix Siteimprove parameters

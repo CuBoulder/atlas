@@ -610,23 +610,24 @@ def delete_stuck_pending_instances():
     instance_query = 'where={"status":"pending"}'
     instances = utilities.get_eve('sites', instance_query)
     # Loop through and remove sites that are more than 30 minutes old.
-    for instance in instances['_items']:
-        # Parse date string into structured time.
-        # See https://docs.python.org/2/library/datetime.html#strftime-and-strptime-behavior
-        # for mask format.
-        date_created = time.strptime(instance['_created'], "%Y-%m-%d %H:%M:%S %Z")
-        # Get time now, Convert date_created to seconds from epoch and
-        # calculate the age of the instance.
-        seconds_since_creation = time.time() - time.mktime(date_created)
-        logger.debug('{0} is {1} seconds old. Created: {2} Current: {3}'.format(
-            instance['sid'],
-            seconds_since_creation,
-            time.mktime(date_created),
-            time.time())
-                    )
-        # 30 min * 60 sec = 1800 seconds
-        if seconds_since_creation > 1800:
-            utilities.delete_eve('instance', instance['_id'])
+    if not instances['_meta']['total'] == 0:
+        for instance in instances['_items']:
+            # Parse date string into structured time.
+            # See https://docs.python.org/2/library/datetime.html#strftime-and-strptime-behavior
+            # for mask format.
+            date_created = time.strptime(instance['_created'], "%Y-%m-%d %H:%M:%S %Z")
+            # Get time now, Convert date_created to seconds from epoch and
+            # calculate the age of the instance.
+            seconds_since_creation = time.time() - time.mktime(date_created)
+            logger.debug('{0} is {1} seconds old. Created: {2} Current: {3}'.format(
+                instance['sid'],
+                seconds_since_creation,
+                time.mktime(date_created),
+                time.time())
+                        )
+            # 30 min * 60 sec = 1800 seconds
+            if seconds_since_creation > 1800:
+                utilities.delete_eve('instance', instance['_id'])
 
 
 @celery.task

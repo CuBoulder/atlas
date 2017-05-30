@@ -257,7 +257,7 @@ def site_update(site, updates, original):
                 subject = 'Packages removed - {0}/{1}'.format(base_urls[environment], site['path'])
                 message = "All packages have been removed from {0}/{1}.\n\n - Web Express Team.".format(base_urls[environment], site['path'])
             to = ['{0}@colorado.edu'.format(site['modified_by'])]
-            utilities.send_email(message=message, subject=subject, you=to)
+            utilities.send_email(message=message, subject=subject, to=to)
 
     if updates.get('status'):
         logger.debug('Found status change.')
@@ -604,12 +604,16 @@ def available_sites_check():
 
 @celery.task
 def delete_stuck_pending_sites():
+    """
+    Task to delete pending sites that don't install for some reason.
+    """
     site_query = 'where={"status":"pending"}'
     sites = utilities.get_eve('sites', site_query)
     # Loop through and remove sites that are more than 30 minutes old.
     for site in sites['_items']:
         # Parse date string into structured time.
-        # See https://docs.python.org/2/library/datetime.html#strftime-and-strptime-behavior for mask format.
+        # See https://docs.python.org/2/library/datetime.html#strftime-and-strptime-behavior
+        # for mask format.
         date_created = time.strptime(site['_created'], "%Y-%m-%d %H:%M:%S %Z")
         # Get time now, Convert date_created to seconds from epoch and
         # calculate the age of the site.
@@ -619,7 +623,7 @@ def delete_stuck_pending_sites():
             seconds_since_creation,
             time.mktime(date_created),
             time.time())
-        )
+                    )
         # 30 min * 60 sec = 1800 seconds
         if seconds_since_creation > 1800:
             utilities.delete_eve('sites', site['_id'])
@@ -628,12 +632,15 @@ def delete_stuck_pending_sites():
 @celery.task
 def delete_all_available_sites():
     """
-    Get a list of available sites and delete them
+    Get a list of available sites and delete them.
     """
     site_query = 'where={"status":"available"}'
     sites = utilities.get_eve('sites', site_query)
-    for site in sites:
-        utilities.delete_eve('sites', site['_id'])
+    logger.debug('Sites\n {0}'.format(sites))
+    if not sites['_meta']['total'] == 0:
+        for site in sites['_items']:
+            logger.debug('Site\n {0}'.format(site))
+            utilities.delete_eve('sites', site['_id'])
 
 
 @celery.task
@@ -644,7 +651,8 @@ def take_down_installed_35_day_old_sites():
         # Loop through and remove sites that are more than 35 days old.
         for site in sites['_items']:
             # Parse date string into structured time.
-            # See https://docs.python.org/2/library/datetime.html#strftime-and-strptime-behavior for mask format.
+            # See https://docs.python.org/2/library/datetime.html#strftime-and-strptime-behavior
+            # for mask format.
             date_created = time.strptime(site['_created'],
                                          "%Y-%m-%d %H:%M:%S %Z")
             # Get time now, Convert date_created to seconds from epoch and

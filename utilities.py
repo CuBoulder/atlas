@@ -157,6 +157,23 @@ def get_single_eve(resource, id):
         return r.text
 
 
+def get_instance_status(id):
+    """
+    Get the status of an instance.
+
+    :param id: _id string
+    :return: status string
+    """
+    url = "{0}/instance/{1}".format(api_urls[environment], id)
+    print(url)
+    r = requests.get(url, auth=(service_account_username, service_account_password), verify=ssl_verification)
+    if r.ok:
+        json = r.json()
+        return json['status']
+    else:
+        return r.text
+
+
 def patch_eve(resource, id, request_payload):
     """
     Patch items in the Atlas API.

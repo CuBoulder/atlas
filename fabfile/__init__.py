@@ -13,7 +13,7 @@ from fabric.api import *
 from fabric.network import disconnect_all
 from jinja2 import Environment, PackageLoader
 from random import randint
-from time import time
+from time import time, sleep
 from datetime import datetime
 from atlas.config import *
 from atlas import utilities
@@ -284,7 +284,7 @@ def instance_launch(instance):
 
 
 @roles('webserver_single')
-def instance_backup(instance):
+def backup_create(instance):
     """
     Backup the database and files for an instance.
     """
@@ -309,7 +309,6 @@ def instance_backup(instance):
         backup_path,
         database_result_file)
     files_result_file = '{0}_{1}.tar.gz'.format(
-
         instance['sid'],
         date_time_string)
     files_result_file_path = '{0}/{1}'.format(
@@ -415,133 +414,43 @@ def instance_backup(instance):
 
 
 @roles('webserver_single')
-def instance_restore(instance):
+def backup_restore(backup, original_instance):
     """
-    Backup the database and files for an instance.
+    Restore database and files to a new instance.
     """
-    print('Instance | Restore | {0}'.format(instance))
-    # Setup all the variables we will need.
-    web_directory = '{0}/{1}/{2}'.format(
-        sites_web_root,
-        instance['type'],
-        instance['sid'])
-    date = datetime.now()
-    date_string = date.strftime("%Y-%m-%d")
-    date_time_string = date.strftime("%Y-%m-%d-%H-%M-%S")
-    datetime_string = date.strftime("%Y-%m-%d %H:%M:%S GMT")
-    backup_path = '{0}/{1}/{2}'.format(
-        backup_directory,
-        instance['sid'],
-        date_string)
-    database_result_file = '{0}_{1}.sql'.format(
-        instance['sid'],
-        date_time_string)
-    database_result_file_path = '{0}/{1}'.format(
-        backup_path,
-        database_result_file)
-    files_result_file = '{0}_{1}.tar.gz'.format(
-        instance['sid'],
-        date_time_string)
-    files_result_file_path = '{0}/{1}'.format(
-        backup_path,
-        files_result_file)
-    atlas_database_path = '{0}/{1}'.format(
-        atlas_backup_directory_tmp,
-        files_result_file)
-    atlas_file_path = '{0}/{1}'.format(
-        atlas_backup_directory_tmp,
-        database_result_file)
-    nfs_dir = nfs_mount_location[environment]
-    nfs_files_dir = '{0}/sitefiles/{1}/files'.format(nfs_dir, instance['sid'])
-    # Start the actual process.
-    _create_directory_structure(backup_path)
-    with cd(web_directory):
-        run('drush sql-dump --result-file={0}'.format(database_result_file_path))
-        run('tar -czf {0} {1}'.format(files_result_file_path, nfs_files_dir))
-    get(database_result_file_path, local_path=atlas_database_path)
-    get(files_result_file_path, local_path=atlas_file_path)
-
-    payload = {
-        'instance': instance['_id'],
-        'instance_version': instance['_version'],
-        'date': datetime_string
-    }
-    payload_database = open(atlas_database_path, 'rb')
-    payload_files = open(atlas_file_path, 'rb')
-    request_url = '{0}/backup'.format(api_urls[environment])
-
-    r = requests.post(
-        request_url,
-        data=payload,
-        files={'database': payload_database, 'files': payload_files},
-        auth=(service_account_username, service_account_password),
-        verify=ssl_verification,
-    )
-    if r.ok:
-        print r.json()
-        text = 'Success'
-        slack_color = 'good'
-
-    else:
-        print r.text
-        text = 'Error'
-        slack_color = 'danger'
-
-    instance_url = '{0}/{1}'.format(base_urls[environment], instance['path'])
-    title = 'Instance Backup'
-    instance_link = '<' + instance_url + '|' + instance_url + '>'
-    command = 'backup'
-
-    slack_channel = 'general'
-
-    slack_fallback = instance_url + ' - ' + environment + ' - ' + command
-
-    slack_payload = {
-        # Channel will be overridden on local environments.
-        "channel": slack_channel,
-        "text": text,
-        "username": 'Atlas',
-        "attachments": [
-            {
-                "fallback": slack_fallback,
-                "color": slack_color,
-                "title": title,
-                "fields": [
-                    {
-                        "title": "Instance",
-                        "value": instance_link,
-                        "short": True
-                    },
-                    {
-                        "title": "Environment",
-                        "value": environment,
-                        "short": True
-                    },
-                    {
-                        "title": "Command",
-                        "value": command,
-                        "short": True
-                    }
-                ],
-            }
-        ],
-    }
-    if not r.ok:
-        slack_payload['attachments'].append(
-            {
-                "fallback": 'Error message',
-                # A lighter red.
-                "color": '#ee9999',
-                "fields": [
-                    {
-                        "title": "Error message",
-                        "value": r.text,
-                        "short": False
-                    }
-                ]
-            }
-        )
-    utilities.post_to_slack_payload(slack_payload)
+    print 'Instance | Restore | {0}'.format(backup)
+    # TODO: Time command
+    # Get the backups files.
+    database_result_file = download_file(api_urls[environment] + backup['database'])
+    files_result_file = download_file(api_urls[environment] + backup['files'])
+    # TODO: Check to see if code items exist, if they are deleted, restore them
+    core = utilities.get_single_eve('code', original_instance['code']['core'])
+    print core
+    profile = utilities.get_single_eve('code', original_instance['code']['profile'])
+    print profile
+    # Grab available instance and switch code
+    available_instances = utilities.get_eve('instance', 'where={"status":"available"}')
+    print available_instances
+    new_instance = next(iter(available_instances['_items']), None)
+    print new_instance
+    # TODO: Don't switch if the code is the same
+    if new_instance:
+        original_code_payload = {
+            'code': {
+                'core': original_instance['code']['core'],
+                'profile': original_instance['code']['profile']
+                },
+            'status': 'installing'
+        }
+        utilities.patch_eve('instance', new_instance['_id'], original_code_payload)
+    # Wait for code and status to update.
+    # TODO: Make sure this can't go forever.
+    while utilities.get_instance_status(new_instance['_id']) != 'installed':
+        sleep(10)
+    # Replace DB
+    # Replace files
+    # Clear drupal cache and run cron
+    # Post to slack
 
 
 @roles('webservers')
@@ -1216,3 +1125,13 @@ def _exportf5(new_file_name, load_balancer_config_dir):
     run("tmsh save sys config")
     run("tmsh run cm config-sync to-group {0}".format(load_balancer_config_group[environment]))
     disconnect_all()
+
+
+def download_file(url):
+    local_filename = url.split('/')[-1]
+    r = requests.get(url, stream=True, verify=ssl_verification)
+    with open(local_filename, 'wb') as f:
+        for chunk in r.iter_content(chunk_size=1024): 
+            if chunk: # filter out keep-alive new chunks
+                f.write(chunk)
+    return local_filename

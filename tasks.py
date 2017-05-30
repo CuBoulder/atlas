@@ -370,6 +370,20 @@ def command_prepare(item):
     if item['command'] == 'update_homepage_extra_files':
         command_wrapper.delay(execute(fabfile.update_homepage_extra_files))
         return
+    if item['command'] == 'backup_restore':
+        backup_query = 'where={0}'.format(item['query'])
+        backups = utilities.get_eve('backup', backup_query)
+        logger.debug('Ran query\n{0}'.format(backups))
+        if not backups['_meta']['total'] == 0:
+            for backup in backups['_items']:
+                original_instance = utilities.get_single_eve('instance', backup['instance'])
+                command_wrapper.delay(
+                    execute(
+                        fabfile.backup_restore,
+                        backup=backup,
+                        original_instance=original_instance))
+                continue
+        return
     if item['query']:
         instance_query = 'where={0}'.format(item['query'])
         instances = utilities.get_eve('instance', instance_query)
@@ -385,11 +399,8 @@ def command_prepare(item):
                     logger.debug('Update instance\n{0}'.format(instance))
                     command_wrapper.delay(execute(fabfile.update_settings_file, instance=instance))
                     continue
-                if item['command'] == 'instance_backup':
-                    command_wrapper.delay(execute(fabfile.instance_backup, instance=instance))
-                    continue
-                if item['command'] == 'instance_restore':
-                    command_wrapper.delay(execute(fabfile.instance_restore, instance=instance))
+                if item['command'] == 'backup_create':
+                    command_wrapper.delay(execute(fabfile.backup_create, instance=instance))
                     continue
                 command_run.delay(
                     instance,

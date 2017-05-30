@@ -376,7 +376,7 @@ def command_prepare(item):
         logger.debug('Ran query\n{0}'.format(backups))
         if not backups['_meta']['total'] == 0:
             for backup in backups['_items']:
-                original_instance = utilities.get_single_eve('instance', backup['instance'])
+                original_instance = utilities.get_single_eve_version('instance', backup['instance'], backup['instance_version'])
                 command_wrapper.delay(
                     execute(
                         fabfile.backup_restore,

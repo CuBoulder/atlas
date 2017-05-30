@@ -117,24 +117,18 @@ def on_inserted_instance_callback(items):
         app.logger.debug(item)
         if item['type'] == 'express' and not item['f5only']:
             app.logger.debug(item)
-            # Create statistics and backup items
+            # Create statistics item
             payload = {
                'instance': str(item['_id'])
             }
             app.logger.debug(
-                'Create Statistics and Backup items\n{0}'.format(payload))
+                'Create Statistics item\n{0}'.format(payload))
             statistics = utilities.post_eve(resource='statistics',
                                             payload=payload)
-            backup = utilities.post_eve(resource='backup', payload=payload)
             app.logger.debug(statistics)
-            app.logger.debug(backup)
             item['statistics'] = str(statistics['_id'])
-            item['backup'] = str(backup['_id'])
             app.logger.debug('Ready to send to Celery\n{0}'.format(item))
-            if not item['import_from_inventory']:
-                tasks.instance_provision.delay(item)
-            else:
-                tasks.instance_import_from_inventory.delay(item)
+            tasks.instance_provision.delay(item)
 
 
 def on_insert_code_callback(items):

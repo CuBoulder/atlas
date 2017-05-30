@@ -156,6 +156,22 @@ def get_single_eve(resource, id):
     else:
         return r.text
 
+def get_single_eve_version(resource, id, version):
+    """
+    Make calls to the Atlas API.
+
+    :param resource:
+    :param id: _id string
+    :param version: version int
+    :return: dict of items that match the query string.
+    """
+    url = "{0}/{1}/{2}?version={3}".format(api_urls[environment], resource, id, version)
+    print(url)
+    r = requests.get(url, auth=(service_account_username, service_account_password), verify=ssl_verification)
+    if r.ok:
+        return r.json()
+    else:
+        return r.text
 
 def get_instance_status(id):
     """

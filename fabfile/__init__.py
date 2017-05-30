@@ -418,12 +418,15 @@ def backup_restore(backup, original_instance):
     """
     Restore database and files to a new instance.
     """
-    print 'Instance | Restore | {0}'.format(backup)
+    print 'Instance | Restore | {0} | {1}'.format(backup, original_instance)
     # TODO: Time command
     # Get the backups files.
+    backup_location_tmp = '{0}/restore_tmp'.format(backup_directory)
     database_result_file = download_file(api_urls[environment] + backup['database'])
+    database_result_file_path = '{0}/{1}'.format(backup_location_tmp, database_result_file)
     files_result_file = download_file(api_urls[environment] + backup['files'])
-    # TODO: Check to see if code items exist, if they are deleted, restore them
+    database_result_file_path = '{0}/{1}'.format(backup_location_tmp, files_result_file)
+    # TODO: Check to see if code items exist, if they are deleted, restore them.
     core = utilities.get_single_eve('code', original_instance['code']['core'])
     print core
     profile = utilities.get_single_eve('code', original_instance['code']['profile'])
@@ -434,7 +437,7 @@ def backup_restore(backup, original_instance):
     new_instance = next(iter(available_instances['_items']), None)
     print new_instance
     # TODO: Don't switch if the code is the same
-    if new_instance:
+    if new_instance is not None:
         original_code_payload = {
             'code': {
                 'core': original_instance['code']['core'],
@@ -443,13 +446,38 @@ def backup_restore(backup, original_instance):
             'status': 'installing'
         }
         utilities.patch_eve('instance', new_instance['_id'], original_code_payload)
+    else:
+        exit('No available instances.')
     # Wait for code and status to update.
-    # TODO: Make sure this can't go forever.
-    while utilities.get_instance_status(new_instance['_id']) != 'installed':
-        sleep(10)
-    # Replace DB
-    # Replace files
-    # Clear drupal cache and run cron
+    attempts = 18 # Tries every 10 seconds to a max of 18 (or 3 minutes).
+    while attempts:
+        try:
+            new_instance_refresh = utilities.get_single_eve('instance', new_instance['_id'])
+            if new_instance_refresh['status'] != 'installed':
+                raise ValueError('Status has not yet updated.')
+            break
+        except ValueError, e:
+            # If the status is not updated and we have attempts left,
+            # remove an attempt and wait 10 seconds.
+            attempts -= 1
+            if attempts is not 0:
+                sleep(10)
+            else:
+                exit(str(e))
+    print 'Instance is ready for DB and files.'
+    web_directory = '{0}/{1}/{2}'.format(
+        instances_web_root,
+        new_instance['type'],
+        new_instance['sid'])
+    nfs_dir = nfs_mount_location[environment]
+    nfs_files_dir = '{0}/sitefiles/{1}/files'.format(nfs_dir, new_instance['sid'])
+    with cd(web_directory):
+        run('drush sql-drop -y && drush sqli < {0}'.format(database_result_file_path))
+        print 'DB imported.'
+        run('tar -xzf {0} {1}'.format(files_result_file_path, nfs_files_dir))
+        print 'Files replaced.'
+        run('drush cc all')
+        run('drush cron')
     # Post to slack
 
 
@@ -1130,8 +1158,11 @@ def _exportf5(new_file_name, load_balancer_config_dir):
 def download_file(url):
     local_filename = url.split('/')[-1]
     r = requests.get(url, stream=True, verify=ssl_verification)
-    with open(local_filename, 'wb') as f:
-        for chunk in r.iter_content(chunk_size=1024): 
-            if chunk: # filter out keep-alive new chunks
-                f.write(chunk)
+    backup_location_tmp = '{0}/restore_tmp'.format(backup_directory)
+    run('mkdir -p {0}'.format(backup_location_tmp))
+    with cd(backup_location_tmp):
+        with open(local_filename, 'wb') as f:
+            for chunk in r.iter_content(chunk_size=1024): 
+                if chunk: # filter out keep-alive new chunks
+                    f.write(chunk)
     return local_filename

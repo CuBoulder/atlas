@@ -17,9 +17,9 @@ load_balancer = True
 # different vhosts for different types of sites and to make it easy to switch
 # to the down page.
 code_root = '/data/code'
-sites_web_root = '/data/atlas/web'
-sites_code_root = '/data/atlas/sites'
-site_down_path = '/data/code/down'
+instances_web_root = '/data/atlas/web'
+instances_code_root = '/data/atlas/sites'
+instances_down_path = '/data/code/down'
 backup_directory = '/data/backups'
 
 # Default core and profile names for site creation. If you do not set

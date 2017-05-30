@@ -638,7 +638,7 @@ backup_schema = {
         'type': 'dict',
         'type': 'objectid',
         'data_relation': {
-            'resource': 'sites',
+            'resource': 'instance',
             'field': '_id',
         },
         'required': True,

@@ -378,19 +378,24 @@ def command_prepare(item):
             for instance in instances['_items']:
                 logger.debug('Command - {0}'.format(item['command']))
                 if item['command'] == 'correct_file_permissions':
-                    command_wrapper.delay(execute(fabfile.correct_file_directory_permissions, instance=instance))
+                    command_wrapper.delay(
+                        execute(fabfile.correct_file_directory_permissions, instance=instance))
                     continue
                 if item['command'] == 'update_settings_file':
                     logger.debug('Update instance\n{0}'.format(instance))
                     command_wrapper.delay(execute(fabfile.update_settings_file, instance=instance))
                     continue
                 if item['command'] == 'instance_backup':
-                    command_wrapper.delay(execute(fabfile.instance_backup, instance=site))
+                    command_wrapper.delay(execute(fabfile.instance_backup, instance=instance))
                     continue
                 if item['command'] == 'instance_restore':
-                    command_wrapper.delay(execute(fabfile.instance_restore, instance=site))
+                    command_wrapper.delay(execute(fabfile.instance_restore, instance=instance))
                     continue
-                command_run.delay(instance, item['command'], item['single_server'], item['modified_by'])
+                command_run.delay(
+                    instance,
+                    item['command'],
+                    item['single_server'],
+                    item['modified_by'])
             # After all the commands run, flush APC.
             if item['command'] == 'update_settings_file':
                 logger.debug('Clear APC')

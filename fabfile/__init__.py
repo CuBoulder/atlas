@@ -288,7 +288,7 @@ def instance_backup(instance):
     """
     Backup the database and files for an instance.
     """
-    print('Instance | Backup | {0}'.format(instance))
+    print 'Instance | Backup | {0}'.format(instance)
     # Setup all the variables we will need.
     web_directory = '{0}/{1}/{2}'.format(
         sites_web_root,

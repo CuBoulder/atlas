@@ -604,12 +604,16 @@ def available_instances_check():
 
 @celery.task
 def delete_stuck_pending_instances():
+    """
+    Task to delete pending instances that don't install for some reason.
+    """
     instance_query = 'where={"status":"pending"}'
-    instances = utilities.get_eve('instance', instance_query)
-    # Loop through and remove instances that are more than 30 minutes old.
+    instances = utilities.get_eve('sites', instance_query)
+    # Loop through and remove sites that are more than 30 minutes old.
     for instance in instances['_items']:
         # Parse date string into structured time.
-        # See https://docs.python.org/2/library/datetime.html#strftime-and-strptime-behavior for mask format.
+        # See https://docs.python.org/2/library/datetime.html#strftime-and-strptime-behavior
+        # for mask format.
         date_created = time.strptime(instance['_created'], "%Y-%m-%d %H:%M:%S %Z")
         # Get time now, Convert date_created to seconds from epoch and
         # calculate the age of the instance.
@@ -619,7 +623,7 @@ def delete_stuck_pending_instances():
             seconds_since_creation,
             time.mktime(date_created),
             time.time())
-        )
+                    )
         # 30 min * 60 sec = 1800 seconds
         if seconds_since_creation > 1800:
             utilities.delete_eve('instance', instance['_id'])
@@ -628,12 +632,15 @@ def delete_stuck_pending_instances():
 @celery.task
 def delete_all_available_instances():
     """
-    Get a list of available instances and delete them
+    Get a list of available instances and delete them.
     """
     instance_query = 'where={"status":"available"}'
-    instances = utilities.get_eve('instance', instance_query)
-    for instance in instances:
-        utilities.delete_eve('instance', instance['_id'])
+    instances = utilities.get_eve('instance', site_query)
+    logger.debug('instances\n {0}'.format(instances))
+    if not instances['_meta']['total'] == 0:
+        for instance in instances['_items']:
+            logger.debug('Instance\n {0}'.format(instance))
+            utilities.delete_eve('instance', instance['_id'])
 
 
 @celery.task
@@ -644,7 +651,8 @@ def take_down_installed_35_day_old_instances():
         # Loop through and remove instances that are more than 35 days old.
         for instance in instances['_items']:
             # Parse date string into structured time.
-            # See https://docs.python.org/2/library/datetime.html#strftime-and-strptime-behavior for mask format.
+            # See https://docs.python.org/2/library/datetime.html#strftime-and-strptime-behavior
+            # for mask format.
             date_created = time.strptime(instance['_created'],
                                          "%Y-%m-%d %H:%M:%S %Z")
             # Get time now, Convert date_created to seconds from epoch and

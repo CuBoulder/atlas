@@ -8,6 +8,12 @@ This release requires a MongoDB command to migrate from Site to Instance
 db.sites.renameCollection("instance")
 ```
 
+## v1.0.14
+
+Resolves:
+
+- &#35;245 - Available instances are not replaced each night
+
 ## v1.0.13
 
 Support new f5 command syntax. See &#35;204 and &#35;196.

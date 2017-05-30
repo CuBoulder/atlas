@@ -17,10 +17,6 @@ from flask import current_app, g
 from email.mime.text import MIMEText
 from atlas.config import *
 
-# Only needed for importing from Inventory.
-from Crypto.Cipher import AES
-from Crypto import Random
-
 path = '/data/code'
 if path not in sys.path:
     sys.path.append(path)
@@ -91,13 +87,6 @@ def mysql_password():
     pass1 = sha1(start).digest()
     pass2 = sha1(pass1).hexdigest()
     return "*" + pass2.upper()
-
-
-def decrypt_old(key, encrypted):
-    iv = Random.new().read(AES.block_size)
-    cipher = AES.new(key, AES.MODE_CFB, iv)
-    decrypted = cipher.decrypt(encrypted.decode("hex"))[len(iv):]
-    return decrypted
 
 
 # See https://cryptography.io/en/latest/fernet/#implementation
@@ -404,15 +393,16 @@ def send_email(message, subject, to):
     :param subject: content of the subject line
     :param to: list of email address(es) the email will be sent to
     """
-    # We only send plaintext to prevent abuse.
-    msg = MIMEText(message, 'plain')
-    msg['Subject'] = subject
-    msg['From'] = send_from_email
-    msg['To'] = ", ".join(to)
+    if send_notification_emails:
+        # We only send plaintext to prevent abuse.
+        msg = MIMEText(message, 'plain')
+        msg['Subject'] = subject
+        msg['From'] = send_notification_from_email
+        msg['To'] = ", ".join(to)
 
-    s = smtplib.SMTP(email_host, email_port)
-    s.starttls()
-    s.login(email_username, email_password)
-    s.sendmail(send_from_email, to, msg.as_string())
-    s.quit()
+        s = smtplib.SMTP(email_host, email_port)
+        s.starttls()
+        s.login(email_username, email_password)
+        s.sendmail(send_notification_from_email, to, msg.as_string())
+        s.quit()
 

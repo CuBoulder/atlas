@@ -2,6 +2,8 @@
 
 ## v1.1.0
 
+This release requires a MongoDB command to migrate from Site to Instance
+
 1. Pull new code.
 1. Rename `site` collection to `instance`.
     ```shell
@@ -9,6 +11,18 @@
     ```
 1. Update python packages via `requirements.txt`.
 1. Restart `celery`, `celerybeat`, and `apache`.
+
+## v1.0.14
+
+Resolves:
+
+- &#35;245 - Available instances are not replaced each night
+
+## v1.0.13
+
+Support new f5 command syntax. See &#35;204 and &#35;196.
+
+Need to add variable (`load_balancer_config_group`) to `config_servers.py`. See  `config_servers.py.example`.
 
 ## v1.0.12
 

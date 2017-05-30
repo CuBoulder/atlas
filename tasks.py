@@ -254,10 +254,10 @@ def instance_update(instance, updates, original):
                 subject = 'Package added - {0}/{1}'.format(base_urls[environment], instance['path'])
                 message = "Requested packages have been added to {0}/{1}.\n\n{2}\n\n - Web Express Team\n\nLogin to the instance: {0}/{1}/user?destination=admin/settings/admin/bundle/list".format(base_urls[environment], instance['path'], package_name_string)
             else:
-                subject = 'Packages removed - {0}/{1}'.format(base_urls[environment], instance['path'])
-                message = "All packages have been removed from {0}/{1}.\n\n - Web Express Team.".format(base_urls[environment], instance['path'])
-            to = ['{0}@colorado.edu'.format(instance['modified_by'])]
-            utilities.send_email(message=message, subject=subject, you=to)
+                subject = 'Packages removed - {0}/{1}'.format(base_urls[environment], site['path'])
+                message = "All packages have been removed from {0}/{1}.\n\n - Web Express Team.".format(base_urls[environment], site['path'])
+            to = ['{0}@colorado.edu'.format(site['modified_by'])]
+            utilities.send_email(message=message, subject=subject, to=to)
 
     if updates.get('status'):
         logger.debug('Found status change.')
@@ -603,6 +603,7 @@ def available_instances_check():
 
 
 @celery.task
+<<<<<<< HEAD
 def delete_stuck_pending_instances():
     instance_query = 'where={"status":"pending"}'
     instances = utilities.get_eve('instance', instance_query)
@@ -611,6 +612,20 @@ def delete_stuck_pending_instances():
         # Parse date string into structured time.
         # See https://docs.python.org/2/library/datetime.html#strftime-and-strptime-behavior for mask format.
         date_created = time.strptime(instance['_created'], "%Y-%m-%d %H:%M:%S %Z")
+=======
+def delete_stuck_pending_sites():
+    """
+    Task to delete pending sites that don't install for some reason.
+    """
+    site_query = 'where={"status":"pending"}'
+    sites = utilities.get_eve('sites', site_query)
+    # Loop through and remove sites that are more than 30 minutes old.
+    for site in sites['_items']:
+        # Parse date string into structured time.
+        # See https://docs.python.org/2/library/datetime.html#strftime-and-strptime-behavior
+        # for mask format.
+        date_created = time.strptime(site['_created'], "%Y-%m-%d %H:%M:%S %Z")
+>>>>>>> dev
         # Get time now, Convert date_created to seconds from epoch and
         # calculate the age of the instance.
         seconds_since_creation = time.time() - time.mktime(date_created)
@@ -619,7 +634,7 @@ def delete_stuck_pending_instances():
             seconds_since_creation,
             time.mktime(date_created),
             time.time())
-        )
+                    )
         # 30 min * 60 sec = 1800 seconds
         if seconds_since_creation > 1800:
             utilities.delete_eve('instance', instance['_id'])
@@ -628,12 +643,24 @@ def delete_stuck_pending_instances():
 @celery.task
 def delete_all_available_instances():
     """
+<<<<<<< HEAD
     Get a list of available instances and delete them
     """
     instance_query = 'where={"status":"available"}'
     instances = utilities.get_eve('instance', instance_query)
     for instance in instances:
         utilities.delete_eve('instance', instance['_id'])
+=======
+    Get a list of available sites and delete them.
+    """
+    site_query = 'where={"status":"available"}'
+    sites = utilities.get_eve('sites', site_query)
+    logger.debug('Sites\n {0}'.format(sites))
+    if not sites['_meta']['total'] == 0:
+        for site in sites['_items']:
+            logger.debug('Site\n {0}'.format(site))
+            utilities.delete_eve('sites', site['_id'])
+>>>>>>> dev
 
 
 @celery.task
@@ -644,8 +671,14 @@ def take_down_installed_35_day_old_instances():
         # Loop through and remove instances that are more than 35 days old.
         for instance in instances['_items']:
             # Parse date string into structured time.
+<<<<<<< HEAD
             # See https://docs.python.org/2/library/datetime.html#strftime-and-strptime-behavior for mask format.
             date_created = time.strptime(instance['_created'],
+=======
+            # See https://docs.python.org/2/library/datetime.html#strftime-and-strptime-behavior
+            # for mask format.
+            date_created = time.strptime(site['_created'],
+>>>>>>> dev
                                          "%Y-%m-%d %H:%M:%S %Z")
             # Get time now, Convert date_created to seconds from epoch and
             # calculate the age of the instance.

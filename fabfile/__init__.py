@@ -425,7 +425,10 @@ def backup_restore(backup, original_instance):
     database_result_file = download_file(api_urls[environment] + backup['database'])
     database_result_file_path = '{0}/{1}'.format(backup_location_tmp, database_result_file)
     files_result_file = download_file(api_urls[environment] + backup['files'])
-    database_result_file_path = '{0}/{1}'.format(backup_location_tmp, files_result_file)
+    files_result_file_path = '{0}/{1}'.format(backup_location_tmp, files_result_file)
+    print database_result_file_path
+    print files_result_file_path
+    exit()
     # TODO: Check to see if code items exist, if they are deleted, restore them.
     core = utilities.get_single_eve('code', original_instance['code']['core'])
     print core
@@ -1157,12 +1160,16 @@ def _exportf5(new_file_name, load_balancer_config_dir):
 
 def download_file(url):
     local_filename = url.split('/')[-1]
-    r = requests.get(url, stream=True, verify=ssl_verification)
+    print local_filename
+    # TODO: Pull file locally and put it onto server.
     backup_location_tmp = '{0}/restore_tmp'.format(backup_directory)
     run('mkdir -p {0}'.format(backup_location_tmp))
-    with cd(backup_location_tmp):
-        with open(local_filename, 'wb') as f:
-            for chunk in r.iter_content(chunk_size=1024): 
-                if chunk: # filter out keep-alive new chunks
-                    f.write(chunk)
-    return local_filename
+    r = requests.get(url, stream=True, verify=ssl_verification)
+    if r.status_code == 200:
+        with cd(backup_location_tmp):
+            with open(local_filename, 'wb') as f:
+                for chunk in r.iter_content(chunk_size=512): 
+                    if chunk: # filter out keep-alive new chunks
+                        f.write(chunk)
+        print 'Download finished'
+        return local_filename

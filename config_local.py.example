@@ -61,26 +61,15 @@ slack_notify = True
 slack_url = 'SLACK_URL'
 slack_username = 'SLACK_USERNAME'
 
-# Email notifications:
-## For failed tasks
-send_error_emails = True
-
-send_from_email = 'no-reply@example.com'
-email_host = 'smtp.example.com'
-email_port = 587
-email_use_tls = True
-email_username = 'no-reply@example.com'
-email_password = ''
-
-# Name and email addresses of recipients of error messages.
-ADMINS = (
-    ('Admin User', 'admin@example.com'),
-)
-
 ######### BETA CONFIG #########
 ## Notifications
 send_notification_emails = True
-send_notification_from_email = ('Dev Ops', 'ops@example.com')
+send_notification_from_email = 'ops@example.com'
+email_host = 'smtp.example.com'
+email_port = 587
+email_use_tls = True
+email_username = 'devops@example.com'
+email_password = 'PASSWORD'
 service_name = 'Drupal by Atlas'
 # Currently only used for invalid f5 entries
 devops_team = ['ops@example.com']

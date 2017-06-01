@@ -13,7 +13,7 @@ from fabric.api import *
 from fabric.network import disconnect_all
 from jinja2 import Environment, PackageLoader
 from random import randint
-from time import time, sleep
+from time import time, sleep, strptime
 from datetime import datetime
 from atlas.config import *
 from atlas import utilities
@@ -422,13 +422,24 @@ def backup_restore(backup, original_instance):
     # TODO: Time command
     # Get the backups files.
     backup_location_tmp = '{0}/restore_tmp'.format(backup_directory)
-    database_result_file = download_file(api_urls[environment] + backup['database'])
-    database_result_file_path = '{0}/{1}'.format(backup_location_tmp, database_result_file)
-    files_result_file = download_file(api_urls[environment] + backup['files'])
-    files_result_file_path = '{0}/{1}'.format(backup_location_tmp, files_result_file)
-    print database_result_file_path
-    print files_result_file_path
-    exit()
+    database_url = '{0}/{1}'.format(api_urls[environment], backup['database'])
+    files_url = '{0}/{1}'.format(api_urls[environment], backup['files'])
+    database_download = download_file(database_url)
+    database_download_path = '{0}/{1}'.format(backup_location_tmp, database_download)
+    file_date = strptime(backup['date'], "%Y-%m-%d-%H-%M-%S")
+    pretty_filename = '{0}_{1}'.format(original_instance['sid'], file_date)
+    pretty_database_filename = '{0}.sql'.format(pretty_filename)
+    database_download_path_clean = '{0}/{1}.sql'.format(backup_location_tmp, pretty_database_filename)
+    print 'database_download | {0}'.format(database_download)
+    print 'database_download_path | {0}'.format(database_download_path)
+    files_download = download_file(files_url)
+    files_download_path = '{0}/{1}'.format(backup_location_tmp, files_download)
+    pretty_files_filename = '{0}.tar.gz'.format(pretty_filename)
+    files_download_path_clean = '{0}/{1}.tar.gz'.format(backup_location_tmp, pretty_files_filename)
+    print 'files_download | {0}'.format(files_download)
+    print 'files_download_path | {0}'.format(files_download_path)
+    if not os.path.isfile(files_download_path) and os.path.isfile(database_download_path):
+        exit()
     # TODO: Check to see if code items exist, if they are deleted, restore them.
     core = utilities.get_single_eve('code', original_instance['code']['core'])
     print core
@@ -474,10 +485,12 @@ def backup_restore(backup, original_instance):
         new_instance['sid'])
     nfs_dir = nfs_mount_location[environment]
     nfs_files_dir = '{0}/sitefiles/{1}/files'.format(nfs_dir, new_instance['sid'])
+    # Move DB and files onto server
+    put(database_download_path, backup_directory_tmp)
     with cd(web_directory):
-        run('drush sql-drop -y && drush sqli < {0}'.format(database_result_file_path))
+        run('drush sql-drop -y && drush sqli < {0}'.format(database_download_path))
         print 'DB imported.'
-        run('tar -xzf {0} {1}'.format(files_result_file_path, nfs_files_dir))
+        run('tar -xzf {0} {1}'.format(files_download_path, nfs_files_dir))
         print 'Files replaced.'
         run('drush cc all')
         run('drush cron')
@@ -1160,16 +1173,13 @@ def _exportf5(new_file_name, load_balancer_config_dir):
 
 def download_file(url):
     local_filename = url.split('/')[-1]
-    print local_filename
-    # TODO: Pull file locally and put it onto server.
-    backup_location_tmp = '{0}/restore_tmp'.format(backup_directory)
-    run('mkdir -p {0}'.format(backup_location_tmp))
+    local('mkdir -p {0}'.format(atlas_backup_directory_tmp))
+    backup_location_tmp_file = '{0}/{1}'.format(atlas_backup_directory_tmp, local_filename)
     r = requests.get(url, stream=True, verify=ssl_verification)
     if r.status_code == 200:
-        with cd(backup_location_tmp):
-            with open(local_filename, 'wb') as f:
-                for chunk in r.iter_content(chunk_size=512): 
-                    if chunk: # filter out keep-alive new chunks
-                        f.write(chunk)
+        with open(backup_location_tmp_file, 'wb') as f:
+            for chunk in r.iter_content(chunk_size=512):
+                if chunk: # filter out keep-alive new chunks
+                    f.write(chunk)
         print 'Download finished'
         return local_filename

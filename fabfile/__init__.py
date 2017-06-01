@@ -7,14 +7,14 @@ import sys
 import requests
 import re
 import os
+import datetime
 
 from fabric.contrib.files import append, exists, sed
 from fabric.api import *
 from fabric.network import disconnect_all
 from jinja2 import Environment, PackageLoader
 from random import randint
-from time import time, sleep, strptime
-from datetime import datetime
+from time import time, sleep, strftime
 from atlas.config import *
 from atlas import utilities
 
@@ -294,7 +294,7 @@ def backup_create(instance):
         sites_web_root,
         instance['type'],
         instance['sid'])
-    date = datetime.now()
+    date = datetime.datetime.now()
     date_string = date.strftime("%Y-%m-%d")
     date_time_string = date.strftime("%Y-%m-%d-%H-%M-%S")
     datetime_string = date.strftime("%Y-%m-%d %H:%M:%S GMT")
@@ -421,24 +421,27 @@ def backup_restore(backup, original_instance):
     print 'Instance | Restore | {0} | {1}'.format(backup, original_instance)
     # TODO: Time command
     # Get the backups files.
-    backup_location_tmp = '{0}/restore_tmp'.format(backup_directory)
     database_url = '{0}/{1}'.format(api_urls[environment], backup['database'])
     files_url = '{0}/{1}'.format(api_urls[environment], backup['files'])
     database_download = download_file(database_url)
-    database_download_path = '{0}/{1}'.format(backup_location_tmp, database_download)
-    file_date = strptime(backup['date'], "%Y-%m-%d-%H-%M-%S")
-    pretty_filename = '{0}_{1}'.format(original_instance['sid'], file_date)
+    database_download_path = '{0}/{1}'.format(atlas_backup_directory_tmp, database_download)
+    
+    file_date = datetime.datetime.strptime(backup['date'], "%Y-%m-%d %H:%M:%S %Z")
+    pretty_filename = '{0}_{1}'.format(original_instance['sid'], file_date.strftime("%Y-%m-%d-%H-%M-%S"))
+    
     pretty_database_filename = '{0}.sql'.format(pretty_filename)
-    database_download_path_clean = '{0}/{1}.sql'.format(backup_location_tmp, pretty_database_filename)
+    database_download_path_clean = '{0}/{1}'.format(atlas_backup_directory_tmp, pretty_database_filename)
     print 'database_download | {0}'.format(database_download)
     print 'database_download_path | {0}'.format(database_download_path)
+    local('mv {0} {1}'.format(database_download_path, database_download_path_clean))
     files_download = download_file(files_url)
-    files_download_path = '{0}/{1}'.format(backup_location_tmp, files_download)
+    files_download_path = '{0}/{1}'.format(atlas_backup_directory_tmp, files_download)
     pretty_files_filename = '{0}.tar.gz'.format(pretty_filename)
-    files_download_path_clean = '{0}/{1}.tar.gz'.format(backup_location_tmp, pretty_files_filename)
+    files_download_path_clean = '{0}/{1}'.format(atlas_backup_directory_tmp, pretty_files_filename)
     print 'files_download | {0}'.format(files_download)
     print 'files_download_path | {0}'.format(files_download_path)
-    if not os.path.isfile(files_download_path) and os.path.isfile(database_download_path):
+    local('mv {0} {1}'.format(files_download_path, files_download_path_clean))
+    if not os.path.isfile(files_download_path_clean) and os.path.isfile(database_download_path_clean):
         exit()
     # TODO: Check to see if code items exist, if they are deleted, restore them.
     core = utilities.get_single_eve('code', original_instance['code']['core'])
@@ -486,11 +489,14 @@ def backup_restore(backup, original_instance):
     nfs_dir = nfs_mount_location[environment]
     nfs_files_dir = '{0}/sitefiles/{1}/files'.format(nfs_dir, new_instance['sid'])
     # Move DB and files onto server
-    put(database_download_path, backup_directory_tmp)
+    put(database_download_path_clean, backup_directory_tmp)
+    put(files_download_path_clean, backup_directory_tmp)
+    webserver_database_path = '{0}/{1}'.format(backup_directory_tmp, pretty_database_filename)
+    webserver_files_path = '{0}/{1}'.format(backup_directory_tmp, pretty_files_filename)
     with cd(web_directory):
-        run('drush sql-drop -y && drush sqli < {0}'.format(database_download_path))
+        run('drush sql-drop -y && drush sqli < {0}'.format(webserver_database_path))
         print 'DB imported.'
-        run('tar -xzf {0} {1}'.format(files_download_path, nfs_files_dir))
+        run('tar -xzf {0} {1}'.format(webserver_files_path, nfs_files_dir))
         print 'Files replaced.'
         run('drush cc all')
         run('drush cron')

@@ -525,8 +525,9 @@ def update_homepage_extra_files():
     put(send_from_htaccess, "{0}/.htaccess".format(send_to))
     run("chmod -R u+w {}".format(send_to))
 
-
-@runs_once
+# Removed because this sometimes causes provision to fail. Since the function is immutable, we don't
+# need to run it a single time. The extra work is worth the stability in provisions.
+#@runs_once
 def _create_nfs_files_dir(nfs_dir, instance_sid):
     nfs_files_dir = '{0}/sitefiles/{1}/files'.format(nfs_dir, instance_sid)
     nfs_tmp_dir = '{0}/sitefiles/{1}/tmp'.format(nfs_dir, instance_sid)

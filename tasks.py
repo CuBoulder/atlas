@@ -625,9 +625,9 @@ def delete_stuck_pending_instances():
                 time.mktime(date_created),
                 time.time())
                         )
-            # 30 min * 60 sec = 1800 seconds
-            if seconds_since_creation > 1800:
-                utilities.delete_eve('instance', instance['_id'])
+            # 15 min * 60 sec = 900 seconds
+            if seconds_since_creation > 900:
+                utilities.delete_eve('sites', site['_id'])
 
 
 @celery.task

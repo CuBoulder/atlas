@@ -645,7 +645,28 @@ def delete_all_available_instances():
 
 
 @celery.task
-def take_down_installed_35_day_old_instances():
+def delete_statistics_without_active_instance():
+    """
+    Get a list of statistics and key them against a list of active instances.
+    """
+    instance_query = 'where={"type":"express","f5only":false}'
+    instances = utilities.get_eve('instance', instance_query)
+    statistics = utilities.get_eve('statistics')
+    logger.debug('Statistics | %s', statistics)
+    logger.debug('Instances | %s', instances)
+    instance_id_list = []
+    # Make as list of ids for easy checking.
+    if not statistics['_meta']['total'] == 0:
+        if not instances['_meta']['total'] == 0:
+            for instance in instances['_items']:
+                instance_id_list.append(instance['_id'])
+        for statistic in statistics['_items']:
+            if statistic['site'] not in instance_id_list:
+                utilities.delete_eve('statistics', statistic['_id'])
+
+
+@celery.task
+def take_down_installed_old_instances():
     if environment != 'production':
         instance_query = 'where={"status":"installed"}'
         instances = utilities.get_eve('instance', instance_query)

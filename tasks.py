@@ -508,18 +508,20 @@ def delete_statistics_without_active_instance():
     """
     Get a list of statistics and key them against a list of active instances.
     """
-    site_query = 'where={"status":{"$in":["pending","installing","installed","launching","launched"]}}'
+    site_query = 'where={"type":"express","f5only":false}'
     sites = utilities.get_eve('sites', site_query)
     statistics = utilities.get_eve('statistics')
     logger.debug('Statistics | %s', statistics)
     logger.debug('Sites | %s', sites)
     site_id_list = []
     # Make as list of ids for easy checking.
-    for site in sites['_items']:
-        site_id_list.append(site['_id'])
-    for statistic in statistics['_items']:
-        if statistic['site'] not in site_id_list:
-            utilities.delete_eve('statistics', statistic['_id'])
+    if not statistics['_meta']['total'] == 0:
+        if not sites['_meta']['total'] == 0:
+            for site in sites['_items']:
+                site_id_list.append(site['_id'])
+        for statistic in statistics['_items']:
+            if statistic['site'] not in site_id_list:
+                utilities.delete_eve('statistics', statistic['_id'])
 
 
 @celery.task

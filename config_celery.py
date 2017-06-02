@@ -70,8 +70,12 @@ CELERYBEAT_SCHEDULE = {
         'task': 'atlas.tasks.delete_all_available_sites',
         'schedule': crontab(minute=0, hour=3),
     },
+    'remove_orphan_statistics': {
+        'task': 'atlas.tasks.delete_statistics_without_active_instance',
+        'schedule': crontab(minute=45, hour=2),
+    },
     'remove_stale_installed_sites': {
-        'task': 'atlas.tasks.take_down_installed_35_day_old_sites',
+        'task': 'atlas.tasks.take_down_installed_old_sites',
         'schedule': crontab(minute=0, hour=2),
     },
 }

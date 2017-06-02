@@ -273,6 +273,8 @@ def import_code(query):
         }
         if code['meta'].get('tag'):
             payload['meta']['tag'] = code['meta']['tag']
+        if code['meta'].get('label'):
+            payload['meta']['label'] = code['meta']['label']
         post_eve('code', payload)
 
 

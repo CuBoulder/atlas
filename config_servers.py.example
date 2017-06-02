@@ -141,3 +141,9 @@ load_balancer_exceptions = [
     '/p1',
 ]
 
+# Needed for reload configuration commands.
+load_balancer_config_group = {
+    'production': 'lb-prod1-2',
+    'test': 'lb-test1-2',
+    'development': 'lb-dev1-2',
+}

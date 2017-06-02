@@ -5,6 +5,7 @@ import sys
 import requests
 import ldap
 import json
+import smtplib
 
 from re import compile, search
 from cryptography.fernet import Fernet
@@ -13,11 +14,8 @@ from string import lowercase
 from hashlib import sha1
 from eve.auth import BasicAuth
 from flask import current_app, g
+from email.mime.text import MIMEText
 from atlas.config import *
-
-# Only needed for importing from Inventory.
-from Crypto.Cipher import AES
-from Crypto import Random
 
 path = '/data/code'
 if path not in sys.path:
@@ -89,27 +87,6 @@ def mysql_password():
     pass1 = sha1(start).digest()
     pass2 = sha1(pass1).hexdigest()
     return "*" + pass2.upper()
-
-
-#TODO: Remove this function in Atlas v1.1.0
-def replace_inventory_encryption_string(string):
-    """
-    Use the hashing methodology from Inventory to decrypt the key, then
-    re-encrypt it using the new methodology.
-
-    :param string: Database key from Inventory
-    :return string: Database key for Atlas
-    """
-    interm_string = decrypt_old(inventory_key, string)
-    modified_key = encrypt_string(interm_string)
-    return modified_key
-
-
-def decrypt_old(key, encrypted):
-    iv = Random.new().read(AES.block_size)
-    cipher = AES.new(key, AES.MODE_CFB, iv)
-    decrypted = cipher.decrypt(encrypted.decode("hex"))[len(iv):]
-    return decrypted
 
 
 # See https://cryptography.io/en/latest/fernet/#implementation
@@ -250,6 +227,18 @@ def get_code(name, code_type=''):
     return code_get
 
 
+def get_code_name_version(code_id):
+    """
+    Get the label and version for a code item.
+    :param code_id: string '_id' for a code item
+    :return: string 'label'-'version'
+    """
+    code = get_single_eve('code', code_id)
+    code_name = code['meta']['name']
+    code_version = code['meta']['version']
+    return '{0}-{1}'.format(code_name, code_version)
+
+
 def import_code(query):
     """
     Import code definitions from a URL. Should be a JSON file export from Atlas
@@ -273,9 +262,42 @@ def import_code(query):
         }
         if code['meta'].get('tag'):
             payload['meta']['tag'] = code['meta']['tag']
+        if code['meta'].get('label'):
+            payload['meta']['label'] = code['meta']['label']
         post_eve('code', payload)
 
 
+def rebalance_update_groups(item):
+    """
+    Redistribute instances into update groups.
+    :param item: command item
+    :return:
+    """
+    instance_query = 'where={0}'.format(item['query'])
+    instances = get_eve('instance', instance_query)
+    installed_update_group = 0
+    launched_update_group = 0
+    if not instances['_meta']['total'] == 0:
+        for instance in instances['_items']:
+            # Only update if the group is less than 11.
+            if instance['update_group'] < 11:
+                if instance['status'] == 'launched':
+                    patch_payload = '{{"update_group": {0}}}'.format(launched_update_group)
+                    if launched_update_group < 10:
+                        launched_update_group += 1
+                    else:
+                        launched_update_group = 0
+                if instance['status'] == 'installed':
+                    patch_payload = '{{"update_group": {0}}}'.format(installed_update_group)
+                    if installed_update_group < 2:
+                        installed_update_group += 1
+                    else:
+                        installed_update_group = 0
+                if patch_payload:
+                    patch_eve('instances', instance['_id'], patch_payload)
+
+
+# Deprecated use 'post_to_slack_payload'
 def post_to_slack(message, title, link='', attachment_text='', level='good', user=slack_username):
     """
     Posts a message to a given channel using the Slack Incoming Webhooks API.
@@ -325,10 +347,64 @@ def post_to_slack(message, title, link='', attachment_text='', level='good', use
         elif 'cron' in attachment_text:
             payload['channel'] = 'cron'
 
-        # We need 'json=payload' vs. 'payload' because arguments can be passed in
-        # any order. Using json=payload instead of data=json.dumps(payload) so that
-        # we don't have to encode the dict ourselves. The Requests library will do
-        # it for us.
+        # We need 'json=payload' vs. 'payload' because arguments can be passed
+        # in any order. Using json=payload instead of data=json.dumps(payload)
+        # so that we don't have to encode the dict ourselves. The Requests
+        # library will do it for us.
         r = requests.post(slack_url, json=payload)
         if not r.ok:
             print r.text
+
+def post_to_slack_payload(payload):
+    """
+    Posts a message to a given channel using the Slack Incoming Webhooks API. 
+    See https://api.slack.com/docs/message-formatting.
+
+    :param payload: Payload suitable for POSTing to Slack.
+    """
+    if slack_notify:
+        if environment == 'local':
+            payload['channel'] = '@{0}'.format(slack_username)
+
+        # We need 'json=payload' vs. 'payload' because arguments can be passed
+        # in any order. Using json=payload instead of data=json.dumps(payload)
+        # so that we don't have to encode the dict ourselves. The Requests
+        # library will do it for us.
+        r = requests.post(slack_url, json=payload)
+        if not r.ok:
+            print r.text
+
+
+def post_to_logstash_payload(payload):
+    """
+    Posts a message to our logstash instance.
+
+    :param payload: JSON encoded payload.
+    """
+    if environment != 'local':
+        r = requests.post(logstash_url, json=payload)
+        if not r.ok:
+            print r.text
+
+
+
+def send_email(message, subject, to):
+    """
+    Sends email
+    :param message: content of the email to be sent.
+    :param subject: content of the subject line
+    :param to: list of email address(es) the email will be sent to
+    """
+    if send_notification_emails:
+        # We only send plaintext to prevent abuse.
+        msg = MIMEText(message, 'plain')
+        msg['Subject'] = subject
+        msg['From'] = send_notification_from_email
+        msg['To'] = ", ".join(to)
+
+        s = smtplib.SMTP(email_host, email_port)
+        s.starttls()
+        s.login(email_username, email_password)
+        s.sendmail(send_notification_from_email, to, msg.as_string())
+        s.quit()
+

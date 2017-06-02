@@ -27,6 +27,9 @@ X_HEADERS = ['Access-Control-Allow-Origin']
 # Allow $regex filtering. Default config blocks where and regex.
 MONGO_QUERY_BLACKLIST = ['$where']
 
+# Require etags
+ENFORCE_IF_MATCH = True
+
 # Definitions of schemas for Items. Schema is based on Cerberus grammar
 # https://github.com/nicolaiarocci/cerberus.
 #
@@ -35,7 +38,7 @@ MONGO_QUERY_BLACKLIST = ['$where']
 # We don't use those fields in our logic because want to be able to move or
 # recreate a record without losing any information.
 
-# Code schema. Defines a code asset that can be applied to a site.
+# Code schema. Defines a code asset that can be applied to an instance.
 # We nest in 'meta' to allow us to check for a unique combo
 code_schema = {
     'meta': {
@@ -56,6 +59,10 @@ code_schema = {
                 'type': 'string',
                 'allowed': ['library', 'theme', 'module', 'core', 'profile'],
                 'required': True,
+            },
+            'label': {
+                'type': 'string',
+                'minlength': 3,
             },
             'is_current': {
                 'type': 'boolean',
@@ -97,29 +104,81 @@ code_schema = {
 }
 
 
-# Site schema.
-sites_schema = {
-    'name': {
-      'type': 'string',
-      'minlength': 1,
+# site schema.
+site_schema = {
+    'instance': {
+        'type': 'list',
+        'schema': {
+            'type': 'objectid',
+            'data_relation': {
+                'resource': 'instance',
+                'field': '_id',
+                'embeddable': True,
+            },
+        }
+    },
+    'site_type': {
+        'type': 'string',
+        'allowed': [
+            # Magazines and Journals
+            'magazine',
+            'committee',
+            # Labs and Research Groups
+            'lab',
+            'faculty',
+            'event',
+            'sports_club',
+            'student_group',
+            # Internal sandboxes and other throw away sites
+            'internal',
+            # Initiative and Promotional
+            'initiative',
+            'academic_department',
+            'administrative_department',
+            # Centers and Institutes
+            'center',
+            # Museums and Collections
+            'museum',
+            'college',
+            'other'
+        ],
+    },
+    'created_by': {
+        'type': 'string',
+    },
+    'modified_by': {
+        'type': 'string',
+    },
+}
+
+
+# Instance schema.
+instance_schema = {
+    'site': {
+        'type': 'objectid',
+        'data_relation': {
+            'resource': 'site',
+            'field': '_id',
+            'embeddable': True,
+        },
     },
     'path': {
-      'type': 'string',
-      'unique': True,
+        'type': 'string',
+        'unique': True,
     },
     'db_key': {
-      'type': 'string',
+        'type': 'string',
     },
     'sid': {
-      'type': 'string',
-      'minlength': 9,
-      'maxlength': 14,
-      'unique': True,
+        'type': 'string',
+        'minlength': 9,
+        'maxlength': 14,
+        'unique': True,
     },
     'type': {
-      'type': 'string',
-      'allowed':  ['custom', 'express', 'legacy', 'homepage'],
-      'default': 'express',
+        'type': 'string',
+        'allowed':  ['custom', 'express', 'legacy', 'homepage'],
+        'default': 'express',
     },
     'status': {
         'type': 'string',
@@ -218,7 +277,8 @@ sites_schema = {
     'dates': {
         'type': 'dict',
         'schema': {
-            # See https://docs.python.org/2/library/datetime.html#datetime.datetime for datetime format.
+            # See https://docs.python.org/2/library/datetime.html#datetime.datetime for datetime
+            # format.
             'created': {
                 'type': 'datetime',
             },
@@ -251,14 +311,18 @@ sites_schema = {
 }
 
 statistics_schema = {
-    'site': {
+    'instance': {
         'type': 'objectid',
         'data_relation': {
-            'resource': 'sites',
+            'resource': 'instance',
             'field': '_id',
         },
         'required': True,
         'unique': True,
+    },
+    'name': {
+        'type': 'string',
+        'minlength': 1,
     },
     'nodes_total': {
         'type': 'integer',
@@ -316,6 +380,54 @@ statistics_schema = {
     'beans_other': {
         'type': 'string',
     },
+    'context': {
+        'type': 'dict',
+        'schema': {
+            'condition': {
+                'type': 'dict',
+                'schema': {
+                    'context': {'type': 'integer'},
+                    'context_all': {'type': 'integer'},
+                    'default': {'type': 'integer'},
+                    'layout': {'type': 'integer'},
+                    'menu': {'type': 'integer'},
+                    'node': {'type': 'integer'},
+                    'node_taxonomy': {'type': 'integer'},
+                    'path': {'type': 'integer'},
+                    'query_param': {'type': 'integer'},
+                    'query_string': {'type': 'integer'},
+                    'sitewide': {'type': 'integer'},
+                    'sitewide_public': {'type': 'integer'},
+                    'taxonomy_term': {'type': 'integer'},
+                    'user': {'type': 'integer'},
+                    'user_page': {'type': 'integer'},
+                    'views': {'type': 'integer'},
+                },
+            },
+            'reaction': {
+                'type': 'dict',
+                'schema': {
+                    'backstretch': {'type': 'integer'},
+                    'block': {'type': 'integer'},
+                    'breadcrumb': {'type': 'integer'},
+                    'column_override': {'type': 'integer'},
+                    'cu_share': {'type': 'integer'},
+                    'menu': {'type': 'integer'},
+                    'region': {'type': 'integer'},
+                    'template_suggestions': {'type': 'integer'},
+                    'theme': {'type': 'integer'},
+                    'theme_html': {'type': 'integer'},
+                    'title_image': {'type': 'integer'},
+                },
+            },
+        },
+    },
+    'context_other_conditions': {
+        'type': 'string',
+    },
+    'context_other_reactions': {
+        'type': 'string',
+    },
     'variable_cron_last': {
         'type': 'integer',
     },
@@ -329,6 +441,9 @@ statistics_schema = {
         'type': 'string',
     },
     'variable_ga_account': {
+        'type': 'string',
+    },
+    'variable_livechat_license_number': {
         'type': 'string',
     },
     'profile_module_manager': {
@@ -345,6 +460,12 @@ statistics_schema = {
     },
     'overridden_features': {
         'type': 'dict',
+    },
+    'drupal_system_status': {
+        'type': 'boolean',
+    },
+    'custom_logo_settings': {
+        'type': 'boolean',
     },
     'users': {
         'type': 'dict',
@@ -370,6 +491,9 @@ statistics_schema = {
                         'type': 'list',
                     },
                 },
+            },
+            'no_valid_owner': {
+                'type': 'boolean',
             },
         },
     },
@@ -490,6 +614,14 @@ statistics_schema = {
             },
         },
     },
+    'webforms': {
+        'type': 'dict',
+        'schema': {
+            'total_submissions': {'type': 'integer'},
+            'active_forms': {'type': 'integer'},
+            'inactive_forms': {'type': 'integer'},
+        },
+    },
     'created_by': {
         'type': 'string',
     },
@@ -541,9 +673,9 @@ code = {
     'schema': code_schema,
 }
 
-# Sites resource
-sites = {
-    'item_title': 'site',
+# Instance resource
+instance = {
+    'item_title': 'instance',
     # Allow lookup by 'sid' in addition to '_id'
     'additional_lookup': {
         'url': 'regex("[\w]+")',
@@ -553,7 +685,17 @@ sites = {
     'public_item_methods': ['GET'],
     'versioning': True,
     'soft_delete': True,
-    'schema': sites_schema,
+    'schema': instance_schema,
+}
+
+# Site resource
+site = {
+    'item_title': 'site',
+    'public_methods': ['GET'],
+    'public_item_methods': ['GET'],
+    'versioning': True,
+    'soft_delete': True,
+    'schema': site_schema,
 }
 
 # Statistics resource
@@ -580,9 +722,9 @@ commands = {
 #
 # Domain definition. Tells Eve what resources are available on this domain.
 #
-
 DOMAIN = {
-    'sites': sites,
+    'site': site,
+    'instance': instance,
     'code': code,
     'commands': commands,
     'statistics': statistics,

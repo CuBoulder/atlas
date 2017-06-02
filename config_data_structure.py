@@ -387,6 +387,9 @@ statistics_schema = {
     'variable_ga_account': {
         'type': 'string',
     },
+    'variable_livechat_license_number': {
+        'type': 'string',
+    },
     'profile_module_manager': {
         'type': 'string',
     },

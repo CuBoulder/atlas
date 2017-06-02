@@ -63,7 +63,6 @@ code_schema = {
             'label': {
                 'type': 'string',
                 'minlength': 3,
-                'required': True,
             },
             'is_current': {
                 'type': 'boolean',
@@ -385,6 +384,9 @@ statistics_schema = {
         'type': 'string',
     },
     'variable_ga_account': {
+        'type': 'string',
+    },
+    'variable_livechat_license_number': {
         'type': 'string',
     },
     'profile_module_manager': {

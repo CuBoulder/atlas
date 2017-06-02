@@ -63,7 +63,6 @@ code_schema = {
             'label': {
                 'type': 'string',
                 'minlength': 3,
-                'required': True,
             },
             'is_current': {
                 'type': 'boolean',

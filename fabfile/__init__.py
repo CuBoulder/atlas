@@ -37,6 +37,8 @@ env.roledefs = serverdefs[environment]
 # TODO: Figure out a better way to deal with the output. Calling functions via
 # 'var = execute(func)' seems to suppress a lot of the output.
 
+class FabricException(Exception):
+    pass
 
 # Code Commands.
 @roles('webservers')
@@ -157,38 +159,39 @@ def site_provision(site):
     profile = utilities.get_single_eve('code', site['code']['profile'])
     profile_name = profile['meta']['name']
 
-    result_create_database = execute(create_database, site=site)
-    errors = {k: v for k, v in result_create_database.iteritems() if v is not None}
-    if errors:
+    try:
+        result_create_database = execute(create_database, site=site)
+    except FabricException:
         print 'Database creation failed.'
-        exit()
+        return result_create_database
 
-    result_create_settings_files = execute(create_settings_files, site=site, profile_name=profile_name)
-    errors = {k: v for k, v in result_create_settings_files.iteritems() if v is not None}
-    if errors:
+    try:
+        result_create_settings_files = execute(create_settings_files, site=site, profile_name=profile_name)
+    except FabricException:
         print 'Settings file creation failed.'
-        exit()
+        return result_create_settings_files
 
-    result_create_directory_structure = execute(create_directory_structure, folder=code_directory)
-    errors = {k: v for k, v in result_create_directory_structure.iteritems() if v is not None}
-    if errors:
+    try:
+        result_create_directory_structure = execute(create_directory_structure, folder=code_directory)
+    except FabricException:
         print 'Create directory structure failed.'
-        exit()
-    result_create_directory_structure_web = execute(create_directory_structure, folder=web_directory_type)
-    errors = {k: v for k, v in result_create_directory_structure_web.iteritems() if v is not None}
-    if errors:
+        return result_create_directory_structure
+
+    try:
+        result_create_directory_structure_web = execute(create_directory_structure, folder=web_directory_type)
+    except FabricException:
         print 'Create directory structure failed.'
-        exit()
+        return result_create_directory_structure_web
 
     with cd(code_directory):
         core = utilities.get_code_name_version(site['code']['core'])
         run('drush dslm-new {0} {1}'.format(site['sid'], core))
 
-    result_update_symlink = execute(update_symlink, source=code_directory_sid, destination=code_directory_current)
-    errors = {k: v for k, v in result_update_symlink.iteritems() if v is not None}
-    if errors:
+    try:
+        result_update_symlink = execute(update_symlink, source=code_directory_sid, destination=code_directory_current)
+    except FabricException:
         print 'Update symlink failed.'
-        exit()
+        return result_update_symlink
 
     with cd(code_directory_current):
         profile = utilities.get_code_name_version(site['code']['profile'])
@@ -197,36 +200,36 @@ def site_provision(site):
     if nfs_mount_files_dir:
         nfs_dir = nfs_mount_location[environment]
         nfs_files_dir = '{0}/sitefiles/{1}/files'.format(nfs_dir, site['sid'])
-        result_create_nfs_files_dir = execute(create_nfs_files_dir, nfs_dir=nfs_dir, site_sid=site['sid'])
-        errors = {k: v for k, v in result_create_nfs_files_dir.iteritems() if v is not None}
-        if errors:
+        try:
+            result_create_nfs_files_dir = execute(create_nfs_files_dir, nfs_dir=nfs_dir, site_sid=site['sid'])
+        except FabricException:
             print 'Create nfs directory failed.'
-            exit()
+            return result_create_nfs_files_dir
         # Replace default files dir with this one
         site_files_dir = code_directory_current + '/sites/default/files'
-        result_replace_files_directory = execute(replace_files_directory, source=nfs_files_dir, destination=site_files_dir)
-        errors = {k: v for k, v in result_replace_files_directory.iteritems() if v is not None}
-        if errors:
+        try:
+            result_replace_files_directory = execute(replace_files_directory, source=nfs_files_dir, destination=site_files_dir)
+        except FabricException:
             print 'Replace file directory failed.'
-            exit()
+            return result_replace_files_directory
 
-    result_push_settings_files = execute(push_settings_files, site=site, directory=code_directory_current)
-    errors = {k: v for k, v in result_push_settings_files.iteritems() if v is not None}
-    if errors:
+    try:
+        result_push_settings_files = execute(push_settings_files, site=site, directory=code_directory_current)
+    except FabricException:
         print 'Replace file directory failed.'
-        exit()
+        return result_push_settings_files
 
-    result_update_symlink_web = execute(update_symlink, source=code_directory_current, destination=web_directory_sid)
-    errors = {k: v for k, v in result_update_symlink_web.iteritems() if v is not None}
-    if errors:
+    try:
+        result_update_symlink_web = execute(update_symlink, source=code_directory_current, destination=web_directory_sid)
+    except FabricException:
         print 'Update symlink failed.'
-        exit()
+        return result_update_symlink_web
 
-    result_correct_file_directory_permissions= execute(correct_file_directory_permissions, site=site)
-    errors = {k: v for k, v in result_correct_file_directory_permissions.iteritems() if v is not None}
-    if errors:
+    try:
+        result_correct_file_directory_permissions= execute(correct_file_directory_permissions, site=site)
+    except FabricException:
         print 'Correct file permissions failed.'
-        exit()
+        return result_correct_file_directory_permissions
 
 
 @roles('webserver_single')

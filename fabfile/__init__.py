@@ -143,7 +143,7 @@ def site_provision(site):
     :param site: The flask.request object, JSON encoded
     :return:
     """
-    print('Site Provision\n{0}'.format(site))
+    print 'Site Provision - {0} - {1}'.format(site['_id'], site)
 
     code_directory = '{0}/{1}'.format(sites_code_root, site['sid'])
     code_directory_sid = '{0}/{1}'.format(code_directory, site['sid'])
@@ -157,18 +157,20 @@ def site_provision(site):
     profile = utilities.get_single_eve('code', site['code']['profile'])
     profile_name = profile['meta']['name']
 
-    create_database(site)
+    result_create_database = execute(create_database(site))
+    if not result_create_database == True:
+        exit()
 
-    create_settings_files(site, profile_name)
+    execute(create_settings_files(site, profile_name))
 
-    create_directory_structure(code_directory)
-    create_directory_structure(web_directory_type)
+    execute(create_directory_structure(code_directory))
+    execute(create_directory_structure(web_directory_type))
 
     with cd(code_directory):
         core = utilities.get_code_name_version(site['code']['core'])
         run('drush dslm-new {0} {1}'.format(site['sid'], core))
 
-    update_symlink(code_directory_sid, code_directory_current)
+    execute(update_symlink(code_directory_sid, code_directory_current))
 
     with cd(code_directory_current):
         profile = utilities.get_code_name_version(site['code']['profile'])
@@ -177,15 +179,15 @@ def site_provision(site):
     if nfs_mount_files_dir:
         nfs_dir = nfs_mount_location[environment]
         nfs_files_dir = '{0}/sitefiles/{1}/files'.format(nfs_dir, site['sid'])
-        create_nfs_files_dir(nfs_dir, site['sid'])
+        execute(create_nfs_files_dir(nfs_dir, site['sid']))
         # Replace default files dir with this one
         site_files_dir = code_directory_current + '/sites/default/files'
-        replace_files_directory(nfs_files_dir, site_files_dir)
+        execute(replace_files_directory(nfs_files_dir, site_files_dir))
 
-    push_settings_files(site, code_directory_current)
+    execute(push_settings_files(site, code_directory_current))
 
-    update_symlink(code_directory_current, web_directory_sid)
-    correct_file_directory_permissions(site)
+    execute(update_symlink(code_directory_current, web_directory_sid))
+    execute(correct_file_directory_permissions(site))
 
 
 
@@ -555,6 +557,7 @@ def remove_symlink(symlink):
 
 @runs_once
 def create_database(site):
+    print 'Site Provision - {0} - Create DB'.format(site['_id'])
     if environment != 'local':
         os.environ['MYSQL_TEST_LOGIN_FILE'] = '/home/{0}/.mylogin.cnf'.format(
             ssh_user)
@@ -594,6 +597,7 @@ def delete_database(site):
             run("mysql -e 'DROP DATABASE IF EXISTS `{}`;'".format(site['sid']))
 
 
+@runs_once
 def create_settings_files(site, profile_name):
     sid = site['sid']
     if 'path' in site:

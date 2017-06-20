@@ -3,3 +3,4 @@
 config_local.py
 config_servers.py
 *.dat
+.vscode/*

@@ -1,12 +1,20 @@
 # Change log
 
-## v1.1.0
+## v1.0.16
 
-This release requires a MongoDB command to migrate from Site to Instance
+Resolves:
 
-```shell
-db.sites.renameCollection("instance")
-```
+- Instances are being marked as 'available' without databases.
+
+## v1.0.15
+
+Resolves:
+
+- &#35;245 - Available instances are not replaced each night
+- &#35;262 - Automatically clean up stats items that have deleted sites.
+- &#35;259 - Need to accept variable_livechat_license_number
+- &#35;256 - Code clone need labels
+- &#35;251 - Math for age of a pending instance is wrong
 
 ## v1.0.14
 

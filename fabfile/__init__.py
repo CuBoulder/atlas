@@ -166,29 +166,33 @@ def site_provision(site):
         return result_create_database
 
     try:
-        result_create_settings_files = execute(create_settings_files, site=site, profile_name=profile_name)
+        result_create_settings_files = execute(
+            create_settings_files, site=site, profile_name=profile_name)
     except FabricException:
         print 'Settings file creation failed.'
         return result_create_settings_files
 
     try:
-        result_create_directory_structure = execute(create_directory_structure, folder=code_directory)
+        result_create_dir_structure = execute(
+            create_directory_structure, folder=code_directory)
     except FabricException:
         print 'Create directory structure failed.'
-        return result_create_directory_structure
+        return result_create_dir_structure
 
     try:
-        result_create_directory_structure_web = execute(create_directory_structure, folder=web_directory_type)
+        result_create_dir_structure_web = execute(
+            create_directory_structure, folder=web_directory_type)
     except FabricException:
         print 'Create directory structure failed.'
-        return result_create_directory_structure_web
+        return result_create_dir_structure_web
 
     with cd(code_directory):
         core = utilities.get_code_name_version(site['code']['core'])
         run('drush dslm-new {0} {1}'.format(site['sid'], core))
 
     try:
-        result_update_symlink = execute(update_symlink, source=code_directory_sid, destination=code_directory_current)
+        result_update_symlink = execute(
+            update_symlink, source=code_directory_sid, destination=code_directory_current)
     except FabricException:
         print 'Update symlink failed.'
         return result_update_symlink
@@ -201,35 +205,40 @@ def site_provision(site):
         nfs_dir = nfs_mount_location[environment]
         nfs_files_dir = '{0}/sitefiles/{1}/files'.format(nfs_dir, site['sid'])
         try:
-            result_create_nfs_files_dir = execute(create_nfs_files_dir, nfs_dir=nfs_dir, site_sid=site['sid'])
+            result_create_nfs_files_dir = execute(
+                create_nfs_files_dir, nfs_dir=nfs_dir, site_sid=site['sid'])
         except FabricException:
             print 'Create nfs directory failed.'
             return result_create_nfs_files_dir
         # Replace default files dir with this one
         site_files_dir = code_directory_current + '/sites/default/files'
         try:
-            result_replace_files_directory = execute(replace_files_directory, source=nfs_files_dir, destination=site_files_dir)
+            result_replace_files_directory = execute(
+                replace_files_directory, source=nfs_files_dir, destination=site_files_dir)
         except FabricException:
             print 'Replace file directory failed.'
             return result_replace_files_directory
 
     try:
-        result_push_settings_files = execute(push_settings_files, site=site, directory=code_directory_current)
+        result_push_settings_files = execute(
+            push_settings_files, site=site, directory=code_directory_current)
     except FabricException:
         print 'Replace file directory failed.'
         return result_push_settings_files
 
     try:
-        result_update_symlink_web = execute(update_symlink, source=code_directory_current, destination=web_directory_sid)
+        result_update_symlink_web = execute(
+            update_symlink, source=code_directory_current, destination=web_directory_sid)
     except FabricException:
         print 'Update symlink failed.'
         return result_update_symlink_web
 
     try:
-        result_correct_file_directory_permissions= execute(correct_file_directory_permissions, site=site)
+        result_correct_file_dir_permissions = execute(
+            correct_file_directory_permissions, site=site)
     except FabricException:
         print 'Correct file permissions failed.'
-        return result_correct_file_directory_permissions
+        return result_correct_file_dir_permissions
 
 
 @roles('webserver_single')

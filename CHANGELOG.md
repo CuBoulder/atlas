@@ -8,6 +8,7 @@ Resolves:
 - &#35;271 - Add user count to statistics
 - &#35;270 - Add status to statistics
 - &#35;273 - Clean up temp files.
+- &#35;269 - Capture all bundles as typed or other
 
 ## v1.0.16
 

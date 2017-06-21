@@ -442,6 +442,9 @@ statistics_schema = {
             'no_valid_owner': {
                 'type': 'boolean',
             },
+            'count': {
+                'type': 'integer',
+            },
         },
     },
     'bundles': {

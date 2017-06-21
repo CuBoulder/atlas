@@ -267,6 +267,10 @@ statistics_schema = {
         'type': 'string',
         'minlength': 1,
     },
+    'status': {
+        'type': 'string',
+        'minlength': 1,
+    },
     'nodes_total': {
         'type': 'integer',
     },

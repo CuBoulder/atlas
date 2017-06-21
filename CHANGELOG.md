@@ -1,5 +1,14 @@
 # Change log
 
+## v1.0.17
+
+Resolves:
+
+- &#35;266 - Allow More Headers In Requests
+- &#35;271 - Add user count to statistics
+- &#35;270 - Add status to statistics
+- &#35;273 - Clean up temp files.
+
 ## v1.0.16
 
 Resolves:

@@ -703,16 +703,19 @@ def verify_statistics():
     """
     time_ago = datetime.utcnow() - timedelta(hours=36)
     statistics_query = 'where={{"_updated":{{"$lte":"{0}"}}}}'.format(
-        time_ago.strftime("%Y-%m-%d %H:%M:%S %Z"))
+        time_ago.strftime("%Y-%m-%d %H:%M:%S GMT"))
     outdated_statistics = utilities.get_eve('statistics', statistics_query)
-    logger.debug('Old statistics time | %s', time_ago.strftime("%Y-%m-%d %H:%M:%S %Z"))
+    logger.debug('Old statistics time | %s', time_ago.strftime("%Y-%m-%d %H:%M:%S GMT"))
+    logger.debug('outdated_statistics items | %s', outdated_statistics)
     statistic_id_list = []
     if not outdated_statistics['_meta']['total'] == 0:
         for outdated_statistic in outdated_statistics['_items']:
             statistic_id_list.append(outdated_statistic['_id'])
 
-        site_query = 'where={"status":{"$in":}}'
-        logger.debug('Site quewry | %s', site_query)
+        logger.debug('statistic_id_list | %s', statistic_id_list)
+
+        site_query = 'where={{"_id":{{"$in":{0}}}}}'.format(json.dumps(statistic_id_list))
+        logger.debug('Site query | %s', site_query)
         sites = utilities.get_eve('sites', site_query)
         sites_id_list = []
         if not sites['_meta']['total'] == 0:
@@ -721,7 +724,7 @@ def verify_statistics():
 
         slack_fallback = '{0} statistics items have not been updated in 36 hours.'.format(
             len(statistic_id_list))
-
+        slack_link = '{0}/statistics?{1}'.format(base_urls[environment], site_query)
         slack_payload = {
             "text": 'Outdated Statistics',
             "username": 'Atlas',
@@ -750,8 +753,9 @@ def verify_statistics():
                     "fields": [
                         {
                             "title": "Site list",
-                            "value": sites_id_list,
-                            "short": False
+                            "value": json.dumps(sites_id_list),
+                            "short": False,
+                            "title_link": slack_link
                         }
                     ]
                 }

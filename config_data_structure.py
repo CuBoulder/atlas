@@ -562,6 +562,9 @@ statistics_schema = {
                     },
                 },
             },
+            'other': {
+                'type': 'string',
+            },
         },
     },
     'webforms': {

@@ -12,6 +12,7 @@ from celery import Celery
 from celery import group
 from celery.utils.log import get_task_logger
 from fabric.api import execute
+from datetime import datetime, timedelta
 from atlas.config import *
 from atlas import utilities
 from atlas import config_celery
@@ -693,3 +694,68 @@ def take_down_installed_old_sites():
                 # Patch the status to 'take_down'.
                 payload = {'status': 'take_down'}
                 utilities.patch_eve('sites', site['_id'], payload)
+
+
+@celery.task
+def verify_statistics():
+    """
+    Get a list of statistics items that have not been updated in 36 hours and notify users.
+    """
+    time_ago = datetime.utcnow() - timedelta(hours=36)
+    statistics_query = 'where={{"_updated":{{"$lte":"{0}"}}}}'.format(
+        time_ago.strftime("%Y-%m-%d %H:%M:%S %Z"))
+    outdated_statistics = utilities.get_eve('statistics', statistics_query)
+    logger.debug('Old statistics time | %s', time_ago.strftime("%Y-%m-%d %H:%M:%S %Z"))
+    statistic_id_list = []
+    if not outdated_statistics['_meta']['total'] == 0:
+        for outdated_statistic in outdated_statistics['_items']:
+            statistic_id_list.append(outdated_statistic['_id'])
+
+        site_query = 'where={"status":{"$in":}}'
+        logger.debug('Site quewry | %s', site_query)
+        sites = utilities.get_eve('sites', site_query)
+        sites_id_list = []
+        if not sites['_meta']['total'] == 0:
+            for site in sites['_items']:
+                sites_id_list.append(site['_id'])
+
+        slack_fallback = '{0} statistics items have not been updated in 36 hours.'.format(
+            len(statistic_id_list))
+
+        slack_payload = {
+            "text": 'Outdated Statistics',
+            "username": 'Atlas',
+            "attachments": [
+                {
+                    "fallback": slack_fallback,
+                    "color": 'danger',
+                    "title": 'Some statistics items have not been updated in 36 hours.',
+                    "fields": [
+                        {
+                            "title": "Count",
+                            "value": len(statistic_id_list),
+                            "short": True
+                        },
+                        {
+                            "title": "Environment",
+                            "value": environment,
+                            "short": True
+                        },
+                    ],
+                },
+                {
+                    "fallback": 'Site list',
+                    # A lighter red.
+                    "color": '#ee9999',
+                    "fields": [
+                        {
+                            "title": "Site list",
+                            "value": sites_id_list,
+                            "short": False
+                        }
+                    ]
+                }
+            ],
+        }
+
+        utilities.post_to_slack_payload(slack_payload)

@@ -323,17 +323,21 @@ def site_update(site, updates, original):
 @celery.task
 def site_remove(site):
     """
-    Remove site from the server.
+    Remove site from the server and delete Statistic item.
 
     :param site: Item to be removed.
     :return:
     """
-    logger.debug('Site remove\n{0}'.format(site))
+    logger.debug('Site remove | %s', site)
     if site['type'] == 'express':
         # execute(fabfile.site_backup, site=site)
-        # Check if stats object exists first.
-        if site.get('statistics'):
-            utilities.delete_eve('statistics', site['statistics'])
+        # Check if stats object exists for the site first.
+        statistics_query = 'where={{"site":"{0}"}}'.format(site['_id'])
+        statistics = utilities.get_eve('statistics', statistics_query)
+        logger.debug('Statistics | %s', statistics)
+        if not statistics['_meta']['total'] == 0:
+            for statistic in statistics['_items']:
+                utilities.delete_eve('statistics', statistic['_id'])
         execute(fabfile.site_remove, site=site)
 
     if environment != 'local':
@@ -661,8 +665,10 @@ def delete_statistics_without_active_instance():
         if not sites['_meta']['total'] == 0:
             for site in sites['_items']:
                 site_id_list.append(site['_id'])
+                logger.debug('Sites list | %s', site_id_list)
         for statistic in statistics['_items']:
             if statistic['site'] not in site_id_list:
+                logger.debug('Statistic not in list | %s', statistic['_id'])
                 utilities.delete_eve('statistics', statistic['_id'])
 
 

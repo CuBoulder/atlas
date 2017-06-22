@@ -622,13 +622,14 @@ def delete_stuck_pending_sites():
             # See https://docs.python.org/2/library/datetime.html#strftime-and-strptime-behavior
             # for mask format.
             date_created = datetime.strptime(site['_created'], "%Y-%m-%d %H:%M:%S %Z")
-            # Get datetime now and calculate the age of the site.
-            time_since_creation = datetime.now() - date_created
+            # Get datetime now and calculate the age of the site. Since our timestamp is in GMT, we
+            # need to use UTC.
+            time_since_creation = datetime.utcnow() - date_created
             logger.debug('%s has timedelta of %s. Created: %s Current: %s',
                          site['sid'],
                          time_since_creation,
                          date_created,
-                         datetime.now())
+                         datetime.utcnow())
             if time_since_creation > timedelta(minutes=15):
                 utilities.delete_eve('sites', site['_id'])
 

@@ -614,21 +614,18 @@ def delete_stuck_pending_sites():
     # Loop through and remove sites that are more than 15 minutes old.
     if not sites['_meta']['total'] == 0:
         for site in sites['_items']:
-            # Parse date string into structured time.
+            # Parse date string into structured datetime.
             # See https://docs.python.org/2/library/datetime.html#strftime-and-strptime-behavior
             # for mask format.
-            date_created = time.strptime(site['_created'], "%Y-%m-%d %H:%M:%S %Z")
-            # Get time now, Convert date_created to seconds from epoch and
-            # calculate the age of the site.
-            seconds_since_creation = time.time() - time.mktime(date_created)
-            logger.debug('{0} is {1} seconds old. Created: {2} Current: {3}'.format(
-                site['sid'],
-                seconds_since_creation,
-                time.mktime(date_created),
-                time.time())
-                        )
-            # 15 min * 60 sec = 900 seconds
-            if seconds_since_creation > 900:
+            date_created = datetime.strptime(site['_created'], "%Y-%m-%d %H:%M:%S %Z")
+            # Get datetime now and calculate the age of the site.
+            time_since_creation = datetime.now() - date_created
+            logger.debug('%s has timedelta of %s. Created: %s Current: %s',
+                         site['sid'],
+                         time_since_creation,
+                         date_created,
+                         datetime.now())
+            if time_since_creation > timedelta(minutes=15):
                 utilities.delete_eve('sites', site['_id'])
 
 

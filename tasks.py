@@ -12,6 +12,7 @@ from celery import Celery
 from celery import group
 from celery.utils.log import get_task_logger
 from fabric.api import execute
+from datetime import datetime, timedelta
 from atlas.config import *
 from atlas import utilities
 from atlas import config_celery
@@ -617,21 +618,18 @@ def delete_stuck_pending_sites():
     # Loop through and remove sites that are more than 15 minutes old.
     if not sites['_meta']['total'] == 0:
         for site in sites['_items']:
-            # Parse date string into structured time.
+            # Parse date string into structured datetime.
             # See https://docs.python.org/2/library/datetime.html#strftime-and-strptime-behavior
             # for mask format.
-            date_created = time.strptime(site['_created'], "%Y-%m-%d %H:%M:%S %Z")
-            # Get time now, Convert date_created to seconds from epoch and
-            # calculate the age of the site.
-            seconds_since_creation = time.time() - time.mktime(date_created)
-            logger.debug('{0} is {1} seconds old. Created: {2} Current: {3}'.format(
-                site['sid'],
-                seconds_since_creation,
-                time.mktime(date_created),
-                time.time())
-                        )
-            # 15 min * 60 sec = 900 seconds
-            if seconds_since_creation > 900:
+            date_created = datetime.strptime(site['_created'], "%Y-%m-%d %H:%M:%S %Z")
+            # Get datetime now and calculate the age of the site.
+            time_since_creation = datetime.now() - date_created
+            logger.debug('%s has timedelta of %s. Created: %s Current: %s',
+                         site['sid'],
+                         time_since_creation,
+                         date_created,
+                         datetime.now())
+            if time_since_creation > timedelta(minutes=15):
                 utilities.delete_eve('sites', site['_id'])
 
 
@@ -699,3 +697,72 @@ def take_down_installed_old_sites():
                 # Patch the status to 'take_down'.
                 payload = {'status': 'take_down'}
                 utilities.patch_eve('sites', site['_id'], payload)
+
+
+@celery.task
+def verify_statistics():
+    """
+    Get a list of statistics items that have not been updated in 36 hours and notify users.
+    """
+    time_ago = datetime.utcnow() - timedelta(hours=36)
+    statistics_query = 'where={{"_updated":{{"$lte":"{0}"}}}}'.format(
+        time_ago.strftime("%Y-%m-%d %H:%M:%S GMT"))
+    outdated_statistics = utilities.get_eve('statistics', statistics_query)
+    logger.debug('Old statistics time | %s', time_ago.strftime("%Y-%m-%d %H:%M:%S GMT"))
+    logger.debug('outdated_statistics items | %s', outdated_statistics)
+    statistic_id_list = []
+    if not outdated_statistics['_meta']['total'] == 0:
+        for outdated_statistic in outdated_statistics['_items']:
+            statistic_id_list.append(outdated_statistic['_id'])
+
+        logger.debug('statistic_id_list | %s', statistic_id_list)
+
+        site_query = 'where={{"_id":{{"$in":{0}}}}}'.format(json.dumps(statistic_id_list))
+        logger.debug('Site query | %s', site_query)
+        sites = utilities.get_eve('sites', site_query)
+        sites_id_list = []
+        if not sites['_meta']['total'] == 0:
+            for site in sites['_items']:
+                sites_id_list.append(site['_id'])
+
+        slack_fallback = '{0} statistics items have not been updated in 36 hours.'.format(
+            len(statistic_id_list))
+        slack_link = '{0}/statistics?{1}'.format(base_urls[environment], site_query)
+        slack_payload = {
+            "text": 'Outdated Statistics',
+            "username": 'Atlas',
+            "attachments": [
+                {
+                    "fallback": slack_fallback,
+                    "color": 'danger',
+                    "title": 'Some statistics items have not been updated in 36 hours.',
+                    "fields": [
+                        {
+                            "title": "Count",
+                            "value": len(statistic_id_list),
+                            "short": True
+                        },
+                        {
+                            "title": "Environment",
+                            "value": environment,
+                            "short": True
+                        },
+                    ],
+                },
+                {
+                    "fallback": 'Site list',
+                    # A lighter red.
+                    "color": '#ee9999',
+                    "fields": [
+                        {
+                            "title": "Site list",
+                            "value": json.dumps(sites_id_list),
+                            "short": False,
+                            "title_link": slack_link
+                        }
+                    ]
+                }
+            ],
+        }
+
+        utilities.post_to_slack_payload(slack_payload)

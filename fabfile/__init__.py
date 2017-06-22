@@ -717,7 +717,7 @@ def create_settings_files(site, profile_name):
 
 
 def push_settings_files(site, directory):
-    print('Push settings\n{0}\n{1}'.format(site, directory))
+    print 'Push settings - {0} - {1}'.format(site, directory)
     send_from = '/tmp/{0}'.format(site['sid'])
     send_to = "{0}/sites/default".format(directory)
     run("chmod -R 755 {0}".format(send_to))
@@ -727,6 +727,9 @@ def push_settings_files(site, directory):
         "{0}/settings.local_post.php".format(send_to))
     put("{0}.settings.php".format(send_from),
         "{0}/settings.php".format(send_to))
+    # Clean up after ourselves.
+    local("rm {0}.settings.local_pre.php {0}.settings.local_post.php {0}.settings.php".format(
+        send_from))
 
 
 @runs_once

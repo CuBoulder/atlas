@@ -8,6 +8,7 @@ Resolves:
 - &#35;271 - Add user count to statistics
 - &#35;270 - Add status to statistics
 - &#35;273 - Clean up temp files
+- &#35;268 - Statistic objects for stuck 'pending' instances are not cleaning up
 - &#35;265 - Verify statistics objects are getting updated
 - &#35;251 - Stuck pending instances not being removed
 - &#35;269 - Capture all bundles as typed or other

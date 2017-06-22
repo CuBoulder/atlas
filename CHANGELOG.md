@@ -9,6 +9,7 @@ Resolves:
 - &#35;270 - Add status to statistics
 - &#35;273 - Clean up temp files
 - &#35;251 - Stuck pending instances not being removed
+- &#35;269 - Capture all bundles as typed or other
 
 ## v1.0.16
 

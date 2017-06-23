@@ -556,11 +556,11 @@ def update_settings_file(site):
     profile = utilities.get_single_eve('code', site['code']['profile'])
     profile_name = profile['meta']['name']
 
-    create_settings_files(site, profile_name)
+    execute(create_settings_files, site=site, profile_name=profile_name)
     # Use execute to pass role.
     execute(push_settings_files, site=site, directory=code_directory)
     # Clean up after we push.
-    remove_tmp_settings_files(site)
+    execute(remove_tmp_settings_files, site=site)
 
 
 @roles('webservers')

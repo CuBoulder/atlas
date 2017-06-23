@@ -559,6 +559,8 @@ def update_settings_file(site):
     create_settings_files(site, profile_name)
     # Use execute to pass role.
     execute(push_settings_files, site=site, directory=code_directory)
+    # Clean up after we push.
+    remove_tmp_settings_files(site)
 
 
 @roles('webservers')
@@ -671,6 +673,7 @@ def create_settings_files(site, profile_name):
     atlas_url = '{0}/'.format(api_urls[environment])
     database_password = utilities.decrypt_string(site['db_key'])
 
+
     # Call the template file and render the variables into it.
     template = jinja_env.get_template('settings.local_pre.php')
     local_pre_settings = template.render(
@@ -727,9 +730,13 @@ def push_settings_files(site, directory):
         "{0}/settings.local_post.php".format(send_to))
     put("{0}.settings.php".format(send_from),
         "{0}/settings.php".format(send_to))
-    # Clean up after ourselves.
-    local("rm {0}.settings.local_pre.php {0}.settings.local_post.php {0}.settings.php".format(
-        send_from))
+
+
+@runs_once
+def remove_tmp_settings_files(site):
+# Clean up after ourselves.
+    local("rm /tmp/{0}.settings.local_pre.php /tmp/{0}.settings.local_post.php /tmp/{0}.settings.php".format(
+        site['sid']))
 
 
 @runs_once

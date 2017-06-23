@@ -12,6 +12,7 @@ from celery import Celery
 from celery import group
 from celery.utils.log import get_task_logger
 from fabric.api import execute
+from datetime import datetime, timedelta
 from atlas.config import *
 from atlas import utilities
 from atlas import config_celery
@@ -323,17 +324,21 @@ def site_update(site, updates, original):
 @celery.task
 def site_remove(site):
     """
-    Remove site from the server.
+    Remove site from the server and delete Statistic item.
 
     :param site: Item to be removed.
     :return:
     """
-    logger.debug('Site remove\n{0}'.format(site))
+    logger.debug('Site remove | %s', site)
     if site['type'] == 'express':
         # execute(fabfile.site_backup, site=site)
-        # Check if stats object exists first.
-        if site.get('statistics'):
-            utilities.delete_eve('statistics', site['statistics'])
+        # Check if stats object exists for the site first.
+        statistics_query = 'where={{"site":"{0}"}}'.format(site['_id'])
+        statistics = utilities.get_eve('statistics', statistics_query)
+        logger.debug('Statistics | %s', statistics)
+        if not statistics['_meta']['total'] == 0:
+            for statistic in statistics['_items']:
+                utilities.delete_eve('statistics', statistic['_id'])
         execute(fabfile.site_remove, site=site)
 
     if environment != 'local':
@@ -613,21 +618,19 @@ def delete_stuck_pending_sites():
     # Loop through and remove sites that are more than 15 minutes old.
     if not sites['_meta']['total'] == 0:
         for site in sites['_items']:
-            # Parse date string into structured time.
+            # Parse date string into structured datetime.
             # See https://docs.python.org/2/library/datetime.html#strftime-and-strptime-behavior
             # for mask format.
-            date_created = time.strptime(site['_created'], "%Y-%m-%d %H:%M:%S %Z")
-            # Get time now, Convert date_created to seconds from epoch and
-            # calculate the age of the site.
-            seconds_since_creation = time.time() - time.mktime(date_created)
-            logger.debug('{0} is {1} seconds old. Created: {2} Current: {3}'.format(
-                site['sid'],
-                seconds_since_creation,
-                time.mktime(date_created),
-                time.time())
-                        )
-            # 15 min * 60 sec = 900 seconds
-            if seconds_since_creation > 900:
+            date_created = datetime.strptime(site['_created'], "%Y-%m-%d %H:%M:%S %Z")
+            # Get datetime now and calculate the age of the site. Since our timestamp is in GMT, we
+            # need to use UTC.
+            time_since_creation = datetime.utcnow() - date_created
+            logger.debug('%s has timedelta of %s. Created: %s Current: %s',
+                         site['sid'],
+                         time_since_creation,
+                         date_created,
+                         datetime.utcnow())
+            if time_since_creation > timedelta(minutes=15):
                 utilities.delete_eve('sites', site['_id'])
 
 
@@ -661,8 +664,10 @@ def delete_statistics_without_active_instance():
         if not sites['_meta']['total'] == 0:
             for site in sites['_items']:
                 site_id_list.append(site['_id'])
+                logger.debug('Sites list | %s', site_id_list)
         for statistic in statistics['_items']:
             if statistic['site'] not in site_id_list:
+                logger.debug('Statistic not in list | %s', statistic['_id'])
                 utilities.delete_eve('statistics', statistic['_id'])
 
 
@@ -693,3 +698,72 @@ def take_down_installed_old_sites():
                 # Patch the status to 'take_down'.
                 payload = {'status': 'take_down'}
                 utilities.patch_eve('sites', site['_id'], payload)
+
+
+@celery.task
+def verify_statistics():
+    """
+    Get a list of statistics items that have not been updated in 36 hours and notify users.
+    """
+    time_ago = datetime.utcnow() - timedelta(hours=36)
+    statistics_query = 'where={{"_updated":{{"$lte":"{0}"}}}}'.format(
+        time_ago.strftime("%Y-%m-%d %H:%M:%S GMT"))
+    outdated_statistics = utilities.get_eve('statistics', statistics_query)
+    logger.debug('Old statistics time | %s', time_ago.strftime("%Y-%m-%d %H:%M:%S GMT"))
+    logger.debug('outdated_statistics items | %s', outdated_statistics)
+    statistic_id_list = []
+    if not outdated_statistics['_meta']['total'] == 0:
+        for outdated_statistic in outdated_statistics['_items']:
+            statistic_id_list.append(outdated_statistic['_id'])
+
+        logger.debug('statistic_id_list | %s', statistic_id_list)
+
+        site_query = 'where={{"_id":{{"$in":{0}}}}}'.format(json.dumps(statistic_id_list))
+        logger.debug('Site query | %s', site_query)
+        sites = utilities.get_eve('sites', site_query)
+        sites_id_list = []
+        if not sites['_meta']['total'] == 0:
+            for site in sites['_items']:
+                sites_id_list.append(site['_id'])
+
+        slack_fallback = '{0} statistics items have not been updated in 36 hours.'.format(
+            len(statistic_id_list))
+        slack_link = '{0}/statistics?{1}'.format(base_urls[environment], site_query)
+        slack_payload = {
+            "text": 'Outdated Statistics',
+            "username": 'Atlas',
+            "attachments": [
+                {
+                    "fallback": slack_fallback,
+                    "color": 'danger',
+                    "title": 'Some statistics items have not been updated in 36 hours.',
+                    "fields": [
+                        {
+                            "title": "Count",
+                            "value": len(statistic_id_list),
+                            "short": True
+                        },
+                        {
+                            "title": "Environment",
+                            "value": environment,
+                            "short": True
+                        },
+                    ],
+                },
+                {
+                    "fallback": 'Site list',
+                    # A lighter red.
+                    "color": '#ee9999',
+                    "fields": [
+                        {
+                            "title": "Site list",
+                            "value": json.dumps(sites_id_list),
+                            "short": False,
+                            "title_link": slack_link
+                        }
+                    ]
+                }
+            ],
+        }
+
+        utilities.post_to_slack_payload(slack_payload)

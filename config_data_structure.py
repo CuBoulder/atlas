@@ -22,7 +22,7 @@ PAGINATION_DEFAULT = 500
 
 # Add support for CORS
 X_DOMAINS = '*'
-X_HEADERS = ['Access-Control-Allow-Origin']
+X_HEADERS = ['Access-Control-Allow-Origin', 'If-Match', 'Authorization', 'User-Agent', 'Content-Type']
 
 # Allow $regex filtering. Default config blocks where and regex.
 MONGO_QUERY_BLACKLIST = ['$where']
@@ -267,6 +267,10 @@ statistics_schema = {
         'type': 'string',
         'minlength': 1,
     },
+    'status': {
+        'type': 'string',
+        'minlength': 1,
+    },
     'nodes_total': {
         'type': 'integer',
     },
@@ -438,6 +442,9 @@ statistics_schema = {
             'no_valid_owner': {
                 'type': 'boolean',
             },
+            'count': {
+                'type': 'integer',
+            },
         },
     },
     'bundles': {
@@ -554,6 +561,9 @@ statistics_schema = {
                         'type': 'integer',
                     },
                 },
+            },
+            'other': {
+                'type': 'string',
             },
         },
     },

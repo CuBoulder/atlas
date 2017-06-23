@@ -556,9 +556,11 @@ def update_settings_file(site):
     profile = utilities.get_single_eve('code', site['code']['profile'])
     profile_name = profile['meta']['name']
 
-    create_settings_files(site, profile_name)
+    execute(create_settings_files, site=site, profile_name=profile_name)
     # Use execute to pass role.
     execute(push_settings_files, site=site, directory=code_directory)
+    # Clean up after we push.
+    execute(remove_tmp_settings_files, site=site)
 
 
 @roles('webservers')
@@ -671,6 +673,7 @@ def create_settings_files(site, profile_name):
     atlas_url = '{0}/'.format(api_urls[environment])
     database_password = utilities.decrypt_string(site['db_key'])
 
+
     # Call the template file and render the variables into it.
     template = jinja_env.get_template('settings.local_pre.php')
     local_pre_settings = template.render(
@@ -717,7 +720,7 @@ def create_settings_files(site, profile_name):
 
 
 def push_settings_files(site, directory):
-    print('Push settings\n{0}\n{1}'.format(site, directory))
+    print 'Push settings - {0} - {1}'.format(site, directory)
     send_from = '/tmp/{0}'.format(site['sid'])
     send_to = "{0}/sites/default".format(directory)
     run("chmod -R 755 {0}".format(send_to))
@@ -727,6 +730,13 @@ def push_settings_files(site, directory):
         "{0}/settings.local_post.php".format(send_to))
     put("{0}.settings.php".format(send_from),
         "{0}/settings.php".format(send_to))
+
+
+@runs_once
+def remove_tmp_settings_files(site):
+# Clean up after ourselves.
+    local("rm /tmp/{0}.settings.local_pre.php /tmp/{0}.settings.local_post.php /tmp/{0}.settings.php".format(
+        site['sid']))
 
 
 @runs_once

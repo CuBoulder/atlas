@@ -12,6 +12,7 @@ Resolves:
 - &#35;265 - Verify statistics objects are getting updated
 - &#35;251 - Stuck pending instances not being removed
 - &#35;269 - Capture all bundles as typed or other
+- &#35;282 - Settings files creation fails often. Switch to Fabric templating.
 
 ## v1.0.16
 

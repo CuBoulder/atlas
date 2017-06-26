@@ -23,7 +23,7 @@ if path not in sys.path:
 
 # Fabric environmental settings.
 env.user = ssh_user
-env.password = ssh_user_password
+# env.key_filename =
 
 # Allow ~/.ssh/config to be utilized.
 env.use_ssh_config = True
@@ -693,8 +693,7 @@ def create_settings_files(site):
                     use_jinja=True,
                     template_dir=template_dir,
                     backup=False,
-                    mode='0664',
-                    use_sudo=True)
+                    mode='0664')
 
     settings_variables = {
         'profile':profile_name,
@@ -713,8 +712,7 @@ def create_settings_files(site):
                     use_jinja=True,
                     template_dir=template_dir,
                     backup=False,
-                    mode='0664',
-                    use_sudo=True)
+                    mode='0664')
 
     local_post_settings_variables = {
         'sid':sid,
@@ -733,8 +731,7 @@ def create_settings_files(site):
                     use_jinja=True,
                     template_dir=template_dir,
                     backup=False,
-                    mode='0664',
-                    use_sudo=True)
+                    mode='0664')
 
 
 @runs_once

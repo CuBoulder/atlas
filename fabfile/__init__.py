@@ -23,7 +23,7 @@ if path not in sys.path:
 
 # Fabric environmental settings.
 env.user = ssh_user
-# env.key_filename =
+env.password = ssh_user_password
 
 # Allow ~/.ssh/config to be utilized.
 env.use_ssh_config = True

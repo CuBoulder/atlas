@@ -237,8 +237,19 @@ def site_install(site):
     profile = utilities.get_single_eve('code', site['code']['profile'])
     profile_name = profile['meta']['name']
 
-    install_site(profile_name, code_directory_current)
-    correct_file_directory_permissions(site)
+    try:
+        result_install_site = execute(
+            install_site, profile_name=profile_name, code_directory_current=code_directory_current)
+    except FabricException:
+        print 'Instance install failed.'
+        return result_install_site
+
+    try:
+        result_correct_file_dir_permissions = execute(
+            correct_file_directory_permissions, site=site)
+    except FabricException:
+        print 'Correct file permissions failed.'
+        return result_correct_file_dir_permissions
 
 
 @roles('webservers')

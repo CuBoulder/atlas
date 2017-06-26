@@ -8,10 +8,9 @@ import requests
 import re
 import os
 
-from fabric.contrib.files import append, exists, sed
+from fabric.contrib.files import append, exists, sed, upload_template
 from fabric.api import *
 from fabric.network import disconnect_all
-from jinja2 import Environment, PackageLoader
 from random import randint
 from time import time
 from datetime import datetime
@@ -21,9 +20,6 @@ from atlas import utilities
 path = '/data/code'
 if path not in sys.path:
     sys.path.append(path)
-
-# Tell Jinja where our templates live.
-jinja_env = Environment(loader=PackageLoader('atlas', 'templates'))
 
 # Fabric environmental settings.
 env.user = ssh_user
@@ -166,13 +162,6 @@ def site_provision(site):
         return result_create_database
 
     try:
-        result_create_settings_files = execute(
-            create_settings_files, site=site, profile_name=profile_name)
-    except FabricException:
-        print 'Settings file creation failed.'
-        return result_create_settings_files
-
-    try:
         result_create_dir_structure = execute(
             create_directory_structure, folder=code_directory)
     except FabricException:
@@ -220,11 +209,11 @@ def site_provision(site):
             return result_replace_files_directory
 
     try:
-        result_push_settings_files = execute(
-            push_settings_files, site=site, directory=code_directory_current)
+        result_create_settings_files = execute(
+            create_settings_files, site=site)
     except FabricException:
-        print 'Replace file directory failed.'
-        return result_push_settings_files
+        print 'Settings file creation failed.'
+        return result_create_settings_files
 
     try:
         result_update_symlink_web = execute(
@@ -317,21 +306,25 @@ def site_profile_swap(site):
 
 @roles('webservers')
 def site_launch(site):
-    update_settings_file(site)
+    try:
+        result_create_settings_files = execute(create_settings_files, site=site)
+    except FabricException:
+        print 'Settings files creation failed.'
+        return result_create_settings_files
 
     if environment is 'prod' and site['pool'] is 'poolb-express':
         # Create GSA collection if needed.
         gsa_task = create_gsa(site)
         if gsa_task is True:
-            print ('GSA Collection - Success')
+            print 'GSA Collection - Success'
             machine_name = machine_readable(site['path'])
             launch_site(site=site, gsa_collection=machine_name)
             return
         else:
-            print ('GSA Collection - Failed')
+            print 'GSA Collection - Failed'
             launch_site(site=site)
     else:
-        print ('Site launch - No GSA')
+        print 'Site launch - No GSA'
         launch_site(site=site)
 
 
@@ -551,16 +544,12 @@ def rewrite_symlinks(site):
 
 @roles('webservers')
 def update_settings_file(site):
-    print('Update Settings Files\n{0}'.format(site))
-    code_directory = '{0}/{1}/{1}'.format(sites_code_root, site['sid'])
-    profile = utilities.get_single_eve('code', site['code']['profile'])
-    profile_name = profile['meta']['name']
-
-    execute(create_settings_files, site=site, profile_name=profile_name)
-    # Use execute to pass role.
-    execute(push_settings_files, site=site, directory=code_directory)
-    # Clean up after we push.
-    execute(remove_tmp_settings_files, site=site)
+    print('Update Settings Files - {0}'.format(site))
+    try:
+        result_create_settings_files = execute(create_settings_files, site=site)
+    except FabricException:
+        print 'Settings files creation failed.'
+        return result_create_settings_files
 
 
 @roles('webservers')
@@ -649,8 +638,7 @@ def delete_database(site):
             run("mysql -e 'DROP DATABASE IF EXISTS `{}`;'".format(site['sid']))
 
 
-@runs_once
-def create_settings_files(site, profile_name):
+def create_settings_files(site):
     sid = site['sid']
     if 'path' in site:
         path = site['path']
@@ -673,70 +661,80 @@ def create_settings_files(site, profile_name):
     atlas_url = '{0}/'.format(api_urls[environment])
     database_password = utilities.decrypt_string(site['db_key'])
 
+    profile = utilities.get_single_eve('code', site['code']['profile'])
+    profile_name = profile['meta']['name']
 
-    # Call the template file and render the variables into it.
-    template = jinja_env.get_template('settings.local_pre.php')
-    local_pre_settings = template.render(
-        profile=profile_name,
-        sid=sid,
-        atlas_id=id,
-        atlas_url=atlas_url,
-        atlas_username=service_account_username,
-        atlas_password=service_account_password,
-        path=path,
-        status=status,
-        pool=site['pool'],
-        atlas_statistics_id=statistics,
-        siteimprove_site=siteimprove_site,
-        siteimprove_group=siteimprove_group
-    )
-    # Write the file to a temporary location.
-    with open("/tmp/{0}.settings.local_pre.php".format(sid), "w") as ofile:
-        ofile.write(local_pre_settings)
+    template_dir = '{0}/templates'.format(atlas_location)
 
-    template = jinja_env.get_template('settings.local_post.php')
-    local_post_settings = template.render(
-        sid=sid,
-        pw=database_password,
-        page_cache_maximum_age=page_cache_maximum_age,
-        database_servers=env.roledefs['database_servers'],
-        memcache_servers=env.roledefs['memcache_servers'],
-        environment=environment if environment != 'prod' else '',
-    )
-    with open("/tmp/{0}.settings.local_post.php".format(sid), "w") as ofile:
-        ofile.write(local_post_settings)
+    print template_dir
 
-    template = jinja_env.get_template('settings.php')
-    settings_php = template.render(
-        profile=profile_name,
-        sid=sid,
-        reverse_proxies=env.roledefs['varnish_servers'],
-        varnish_control=varnish_control_terminals[environment],
-        memcache_servers=env.roledefs['memcache_servers'],
-        environment=environment if environment != 'prod' else '',
-    )
-    with open("/tmp/{0}.settings.php".format(sid), "w") as ofile:
-        ofile.write(settings_php)
+    destination = "{0}/{1}/{1}/sites/default".format(sites_code_root, site['sid'])
 
+    local_pre_settings_variables = {
+        'profile':profile_name,
+        'sid':sid,
+        'atlas_id':id,
+        'atlas_url':atlas_url,
+        'atlas_username':service_account_username,
+        'atlas_password':service_account_password,
+        'path':path,
+        'status':status,
+        'pool':site['pool'],
+        'atlas_statistics_id':statistics,
+        'siteimprove_site':siteimprove_site,
+        'siteimprove_group':siteimprove_group
+    }
 
-def push_settings_files(site, directory):
-    print 'Push settings - {0} - {1}'.format(site, directory)
-    send_from = '/tmp/{0}'.format(site['sid'])
-    send_to = "{0}/sites/default".format(directory)
-    run("chmod -R 755 {0}".format(send_to))
-    put("{0}.settings.local_pre.php".format(send_from),
-        "{0}/settings.local_pre.php".format(send_to))
-    put("{0}.settings.local_post.php".format(send_from),
-        "{0}/settings.local_post.php".format(send_to))
-    put("{0}.settings.php".format(send_from),
-        "{0}/settings.php".format(send_to))
+    print 'Settings Pre Variables - {0}'.format(local_pre_settings_variables)
 
+    upload_template('settings.local_pre.php',
+                    destination=destination,
+                    context=local_pre_settings_variables,
+                    use_jinja=True,
+                    template_dir=template_dir,
+                    backup=False,
+                    mode='0664',
+                    use_sudo=True)
 
-@runs_once
-def remove_tmp_settings_files(site):
-# Clean up after ourselves.
-    local("rm /tmp/{0}.settings.local_pre.php /tmp/{0}.settings.local_post.php /tmp/{0}.settings.php".format(
-        site['sid']))
+    settings_variables = {
+        'profile':profile_name,
+        'sid':sid,
+        'reverse_proxies':env.roledefs['varnish_servers'],
+        'varnish_control':varnish_control_terminals[environment],
+        'memcache_servers':env.roledefs['memcache_servers'],
+        'environment':environment if environment != 'prod' else ''
+    }
+
+    print 'Settings  Variables - {0}'.format(settings_variables)
+
+    upload_template('settings.php',
+                    destination=destination,
+                    context=settings_variables,
+                    use_jinja=True,
+                    template_dir=template_dir,
+                    backup=False,
+                    mode='0664',
+                    use_sudo=True)
+
+    local_post_settings_variables = {
+        'sid':sid,
+        'pw':database_password,
+        'page_cache_maximum_age':page_cache_maximum_age,
+        'database_servers':env.roledefs['database_servers'],
+        'memcache_servers':env.roledefs['memcache_servers'],
+        'environment':environment if environment != 'prod' else ''
+    }
+
+    print 'Settings Post Variables - {0}'.format(local_post_settings_variables)
+
+    upload_template('settings.local_post.php',
+                    destination=destination,
+                    context=local_post_settings_variables,
+                    use_jinja=True,
+                    template_dir=template_dir,
+                    backup=False,
+                    mode='0664',
+                    use_sudo=True)
 
 
 @runs_once

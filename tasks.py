@@ -30,6 +30,10 @@ celery = Celery('tasks')
 celery.config_from_object(config_celery)
 
 
+class CeleryException(Exception):
+    pass
+
+
 @celery.task
 def code_deploy(item):
     """
@@ -171,17 +175,28 @@ def site_provision(site):
     # Set future site status for settings file creation.
     site['status'] = 'available'
 
-    provision_task = execute(fabfile.site_provision, site=site)
+    try:
+        provision_task = execute(fabfile.site_provision, site=site)
+        if isinstance(provision_task.get('host_string', None), BaseException):
+            raise provision_task.get('host_string')
+    except CeleryException as e:
+        logger.info('Site provision failed | Error Message | %s', e.message)
 
-    logger.debug(provision_task)
-    logger.debug(provision_task.values)
+    logger.debug('Site provision | Provision Fabric task | %s', provision_task)
+    logger.debug('Site provision | Provision Fabric task values | %s', provision_task.values)
 
-    install_task = execute(fabfile.site_install, site=site)
+    try:
+        install_task = execute(fabfile.site_install, site=site)
+        if isinstance(install_task.get('host_string', None), BaseException):
+            raise install_task.get('host_string')
+    except CeleryException as e:
+        logger.info('Site install failed | Error Message | %s', e.message)
 
-    logger.debug(install_task)
-    logger.debug(install_task.values)
+    logger.debug('Site provision | Install Fabric task | %s', install_task)
+    logger.debug('Site provision | Install Fabric task values | %s', install_task.values)
 
-    patch_payload = {'status': 'available', 'db_key': site['db_key'], 'statistics': site['statistics']}
+    patch_payload = {'status': 'available',
+                     'db_key': site['db_key'], 'statistics': site['statistics']}
     patch = utilities.patch_eve('sites', site['_id'], patch_payload)
 
     profile = utilities.get_single_eve('code', site['code']['profile'])
@@ -191,8 +206,9 @@ def site_provision(site):
     core_string = core['meta']['name'] + '-' + core['meta']['version']
 
     provision_time = time.time() - start_time
-    logger.info('Atlas operational statistic | Site Provision - {0} - {1} | {2} '.format(core_string, profile_string, provision_time))
-    logger.debug('Site has been provisioned\n{0}'.format(patch))
+    logger.info('Atlas operational statistic | Site Provision | %s | %s | %s ',
+                core_string, profile_string, provision_time)
+    logger.debug('Site provision | Patch | %s', patch)
 
     slack_title = '{0}/{1}'.format(base_urls[environment], site['path'])
     slack_link = '{0}/{1}'.format(base_urls[environment], site['path'])

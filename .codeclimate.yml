@@ -1,4 +1,9 @@
 ---
+# See also setup.cfg for pep8 settings
+#
+# Radom is set to 'C' so that A and B scores are allowed
+# 1 - 5  | A | low - simple block
+# 6 - 10 | B | low - well structured and stable block
 engines:
   fixme:
     enabled: true
@@ -6,6 +11,14 @@ engines:
     enabled: true
   radon:
     enabled: true
+    config: 
+      python_version: 2
+      threshold: "C"
+  duplication:
+    enabled: true
+    config:
+      languages:
+      - python:
 ratings:
   paths:
   - "**.py"

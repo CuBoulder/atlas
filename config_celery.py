@@ -24,7 +24,7 @@ CELERYBEAT_SCHEDULE = {
         'task': 'atlas.tasks.cron',
         'schedule': timedelta(minutes=60),
         'kwargs': {
-            "type": "express",
+            "instance_type": "express",
             "status": "launched",
             "exclude_packages": ["cu_classes_bundle"]
         },
@@ -40,7 +40,7 @@ CELERYBEAT_SCHEDULE = {
         'task': 'atlas.tasks.cron',
         'schedule': timedelta(hours=3),
         'kwargs': {
-            "type": "express",
+            "instance_type": "express",
             "status": "installed",
             "exclude_packages": ["cu_classes_bundle"]
         },
@@ -57,8 +57,16 @@ CELERYBEAT_SCHEDULE = {
         'task': 'atlas.tasks.delete_all_available_instances',
         'schedule': crontab(minute=0, hour=3),
     },
-    'remove_stale_installed_sites': {
-        'task': 'atlas.tasks.take_down_installed_35_day_old_instances',
+    'remove_orphan_statistics': {
+        'task': 'atlas.tasks.delete_statistics_without_active_instance',
+        'schedule': timedelta(minutes=60),
+    },
+    'remove_stale_installed_instances': {
+        'task': 'atlas.tasks.take_down_installed_old_instances',
         'schedule': crontab(minute=0, hour=2),
+    },
+    'verify_statistics_updating': {
+        'task': 'atlas.tasks.verify_statistics',
+        'schedule': timedelta(hours=24),
     },
 }

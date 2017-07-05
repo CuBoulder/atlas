@@ -22,7 +22,7 @@ PAGINATION_DEFAULT = 500
 
 # Add support for CORS
 X_DOMAINS = '*'
-X_HEADERS = ['Access-Control-Allow-Origin']
+X_HEADERS = ['Access-Control-Allow-Origin', 'If-Match', 'Authorization', 'User-Agent', 'Content-Type']
 
 # Allow $regex filtering. Default config blocks where and regex.
 MONGO_QUERY_BLACKLIST = ['$where']
@@ -63,7 +63,6 @@ code_schema = {
             'label': {
                 'type': 'string',
                 'minlength': 3,
-                'required': True,
             },
             'is_current': {
                 'type': 'boolean',
@@ -172,19 +171,19 @@ instance_schema = {
         },
     },
     'db_key': {
-      'type': 'string',
+        'type': 'string',
     },
     # Leave in 'instance' since value would not be moved between instances.
     'sid': {
-      'type': 'string',
-      'minlength': 9,
-      'maxlength': 14,
-      'unique': True,
+        'type': 'string',
+        'minlength': 9,
+        'maxlength': 14,
+        'unique': True,
     },
     'type': {
-      'type': 'string',
-      'allowed':  ['custom', 'express', 'legacy', 'homepage'],
-      'default': 'express',
+        'type': 'string',
+        'allowed':  ['custom', 'express', 'legacy', 'homepage'],
+        'default': 'express',
     },
     'status': {
         'type': 'string',
@@ -279,7 +278,8 @@ instance_schema = {
     'dates': {
         'type': 'dict',
         'schema': {
-            # See https://docs.python.org/2/library/datetime.html#datetime.datetime for datetime format.
+            # See https://docs.python.org/2/library/datetime.html#datetime.datetime for datetime
+            # format.
             'created': {
                 'type': 'datetime',
             },
@@ -322,6 +322,10 @@ statistics_schema = {
         'unique': True,
     },
     'name': {
+        'type': 'string',
+        'minlength': 1,
+    },
+    'status': {
         'type': 'string',
         'minlength': 1,
     },
@@ -444,6 +448,9 @@ statistics_schema = {
     'variable_ga_account': {
         'type': 'string',
     },
+    'variable_livechat_license_number': {
+        'type': 'string',
+    },
     'profile_module_manager': {
         'type': 'string',
     },
@@ -492,6 +499,9 @@ statistics_schema = {
             },
             'no_valid_owner': {
                 'type': 'boolean',
+            },
+            'count': {
+                'type': 'integer',
             },
         },
     },
@@ -609,6 +619,9 @@ statistics_schema = {
                         'type': 'integer',
                     },
                 },
+            },
+            'other': {
+                'type': 'string',
             },
         },
     },

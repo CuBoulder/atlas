@@ -6,4 +6,4 @@ address = 'inventory.local'
 # Enable debug logging
 logging = 'DEBUG'
 
-#url_prefix = 'flower'
+# url_prefix = 'flower'

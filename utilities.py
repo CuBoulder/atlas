@@ -190,7 +190,7 @@ def patch_eve(resource, id, request_payload):
         return r.text
 
 
-def delete_eve(resource, id):
+def delete_eve(resource, eve_id):
     """
     Patch items in the Atlas API.
 
@@ -198,18 +198,18 @@ def delete_eve(resource, id):
     :param id:
     :return:
     """
-    url = "{0}/{1}/{2}".format(api_urls[environment], resource, id)
-    get_etag = get_single_eve(resource, id)
+    url = "{0}/{1}/{2}".format(api_urls[environment], resource, eve_id)
+    get_etag = get_single_eve(resource, eve_id)
     headers = {'Content-Type': 'application/json', 'If-Match': get_etag['_etag']}
-    r = requests.delete(url, headers=headers, auth=(service_account_username,
-                                                    service_account_password), verify=ssl_verification)
+    r = requests.delete(url, headers=headers, auth=(
+        service_account_username, service_account_password), verify=ssl_verification)
     if r.ok:
         return r.status_code
     else:
         return r.text
 
 
-def get_current_code(name, type):
+def get_current_code(name, code_type):
     """
     Get the current code item for a given name and type.
 
@@ -217,7 +217,8 @@ def get_current_code(name, type):
     :param type: string
     :return: _id of the item.
     """
-    query = 'where={{"meta.name":"{0}","meta.code_type":"{1}","meta.is_current":true}}'.format(name, type)
+    query = 'where={{"meta.name":"{0}","meta.code_type":"{1}","meta.is_current":true}}'.format(
+        name, code_type)
     current_get = get_eve('code', query)
     log.debug('Get current code | %s', current_get)
     return current_get['_items'][0]['_id']

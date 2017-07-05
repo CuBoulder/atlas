@@ -152,7 +152,7 @@ def code_remove(item):
     :param item: Item to be removed.
     :return:
     """
-    log.debug('Code remove - {0}'.format(item))
+    log.debug('Code | Remove | %s', item)
     fab_task = execute(fabfile.code_remove, item=item)
 
     slack_title = '{0} - {1}'.format(item['meta']['name'],
@@ -174,7 +174,7 @@ def instance_provision(instance):
     :param instance: A single instance.
     :return:
     """
-    log.debug('Instance provision - {0}'.format(instance))
+    log.debug('Instance | Provision Task | %s', instance)
     start_time = time.time()
     # 'db_key' needs to be added here and not in Eve so that the encryption
     # works properly.
@@ -187,20 +187,20 @@ def instance_provision(instance):
         if isinstance(provision_task.get('host_string', None), BaseException):
             raise provision_task.get('host_string')
     except CeleryException as e:
-        log.info('Site provision failed | Error Message | %s', e.message)
+        log.info('Instance | Provision failed | %s', e.message)
 
-    log.debug('Site provision | Provision Fabric task | %s', provision_task)
-    log.debug('Site provision | Provision Fabric task values | %s', provision_task.values)
+    log.debug('Instance | Provision Fabric task | %s', provision_task)
+    log.debug('Instance | Provision Fabric task values | %s', provision_task.values)
 
     try:
         install_task = execute(fabfile.instance_install, instance=instance)
         if isinstance(install_task.get('host_string', None), BaseException):
             raise install_task.get('host_string')
     except CeleryException as e:
-        log.info('Site install failed | Error Message | %s', e.message)
+        log.info('Instance | Install failed | %s', e.message)
 
-    log.debug('Site provision | Install Fabric task | %s', install_task)
-    log.debug('Site provision | Install Fabric task values | %s', install_task.values)
+    log.debug('Instance | Install Fabric task | %s', install_task)
+    log.debug('Instance | Install Fabric task values | %s', install_task.values)
 
     patch_payload = {'status': 'available',
                      'db_key': instance['db_key'], 'statistics': instance['statistics']}
@@ -244,8 +244,7 @@ def instance_update(instance, updates, original):
     :param original: Complete original Instance item.
     :return:
     """
-    log.debug('Instance | Update | %s | %s | %s | %s',
-                 instance['_id'], instance, updates, original)
+    log.debug('Instance | Update | %s | %s | %s | %s', instance['_id'], instance, updates, original)
 
     if updates.get('code'):
         log.debug('Found code changes.')
@@ -354,7 +353,7 @@ def instance_remove(instance):
     :param instance: Item to be removed.
     :return:
     """
-    log.debug('Instance remove | %s', instance)
+    log.debug('Instance | Remove | %s', instance)
     if instance['type'] == 'express':
         # execute(fabfile.instance_backup, instance=instance)
         # Check if stats object exists first.
@@ -365,7 +364,7 @@ def instance_remove(instance):
             for statistic in statistics['_items']:
                 utilities.delete_eve('statistics', statistic['_id'])
         execute(fabfile.instance_remove, instance=instance)
-    log.debug('Site remove | %s', site)
+    log.debug('Instance | Remove | Success | %s', instance)
 
     if environment != 'local':
         execute(fabfile.update_f5)
@@ -388,7 +387,7 @@ def command_prepare(item):
     :param item: A complete command item, including new values.
     :return:
     """
-    log.debug('Prepare Command\n{0}'.format(item))
+    log.debug('Command | %s', item)
     if item['command'] == 'clear_apc':
         execute(fabfile.clear_apc())
         return
@@ -401,16 +400,16 @@ def command_prepare(item):
     if item['query']:
         instance_query = 'where={0}'.format(item['query'])
         instances = utilities.get_eve('instance', instance_query)
-        log.debug('Ran query\n{0}'.format(instances))
+        log.debug('Command | Ran query | %s', instances)
         if not instances['_meta']['total'] == 0:
             for instance in instances['_items']:
-                log.debug('Command - {0}'.format(item['command']))
+                log.debug('Command | %s', item['command'])
                 if item['command'] == 'correct_file_permissions':
                     command_wrapper.delay(
                         execute(fabfile.correct_file_directory_permissions, instance=instance))
                     continue
                 if item['command'] == 'update_settings_file':
-                    log.debug('Update instance\n{0}'.format(instance))
+                    log.debug('Command | Update Settings File | %s', instance)
                     command_wrapper.delay(execute(fabfile.update_settings_file, instance=instance))
                     continue
                 if item['command'] == 'update_homepage_extra_files':
@@ -449,7 +448,7 @@ def command_run(instance, command, single_server, user=None):
     :param user: string Username that called the command.
     :return:
     """
-    log.debug('Run Command - {0} - {1} - {2}'.format(instance['sid'], single_server, command))
+    log.debug('Command | Run | %s | %s | %s', instance['sid'], single_server, command)
     start_time = time.time()
     if single_server:
         fabric_task_result = execute(fabfile.command_run_single,
@@ -458,7 +457,7 @@ def command_run(instance, command, single_server, user=None):
         fabric_task_result = execute(
             fabfile.command_run, instance=instance, command=command, warn_only=True)
 
-    log.debug('Command result - {0}'.format(fabric_task_result))
+    log.debug('Command | Result | %s', fabric_task_result)
     command_time = time.time() - start_time
     logstash_payload = {'command_time': command_time,
                         'logsource': 'atlas',
@@ -488,55 +487,55 @@ def command_run(instance, command, single_server, user=None):
 
 
 @celery.task
-def cron(type=None, status=None, include_packages=None, exclude_packages=None):
+def cron(instance_type=None, status=None, include_packages=None, exclude_packages=None):
     log.debug('Cron | Status - %s | Include - %s | Exclude - %s',
-                 status, include_packages, exclude_packages)
+              status, include_packages, exclude_packages)
     # Build query.
     instance_query_string = ['max_results=2000']
-    log.debug('Cron - found argument')
+    log.debug('Cron | found argument')
     # Start by eliminating f5 records.
     instance_query_string.append('&where={"f5only":false,')
-    if type:
-        log.debug('Cron - found type')
-        instance_query_string.append('"type":"{0}",'.format(type))
+    if instance_type:
+        log.debug('Cron | found type')
+        instance_query_string.append('"type":"{0}",'.format(instance_type))
     if status:
-        log.debug('Cron - found status')
+        log.debug('Cron | found status')
         instance_query_string.append('"status":"{0}",'.format(status))
     else:
-        log.debug('Cron - No status found')
+        log.debug('Cron | No status found')
         instance_query_string.append('"status":{"$in":["installed","launched"]},')
     if include_packages:
-        log.debug('Cron - found include_packages')
+        log.debug('Cron | found include_packages')
         for package_name in include_packages:
             packages = utilities.get_code(name=package_name)
             include_packages_ids = []
             if not packages['_meta']['total'] == 0:
                 for item in packages['_items']:
-                    log.debug('Cron - include_packages item | %s', item)
+                    log.debug('Cron | include_packages item | %s', item)
                     include_packages_ids.append(str(item['_id']))
-                log.debug('Cron - include_packages list | %s', json.dumps(include_packages_ids))
+                log.debug('Cron | include_packages list | %s', json.dumps(include_packages_ids))
                 instance_query_string.append(
                     '"code.package": {{"$in": {0}}},'.format(json.dumps(include_packages_ids)))
     if exclude_packages:
-        log.debug('Cron - found exclude_packages')
+        log.debug('Cron | found exclude_packages')
         for package_name in exclude_packages:
             packages = utilities.get_code(name=package_name)
             exclude_packages_ids = []
             if not packages['_meta']['total'] == 0:
                 for item in packages['_items']:
-                    log.debug('Cron - exclude_packages item | %s', item)
+                    log.debug('Cron | exclude_packages item | %s', item)
                     exclude_packages_ids.append(str(item['_id']))
-                    log.debug('Cron - exclude_packages list | %s',
+                    log.debug('Cron | exclude_packages list | %s',
                                  json.dumps(exclude_packages_ids))
                     instance_query_string.append(
                         '"code.package": {{"$nin": {0}}},'.format(json.dumps(exclude_packages_ids)))
 
     instance_query = ''.join(instance_query_string)
-    log.debug('Query after join - | %s', instance_query)
+    log.debug('Query after join | %s', instance_query)
     instance_query = instance_query.rstrip('\,')
-    log.debug('Query after rstrip - | %s', instance_query)
+    log.debug('Query after rstrip | %s', instance_query)
     instance_query += '}'
-    log.debug('Query final -  | %s', instance_query)
+    log.debug('Query final | %s', instance_query)
 
     instances = utilities.get_eve('instance', instance_query)
     if not instances['_meta']['total'] == 0:
@@ -660,10 +659,7 @@ def delete_stuck_pending_instances():
             # we need to use UTC.
             time_since_creation = datetime.utcnow() - date_created
             log.debug('%s has timedelta of %s. Created: %s Current: %s',
-                         instance['sid'],
-                         time_since_creation,
-                         date_created,
-                         datetime.utcnow())
+                      instance['sid'], time_since_creation, date_created, datetime.utcnow())
             if time_since_creation > timedelta(minutes=15):
                 utilities.delete_eve('instance', instance['_id'])
 
@@ -721,13 +717,9 @@ def take_down_installed_old_instances():
             # Get time now, Convert date_created to seconds from epoch and
             # calculate the age of the instance.
             seconds_since_creation = time.time() - time.mktime(date_created)
-            log.debug(
-                '{0} is {1} seconds old. Created: {2} Current: {3}'.format(
-                    instance['sid'],
-                    seconds_since_creation,
-                    time.mktime(date_created),
-                    time.time())
-            )
+            log.debug('%s is %s seconds old. Created: %s Current: %s',
+                      instance['sid'], seconds_since_creation, time.mktime(date_created),
+                      time.time())
             # 35 days * 24 hrs * 60 min * 60 sec = 302400 seconds
             if seconds_since_creation > 3024000:
                 # Patch the status to 'take_down'.

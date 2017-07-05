@@ -688,11 +688,11 @@ def create_settings_files(instance, profile_name):
         'profile': profile_name,
         'sid': sid,
         'atlas_id': instance_id,
-        'atlas_url':atlas_url,
+        'atlas_url': atlas_url,
         'atlas_username': service_account_username,
         'atlas_password': service_account_password,
         'path': path,
-        'status':status,
+        'status': status,
         'pool': instance['pool'],
         'atlas_statistics_id': statistics,
         'siteimprove_site': siteimprove_site,
@@ -950,7 +950,8 @@ def launch_instance(instance, gsa_collection=False):
                     clear_apc()
                     if gsa_collection:
                         # Set the collection name
-                        run("drush vset --yes google_appliance_collection {0}".format(gsa_collection))
+                        run("drush vset --yes google_appliance_collection {0}".format(
+                            gsa_collection))
                     # Clear caches at the end of the launch process to show
                     # correct pathologic rendered URLS.
                     drush_cache_clear(instance['sid'])
@@ -1011,7 +1012,7 @@ def diff_f5():
             subject = 'Instance record missing'
             message = "Path '{0}' is in the f5, but does not have an instance record.".format(path)
             utilities.send_email(message=message, subject=subject, to=devops_team)
-            print ("The f5 has an entry for '{0}' without a corresponding instance record.".format(path))
+            print 'f5 | No Instance for path | {0}'.format(path)
 
 
 def update_f5():
@@ -1031,8 +1032,7 @@ def update_f5():
               "w") as ofile:
         for instance in instances['_items']:
             if 'path' in instance:
-                # If an instance is down or scheduled for deletion, skip to the
-                #  next instance.
+                # If an instance is down or scheduled for deletion, skip to the next instance.
                 if 'status' in instance and (instance['status'] == 'down' or instance['status'] == 'delete'):
                     continue
                 # In case a path was saved with a leading slash

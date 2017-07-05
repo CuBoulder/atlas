@@ -69,7 +69,7 @@ def pre_delete_code_callback(request, lookup):
             else:
                 instance_list.append(instance['_id'])
         instance_list_full = ', '.join(instance_list)
-        app.logger.error('Code Delete | Code in Use Error | Instances | %s', instance_list_full))
+        app.logger.error('Code Delete | Code in Use Error | Instances | %s', instance_list_full)
         abort(409, 'Error: Code item is in use by one or more instances.')
 
 

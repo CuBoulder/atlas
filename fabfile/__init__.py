@@ -17,9 +17,9 @@ from datetime import datetime
 from atlas.config import *
 from atlas import utilities
 
-path = '/data/code'
-if path not in sys.path:
-    sys.path.append(path)
+atlas_path = '/data/code'
+if atlas_path not in sys.path:
+    sys.path.append(atlas_path)
 
 # Fabric environmental settings.
 env.user = ssh_user
@@ -653,8 +653,9 @@ def delete_database(instance):
 
 def create_settings_files(instance, profile_name):
     sid = instance['sid']
-    if 'path' in instance:
-        path = instance['path']
+    if 'route' in instance:
+        route = utilities.get_single_eve('route', instance['route'])
+        path = route['source']
     else:
         path = instance['sid']
     # If the instance is launching or launched, we add 'cu_path' and redirect the
@@ -810,10 +811,10 @@ def machine_readable(string):
 
 # GSA utilities
 def create_gsa(instance):
-    machine_name = _machine_readable(instance['path'])
-    if not _gsa_collection_exists(machine_name):
+    machine_name = machine_readable(instance['path'])
+    if not gsa_collection_exists(machine_name):
         index_path = "http://www.colorado.edu/{0}/".format(instance['path'])
-        _gsa_create_collection(machine_name, index_path)
+        gsa_create_collection(machine_name, index_path)
 
 
 def gsa_collection_exists(name):
@@ -844,7 +845,7 @@ def gsa_create_collection(name, follow):
     payload = payload.format(name, follow)
     r = requests.post(url, data=payload, headers=headers, verify=False)
     if not r.ok:
-        print(r.text)
+        print r.text
 
 
 def gsa_auth():
@@ -933,18 +934,20 @@ def launch_instance(instance, gsa_collection=False):
     code_directory_current = '{0}/current'.format(code_directory)
 
     if instance['pool'] in ['poolb-express', 'poolb-homepage'] and instance['type'] == 'express':
+        # Get the route entry
+        route = utilities.get_single_eve('route', instance['route'])
         if instance['pool'] == 'poolb-express':
             web_directory = '{0}/{1}'.format(instances_web_root, instance['type'])
-            web_directory_path = '{0}/{1}'.format(web_directory, instance['path'])
+            web_directory_path = '{0}/{1}'.format(web_directory, route['source'])
             with cd(web_directory):
-                # If the path is nested like 'lab/atlas', make the 'lab' directory
-                if "/" in instance['path']:
-                    lead_path = "/".join(instance['path'].split("/")[:-1])
+                # If the route is nested like 'lab/atlas', make the 'lab' directory
+                if "/" in route['source']:
+                    lead_path = "/".join(route['source'].split("/")[:-1])
                     create_directory_structure(lead_path)
 
                 # Create a new symlink using instance's updated path
                 if not exists(web_directory_path):
-                    update_symlink(code_directory_current, instance['path'])
+                    update_symlink(code_directory_current, route['source'])
                 # enter new instance directory
                 with cd(web_directory_path):
                     clear_apc()
@@ -999,20 +1002,21 @@ def diff_f5():
         data = ifile.read()
     # Use regex to parse out path values
     p = re.compile('"(.+/?)" := "(\w+(-\w+)?)",')
-    instances = p.findall(data)
-    # Iterate through instances found in f5 data
-    for instance in instances:
+    routes = p.findall(data)
+    # Iterate through routes found in f5 data
+    for route in routes:
         # Get path without leading slash
-        path = instance[0][1:]
+        print 'f5 | Route checking | {0}'.format(route)
+        source = route[0][1:]
 
-        instance_query = 'where={{"path":"{0}"}}'.format(path)
-        api_instances = utilities.get_eve('instance', instance_query)
+        route_query = 'where={{"source":"{0}"}}'.format(source)
+        api_routes = utilities.get_eve('route', route_query)
 
-        if not api_instances or len(api_instances['_items']) == 0:
-            subject = 'Instance record missing'
-            message = "Path '{0}' is in the f5, but does not have an instance record.".format(path)
+        if not api_routes or len(api_routes['_items']) == 0:
+            subject = 'Route record missing'
+            message = "Source '{0}' is in the f5, but does not have a route record.".format(source)
             utilities.send_email(message=message, subject=subject, to=devops_team)
-            print 'f5 | No Instance for path | {0}'.format(path)
+            print 'f5 | No Route for path | {0}'.format(source)
 
 
 def update_f5():
@@ -1023,23 +1027,22 @@ def update_f5():
         load_balancer_config_files[environment],
         str(time()).split('.')[0])
     load_balancer_config_dir = '{0}/fabfile'.format(atlas_location)
-    instances = utilities.get_eve('instance', 'max_results=3000')
+    # Find instances that are 'launching', or 'launched' and have a route
+    instances = utilities.get_eve('instance', 'where={"status":{"$in":["launching","launched"]},"route":{"$exists":1}}&max_results=3000')
 
-    # TODO: delete old backups
+    # TODO: delete old backup files
 
     # Write data to file
     with open("{0}/{1}".format(load_balancer_config_dir, load_balancer_config_files[environment]),
               "w") as ofile:
         for instance in instances['_items']:
-            if 'path' in instance:
-                # If an instance is down or scheduled for deletion, skip to the next instance.
-                if 'status' in instance and (instance['status'] == 'down' or instance['status'] == 'delete'):
-                    continue
-                # In case a path was saved with a leading slash
-                path = instance["path"] if instance["path"][0] == '/' else '/' + instance["path"]
-                # Ignore 'p1' paths but let the /p1 pattern through
-                if not path.startswith("/p1") or len(path) == 3:
-                    ofile.write('"{0}" := "{1}",\n'.format(path, instance['pool']))
+            # Get route
+            route = utilities.get_single_eve('route', instance['route'])
+            # In case a path was saved with a leading slash
+            source = route['source'] if route['source'][0] == '/' else '/' + route['source']
+            # Ignore 'p1' paths but let the /p1 pattern through
+            if not source.startswith("/p1") or len(source) == 3:
+                ofile.write('"{0}" := "{1}",\n'.format(source, route['route_type']))
 
     execute(exportf5,
             new_file_name=new_file_name,

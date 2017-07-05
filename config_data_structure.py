@@ -719,7 +719,8 @@ route_schema = {
     'dates': {
         'type': 'dict',
         'schema': {
-            # See https://docs.python.org/2/library/datetime.html#datetime.datetime for datetime format.
+            # See https://docs.python.org/2/library/datetime.html#datetime.datetime for datetime
+            # format.
             'created': {
                 'type': 'datetime',
             },

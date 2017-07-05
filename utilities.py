@@ -21,9 +21,9 @@ from flask import g
 
 from atlas.config import *
 
-path = '/data/code'
-if path not in sys.path:
-    sys.path.append(path)
+atlas_path = '/data/code'
+if atlas_path not in sys.path:
+    sys.path.append(atlas_path)
 
 # Setup a sub-logger
 # Best practice is to setup sub-loggers rather than passing the main logger between different parts of the application.

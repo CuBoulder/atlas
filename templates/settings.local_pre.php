@@ -20,12 +20,13 @@ $conf["atlas_statistics_id"] = "{{atlas_statistics_id}}";
 $conf["siteimprove_site"] = "{{siteimprove_site}}";
 $conf["siteimprove_group"] = "{{siteimprove_group}}";
 
-$path = "{{path}}";
 $pool = "{{pool}}";
 
 {% if status in ['launched', 'launching'] %}
 $launched = TRUE;
-$conf["cu_path"] = "{{path}}";
+$path = "{{path}}";
+$conf["cu_path"] = $path;
 {% else %}
 $launched = FALSE;
+$path = "{{sid}}";
 {% endif %}

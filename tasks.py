@@ -20,9 +20,9 @@ from atlas import utilities
 from atlas import config_celery
 
 
-path = '/data/code'
-if path not in sys.path:
-    sys.path.append(path)
+atlas_path = '/data/code'
+if atlas_path not in sys.path:
+    sys.path.append(atlas_path)
 
 
 # Setup a sub-logger
@@ -217,8 +217,8 @@ def instance_provision(instance):
                 core_string, profile_string, provision_time)
     log.debug('Instance provision | Patch | %s', patch)
 
-    slack_title = '{0}/{1}'.format(base_urls[environment], instance['path'])
-    slack_link = '{0}/{1}'.format(base_urls[environment], instance['path'])
+    slack_title = '{0}/{1}'.format(base_urls[environment], instance['sid'])
+    slack_link = '{0}/{1}'.format(base_urls[environment], instance['sid'])
     attachment_text = '{0}/instance/{1}'.format(api_urls[environment], instance['_id'])
     if False not in (provision_task.values() or install_task.values()):
         slack_message = 'Instance provision - Success - {0} seconds'.format(provision_time)
@@ -276,11 +276,11 @@ def instance_update(instance, updates, original):
             # Strip the trailing space off the end.
             package_name_string = package_name_string.rstrip()
             if len(package_name_string) > 0:
-                subject = 'Package added - {0}/{1}'.format(base_urls[environment], instance['path'])
-                message = "Requested packages have been added to {0}/{1}.\n\n{2}\n\n - Web Express Team\n\nLogin to the instance: {0}/{1}/user?destination=admin/settings/admin/bundle/list".format(base_urls[environment], instance['path'], package_name_string)
+                subject = 'Package added - {0}/{1}'.format(base_urls[environment], instance['sid'])
+                message = "Requested packages have been added to {0}/{1}.\n\n{2}\n\n - Web Express Team\n\nLogin to the instance: {0}/{1}/user?destination=admin/settings/admin/bundle/list".format(base_urls[environment], instance['sid'], package_name_string)
             else:
-                subject = 'Packages removed - {0}/{1}'.format(base_urls[environment], instance['path'])
-                message = "All packages have been removed from {0}/{1}.\n\n - Web Express Team.".format(base_urls[environment], instance['path'])
+                subject = 'Packages removed - {0}/{1}'.format(base_urls[environment], instance['sid'])
+                message = "All packages have been removed from {0}/{1}.\n\n - Web Express Team.".format(base_urls[environment], instance['sid'])
             to = ['{0}@colorado.edu'.format(instance['modified_by'])]
             utilities.send_email(message=message, subject=subject, to=to)
 
@@ -328,8 +328,8 @@ def instance_update(instance, updates, original):
             log.debug('Found page_cache_maximum_age change.')
         execute(fabfile.update_settings_file, instance=instance)
 
-    slack_title = '{0}/{1}'.format(base_urls[environment], instance['path'])
-    slack_link = '{0}/{1}'.format(base_urls[environment], instance['path'])
+    slack_title = '{0}/{1}'.format(base_urls[environment], instance['sid'])
+    slack_link = '{0}/{1}'.format(base_urls[environment], instance['sid'])
     if instance['pool'] == 'poolb-homepage' and instance['type'] == 'express' and instance['status'] in ['launching', 'launched']:
         slack_title = base_urls[environment]
         slack_link = base_urls[environment]
@@ -369,7 +369,7 @@ def instance_remove(instance):
     if environment != 'local':
         execute(fabfile.update_f5)
 
-    slack_title = '{0}/{1}'.format(base_urls[environment], instance['path'])
+    slack_title = '{0}/{1}'.format(base_urls[environment], instance['sid'])
     slack_message = 'Instance Remove - Success'
     slack_color = 'good'
     utilities.post_to_slack(
@@ -468,8 +468,8 @@ def command_run(instance, command, single_server, user=None):
 
     # Cron handles its own messages.
     if command != 'drush cron':
-        slack_title = '{0}/{1}'.format(base_urls[environment], instance['path'])
-        slack_link = '{0}/{1}'.format(base_urls[environment], instance['path'])
+        slack_title = '{0}/{1}'.format(base_urls[environment], instance['sid'])
+        slack_link = '{0}/{1}'.format(base_urls[environment], instance['sid'])
         slack_message = 'Command - Success'
         slack_color = 'good'
         attachment_text = command
@@ -483,7 +483,7 @@ def command_run(instance, command, single_server, user=None):
             level=slack_color,
             user=user)
     else:
-        return fabric_task_result, instance['path']
+        return fabric_task_result, instance['sid']
 
 
 @celery.task
@@ -547,7 +547,7 @@ def cron(instance_type=None, status=None, include_packages=None, exclude_package
 def check_cron_result(payload):
     log.debug('Check cron result')
     # Expand the list to the variables we need.
-    fabric_result, instance_path = payload
+    fabric_result, instance_sid = payload
 
     log.debug(fabric_result)
     # The fabric_result is a dict of {hosts: result} from fabric.
@@ -556,7 +556,7 @@ def check_cron_result(payload):
     # This uses constructor syntax https://doughellmann.com/blog/2012/11/12/the-performance-impact-of-using-dict-instead-of-in-cpython-2-7-2/.
     errors = {k: v for k, v in fabric_result.iteritems() if v is not None}
 
-    instance_url = '{0}/{1}'.format(base_urls[environment], instance_path)
+    instance_url = '{0}/{1}'.format(base_urls[environment], instance_sid)
     title = 'Run Command'
     instance_link = '<' + instance_url + '|' + instance_url + '>'
     command = 'drush cron'

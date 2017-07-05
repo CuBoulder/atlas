@@ -13,9 +13,9 @@ from atlas import utilities
 from atlas.config import *
 
 
-path = '/data/code'
-if path not in sys.path:
-    sys.path.append(path)
+atlas_path = '/data/code'
+if atlas_path not in sys.path:
+    sys.path.append(atlas_path)
 
 
 # Callbacks
@@ -85,8 +85,6 @@ def on_insert_instance_callback(items):
         if item['type'] == 'express' and not item['f5only']:
             if not item.get('sid'):
                 item['sid'] = 'p1' + sha1(utilities.randomstring()).hexdigest()[0:10]
-            if not item.get('path'):
-                item['path'] = item['sid']
             if not item.get('update_group'):
                 item['update_group'] = random.randint(0, 2)
             # Add default core and profile if not set.

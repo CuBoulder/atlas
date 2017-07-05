@@ -630,20 +630,20 @@ def delete_stuck_pending_instances():
     Task to delete pending instances that don't install for some reason.
     """
     instance_query = 'where={"status":"pending"}'
-    instances = utilities.get_eve('sites', instance_query)
-    logger.debug('Pending instances | %s', sites)
-    # Loop through and remove sites that are more than 30 minutes old.
+    instances = utilities.get_eve('instance', instance_query)
+    logger.debug('Pending instances | %s', instances)
+    # Loop through and remove instances that are more than 30 minutes old.
     if not instances['_meta']['total'] == 0:
         for instance in instances['_items']:
             # Parse date string into structured time.
             # See https://docs.python.org/2/library/datetime.html#strftime-and-strptime-behavior
             # for mask format.
-            date_created = datetime.strptime(site['_created'], "%Y-%m-%d %H:%M:%S %Z")
-            # Get datetime now and calculate the age of the site. Since our timestamp is in GMT, we
+            date_created = datetime.strptime(instance['_created'], "%Y-%m-%d %H:%M:%S %Z")
+            # Get datetime now and calculate the age of the instance. Since our timestamp is in GMT, we
             # need to use UTC.
             time_since_creation = datetime.utcnow() - date_created
             logger.debug('%s has timedelta of %s. Created: %s Current: %s',
-                         site['sid'],
+                         instance['sid'],
                          time_since_creation,
                          date_created,
                          datetime.utcnow())
@@ -657,18 +657,19 @@ def delete_all_available_instances():
     Get a list of available instances and delete them.
     """
     instance_query = 'where={"status":"available"}'
-    instances = utilities.get_eve('instance', site_query)
-    logger.debug('instances\n {0}'.format(instances))
+    instances = utilities.get_eve('instance', instance_query)
+    logger.debug('Available Instances | %s', instances)
     if not instances['_meta']['total'] == 0:
         for instance in instances['_items']:
-            logger.debug('Instance\n {0}'.format(instance))
+            logger.debug('Instance to remove | %s', instance)
             utilities.delete_eve('instance', instance['_id'])
 
 
 @celery.task
-def delete_statistics_without_active_instance():
+def delete_stats_without_active_instance():
     """
-    Get a list of statistics and key them against a list of active instances.
+    Get a list of statistics and key them against a list of active instances. Delete any that do not
+    have an active instance.
     """
     instance_query = 'where={"type":"express","f5only":false}'
     instances = utilities.get_eve('instance', instance_query)
@@ -683,7 +684,7 @@ def delete_statistics_without_active_instance():
                 instance_id_list.append(instance['_id'])
                 logger.debug('Instance list | %s', instance_id_list)
         for statistic in statistics['_items']:
-            if statistic['site'] not in instance_id_list:
+            if statistic['instance'] not in instance_id_list:
                 logger.debug('Statistic not in list | %s', statistic['_id'])
                 utilities.delete_eve('statistics', statistic['_id'])
 

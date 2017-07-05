@@ -210,7 +210,7 @@ def instance_provision(instance):
 
     try:
         result_create_settings_files = execute(
-            create_settings_files, instance=instance)
+            create_settings_files, instance=instance, profile_name=profile_name)
     except FabricException:
         print 'Settings file creation failed.'
         return result_create_settings_files
@@ -317,8 +317,10 @@ def instance_profile_swap(instance):
 
 @roles('webservers')
 def instance_launch(instance):
+    profile = utilities.get_single_eve('code', instance['code']['profile'])
+    profile_name = profile['meta']['name']
     try:
-        result_create_settings_files = execute(create_settings_files, instance=instance)
+        result_create_settings_files = execute(create_settings_files, instance=instance, profile_name=profile_name)
     except FabricException:
         print 'Settings files creation failed.'
         return result_create_settings_files
@@ -556,8 +558,10 @@ def rewrite_symlinks(instance):
 @roles('webservers')
 def update_settings_file(instance):
     print('Update Settings Files - {0}'.format(instance))
+    profile = utilities.get_single_eve('code', instance['code']['profile'])
+    profile_name = profile['meta']['name']
     try:
-        result_create_settings_files = execute(create_settings_files, instance=instance)
+        result_create_settings_files = execute(create_settings_files, instance=instance, profile_name=profile_name)
     except FabricException:
         print 'Settings files creation failed.'
         return result_create_settings_files

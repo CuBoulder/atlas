@@ -36,6 +36,7 @@ env.roledefs = serverdefs[environment]
 class FabricException(Exception):
     pass
 
+
 # Code Commands.
 @roles('webservers')
 def code_deploy(item):
@@ -61,7 +62,7 @@ def code_deploy(item):
         clone_task = clone_repo(item["git_url"], item["commit_hash"], code_folder)
         print('Got clone response')
         print(clone_task)
-        if clone_task == True:
+        if clone_task is True:
             if item['meta']['is_current']:
                 code_folder_current = '{0}/{1}/{2}/{2}-current'.format(
                     code_root,
@@ -232,14 +233,14 @@ def instance_provision(instance):
 
 @roles('webserver_single')
 def instance_install(instance):
-    code_directory = '{0}/{1}'.format(instances_code_root, instance['sid'])
-    code_directory_current = '{0}/current'.format(code_directory)
+    code_dir = '{0}/{1}'.format(instances_code_root, instance['sid'])
+    code_dir_current = '{0}/current'.format(code_dir)
     profile = utilities.get_single_eve('code', instance['code']['profile'])
     profile_name = profile['meta']['name']
 
     try:
         result_install_instance = execute(
-            install_instance, profile_name=profile_name, code_directory_current=code_directory_current)
+            install_instance, profile_name=profile_name, code_directory_current=code_dir_current)
     except FabricException:
         print 'Instance install failed.'
         return result_install_instance
@@ -320,7 +321,8 @@ def instance_launch(instance):
     profile = utilities.get_single_eve('code', instance['code']['profile'])
     profile_name = profile['meta']['name']
     try:
-        result_create_settings_files = execute(create_settings_files, instance=instance, profile_name=profile_name)
+        result_create_settings_files = execute(
+            create_settings_files, instance=instance, profile_name=profile_name)
     except FabricException:
         print 'Settings files creation failed.'
         return result_create_settings_files
@@ -399,12 +401,7 @@ def instance_restore(instance):
         instances_code_root,
         instance['sid'])
     update_symlink(code_directory_sid, code_directory_current)
-    with cd(code_directory_current):
-        # Run updates
-        action_0 = run("drush vset inactive_30_email FALSE; drush vset inactive_55_email FALSE; drush vset inactive_60_email FALSE;")
-        # TODO: See if this works as intended.
-        if action_0.failed:
-            return task
+    # TODO: Figure out what we need to do with Bondo during a restore.
 
 
 @roles('webservers')
@@ -415,8 +412,7 @@ def instance_remove(instance):
     :param instance: Item to remove
     :return:
     """
-    print('Instance - Remove\n{0}'.format(instance))
-
+    print 'Instance - Remove\n{0}'.format(instance)
     code_directory = '{0}/{1}'.format(instances_code_root, instance['sid'])
     web_directory = '{0}/{1}/{2}'.format(
         instances_web_root,
@@ -469,7 +465,7 @@ def command_run_single(instance, command, warn_only=False):
     :param command: Command to run
     :return:
     """
-    print('Command - Single Server - {0}\n{1}'.format(instance['sid'], command))
+    print 'Command - Single Server | {0} | {1}'.format(instance['sid'], command)
     web_directory = '{0}/{1}/{2}'.format(
         instances_web_root,
         instance['type'],
@@ -557,11 +553,12 @@ def rewrite_symlinks(instance):
 
 @roles('webservers')
 def update_settings_file(instance):
-    print('Update Settings Files - {0}'.format(instance))
+    print 'Update Settings Files - {0}'.format(instance)
     profile = utilities.get_single_eve('code', instance['code']['profile'])
     profile_name = profile['meta']['name']
     try:
-        result_create_settings_files = execute(create_settings_files, instance=instance, profile_name=profile_name)
+        result_create_settings_files = execute(
+            create_settings_files, instance=instance, profile_name=profile_name)
     except FabricException:
         print 'Settings files creation failed.'
         return result_create_settings_files
@@ -583,9 +580,10 @@ def update_homepage_extra_files():
     put(send_from_htaccess, "{0}/.htaccess".format(send_to))
     run("chmod -R u+w {}".format(send_to))
 
+
 # Removed because this sometimes causes provision to fail. Since the function is immutable, we don't
 # need to run it a single time. The extra work is worth the stability in provisions.
-#@runs_once
+# @runs_once
 def create_nfs_files_dir(nfs_dir, instance_sid):
     nfs_files_dir = '{0}/sitefiles/{1}/files'.format(nfs_dir, instance_sid)
     nfs_tmp_dir = '{0}/sitefiles/{1}/tmp'.format(nfs_dir, instance_sid)
@@ -597,17 +595,17 @@ def create_nfs_files_dir(nfs_dir, instance_sid):
 # TODO: Add decorator to run on a single host if called via 'execute'.
 # Need to make sure it runs on all when called without execute.
 def create_directory_structure(folder):
-    print('Create directory\n{0}'.format(folder))
+    print 'Create directory\n{0}'.format(folder)
     run('mkdir -p {0}'.format(folder))
 
 
 def remove_directory(folder):
-    print('Remove directory\n{0}'.format(folder))
+    print 'Remove directory\n{0}'.format(folder)
     run('rm -rf {0}'.format(folder))
 
 
 def remove_symlink(symlink):
-    print('Remove symlink\n{0}'.format(symlink))
+    print 'Remove symlink\n{0}'.format(symlink)
     run('rm -f {0}'.format(symlink))
 
 
@@ -662,7 +660,7 @@ def create_settings_files(instance, profile_name):
     # If the instance is launching or launched, we add 'cu_path' and redirect the
     # p1 URL.
     status = instance['status']
-    id = instance['_id']
+    instance_id = instance['_id']
     statistics = instance['statistics']
     # TODO: Fix this for new site record.
     if instance['settings'].get('siteimprove_site'):
@@ -687,18 +685,18 @@ def create_settings_files(instance, profile_name):
     destination = "{0}/{1}/{1}/sites/default".format(instances_code_root, instance['sid'])
 
     local_pre_settings_variables = {
-        'profile':profile_name,
-        'sid':sid,
-        'atlas_id':id,
+        'profile': profile_name,
+        'sid': sid,
+        'atlas_id': instance_id,
         'atlas_url':atlas_url,
-        'atlas_username':service_account_username,
-        'atlas_password':service_account_password,
-        'path':path,
+        'atlas_username': service_account_username,
+        'atlas_password': service_account_password,
+        'path': path,
         'status':status,
-        'pool':instance['pool'],
-        'atlas_statistics_id':statistics,
-        'siteimprove_site':siteimprove_site,
-        'siteimprove_group':siteimprove_group
+        'pool': instance['pool'],
+        'atlas_statistics_id': statistics,
+        'siteimprove_site': siteimprove_site,
+        'siteimprove_group': siteimprove_group
     }
 
     print 'Settings Pre Variables - {0}'.format(local_pre_settings_variables)
@@ -712,12 +710,12 @@ def create_settings_files(instance, profile_name):
                     mode='0664')
 
     settings_variables = {
-        'profile':profile_name,
-        'sid':sid,
-        'reverse_proxies':env.roledefs['varnish_servers'],
-        'varnish_control':varnish_control_terminals[environment],
-        'memcache_servers':env.roledefs['memcache_servers'],
-        'environment':environment if environment != 'prod' else ''
+        'profile': profile_name,
+        'sid': sid,
+        'reverse_proxies': env.roledefs['varnish_servers'],
+        'varnish_control': varnish_control_terminals[environment],
+        'memcache_servers': env.roledefs['memcache_servers'],
+        'environment': environment if environment != 'prod' else ''
     }
 
     print 'Settings  Variables - {0}'.format(settings_variables)
@@ -731,12 +729,12 @@ def create_settings_files(instance, profile_name):
                     mode='0664')
 
     local_post_settings_variables = {
-        'sid':sid,
-        'pw':database_password,
-        'page_cache_maximum_age':page_cache_maximum_age,
-        'database_servers':env.roledefs['database_servers'],
-        'memcache_servers':env.roledefs['memcache_servers'],
-        'environment':environment if environment != 'prod' else ''
+        'sid': sid,
+        'pw': database_password,
+        'page_cache_maximum_age': page_cache_maximum_age,
+        'database_servers': env.roledefs['database_servers'],
+        'memcache_servers': env.roledefs['memcache_servers'],
+        'environment': environment if environment != 'prod' else ''
     }
 
     print 'Settings Post Variables - {0}'.format(local_post_settings_variables)
@@ -759,29 +757,27 @@ def install_instance(profile_name, code_directory_current):
 
 def clone_repo(git_url, checkout_item, destination):
     with settings(warn_only=True):
-        print('Clone Repo: {0}\n Checkout: {1}'.format(git_url, checkout_item))
+        print 'Clone Repo: {0}\n Checkout: {1}'.format(git_url, checkout_item)
         clone_result = run('git clone {0} {1}'.format(git_url, destination), pty=False)
 
         if clone_result.failed:
-            print ('Git clone failed\n{0}'.format(clone_result))
+            print 'Git clone failed\n{0}'.format(clone_result)
             return clone_result
 
         with cd(destination):
             checkout_result = run('git checkout {0}'.format(checkout_item), pty=False)
             if checkout_result.failed:
-                print ('Git checkout failed\n{0}'.format(checkout_result))
+                print 'Git checkout failed\n{0}'.format(checkout_result)
                 return checkout_result
             clean_result = run('git clean -f -f -d', pty=False)
             if clean_result.failed:
-                print ('Git clean failed\n{0}'.format(clean_result))
+                print 'Git clean failed\n{0}'.format(clean_result)
                 return clean_result
             return True
 
 
 def checkout_repo(checkout_item, destination):
-    print('Checkout Repo: {0}\n Checkout: {1}'.format(
-        destination,
-        checkout_item))
+    print 'Checkout Repo: {0}\n Checkout: {1}'.format(destination, checkout_item)
     with cd(destination):
         run('git reset --hard')
         run('git fetch --all')
@@ -932,7 +928,7 @@ def launch_instance(instance, gsa_collection=False):
     """
     Create symlinks with new instance name.
     """
-    print ('Launch subtask')
+    print 'Launch subtask'
     code_directory = '{0}/{1}'.format(instances_code_root, instance['sid'])
     code_directory_current = '{0}/current'.format(code_directory)
 

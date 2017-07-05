@@ -47,8 +47,8 @@ def pre_delete_code_callback(request, lookup):
             # List of code items that declare this one as a dependency.
             code_list.append(item['_id'])
         code_list_full = ', '.join(code_list)
-        app.logger.error('Code item is a dependency of one or more code items:\n{0}'.format(code_list_full))
-        abort(409, 'A conflict happened while processing the request. Code item is a dependency of one or more code items.')
+        app.logger.error('Code Delete | Code Dependency Error | Code | %s', code_list_full)
+        abort(409, 'Error: Code item is a dependency of one or more code items.')
 
     # Check for instances using this piece of code.
     if code['meta']['code_type'] in ['module', 'theme', 'library']:
@@ -69,8 +69,8 @@ def pre_delete_code_callback(request, lookup):
             else:
                 instance_list.append(instance['_id'])
         instance_list_full = ', '.join(instance_list)
-        app.logger.error('Code item is in use by one or more instances:\n{0}'.format(instance_list_full))
-        abort(409, 'A conflict happened while processing the request. Code item is in use by one or more instances.')
+        app.logger.error('Code Delete | Code in Use Error | Instances | %s', instance_list_full))
+        abort(409, 'Error: Code item is in use by one or more instances.')
 
 
 def on_insert_instance_callback(items):
@@ -93,13 +93,16 @@ def on_insert_instance_callback(items):
             # The 'get' method checks if the key exists.
             if item.get('code'):
                 if not item['code'].get('core'):
-                    item['code']['core'] = utilities.get_current_code(name=default_core, type='core')
+                    item['code']['core']=utilities.get_current_code(
+                        name = default_core, type = 'core')
                 if not item['code'].get('profile'):
                     item['code']['profile'] = utilities.get_current_code(name=default_profile, type='profile')
             else:
-                item['code'] = {}
-                item['code']['core'] = utilities.get_current_code(name=default_core, type='core')
-                item['code']['profile'] = utilities.get_current_code(name=default_profile, type='profile')
+                item['code']={}
+                item['code']['core']=utilities.get_current_code(
+                    name = default_core, type = 'core')
+                item['code']['profile']=utilities.get_current_code(
+                    name = default_profile, type = 'profile')
             if not item['import_from_inventory']:
                 date_json = '{{"created":"{0} GMT"}}'.format(item['_created'])
                 item['dates'] = json.loads(date_json)
@@ -143,7 +146,7 @@ def on_insert_code_callback(items):
     """
     app.logger.debug(items)
     for item in items:
-        if item.get('meta') and item['meta'].get('is_current') and item['meta']['is_current'] == True:
+        if item.get('meta') and item['meta'].get('is_current') and item['meta']['is_current'] is True:
             # Need a lowercase string when querying boolean values. Python
             # stores it as 'True'.
             query = 'where={{"meta.name":"{0}","meta.code_type":"{1}","meta.is_current": {2}}}'.format(item['meta']['name'], item['meta']['code_type'], str(item['meta']['is_current']).lower())
@@ -189,7 +192,7 @@ def on_update_code_callback(updates, original):
     app.logger.debug(updates)
     app.logger.debug(original)
     # If this 'is_current' PATCH code with the same name and code_type.
-    if updates.get('meta') and updates['meta'].get('is_current') and updates['meta']['is_current'] == True:
+    if updates.get('meta') and updates['meta'].get('is_current') and updates['meta']['is_current'] is True:
         # If the name and code_type are not changing, we need to load them from
         # the original.
         name = updates['meta']['name'] if updates['meta'].get('name') else original['meta']['name']
@@ -217,7 +220,7 @@ def on_update_code_callback(updates, original):
     if updates.get('meta'):
         updated_item['meta'] = meta
 
-    app.logger.debug('Ready to hand to Celery\n{0}\n{1}'.format(updated_item, original))
+    app.logger.debug('Ready to hand to Celery | %s | %s', updated_item, original)
     tasks.code_update.delay(updated_item, original)
 
 
@@ -228,7 +231,7 @@ def on_update_instance_callback(updates, original):
     :param updates:
     :param original:
     """
-    app.logger.debug('Update instance\n{0}\n\n{1}'.format(updates, original))
+    app.logger.debug('Update instance | %s | %s', updates, original)
     instance_type = updates['type'] if updates.get('type') else original['type']
     if instance_type == 'express':
         instance = original.copy()
@@ -274,7 +277,7 @@ def on_update_instance_callback(updates, original):
             instance['settings'] = settings
 
         if updates.get('status'):
-            if updates['status'] in ['installing', 'launching', 'take_down','restore']:
+            if updates['status'] in ['installing', 'launching', 'take_down', 'restore']:
                 if updates['status'] == 'installing':
                     date_json = '{{"assigned":"{0} GMT"}}'.format(updates['_updated'])
                 elif updates['status'] == 'launching':
@@ -286,7 +289,7 @@ def on_update_instance_callback(updates, original):
 
                 updates['dates'] = json.loads(date_json)
 
-        app.logger.debug('Ready to hand to Celery\n{0}\n{1}'.format(instance, updates))
+        app.logger.debug('Ready to hand to Celery | %s | %s', instance, updates)
         tasks.instance_update.delay(instance, updates, original)
 
 
@@ -299,7 +302,7 @@ def on_update_commands_callback(updates, original):
     """
     item = original.copy()
     item.update(updates)
-    app.logger.debug('Update command\n\nItem\n{0}\n\nUpdate\n{1}\n\nOriginal\n{2}'.format(item, updates, original))
+    app.logger.debug('Update command | Item | %s | Update | %s | Original | %s', item, updates, original)
     tasks.command_prepare.delay(item)
 
 
@@ -361,7 +364,6 @@ app.on_delete_item_code += on_delete_item_code_callback
 app.on_insert += pre_insert
 app.on_update += pre_update
 app.on_replace += pre_replace
-
 
 
 @app.errorhandler(409)

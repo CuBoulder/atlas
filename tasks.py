@@ -42,9 +42,9 @@ def code_deploy(item):
     :param item: The flask request.json object.
     :return:
     """
-    logger.debug('Code deploy - {0}'.format(item))
+    logger.debug('Code deploy | %s', item)
     code_deploy_fabric_task_result = execute(fabfile.code_deploy, item=item)
-    logger.debug('Code Deploy - Fabric Result\n{0}'.format(code_deploy_fabric_task_result))
+    logger.debug('Code Deploy | Fabric Result | %s', code_deploy_fabric_task_result)
 
     # The fabric_result is a dict of {hosts: result} from fabric.
     # We loop through each row and add it to a new dict if value is not
@@ -237,7 +237,8 @@ def instance_update(instance, updates, original):
     :param original: Complete original Instance item.
     :return:
     """
-    logger.debug('Instance update - {0}\n{1}\n\n{2}\n\n{3}'.format(instance['_id'], instance, updates, original))
+    logger.debug('Instance | Update | %s | %s | %s | %s',
+                 instance['_id'], instance, updates, original)
 
     if updates.get('code'):
         logger.debug('Found code changes.')
@@ -251,7 +252,8 @@ def instance_update(instance, updates, original):
         if 'profile' in updates['code']:
             logger.debug('Found profile change.')
             profile_change = True
-            execute(fabfile.instance_profile_update, instance=instance, original=original, updates=updates)
+            execute(fabfile.instance_profile_update, instance=instance,
+                    original=original, updates=updates)
         if 'package' in updates['code']:
             logger.debug('Found package changes.')
             package_change = True
@@ -271,9 +273,9 @@ def instance_update(instance, updates, original):
                 subject = 'Package added - {0}/{1}'.format(base_urls[environment], instance['path'])
                 message = "Requested packages have been added to {0}/{1}.\n\n{2}\n\n - Web Express Team\n\nLogin to the instance: {0}/{1}/user?destination=admin/settings/admin/bundle/list".format(base_urls[environment], instance['path'], package_name_string)
             else:
-                subject = 'Packages removed - {0}/{1}'.format(base_urls[environment], site['path'])
-                message = "All packages have been removed from {0}/{1}.\n\n - Web Express Team.".format(base_urls[environment], site['path'])
-            to = ['{0}@colorado.edu'.format(site['modified_by'])]
+                subject = 'Packages removed - {0}/{1}'.format(base_urls[environment], instance['path'])
+                message = "All packages have been removed from {0}/{1}.\n\n - Web Express Team.".format(base_urls[environment], instance['path'])
+            to = ['{0}@colorado.edu'.format(instance['modified_by'])]
             utilities.send_email(message=message, subject=subject, to=to)
 
     if updates.get('status'):
@@ -397,7 +399,8 @@ def command_prepare(item):
             for instance in instances['_items']:
                 logger.debug('Command - {0}'.format(item['command']))
                 if item['command'] == 'correct_file_permissions':
-                    command_wrapper.delay(execute(fabfile.correct_file_directory_permissions, instance=instance))
+                    command_wrapper.delay(
+                        execute(fabfile.correct_file_directory_permissions, instance=instance))
                     continue
                 if item['command'] == 'update_settings_file':
                     logger.debug('Update instance\n{0}'.format(instance))
@@ -409,7 +412,8 @@ def command_prepare(item):
                 # if item['command'] == 'instance_backup':
                 #     execute(fabfile.instance_backup, instance=instance)
                 #     continue
-                command_run.delay(instance, item['command'], item['single_server'], item['modified_by'])
+                command_run.delay(instance, item['command'],
+                                  item['single_server'], item['modified_by'])
             # After all the commands run, flush APC.
             if item['command'] == 'update_settings_file':
                 logger.debug('Clear APC')
@@ -441,9 +445,11 @@ def command_run(instance, command, single_server, user=None):
     logger.debug('Run Command - {0} - {1} - {2}'.format(instance['sid'], single_server, command))
     start_time = time.time()
     if single_server:
-        fabric_task_result = execute(fabfile.command_run_single, instance=instance, command=command, warn_only=True)
+        fabric_task_result = execute(fabfile.command_run_single,
+                                     instance=instance, command=command, warn_only=True)
     else:
-        fabric_task_result = execute(fabfile.command_run, instance=instance, command=command, warn_only=True)
+        fabric_task_result = execute(
+            fabfile.command_run, instance=instance, command=command, warn_only=True)
 
     logger.debug('Command result - {0}'.format(fabric_task_result))
     command_time = time.time() - start_time
@@ -476,7 +482,8 @@ def command_run(instance, command, single_server, user=None):
 
 @celery.task
 def cron(type=None, status=None, include_packages=None, exclude_packages=None):
-    logger.debug('Cron | Status - {0} | Include - {1} | Exclude - {2}'.format(status, include_packages, exclude_packages))
+    logger.debug('Cron | Status - %s | Include - %s | Exclude - %s',
+                 status, include_packages, exclude_packages)
     # Build query.
     instance_query_string = ['max_results=2000']
     logger.debug('Cron - found argument')
@@ -498,10 +505,11 @@ def cron(type=None, status=None, include_packages=None, exclude_packages=None):
             include_packages_ids = []
             if not packages['_meta']['total'] == 0:
                 for item in packages['_items']:
-                    logger.debug('Cron - include_packages item \n{0}'.format(item))
+                    logger.debug('Cron - include_packages item | %s', item))
                     include_packages_ids.append(str(item['_id']))
-                logger.debug('Cron - include_packages list \n{0}'.format(json.dumps(include_packages_ids)))
-                instance_query_string.append('"code.package": {{"$in": {0}}},'.format(json.dumps(include_packages_ids)))
+                logger.debug('Cron - include_packages list | %s', json.dumps(include_packages_ids))
+                instance_query_string.append(
+                    '"code.package": {{"$in": {0}}},'.format(json.dumps(include_packages_ids)))
     if exclude_packages:
         logger.debug('Cron - found exclude_packages')
         for package_name in exclude_packages:
@@ -509,17 +517,18 @@ def cron(type=None, status=None, include_packages=None, exclude_packages=None):
             exclude_packages_ids = []
             if not packages['_meta']['total'] == 0:
                 for item in packages['_items']:
-                    logger.debug('Cron - exclude_packages item \n{0}'.format(item))
+                    logger.debug('Cron - exclude_packages item | %s', item))
                     exclude_packages_ids.append(str(item['_id']))
-                logger.debug('Cron - exclude_packages list \n{0}'.format(json.dumps(exclude_packages_ids)))
-                instance_query_string.append('"code.package": {{"$nin": {0}}},'.format(json.dumps(exclude_packages_ids)))
+                logger.debug('Cron - exclude_packages list | %s', json.dumps(exclude_packages_ids)))
+                    instance_query_string.append(
+                        '"code.package": {{"$nin": {0}}},'.format(json.dumps(exclude_packages_ids)))
 
     instance_query = ''.join(instance_query_string)
-    logger.debug('Query after join - {0}'.format(instance_query))
+    logger.debug('Query after join - | %s', instance_query))
     instance_query = instance_query.rstrip('\,')
-    logger.debug('Query after rstrip - {0}'.format(instance_query))
+    logger.debug('Query after rstrip - | %s', instance_query))
     instance_query += '}'
-    logger.debug('Query final - {0}'.format(instance_query))
+    logger.debug('Query final -  | %s', instance_query))
 
     instances = utilities.get_eve('instance', instance_query)
     if not instances['_meta']['total'] == 0:
@@ -639,8 +648,8 @@ def delete_stuck_pending_instances():
             # See https://docs.python.org/2/library/datetime.html#strftime-and-strptime-behavior
             # for mask format.
             date_created = datetime.strptime(instance['_created'], "%Y-%m-%d %H:%M:%S %Z")
-            # Get datetime now and calculate the age of the instance. Since our timestamp is in GMT, we
-            # need to use UTC.
+            # Get datetime now and calculate the age of the instance. Since our timestamp is in GMT,
+            # we need to use UTC.
             time_since_creation = datetime.utcnow() - date_created
             logger.debug('%s has timedelta of %s. Created: %s Current: %s',
                          instance['sid'],

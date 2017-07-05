@@ -394,6 +394,9 @@ def command_prepare(item):
     if item['command'] == 'import_code':
         utilities.import_code(item['query'])
         return
+    if item['command'] == 'migrate_to_routes':
+        utilities.migrate_to_routes()
+        return
     if item['command'] == 'rebalance_update_groups':
         utilities.rebalance_update_groups(item)
         return

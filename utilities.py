@@ -424,3 +424,21 @@ def send_email(message, subject, to):
         s.sendmail(send_notification_from_email, to, msg.as_string())
         s.quit()
 
+
+def migrate_to_routes():
+    """
+    Migrate from instance['path'] to instance['route']
+    """
+    # Get all instances where path doesn't begin with 'p1'
+    instance_query = '&where={"pool":"poolb-express","status":"launched","type":"express"}'
+    instances = get_eve('instance', instance_query)
+    # Create a route for each item
+    # Get all homepage f5 only paths
+    # TODO see how this works for the homepage itself.
+    homepage_query = '&where={"pool":"poolb-homepage","status":"launched","type":"express"}'
+    homepage_instances = get_eve('instance', homepage_query)
+    # Create a route for each item
+    # Get all legacy paths
+    legacy_query = '&where={"pool":"wwwlegacy","status":"launched"}'
+    homepage_instances = get_eve('instance', legacy_query)
+    # Create a route for each item

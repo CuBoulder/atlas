@@ -93,20 +93,21 @@ def on_insert_instance_callback(items):
             # The 'get' method checks if the key exists.
             if item.get('code'):
                 if not item['code'].get('core'):
-                    item['code']['core']=utilities.get_current_code(
-                        name = default_core, type = 'core')
+                    item['code']['core'] = utilities.get_current_code(
+                        name=default_core, type='core')
                 if not item['code'].get('profile'):
-                    item['code']['profile'] = utilities.get_current_code(name=default_profile, type='profile')
+                    item['code']['profile'] = utilities.get_current_code(
+                        name=default_profile, type='profile')
             else:
-                item['code']={}
-                item['code']['core']=utilities.get_current_code(
-                    name = default_core, type = 'core')
-                item['code']['profile']=utilities.get_current_code(
-                    name = default_profile, type = 'profile')
+                item['code'] = {}
+                item['code']['core'] = utilities.get_current_code(
+                    name=default_core, type='core')
+                item['code']['profile'] = utilities.get_current_code(
+                    name=default_profile, type='profile')
             if not item['import_from_inventory']:
                 date_json = '{{"created":"{0} GMT"}}'.format(item['_created'])
                 item['dates'] = json.loads(date_json)
-            app.logger.debug('Ready to create item\n{0}'.format(item))
+            app.logger.debug('Ready to create item| %s', item)
 
 
 def on_inserted_instance_callback(items):

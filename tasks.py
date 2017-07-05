@@ -505,7 +505,7 @@ def cron(type=None, status=None, include_packages=None, exclude_packages=None):
             include_packages_ids = []
             if not packages['_meta']['total'] == 0:
                 for item in packages['_items']:
-                    logger.debug('Cron - include_packages item | %s', item))
+                    logger.debug('Cron - include_packages item | %s', item)
                     include_packages_ids.append(str(item['_id']))
                 logger.debug('Cron - include_packages list | %s', json.dumps(include_packages_ids))
                 instance_query_string.append(
@@ -517,18 +517,19 @@ def cron(type=None, status=None, include_packages=None, exclude_packages=None):
             exclude_packages_ids = []
             if not packages['_meta']['total'] == 0:
                 for item in packages['_items']:
-                    logger.debug('Cron - exclude_packages item | %s', item))
+                    logger.debug('Cron - exclude_packages item | %s', item)
                     exclude_packages_ids.append(str(item['_id']))
-                logger.debug('Cron - exclude_packages list | %s', json.dumps(exclude_packages_ids)))
+                    logger.debug('Cron - exclude_packages list | %s',
+                                 json.dumps(exclude_packages_ids))
                     instance_query_string.append(
                         '"code.package": {{"$nin": {0}}},'.format(json.dumps(exclude_packages_ids)))
 
     instance_query = ''.join(instance_query_string)
-    logger.debug('Query after join - | %s', instance_query))
+    logger.debug('Query after join - | %s', instance_query)
     instance_query = instance_query.rstrip('\,')
-    logger.debug('Query after rstrip - | %s', instance_query))
+    logger.debug('Query after rstrip - | %s', instance_query)
     instance_query += '}'
-    logger.debug('Query final -  | %s', instance_query))
+    logger.debug('Query final -  | %s', instance_query)
 
     instances = utilities.get_eve('instance', instance_query)
     if not instances['_meta']['total'] == 0:

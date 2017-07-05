@@ -2,19 +2,23 @@
 Utility functions.
 """
 import sys
-import requests
-import ldap
 import json
+import logging
 import smtplib
-
-from re import compile, search
-from cryptography.fernet import Fernet
 from random import choice
-from string import lowercase
-from hashlib import sha1
-from eve.auth import BasicAuth
-from flask import current_app, g
+from re import compile as re_compile
 from email.mime.text import MIMEText
+from hashlib import sha1
+from string import lowercase
+
+import ldap
+import requests
+
+from cryptography.fernet import Fernet
+from eve.auth import BasicAuth
+from flask import g
+
+
 from atlas.config import *
 
 path = '/data/code'
@@ -333,7 +337,7 @@ def post_to_slack(message, title, link='', attachment_text='', level='good', use
     """
     # We want to notify the channel if we get a message with 'fail' in it.
     if slack_notify:
-        regexp = compile(r'fail')
+        regexp = re_compile(r'fail')
         if regexp.search(message) is not None:
             message_text = '<!channel> ' + environment + ' - ' + message
         else:

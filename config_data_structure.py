@@ -170,6 +170,11 @@ instance_schema = {
             'embeddable': True,
         },
     },
+    # TODO: Remove this after the migration
+    'path': {
+        'type': 'string',
+        'unique': True,
+    },
     'db_key': {
         'type': 'string',
     },

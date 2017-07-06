@@ -2,8 +2,8 @@
 Utility functions.
 """
 import sys
+import requests
 import json
-import logging
 import smtplib
 from random import choice
 from re import compile as re_compile
@@ -12,25 +12,16 @@ from hashlib import sha1
 from string import lowercase
 
 import ldap
-import requests
 from datetime import datetime
 
 from cryptography.fernet import Fernet
 from eve.auth import BasicAuth
-from flask import g
-
-
+from flask import current_app, g
 from atlas.config import *
 
 atlas_path = '/data/code'
 if atlas_path not in sys.path:
     sys.path.append(atlas_path)
-
-# Setup a sub-logger
-# Best practice is to setup sub-loggers rather than passing the main logger between different parts of the application.
-# https://docs.python.org/3/library/logging.html#logging.getLogger and
-# https://stackoverflow.com/questions/39863718/how-can-i-log-outside-of-main-flask-module
-log = logging.getLogger('atlas.utilities')
 
 
 class AtlasBasicAuth(BasicAuth):
@@ -52,14 +43,14 @@ class AtlasBasicAuth(BasicAuth):
         try:
             l.start_tls_s()
         except ldap.LDAPError, e:
-            log.error('LDAP | Error | %s', e.message['info'])
+            current_app.logger.error(e.message['info'])
             if type(e.message) == dict and e.message.has_key('desc'):
-                log.error('LDAP | Error | %s', e.message['desc'])
+                current_app.logger.error(e.message['desc'])
             else:
-                log.error('LDAP | Error | %s', e)
+                current_app.logger.error(e)
 
         ldap_distinguished_name = "uid={0},ou={1},{2}".format(username, ldap_org_unit, ldap_dns_domain_name)
-        log.debug(ldap_distinguished_name)
+        current_app.logger.debug(ldap_distinguished_name)
 
         # Add the username as a Flask application global.
         g.username = username
@@ -69,13 +60,13 @@ class AtlasBasicAuth(BasicAuth):
             # is blocked until the bind gets a result. If you can bind, the
             # credentials are valid.
             result = l.simple_bind_s(ldap_distinguished_name, password)
-            log.debug('LDAP | Bind successful | %s', username)
+            current_app.logger.debug('LDAP - {0} - Bind successful'.format(username))
             return True
         except ldap.INVALID_CREDENTIALS:
-            log.debug('LDAP | Invalid credentials | %s | %s', username, result)
+            current_app.logger.debug('LDAP - {0} - Invalid credentials'.format(username))
 
         # Apparently this was a bad login attempt
-        log.info('LDAP | Bind failed | %s', username)
+        current_app.logger.info('LDAP - {0} - Bind failed'.format(username))
         return False
 
 
@@ -90,7 +81,7 @@ def randomstring(length=14):
 def mysql_password():
     """
     Hash string twice with SHA1 and return uppercase hex digest, prepended with
-    an asterisk.
+    an astrix.
 
     This function is identical to the MySQL PASSWORD() function.
     """
@@ -124,8 +115,7 @@ def post_eve(resource, payload):
     """
     url = "{0}/{1}".format(api_urls[environment], resource)
     headers = {"content-type": "application/json"}
-    r = requests.post(url, auth=(service_account_username, service_account_password),
-                      headers=headers, verify=ssl_verification, data=json.dumps(payload))
+    r = requests.post(url, auth=(service_account_username, service_account_password), headers=headers, verify=ssl_verification, data=json.dumps(payload))
     if r.ok:
         return r.json()
     else:
@@ -144,9 +134,8 @@ def get_eve(resource, query=None):
         url = "{0}/{1}?{2}".format(api_urls[environment], resource, query)
     else:
         url = "{0}/{1}".format(api_urls[environment], resource)
-    log.debug('Get Eve | %s', url)
-    r = requests.get(url, auth=(service_account_username,
-                                service_account_password), verify=ssl_verification)
+    print(url)
+    r = requests.get(url, auth=(service_account_username, service_account_password), verify=ssl_verification)
     if r.ok:
         return r.json()
     else:
@@ -162,9 +151,8 @@ def get_single_eve(resource, id):
     :return: dict of items that match the query string.
     """
     url = "{0}/{1}/{2}".format(api_urls[environment], resource, id)
-    log.debug('Get Eve Single | %s', url)
-    r = requests.get(url, auth=(service_account_username,
-                                service_account_password), verify=ssl_verification)
+    print(url)
+    r = requests.get(url, auth=(service_account_username, service_account_password), verify=ssl_verification)
     if r.ok:
         return r.json()
     else:
@@ -183,15 +171,14 @@ def patch_eve(resource, id, request_payload):
     url = "{0}/{1}/{2}".format(api_urls[environment], resource, id)
     get_etag = get_single_eve(resource, id)
     headers = {'Content-Type': 'application/json', 'If-Match': get_etag['_etag']}
-    r = requests.patch(url, headers=headers, data=json.dumps(request_payload), auth=(
-        service_account_username, service_account_password), verify=ssl_verification)
+    r = requests.patch(url, headers=headers, data=json.dumps(request_payload), auth=(service_account_username, service_account_password), verify=ssl_verification)
     if r.ok:
         return r.json()
     else:
         return r.text
 
 
-def delete_eve(resource, eve_id):
+def delete_eve(resource, id):
     """
     Patch items in the Atlas API.
 
@@ -199,18 +186,17 @@ def delete_eve(resource, eve_id):
     :param id:
     :return:
     """
-    url = "{0}/{1}/{2}".format(api_urls[environment], resource, eve_id)
-    get_etag = get_single_eve(resource, eve_id)
+    url = "{0}/{1}/{2}".format(api_urls[environment], resource, id)
+    get_etag = get_single_eve(resource, id)
     headers = {'Content-Type': 'application/json', 'If-Match': get_etag['_etag']}
-    r = requests.delete(url, headers=headers, auth=(
-        service_account_username, service_account_password), verify=ssl_verification)
+    r = requests.delete(url, headers=headers, auth=(service_account_username, service_account_password), verify=ssl_verification)
     if r.ok:
         return r.status_code
     else:
         return r.text
 
 
-def get_current_code(name, code_type):
+def get_current_code(name, type):
     """
     Get the current code item for a given name and type.
 
@@ -218,10 +204,9 @@ def get_current_code(name, code_type):
     :param type: string
     :return: _id of the item.
     """
-    query = 'where={{"meta.name":"{0}","meta.code_type":"{1}","meta.is_current":true}}'.format(
-        name, code_type)
+    query = 'where={{"meta.name":"{0}","meta.code_type":"{1}","meta.is_current":true}}'.format(name, type)
     current_get = get_eve('code', query)
-    log.debug('Get current code | %s', current_get)
+    print(current_get)
     return current_get['_items'][0]['_id']
 
 
@@ -240,7 +225,7 @@ def get_code(name, code_type=''):
     else:
         query = 'where={{"meta.name":"{0}"}}'.format(name)
     code_get = get_eve('code', query)
-    log.debug('Get code | %s', code_get)
+    print(code_get)
     return code_get
 
 
@@ -264,7 +249,7 @@ def import_code(query):
     :param query: URL for JSON to import
     """
     r = requests.get(query)
-    log.debug('Import code | %s', r.json())
+    print(r.json())
     data = r.json()
     for code in data['_items']:
         payload = {
@@ -374,7 +359,7 @@ def post_to_slack(message, title, link='', attachment_text='', level='good', use
 
 def post_to_slack_payload(payload):
     """
-    Posts a message to a given channel using the Slack Incoming Webhooks API.
+    Posts a message to a given channel using the Slack Incoming Webhooks API. 
     See https://api.slack.com/docs/message-formatting.
 
     :param payload: Payload suitable for POSTing to Slack.

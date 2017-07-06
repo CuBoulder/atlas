@@ -24,7 +24,7 @@ def pre_post_callback(resource, request):
     :param resource: resource accessed
     :param request: flask.request object
     """
-    app.logger.debug('POST | %s | %s ', resource, request.json)
+    app.logger.debug('POST to {0} resource\nRequest:\n{1}'.format(resource, request.json))
 
 
 def pre_delete_code_callback(request, lookup):
@@ -92,16 +92,16 @@ def on_insert_instance_callback(items):
             if item.get('code'):
                 if not item['code'].get('core'):
                     item['code']['core'] = utilities.get_current_code(
-                        name=default_core, code_type='core')
+                        name=default_core, type='core')
                 if not item['code'].get('profile'):
                     item['code']['profile'] = utilities.get_current_code(
-                        name=default_profile, code_type='profile')
+                        name=default_profile, type='profile')
             else:
                 item['code'] = {}
                 item['code']['core'] = utilities.get_current_code(
-                    name=default_core, code_type='core')
+                    name=default_core, type='core')
                 item['code']['profile'] = utilities.get_current_code(
-                    name=default_profile, code_type='profile')
+                    name=default_profile, type='profile')
             if not item['import_from_inventory']:
                 date_json = '{{"created":"{0} GMT"}}'.format(item['_created'])
                 item['dates'] = json.loads(date_json)
@@ -123,12 +123,15 @@ def on_inserted_instance_callback(items):
             statistics_payload = {}
             # Need to get the string out of the ObjectID.
             statistics_payload['instance'] = str(item['_id'])
-            app.logger.debug('Instance | Create Statistics item | %s', statistics_payload)
+            app.logger.debug('Create Statistics item\n{0}'.format(statistics_payload))
             statistics = utilities.post_eve(resource='statistics', payload=statistics_payload)
             app.logger.debug(statistics)
             item['statistics'] = str(statistics['_id'])
-            app.logger.debug('Instance | Provision Ready | %s', item)
-            tasks.instance_provision.delay(item)
+            app.logger.debug('Ready to send to Celery\n{0}'.format(item))
+            if not item['import_from_inventory']:
+                tasks.instance_provision.delay(item)
+            else:
+                tasks.instance_import_from_inventory.delay(item)
 
 
 def on_insert_code_callback(items):
@@ -152,7 +155,7 @@ def on_insert_code_callback(items):
                 for code in code_get['_items']:
                     request_payload = {'meta.is_current': False}
                     utilities.patch_eve('code', code['_id'], request_payload)
-        app.logger.debug('Code | Clone Ready | %s', item)
+        app.logger.debug('Ready to send to Celery\n{0}'.format(item))
         tasks.code_deploy.delay(item)
 
 
@@ -192,14 +195,12 @@ def on_update_code_callback(updates, original):
         # If the name and code_type are not changing, we need to load them from
         # the original.
         name = updates['meta']['name'] if updates['meta'].get('name') else original['meta']['name']
-        code_type = updates['meta']['code_type'] if updates['meta'].get(
-            'code_type') else original['meta']['code_type']
+        code_type = updates['meta']['code_type'] if updates['meta'].get('code_type') else original['meta']['code_type']
 
-        query = 'where={{"meta.name":"{0}","meta.code_type":"{1}","meta.is_current": {2}}}'.format(
-            name, code_type, str(updates['meta']['is_current']).lower())
+        query = 'where={{"meta.name":"{0}","meta.code_type":"{1}","meta.is_current": {2}}}'.format(name, code_type, str(updates['meta']['is_current']).lower())
         code_get = utilities.get_eve('code', query)
         # TODO: Filter out the item we are updating.
-        app.logger.debug('Code | Update code | Former Current code | %s', code_get)
+        app.logger.debug(code_get)
 
         for code in code_get['_items']:
             request_payload = {'meta.is_current': False}

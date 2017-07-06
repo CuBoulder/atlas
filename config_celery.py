@@ -24,7 +24,7 @@ CELERYBEAT_SCHEDULE = {
         'task': 'atlas.tasks.cron',
         'schedule': timedelta(minutes=60),
         'kwargs': {
-            "instance_type": "express",
+            "type": "express",
             "status": "launched",
             "exclude_packages": ["cu_classes_bundle"]
         },
@@ -40,7 +40,7 @@ CELERYBEAT_SCHEDULE = {
         'task': 'atlas.tasks.cron',
         'schedule': timedelta(hours=3),
         'kwargs': {
-            "instance_type": "express",
+            "type": "express",
             "status": "installed",
             "exclude_packages": ["cu_classes_bundle"]
         },

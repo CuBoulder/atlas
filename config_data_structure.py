@@ -170,6 +170,7 @@ instance_schema = {
             'embeddable': True,
             'unique': True,
         },
+        'nullable': True,
     },
     # TODO: Remove this after the migration
     'path': {
@@ -679,14 +680,8 @@ command_schema = {
 route_schema = {
     'route_type': {
         'type': 'string',
+        'allowed': ['poolb-express', 'poolb-homepage', 'poola-custom', 'legacy', 'redirect'],
         'required': True,
-        'allowed': [
-            'poolb-express',
-            'poolb-homepage',
-            'poola-custom',
-            'legacy',
-            #'redirect'
-            ],
     },
     'source': {
         'type': 'string',
@@ -704,7 +699,7 @@ route_schema = {
     },
     'response_code': {
         'type': 'string',
-        'allowed_values': [
+        'allowed': [
             301,
             302,
             307
@@ -809,7 +804,7 @@ commands = {
 route = {
     'item_title': 'route',
     'public_methods': ['GET'],
-    'public_item_methods': [],
+    'public_item_methods': ['GET'],
     'versioning': True,
     'soft_delete': True,
     'schema': route_schema,
@@ -824,4 +819,5 @@ DOMAIN = {
     'code': code,
     'commands': commands,
     'statistics': statistics,
+    'route': route,
 }

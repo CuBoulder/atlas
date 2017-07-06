@@ -82,7 +82,7 @@ def on_insert_instance_callback(items):
     app.logger.debug(items)
     for item in items:
         app.logger.debug(item)
-        if item['type'] == 'express' and not item['f5only']:
+        if item['type'] == 'express':
             if not item.get('sid'):
                 item['sid'] = 'p1' + sha1(utilities.randomstring()).hexdigest()[0:10]
             if not item.get('update_group'):
@@ -117,7 +117,7 @@ def on_inserted_instance_callback(items):
     app.logger.debug(items)
     for item in items:
         app.logger.debug(item)
-        if item['type'] == 'express' and not item['f5only']:
+        if item['type'] == 'express':
             app.logger.debug(item)
             # Create statistics item
             statistics_payload = {}

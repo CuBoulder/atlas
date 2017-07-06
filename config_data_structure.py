@@ -168,6 +168,7 @@ instance_schema = {
             'resource': 'route',
             'field': '_id',
             'embeddable': True,
+            'unique': True,
         },
     },
     # TODO: Remove this after the migration
@@ -682,8 +683,10 @@ route_schema = {
         'allowed': [
             'poolb-express',
             'poolb-homepage',
+            'poola-custom',
             'legacy',
-            'redirect'],
+            #'redirect'
+            ],
     },
     'source': {
         'type': 'string',

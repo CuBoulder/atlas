@@ -13,6 +13,7 @@ from string import lowercase
 
 import ldap
 import requests
+from datetime import datetime
 
 from cryptography.fernet import Fernet
 from eve.auth import BasicAuth
@@ -429,16 +430,86 @@ def migrate_to_routes():
     """
     Migrate from instance['path'] to instance['route']
     """
-    # Get all instances where path doesn't begin with 'p1'
-    instance_query = '&where={"pool":"poolb-express","status":"launched","type":"express"}'
+    # TODO Make sure p1 and other perm paths are handled.
+
+    # Get all poolb instances that are launched 'p1'
+    instance_query = '?where={"pool":"poolb-express","status":"launched","type":"express"}'
     instances = get_eve('instance', instance_query)
-    # Create a route for each item
-    # Get all homepage f5 only paths
-    # TODO see how this works for the homepage itself.
-    homepage_query = '&where={"pool":"poolb-homepage","status":"launched","type":"express"}'
-    homepage_instances = get_eve('instance', homepage_query)
-    # Create a route for each item
+    log.debug('Migrate Routes | Query | Instances | %s', instances['_meta']['total'])
+    log.debug('Migrate Routes | Query | Instances | %s', instances)
+    # Get all homepage f5 only paths (not all indicated that they are supposed to be)
+    homepage_paths_query = '?where={"pool":"poolb-homepage","status":"launched","type":{"$ne":"express"}}'
+    homepage_routes = get_eve('instance', homepage_paths_query)
+    log.debug('Migrate Routes | Query | Homepage Routes | %s', homepage_routes['_meta']['total'])
+    log.debug('Migrate Routes | Query | Homepage Routes | %s', homepage_routes)
+    # Homepage itself
+    homepage_query = '?where={"pool":"poolb-homepage","status":"launched","type":"express"}'
+    homepage_instance = get_eve('instance', homepage_query)
+    log.debug('Migrate Routes | Query | Homepage Instance | %s',
+              homepage_instance['_meta']['total'])
+    log.debug('Migrate Routes | Query | Homepage Instance | %s', homepage_instance)
     # Get all legacy paths
-    legacy_query = '&where={"pool":"wwwlegacy","status":"launched"}'
-    homepage_instances = get_eve('instance', legacy_query)
-    # Create a route for each item
+    legacy_paths_query = '?where={"pool":"WWWLegacy","status":"launched"}'
+    legacy_routes = get_eve('instance', legacy_paths_query)
+    log.debug('Migrate Routes | Query | Legacy Routes | %s', legacy_routes['_meta']['total'])
+    log.debug('Migrate Routes | Query | Legacy Routes | %s', legacy_routes)
+
+    # Put the dicts of items that require a route into a list
+    routes_list = []
+    if not instances['_meta']['total'] == 0:
+        routes_list.append(instances['_items'])
+    if not homepage_routes['_meta']['total'] == 0:
+        routes_list.append(homepage_routes['_items'])
+    if not homepage_instance['_meta']['total'] == 0:
+        routes_list.append(homepage_instance['_items'])
+    if not legacy_routes['_meta']['total'] == 0:
+        routes_list.append(legacy_routes['_items'])
+
+    if routes_list:
+        for route_dict in routes_list:
+            create_routes(route_dict)
+
+
+def create_routes(instances):
+    """
+    Create routes and associate them with their instances.abs
+
+    :param instances: dict of instances that need routes
+    """
+    for instance in instances:
+        log.debug('Create Route | Instance | %s', instance)
+        # Convert the pool field into what we need for type
+        route_type = instance['pool']
+        route_type = route_type.lower()
+        if route_type == 'WWWLegacy':
+            route_type = 'legacy'
+
+        if instance['dates']['launched']:
+            date_created = instance['dates']['launched']
+        else:
+            date_created = datetime.now().strftime("%Y-%m-%d %H:%M:%S %Z")
+
+        # Setup payload
+        payload = {
+            'route_type': route_type,
+            'source': instance['path'],
+            'dates': {
+                'created': date_created
+            },
+            'created_by':'migration',
+        }
+
+        if instance['pool'] == 'poolb-express' or (instance['pool'] == 'poolb-homepage' and instance['type'] == 'express'):
+            log.debug('Create Route | Instance ID Found')
+            payload['instance'] = instance['_id']
+
+        log.debug('Create Route | POST Route Payload | %s', payload)
+        create_route_request = post_eve('route', payload)
+        log.debug('Create Route | POST Response | %s | %s', instance, create_route_request)
+        if create_route_request:
+            instance_patch = {
+                'route': create_route_request['item']['_id']
+            }
+            log.debug('Create Route | PATCH Instance Payload | %s', instance_patch)
+            patch_instance_request = patch_eve('instance', instance['_id'], instance_patch)
+            log.debug('Create Route | PATCH Instance Response | %s | %s', instance, patch_instance_request)

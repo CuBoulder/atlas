@@ -474,6 +474,8 @@ def create_routes(instances):
             'route_type': route_type,
             'source': instance['path'],
             'created_by':'migration',
+            'route_status': 'active',
+            'active_on_launch': True,
         }
 
         if instance['dates'].get('launched'):
@@ -483,7 +485,7 @@ def create_routes(instances):
 
         if instance['pool'] == 'poolb-express' or (instance['pool'] == 'poolb-homepage' and instance['type'] == 'express'):
             print('Create Route | Instance ID Found')
-            payload['instance'] = instance['_id']
+            payload['instance_id'] = instance['_id']
 
         print('Create Route | POST Route Payload | %s', payload)
         create_route_request = post_eve(resource='route', payload=payload)

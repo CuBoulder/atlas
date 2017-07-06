@@ -655,9 +655,10 @@ def create_settings_files(instance, profile_name):
     sid = instance['sid']
     if 'route' in instance:
         route = utilities.get_single_eve('route', instance['route'])
-        path = route['source']
+        print route
+        instance_path = route['source']
     else:
-        path = instance['sid']
+        instance_path = instance['sid']
     # If the instance is launching or launched, we add 'cu_path' and redirect the
     # p1 URL.
     status = instance['status']
@@ -692,7 +693,7 @@ def create_settings_files(instance, profile_name):
         'atlas_url': atlas_url,
         'atlas_username': service_account_username,
         'atlas_password': service_account_password,
-        'path': path,
+        'path': instance_path,
         'status': status,
         'pool': instance['pool'],
         'atlas_statistics_id': statistics,

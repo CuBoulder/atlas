@@ -677,10 +677,22 @@ command_schema = {
     },
 }
 
+
+# If a route is created and is 'active' and 'active_on_launch'; launch the associated instance and
+# make any other 'active_on_launch' routes active as well.
 route_schema = {
     'route_type': {
         'type': 'string',
         'allowed': ['poolb-express', 'poolb-homepage', 'poola-custom', 'legacy', 'redirect'],
+        'required': True,
+    },
+    'route_status': {
+        'type': 'string',
+        'allowed': ['active', 'inactive'],
+        'required': True,
+    },
+    'active_on_launch': {
+        'type': 'boolean',
         'required': True,
     },
     'source': {
@@ -705,14 +717,14 @@ route_schema = {
             307
         ],
     },
-    'instance': {
+    'instance_id': {
         'type': 'objectid',
         'data_relation': {
             'resource': 'instance',
             'field': '_id',
         },
     },
-    'site': {
+    'site_id': {
         'type': 'objectid',
         'data_relation': {
             'resource': 'site',

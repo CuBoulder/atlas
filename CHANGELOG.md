@@ -14,6 +14,7 @@ This release migrates 'sites' to 'instance' and re-adds 'site' as an optional wr
     ```
 1. Update python packages via `requirements.txt`.
 1. Restart `celery`, `celerybeat`, and `apache`.
+1. Create a command for `migrate_to_routes` and run the command to migrate from `instance['path']` to routes.
 
 Resolves:
 
@@ -21,6 +22,11 @@ Resolves:
 - &#35;230 - Convert site to instance
 - &#35;231 - Add site
 - &#35;232 - Fix Siteimprove parameters
+- &#35;288 - Replace Site['path'] with Routing
+
+Known Issues:
+
+- `redirect` mentioned in Route data structure has no impact at this time
 
 ## v1.0.17
 

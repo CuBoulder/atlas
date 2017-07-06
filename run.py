@@ -127,11 +127,28 @@ def on_inserted_instance_callback(items):
             statistics = utilities.post_eve(resource='statistics', payload=statistics_payload)
             app.logger.debug(statistics)
             item['statistics'] = str(statistics['_id'])
-            app.logger.debug('Ready to send to Celery\n{0}'.format(item))
-            if not item['import_from_inventory']:
-                tasks.instance_provision.delay(item)
-            else:
-                tasks.instance_import_from_inventory.delay(item)
+
+            app.logger.debug('Ready to send to Celery| %s}', item)
+            tasks.instance_provision.delay(item)
+
+
+def on_inserted_route_callback(items):
+    """
+    If a new route is configured correctly, launch the associated instance.
+
+    :param items: List of dicts for new routes.
+    """
+    app.logger.debug('Route | Inserted Callback | Items | %s', items)
+    for item in items:
+        app.logger.debug('Route | Inserted Callback | Single Item | %s', item)
+        if item['route_type'] == 'poolb-express' and item['route_status'] == 'active' and item['active_on_launch'] is True:
+            payload = {
+                'status': 'launching',
+                'path': item['source'],
+                'route': str(item['_id'])
+            }
+            launch_instance = utilities.patch_eve('instance', item['instance_id'], payload)
+            app.logger.debug('Route | Launch Instance | %s', launch_instance)
 
 
 def on_insert_code_callback(items):
@@ -356,6 +373,7 @@ app.on_pre_DELETE_instance += pre_delete_instance_callback
 app.on_insert_code += on_insert_code_callback
 app.on_insert_instance += on_insert_instance_callback
 app.on_inserted_instance += on_inserted_instance_callback
+app.on_inserted_route += on_inserted_route_callback
 app.on_update_code += on_update_code_callback
 app.on_update_instance += on_update_instance_callback
 app.on_update_commands += on_update_commands_callback

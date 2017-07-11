@@ -438,6 +438,7 @@ def site_remove(site):
     remove_directory(code_directory)
 
 
+@roles('webservers')
 def correct_file_directory_permissions(site):
     code_directory_sid = '{0}/{1}/{1}'.format(sites_code_root, site['sid'])
     web_directory_sid = '{0}/{1}/{2}'.format(sites_web_root, site['type'], site['sid'])

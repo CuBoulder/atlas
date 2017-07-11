@@ -262,7 +262,7 @@ def site_update(site, updates, original):
 
     if updates.get('status'):
         logger.debug('Found status change.')
-        if updates['status'] in ['installing', 'launching', 'take_down', 'restore']:
+        if updates['status'] in ['installing', 'launching', 'locked', 'take_down', 'restore']:
             if updates['status'] == 'installing':
                 logger.debug('Status changed to installing')
                 # Set new status on site record for update to settings files.
@@ -279,6 +279,9 @@ def site_update(site, updates, original):
                     execute(fabfile.diff_f5)
                     execute(fabfile.update_f5)
                 # Let fabric send patch since it is changing update group.
+            elif updates['status'] == 'locked':
+                logger.debug('Status changed to locked')
+                execute(fabfile.update_settings_file, site=site)
             elif updates['status'] == 'take_down':
                 logger.debug('Status changed to take_down')
                 site['status'] = 'down'
@@ -298,7 +301,8 @@ def site_update(site, updates, original):
                 patch = utilities.patch_eve('sites', site['_id'], patch_payload)
                 logger.debug(patch)
 
-    if updates.get('settings'):
+    # Don't update settings files a second time if status is changing to 'locked'.
+    if updates.get('settings') and updates['status'] != 'locked':
         logger.debug('Found settings change.')
         if updates['settings'].get('page_cache_maximum_age') != original['settings'].get('page_cache_maximum_age'):
             logger.debug('Found page_cache_maximum_age change.')
@@ -473,7 +477,7 @@ def cron(type=None, status=None, include_packages=None, exclude_packages=None):
         site_query_string.append('"status":"{0}",'.format(status))
     else:
         logger.debug('Cron - No status found')
-        site_query_string.append('"status":{"$in":["installed","launched"]},')
+        site_query_string.append('"status":{"$in":["installed","launched","locked"]},')
     if include_packages:
         logger.debug('Cron - found include_packages')
         for package_name in include_packages:

@@ -279,6 +279,8 @@ def on_update_sites_callback(updates, original):
                     date_json = '{{"assigned":"{0} GMT"}}'.format(updates['_updated'])
                 elif updates['status'] == 'launching':
                     date_json = '{{"launched":"{0} GMT"}}'.format(updates['_updated'])
+                elif updates['status'] == 'locked':
+                    date_json = '{{"locked":""}}'.format(updates['_updated'])
                 elif updates['status'] == 'take_down':
                     date_json = '{{"taken_down":"{0} GMT"}}'.format(updates['_updated'])
                 elif updates['status'] == 'restore':

@@ -30,6 +30,7 @@ MONGO_QUERY_BLACKLIST = ['$where']
 # Require etags
 ENFORCE_IF_MATCH = True
 
+DEBUG = True
 # Definitions of schemas for Items. Schema is based on Cerberus grammar
 # https://github.com/nicolaiarocci/cerberus.
 #
@@ -162,17 +163,34 @@ instance_schema = {
             'embeddable': True,
         },
     },
-    'route': {
-        'type': 'objectid',
-        'data_relation': {
-            'resource': 'route',
-            'field': '_id',
-            'embeddable': True,
-            'unique': True,
+    'routes': {
+        'type': 'dict',
+        'schema': {
+            'primary_route': {
+                'type': 'objectid',
+                'data_relation': {
+                    'resource': 'route',
+                    'field': '_id',
+                    'embeddable': True,
+                    'unique': True,
+                },
+                'nullable': True,
+            },
+            'secondary_route': {
+                'type': 'list',
+                'schema': {
+                    'type': 'objectid',
+                    'data_relation': {
+                        'resource': 'route',
+                        'field': '_id',
+                        'embeddable': True,
+                        'unique': True,
+                    },
+                },
+            },
         },
-        'nullable': True,
     },
-    # TODO: Remove this after the migration
+    # TODO: Convert to non-canonical this after the migration
     'path': {
         'type': 'string',
         'unique': True,
@@ -695,6 +713,8 @@ route_schema = {
         'type': 'boolean',
         'required': True,
     },
+    # We reserve the phrase 'domainroot' to allow routing to an instance at the root of the domain
+    # like www.example.com/.
     'source': {
         'type': 'string',
         'required': True,

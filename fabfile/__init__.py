@@ -653,6 +653,7 @@ def delete_database(instance):
 
 def create_settings_files(instance, profile_name):
     sid = instance['sid']
+    
     if 'route' in instance:
         route = utilities.get_single_eve('route', instance['route'])
         print route

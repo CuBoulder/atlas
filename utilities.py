@@ -472,15 +472,19 @@ def create_routes(instances):
         # Setup payload
         payload = {
             'route_type': route_type,
-            'source': instance['path'],
             'created_by':'migration',
             'route_status': 'active',
             'active_on_launch': True,
         }
 
+        if instance['pool'] == 'poolb-homepage' and instance['type'] == 'express':
+            payload['source'] = 'domainroot'
+        else:
+            payload['source'] = instance['path']
+
         if instance['dates'].get('launched'):
             payload['dates'] = {
-                'created' :instance['dates']['launched']
+                'created': instance['dates']['launched']
             }
 
         if instance['pool'] == 'poolb-express' or (instance['pool'] == 'poolb-homepage' and instance['type'] == 'express'):
@@ -490,8 +494,11 @@ def create_routes(instances):
         print('Create Route | POST Route Payload | %s', payload)
         create_route_request = post_eve(resource='route', payload=payload)
         print('Create Route | POST Response | %s', str(create_route_request))
-        instance_patch = {}
-        instance_patch['route'] = str(create_route_request['_id'])
+        instance_patch = {
+            'routes': {
+                'primary_route': str(create_route_request['_id'])
+            }
+        }
         print('Create Route | PATCH Instance Payload | %s', instance_patch)
         patch_instance_request = patch_eve('instance', instance['_id'], instance_patch)
         print('Create Route | PATCH Instance Response | %s | %s', instance, patch_instance_request)

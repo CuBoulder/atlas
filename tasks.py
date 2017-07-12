@@ -167,13 +167,19 @@ def site_provision(site):
     :param site: A single site.
     :return:
     """
-    logger.debug('Site provision - {0}'.format(site))
+    logger.debug('Site provision| %s', site)
     start_time = time.time()
     # 'db_key' needs to be added here and not in Eve so that the encryption
     # works properly.
     site['db_key'] = utilities.encrypt_string(utilities.mysql_password())
     # Set future site status for settings file creation.
     site['status'] = 'available'
+
+    try:
+        result_create_database = execute(fabfile.create_database, site=site)
+    except CeleryException:
+        logger.info('Site provision failed | Database creation failed')
+        return result_create_database
 
     try:
         provision_task = execute(fabfile.site_provision, site=site)

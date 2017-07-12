@@ -156,12 +156,6 @@ def site_provision(site):
     profile_name = profile['meta']['name']
 
     try:
-        result_create_database = execute(create_database, site=site)
-    except FabricException:
-        print 'Database creation failed.'
-        return result_create_database
-
-    try:
         result_create_dir_structure = execute(
             create_directory_structure, folder=code_directory)
     except FabricException:

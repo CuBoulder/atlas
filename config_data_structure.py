@@ -187,6 +187,7 @@ instance_schema = {
                         'unique': True,
                     },
                 },
+                'nullable': True,
             },
         },
     },

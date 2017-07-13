@@ -133,6 +133,7 @@ sites_schema = {
             'installed',
             'launching',
             'launched',
+            'locked',
             'take_down',
             'down',
             'restore',
@@ -229,6 +230,9 @@ sites_schema = {
                 'type': 'datetime',
             },
             'launched': {
+                'type': 'datetime',
+            },
+            'locked': {
                 'type': 'datetime',
             },
             'taken_down': {

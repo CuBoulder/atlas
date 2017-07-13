@@ -1,8 +1,4 @@
 # -*- coding: utf-8 -*-
-
-# Config to mock modules that we cannot compile
-import sys
-from mock import Mock as MagicMock
 #
 # Atlas documentation build configuration file, created by
 # sphinx-quickstart on Thu Jul 13 17:08:08 2017.
@@ -345,6 +341,9 @@ texinfo_documents = [
 
 
 # Config to mock modules that we cannot compile
+import sys
+from unittest.mock import MagicMock
+
 class Mock(MagicMock):
     @classmethod
     def __getattr__(cls, name):

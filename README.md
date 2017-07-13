@@ -3,6 +3,7 @@
 Atlas is a RESTful API that interacts with servers to deploy and maintain [Web Express](https://github.com/CuBoulder/express) at University of Colorado Boulder.
 
 ## Features
+
 * Chronological tasks run to keep a small number of instances available for assignment to end users.
 * POST to create additional instances on demand.
 * Available instances are replaced every night.
@@ -10,6 +11,7 @@ Atlas is a RESTful API that interacts with servers to deploy and maintain [Web E
 * Instance Statistics
 
 ### API
+
 * Prefers to receive JSON encoded POST request.
 * CRUD Web Express instances
 
@@ -26,7 +28,7 @@ If you are on anything other than a local development environment, you will also
 
 ### Populating Atlas
 
-Code items should be created first. Required fields are: git URL, commit hash, Name, Version, and Type (core, profile, module, theme, library). Optional fields are: is_current (allows you to indicate the preferred version of a code item) and a tagging field.
+Code items should be created first.
 
 Instance items are created with a 'pending' status and can be assigned a specific core and/or profile when created. If a core or profile is not specified, the 'current' version of the default is used.
 
@@ -35,11 +37,13 @@ Instance items are created with a 'pending' status and can be assigned a specifi
 Currently we use a `git pull` deployment. When code is changed, you need to restart Celery, Celerybeat and Apache.
 
 Celery Flower is available via to command line to inspect tasks.
+
 ```bash
  /data/environments/atlas/bin/celery -A celery flower --conf=path/to/atlas/config_flower.py
 ```
 
 Celery will return a url in the first part of a long response.
+
 ```bash
 [I 170118 22:33:35 command:136] Visit me at http://[YOUR-URL]:5555
 ```
@@ -51,13 +55,16 @@ Pull requests are always welcome. Project is under active development. We are co
 ## Best Practices and Notes
 
 ### Code maintenance
+
 *The safest option is always to use **POST** to create a new item and then to **PATCH** the instance over.*
+
 * No current version - **POST** new code item
 * Stable version - **POST** new code item
 * Version with error and new version does not require an update hook - **PATCH** existing code item
 * Version with error and new version *does* require an update hook - **POST** new code item
 
 ### Using Commands
+
 * Schema notes:
   * `name` is an end user facing field that should describe the command.
   * `command` is the string that is run on the server(s). Commands do not support prompts and should exit with a `0` exit code, this means end drush commands like `drush en [module_name] -y` with `-y`.
@@ -71,8 +78,6 @@ Pull requests are always welcome. Project is under active development. We are co
   * `update_homepage_extra_files`
 * To use a command, first **POST** to create the command. Then **PATCH** the item to 'run' the command. 
   * This is not the most intuitive pattern, but not sure what a better pattern in at the moment. Considering using an authenticated **GET** to the command item, but that would be a different pattern than all other endpoints. Also considering defining our own method.
- 
-  
 
 ## Sample requests
 

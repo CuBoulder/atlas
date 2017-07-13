@@ -167,7 +167,7 @@ def site_provision(site):
     :param site: A single site.
     :return:
     """
-    logger.debug('Site provision - {0}'.format(site))
+    logger.debug('Site provision| %s', site)
     start_time = time.time()
     # 'db_key' needs to be added here and not in Eve so that the encryption
     # works properly.
@@ -176,11 +176,18 @@ def site_provision(site):
     site['status'] = 'available'
 
     try:
+        logger.debug('Site provision | Create database')
+        result_create_database = execute(fabfile.create_database, site=site)
+    except CeleryException as e:
+        logger.error('Site provision failed | Database creation failed')
+        return result_create_database
+
+    try:
         provision_task = execute(fabfile.site_provision, site=site)
         if isinstance(provision_task.get('host_string', None), BaseException):
             raise provision_task.get('host_string')
     except CeleryException as e:
-        logger.info('Site provision failed | Error Message | %s', e.message)
+        logger.error('Site provision failed | Error Message | %s', e.message)
 
     logger.debug('Site provision | Provision Fabric task | %s', provision_task)
     logger.debug('Site provision | Provision Fabric task values | %s', provision_task.values)
@@ -190,7 +197,7 @@ def site_provision(site):
         if isinstance(install_task.get('host_string', None), BaseException):
             raise install_task.get('host_string')
     except CeleryException as e:
-        logger.info('Site install failed | Error Message | %s', e.message)
+        logger.error('Site install failed | Error Message | %s', e.message)
 
     logger.debug('Site provision | Install Fabric task | %s', install_task)
     logger.debug('Site provision | Install Fabric task values | %s', install_task.values)
@@ -278,7 +285,7 @@ def site_update(site, updates, original):
 
     if updates.get('status'):
         logger.debug('Found status change.')
-        if updates['status'] in ['installing', 'launching', 'take_down', 'restore']:
+        if updates['status'] in ['installing', 'launching', 'locked', 'take_down', 'restore']:
             if updates['status'] == 'installing':
                 logger.debug('Status changed to installing')
                 # Set new status on site record for update to settings files.
@@ -295,6 +302,9 @@ def site_update(site, updates, original):
                     execute(fabfile.diff_f5)
                     execute(fabfile.update_f5)
                 # Let fabric send patch since it is changing update group.
+            elif updates['status'] == 'locked':
+                logger.debug('Status changed to locked')
+                execute(fabfile.update_settings_file, site=site)
             elif updates['status'] == 'take_down':
                 logger.debug('Status changed to take_down')
                 site['status'] = 'down'
@@ -314,7 +324,8 @@ def site_update(site, updates, original):
                 patch = utilities.patch_eve('sites', site['_id'], patch_payload)
                 logger.debug(patch)
 
-    if updates.get('settings'):
+    # Don't update settings files a second time if status is changing to 'locked'.
+    if updates.get('settings') and updates['status'] != 'locked':
         logger.debug('Found settings change.')
         if updates['settings'].get('page_cache_maximum_age') != original['settings'].get('page_cache_maximum_age'):
             logger.debug('Found page_cache_maximum_age change.')
@@ -489,7 +500,7 @@ def cron(type=None, status=None, include_packages=None, exclude_packages=None):
         site_query_string.append('"status":"{0}",'.format(status))
     else:
         logger.debug('Cron - No status found')
-        site_query_string.append('"status":{"$in":["installed","launched"]},')
+        site_query_string.append('"status":{"$in":["installed","launched","locked"]},')
     if include_packages:
         logger.debug('Cron - found include_packages')
         for package_name in include_packages:

@@ -107,22 +107,22 @@ code_schema = {
 # Site schema.
 sites_schema = {
     'path': {
-      'type': 'string',
-      'unique': True,
+        'type': 'string',
+        'unique': True,
     },
     'db_key': {
-      'type': 'string',
+        'type': 'string',
     },
     'sid': {
-      'type': 'string',
-      'minlength': 9,
-      'maxlength': 14,
-      'unique': True,
+        'type': 'string',
+        'minlength': 9,
+        'maxlength': 14,
+        'unique': True,
     },
     'type': {
-      'type': 'string',
-      'allowed':  ['custom', 'express', 'legacy', 'homepage'],
-      'default': 'express',
+        'type': 'string',
+        'allowed':  ['custom', 'express', 'legacy', 'homepage'],
+        'default': 'express',
     },
     'status': {
         'type': 'string',
@@ -133,6 +133,7 @@ sites_schema = {
             'installed',
             'launching',
             'launched',
+            'locked',
             'take_down',
             'down',
             'restore',
@@ -229,6 +230,9 @@ sites_schema = {
                 'type': 'datetime',
             },
             'launched': {
+                'type': 'datetime',
+            },
+            'locked': {
                 'type': 'datetime',
             },
             'taken_down': {

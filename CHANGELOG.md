@@ -1,5 +1,13 @@
 # Change log
 
+## v1.0.18
+
+Resolves:
+
+- &#35;272 - Add 'locked' status
+- Unbind LDAP
+- &#35;282 - Continue to try a squash this bug
+
 ## v1.0.17
 
 Resolves:

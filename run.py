@@ -18,6 +18,11 @@ if atlas_path not in sys.path:
     sys.path.append(atlas_path)
 
 
+# TODO Routes - Creating routes - If I associate an active route with an unlaunched instance, what happens?
+# TODO Routes - When route is created, if it has an instance or site, update those records
+# TODO Site - Do we allow more than one launched instance per site?
+
+
 # Callbacks
 def pre_post_callback(resource, request):
     """

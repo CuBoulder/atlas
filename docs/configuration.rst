@@ -53,7 +53,7 @@ Celery Flower is available via to command line to inspect tasks.
 
 Celery Flower will return a url in the first part of a long response.
 
-.. code-block:: log
+.. code-block:: bash
     
     [I 170118 22:33:35 command:136] Visit me at http://[YOUR-URL]:5555
 

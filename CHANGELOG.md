@@ -30,7 +30,6 @@ Caveats:
 
 - `redirect` mentioned in Route data structure has no impact at this time
 
-
 ## v1.0.17
 
 Resolves:

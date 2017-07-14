@@ -4,9 +4,9 @@ Running Atlas
 Running the first time
 -------------------------
 
-Code items should be created first.
-
-You will need a ``core`` and ``profile`` with ``meta.is_current: true`` set.
+* Code items need to be created before instances.
+* After a ``core`` and ``profile`` with ``meta.is_current: true`` set are created, Atlas will provision several instances.
+* All endpoints have concurency control to make sure that users do not unintentionally overwrite eachother. When updating an item, you will need to include the ``etag`` in an ``If-Match`` request header.
 
 Cronological tasks
 ---------------------
@@ -29,6 +29,19 @@ Cronological tasks
 Code
 ----------
 
+Types of code
+~~~~~~~~~~~~~~~~~~~
+
+* Core
+* Profile
+* Package
+    * Module
+    * Theme
+    * Library
+
+Creating and updating code
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
 The safest option is always to use **POST** to create a new item and then to **PATCH** the instance to update the code for that instance.
 
 How to create or update code:
@@ -41,21 +54,49 @@ How to create or update code:
 Instances and Routes
 -------------
 
-Instance items are created with a 'pending' status and can be assigned a specific core and/or profile when created. If a core or profile is not specified, the 'current' version of the default is used.
+Instance items are created with a ``pending`` status and can be assigned a specific core and/or profile when created. If a core or profile is not specified, the 'current' version of the default is used.
+
+Instance states
+~~~~~~~~~~~~~~~~~~~~~
+* Instances are created in a ``pending`` state, this state triggers the provision.
+* After an instance is provisioned and the Drupal installation is run, the state is moved to ``available``.
+    * Cron is not run on ``available`` instances and packages cannot be added to instances in this state.
+* When a user is invited or otherwise allocated an instance the state should be changed to ``installing``.
+    * The settings files for the instance is updated.
+    * Cron is run on instances in this state.
+    * State ends on ``installed`` and packages can now be added.
+* ``launching`` requires a ``primary_route``
+    * Update settings files.
+    * Activates any associated routes that are ``active_on_launch: True``.
+    * Create symlinks from route ``source`` in the web root to the code root.
+
+
+Route states
+~~~~~~~~~~~~~~~~~~~~~
+
+* ``'route_status': 'active'``
+    * Only ``active`` routes are added to the load balancer.
+    * ``active`` routes can only be associated with a ``launched`` instance.
+* If a route is associated with an instance, and has ``active_on_launch: True`` and ``'route_status': 'inactive'``
+
 
 Create an instance
 ~~~~~~~~~~~~~~~~~~~~~~
 .. code-block:: bash
 
-    curl -i -v -X POST -d '{"status": "pending"}' -H 'Content-Type: application/json' -u 'USERNAME:PASSWORD' https://127.0.0.1/atlas/instance
+    curl -i -v -X POST -d '{"status": "pending"}' -H 'Content-Type: application/json' -u 'USERNAME' https://127.0.0.1/atlas/instance
 
 Update an instance
 ~~~~~~~~~~~~~~~~~~~~~
-* Change the 'status' of an Instance to 'installed'
+* Update the 'status' of an Instance to 'installed'
     .. code-block:: bash
 
-        curl -i -v -X PATCH -d '{"status": "installed"}' -H "If-Match: 4173813fc614292febc79241a8b677266cbed826" -H 'Content-Type: application/json' -u 'USERNAME:PASSWORD' https://inventory.local/atlas/instance/
+        curl -i -v -X PATCH -d '{"status": "installed"}' -H "If-Match: 4173813fc614292febc79241a8b677266cbed826" -H 'Content-Type: application/json' -u 'USERNAME' https://127.0.0.1/atlas/instance/
 
+* Update the 'profile' and 'core' of an Instance
+    .. code-block:: bash
+
+        curl -i -v -X PATCH -d '{"meta": {"core": "[code_id]", "profile":"[profile_id]"}}' -H "If-Match: [etag]" -H 'Content-Type: application/json' -u 'USERNAME' https://127.0.0.1/atlas/instance/
 
 
 Commands

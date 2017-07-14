@@ -23,10 +23,13 @@ Resolves:
 - &#35;231 - Add site
 - &#35;232 - Fix Siteimprove parameters
 - &#35;288 - Replace Site['path'] with Routing
+- &#35;294 - Indicate that Atlas owns all files that it templates
+- &#35;298 - Read the Docs and Sphinx support.
 
-Known Issues:
+Caveats:
 
 - `redirect` mentioned in Route data structure has no impact at this time
+
 
 ## v1.0.17
 

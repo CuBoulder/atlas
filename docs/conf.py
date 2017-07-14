@@ -1,3 +1,4 @@
+import sphinx_rtd_theme
 # -*- coding: utf-8 -*-
 #
 # Atlas documentation build configuration file, created by
@@ -51,7 +52,7 @@ master_doc = 'index'
 
 # General information about the project.
 project = u'Atlas'
-copyright = u'2017, James Fuller (jwfuller)'
+copyright = u'2016, University of Colorado Boulder'
 author = u'James Fuller (jwfuller)'
 
 # The version info for the project you're documenting, acts as replacement for
@@ -121,16 +122,19 @@ todo_include_todos = False
 # The theme to use for HTML and HTML Help pages.  See the documentation for
 # a list of builtin themes.
 #
-html_theme = 'alabaster'
+html_theme = 'sphinx_rtd_theme'
 
 # Theme options are theme-specific and customize the look and feel of a theme
 # further.  For a list of options available for each theme, see the
 # documentation.
 #
-# html_theme_options = {}
+html_theme_options = {
+    'analytics_id': 'UA-25752450-5',
+    'sticky_navigation': True
+}
 
 # Add any paths that contain custom themes here, relative to this directory.
-# html_theme_path = []
+html_theme_path = [sphinx_rtd_theme.get_html_theme_path()]
 
 # The name for this set of Sphinx documents.
 # "<project> v<release> documentation" by default.
@@ -176,7 +180,11 @@ html_static_path = ['_static']
 
 # Custom sidebar templates, maps document names to template names.
 #
-# html_sidebars = {}
+# html_sidebars = {
+#     '**': [
+#         'about.html',
+#     ]
+# }
 
 # Additional templates that should be rendered to pages, maps page names to
 # template names.

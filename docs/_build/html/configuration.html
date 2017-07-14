@@ -1,0 +1,285 @@
+
+
+<!DOCTYPE html>
+<!--[if IE 8]><html class="no-js lt-ie9" lang="en" > <![endif]-->
+<!--[if gt IE 8]><!--> <html class="no-js" lang="en" > <!--<![endif]-->
+<head>
+  <meta charset="utf-8">
+  
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  
+  <title>Configuration and Deployment &mdash; Atlas 1.1.0 documentation</title>
+  
+
+  
+  
+  
+  
+
+  
+
+  
+  
+    
+
+  
+
+  
+  
+    <link rel="stylesheet" href="_static/css/theme.css" type="text/css" />
+  
+
+  
+
+  
+    <link rel="top" title="Atlas 1.1.0 documentation" href="index.html"/>
+        <link rel="next" title="Running Atlas" href="running.html"/>
+        <link rel="prev" title="Atlas" href="index.html"/> 
+
+  
+  <script src="_static/js/modernizr.min.js"></script>
+
+</head>
+
+<body class="wy-body-for-nav" role="document">
+
+   
+  <div class="wy-grid-for-nav">
+
+    
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search">
+          
+
+          
+            <a href="index.html" class="icon icon-home"> Atlas
+          
+
+          
+          </a>
+
+          
+            
+            
+              <div class="version">
+                1.1.0
+              </div>
+            
+          
+
+          
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+
+          
+        </div>
+
+        <div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="main navigation">
+          
+            
+            
+              
+            
+            
+              <ul class="current">
+<li class="toctree-l1 current"><a class="current reference internal" href="#">Configuration and Deployment</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="#configuration-files">Configuration files</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#deploying">Deploying</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#additional-information">Additional information</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="running.html">Running Atlas</a></li>
+<li class="toctree-l1"><a class="reference internal" href="command-samples.html">Command Samples</a></li>
+</ul>
+
+            
+          
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap">
+
+      
+      <nav class="wy-nav-top" role="navigation" aria-label="top navigation">
+        
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="index.html">Atlas</a>
+        
+      </nav>
+
+
+      
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+<div role="navigation" aria-label="breadcrumbs navigation">
+
+  <ul class="wy-breadcrumbs">
+    
+      <li><a href="index.html">Docs</a> &raquo;</li>
+        
+      <li>Configuration and Deployment</li>
+    
+    
+      <li class="wy-breadcrumbs-aside">
+        
+            
+            <a href="_sources/configuration.txt" rel="nofollow"> View page source</a>
+          
+        
+      </li>
+    
+  </ul>
+
+  
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+            
+  <div class="section" id="configuration-and-deployment">
+<h1>Configuration and Deployment<a class="headerlink" href="#configuration-and-deployment" title="Permalink to this headline">¶</a></h1>
+<p>Atlas is tested and run on RHEL 7 uing <code class="docutils literal"><span class="pre">mod_wsgi</span></code> and Apache 2.4 with the following additional packages installed:</p>
+<ul class="simple">
+<li><code class="docutils literal"><span class="pre">python-ldap</span></code></li>
+<li><code class="docutils literal"><span class="pre">openldap</span></code></li>
+<li><code class="docutils literal"><span class="pre">mod_wsgi</span></code></li>
+<li></li>
+<li></li>
+</ul>
+<div class="section" id="configuration-files">
+<h2>Configuration files<a class="headerlink" href="#configuration-files" title="Permalink to this headline">¶</a></h2>
+<p>Configuration is split between various files <code class="docutils literal"><span class="pre">config_*.py</span></code>. You need to create <code class="docutils literal"><span class="pre">config_local.py</span></code> and <code class="docutils literal"><span class="pre">config_servers.py</span></code> files.
+If you are on anything other than a local development environment, you will also need to create a <cite>.mylogin.cnf</cite> file to <a class="reference external" href="http://dev.mysql.com/doc/refman/5.7/en/mysql-config-editor.html">authenticate into MySQL</a>. The naming convention is <cite>[database_user]_[environment]</cite>.</p>
+</div>
+<div class="section" id="deploying">
+<h2>Deploying<a class="headerlink" href="#deploying" title="Permalink to this headline">¶</a></h2>
+<p>Sample Apache vhost</p>
+<div class="highlight-apache"><div class="highlight"><pre><span></span><span class="nt">&lt;VirtualHost</span> <span class="s">*:80</span><span class="nt">&gt;</span>
+    <span class="nb">SetEnv</span> ATLAS_ENV production
+
+    <span class="nb">WSGIDaemonProcess</span> atlas processes=2 threads=5 <span class="k">user</span>=[USER] <span class="k">group</span>=[GROUP] display-name=%{GROUP}
+    <span class="nb">WSGIScriptAlias</span> / <span class="sx">/path/to/atlas/atlas.wsgi</span>
+
+    <span class="nt">&lt;Directory</span> <span class="s">&quot;/path/to/atlas&quot;</span><span class="nt">&gt;</span>
+            <span class="nb">WSGIPassAuthorization</span> <span class="k">On</span>
+            <span class="nb">Require</span> <span class="k">all</span> granted
+    <span class="nt">&lt;/Directory&gt;</span>
+    <span class="nb">CustomLog</span> <span class="s2">&quot;logs/atlas-access_log&quot;</span> combined
+    <span class="nb">ErrorLog</span> <span class="s2">&quot;logs/atlas-error_log&quot;</span>
+<span class="nt">&lt;/VirtualHost&gt;</span>
+</pre></div>
+</div>
+<ul class="simple">
+<li><a class="reference external" href="http://docs.celeryproject.org/en/latest/userguide/daemonizing.html#init-script-celeryd">Sample celeryd init script</a></li>
+<li><a class="reference external" href="http://docs.celeryproject.org/en/latest/userguide/daemonizing.html#init-script-celerybeat">Sample celerybeat init script</a></li>
+</ul>
+</div>
+<div class="section" id="additional-information">
+<h2>Additional information<a class="headerlink" href="#additional-information" title="Permalink to this headline">¶</a></h2>
+<p>Celery Flower is available via to command line to inspect tasks.</p>
+<div class="highlight-bash"><div class="highlight"><pre><span></span>/path/to/virtualenv/atlas/bin/celery -A celery flower --conf<span class="o">=</span>path/to/atlas/config_flower.py
+</pre></div>
+</div>
+<p>Celery Flower will return a url in the first part of a long response.</p>
+<div class="highlight-log"><div class="highlight"><pre><span></span>[I 170118 22:33:35 command:136] Visit me at http://[YOUR-URL]:5555
+</pre></div>
+</div>
+</div>
+</div>
+
+
+           </div>
+           <div class="articleComments">
+            
+           </div>
+          </div>
+          <footer>
+  
+    <div class="rst-footer-buttons" role="navigation" aria-label="footer navigation">
+      
+        <a href="running.html" class="btn btn-neutral float-right" title="Running Atlas" accesskey="n" rel="next">Next <span class="fa fa-arrow-circle-right"></span></a>
+      
+      
+        <a href="index.html" class="btn btn-neutral" title="Atlas" accesskey="p" rel="prev"><span class="fa fa-arrow-circle-left"></span> Previous</a>
+      
+    </div>
+  
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>
+        &copy; Copyright 2016, University of Colorado Boulder.
+
+    </p>
+  </div>
+  Built with <a href="http://sphinx-doc.org/">Sphinx</a> using a <a href="https://github.com/snide/sphinx_rtd_theme">theme</a> provided by <a href="https://readthedocs.org">Read the Docs</a>. 
+
+</footer>
+
+        </div>
+      </div>
+
+    </section>
+
+  </div>
+  
+
+
+  
+
+    <script type="text/javascript">
+        var DOCUMENTATION_OPTIONS = {
+            URL_ROOT:'./',
+            VERSION:'1.1.0',
+            COLLAPSE_INDEX:false,
+            FILE_SUFFIX:'.html',
+            HAS_SOURCE:  true,
+            SOURCELINK_SUFFIX: ''
+        };
+    </script>
+      <script type="text/javascript" src="_static/jquery.js"></script>
+      <script type="text/javascript" src="_static/underscore.js"></script>
+      <script type="text/javascript" src="_static/doctools.js"></script>
+
+  
+
+  
+  
+    <script type="text/javascript" src="_static/js/theme.js"></script>
+  
+
+  
+  
+  <script type="text/javascript">
+      jQuery(function () {
+          SphinxRtdTheme.StickyNav.enable();
+      });
+  </script>
+   
+
+</body>
+</html>

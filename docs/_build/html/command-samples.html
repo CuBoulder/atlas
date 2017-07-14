@@ -1,0 +1,292 @@
+
+
+<!DOCTYPE html>
+<!--[if IE 8]><html class="no-js lt-ie9" lang="en" > <![endif]-->
+<!--[if gt IE 8]><!--> <html class="no-js" lang="en" > <!--<![endif]-->
+<head>
+  <meta charset="utf-8">
+  
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  
+  <title>Command Samples &mdash; Atlas 1.1.0 documentation</title>
+  
+
+  
+  
+  
+  
+
+  
+
+  
+  
+    
+
+  
+
+  
+  
+    <link rel="stylesheet" href="_static/css/theme.css" type="text/css" />
+  
+
+  
+
+  
+    <link rel="top" title="Atlas 1.1.0 documentation" href="index.html"/>
+        <link rel="prev" title="Running Atlas" href="running.html"/> 
+
+  
+  <script src="_static/js/modernizr.min.js"></script>
+
+</head>
+
+<body class="wy-body-for-nav" role="document">
+
+   
+  <div class="wy-grid-for-nav">
+
+    
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search">
+          
+
+          
+            <a href="index.html" class="icon icon-home"> Atlas
+          
+
+          
+          </a>
+
+          
+            
+            
+              <div class="version">
+                1.1.0
+              </div>
+            
+          
+
+          
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+
+          
+        </div>
+
+        <div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="main navigation">
+          
+            
+            
+              
+            
+            
+              <ul class="current">
+<li class="toctree-l1"><a class="reference internal" href="configuration.html">Configuration and Deployment</a></li>
+<li class="toctree-l1"><a class="reference internal" href="running.html">Running Atlas</a></li>
+<li class="toctree-l1 current"><a class="current reference internal" href="#">Command Samples</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="#code-items">Code items</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#instance-items">Instance items</a></li>
+</ul>
+</li>
+</ul>
+
+            
+          
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap">
+
+      
+      <nav class="wy-nav-top" role="navigation" aria-label="top navigation">
+        
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="index.html">Atlas</a>
+        
+      </nav>
+
+
+      
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+<div role="navigation" aria-label="breadcrumbs navigation">
+
+  <ul class="wy-breadcrumbs">
+    
+      <li><a href="index.html">Docs</a> &raquo;</li>
+        
+      <li>Command Samples</li>
+    
+    
+      <li class="wy-breadcrumbs-aside">
+        
+            
+            <a href="_sources/command-samples.txt" rel="nofollow"> View page source</a>
+          
+        
+      </li>
+    
+  </ul>
+
+  
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+            
+  <div class="section" id="command-samples">
+<h1>Command Samples<a class="headerlink" href="#command-samples" title="Permalink to this headline">¶</a></h1>
+<div class="section" id="code-items">
+<h2>Code items<a class="headerlink" href="#code-items" title="Permalink to this headline">¶</a></h2>
+<ul>
+<li><dl class="first docutils">
+<dt>Drupal core 7.42</dt>
+<dd><div class="first last highlight-bash"><div class="highlight"><pre><span></span>curl -i -v -X POST -d <span class="s1">&#39;{&quot;git_url&quot;: &quot;git@github.com:CuBoulder/drupal-7.x.git&quot;, &quot;commit_hash&quot;: &quot;9ee4a1a2fa3bedb3852d21f2198509c107c48890&quot;, &quot;meta&quot;:{&quot;version&quot;: &quot;7.42&quot;, &quot;code_type&quot;: &quot;core&quot;, &quot;name&quot;: &quot;drupal&quot;, &quot;is_current&quot;: true}}&#39;</span> -H <span class="s1">&#39;Content-Type: application/json&#39;</span> -u <span class="s1">&#39;USERNAME:PASSWORD&#39;</span> https://inventory.local/atlas/code
+</pre></div>
+</div>
+</dd>
+</dl>
+</li>
+<li><dl class="first docutils">
+<dt>Express 2.2.5</dt>
+<dd><div class="first last highlight-bash"><div class="highlight"><pre><span></span>curl -i -v -X POST -d <span class="s1">&#39;{&quot;git_url&quot;: &quot;git@github.com:CuBoulder/express.git&quot;, &quot;commit_hash&quot;: &quot;5f1fb979cacff22d6641da3c413696d02f9cc5f5&quot;, &quot;meta&quot;:{&quot;version&quot;: &quot;2.2.5&quot;, &quot;code_type&quot;: &quot;profile&quot;, &quot;name&quot;: &quot;express&quot;, &quot;is_current&quot;: true}}&#39;</span> -H <span class="s1">&#39;Content-Type: application/json&#39;</span> -u <span class="s1">&#39;USERNAME:PASSWORD&#39;</span> https://inventory.local/atlas/code
+</pre></div>
+</div>
+</dd>
+</dl>
+</li>
+</ul>
+</div>
+<div class="section" id="instance-items">
+<h2>Instance items<a class="headerlink" href="#instance-items" title="Permalink to this headline">¶</a></h2>
+<ul>
+<li><dl class="first docutils">
+<dt>Create an Instance</dt>
+<dd><div class="first last highlight-bash"><div class="highlight"><pre><span></span>curl -i -v -X POST -d <span class="s1">&#39;{&quot;status&quot;: &quot;pending&quot;}&#39;</span> -H <span class="s1">&#39;Content-Type: application/json&#39;</span> -u <span class="s1">&#39;USERNAME:PASSWORD&#39;</span> https://inventory.local/atlas/instance
+</pre></div>
+</div>
+</dd>
+</dl>
+</li>
+<li><dl class="first docutils">
+<dt>Change the &#8216;status&#8217; of an Instance to &#8216;installed&#8217;</dt>
+<dd><div class="first last highlight-bash"><div class="highlight"><pre><span></span>curl -i -v -X PATCH -d <span class="s1">&#39;{&quot;status&quot;: &quot;installed&quot;}&#39;</span> -H <span class="s2">&quot;If-Match: 4173813fc614292febc79241a8b677266cbed826&quot;</span> -H <span class="s1">&#39;Content-Type: application/json&#39;</span> -u <span class="s1">&#39;USERNAME:PASSWORD&#39;</span> https://inventory.local/atlas/instance/579b8f9a89b0dc0d7d7ce090
+</pre></div>
+</div>
+</dd>
+</dl>
+</li>
+<li><dl class="first docutils">
+<dt>Update the installation profile for an Instance</dt>
+<dd><div class="first last highlight-bash"><div class="highlight"><pre><span></span>curl -i -v -X PATCH -d <span class="s1">&#39;{&quot;code&quot;: {&quot;profile&quot;: &quot;57adffc389b0dc1631822bce&quot;}}&#39;</span> -H <span class="s2">&quot;If-Match: b8c1942d0238559ca9c3333626777ec7ce97f955&quot;</span> -H <span class="s1">&#39;Content-Type: application/json&#39;</span> -u <span class="s1">&#39;USERNAME:PASSWORD&#39;</span> https://inventory.local/atlas/instance/57adff1389b0dc1613d0f948
+</pre></div>
+</div>
+</dd>
+</dl>
+</li>
+<li><dl class="first docutils">
+<dt>Delete an Instance</dt>
+<dd><div class="first last highlight-bash"><div class="highlight"><pre><span></span>curl -i -v -X DELETE -H <span class="s2">&quot;If-Match: 5b3bc91045cca9fdc9a8b50bfb4095ecceb2dcbe&quot;</span> -H <span class="s1">&#39;Content-Type: application/json&#39;</span> -u <span class="s1">&#39;USERNAME:PASSWORD&#39;</span> https://inventory.local/atlas/instance/57adfdb789b0dc1612c23a90
+</pre></div>
+</div>
+</dd>
+</dl>
+</li>
+</ul>
+</div>
+</div>
+
+
+           </div>
+           <div class="articleComments">
+            
+           </div>
+          </div>
+          <footer>
+  
+    <div class="rst-footer-buttons" role="navigation" aria-label="footer navigation">
+      
+      
+        <a href="running.html" class="btn btn-neutral" title="Running Atlas" accesskey="p" rel="prev"><span class="fa fa-arrow-circle-left"></span> Previous</a>
+      
+    </div>
+  
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>
+        &copy; Copyright 2016, University of Colorado Boulder.
+
+    </p>
+  </div>
+  Built with <a href="http://sphinx-doc.org/">Sphinx</a> using a <a href="https://github.com/snide/sphinx_rtd_theme">theme</a> provided by <a href="https://readthedocs.org">Read the Docs</a>. 
+
+</footer>
+
+        </div>
+      </div>
+
+    </section>
+
+  </div>
+  
+
+
+  
+
+    <script type="text/javascript">
+        var DOCUMENTATION_OPTIONS = {
+            URL_ROOT:'./',
+            VERSION:'1.1.0',
+            COLLAPSE_INDEX:false,
+            FILE_SUFFIX:'.html',
+            HAS_SOURCE:  true,
+            SOURCELINK_SUFFIX: ''
+        };
+    </script>
+      <script type="text/javascript" src="_static/jquery.js"></script>
+      <script type="text/javascript" src="_static/underscore.js"></script>
+      <script type="text/javascript" src="_static/doctools.js"></script>
+
+  
+
+  
+  
+    <script type="text/javascript" src="_static/js/theme.js"></script>
+  
+
+  
+  
+  <script type="text/javascript">
+      jQuery(function () {
+          SphinxRtdTheme.StickyNav.enable();
+      });
+  </script>
+   
+
+</body>
+</html>

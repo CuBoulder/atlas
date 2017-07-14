@@ -1,0 +1,346 @@
+
+
+<!DOCTYPE html>
+<!--[if IE 8]><html class="no-js lt-ie9" lang="en" > <![endif]-->
+<!--[if gt IE 8]><!--> <html class="no-js" lang="en" > <!--<![endif]-->
+<head>
+  <meta charset="utf-8">
+  
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  
+  <title>Running Atlas &mdash; Atlas 1.1.0 documentation</title>
+  
+
+  
+  
+  
+  
+
+  
+
+  
+  
+    
+
+  
+
+  
+  
+    <link rel="stylesheet" href="_static/css/theme.css" type="text/css" />
+  
+
+  
+
+  
+    <link rel="top" title="Atlas 1.1.0 documentation" href="index.html"/>
+        <link rel="next" title="Command Samples" href="command-samples.html"/>
+        <link rel="prev" title="Configuration and Deployment" href="configuration.html"/> 
+
+  
+  <script src="_static/js/modernizr.min.js"></script>
+
+</head>
+
+<body class="wy-body-for-nav" role="document">
+
+   
+  <div class="wy-grid-for-nav">
+
+    
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search">
+          
+
+          
+            <a href="index.html" class="icon icon-home"> Atlas
+          
+
+          
+          </a>
+
+          
+            
+            
+              <div class="version">
+                1.1.0
+              </div>
+            
+          
+
+          
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+
+          
+        </div>
+
+        <div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="main navigation">
+          
+            
+            
+              
+            
+            
+              <ul class="current">
+<li class="toctree-l1"><a class="reference internal" href="configuration.html">Configuration and Deployment</a></li>
+<li class="toctree-l1 current"><a class="current reference internal" href="#">Running Atlas</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="#running-the-first-time">Running the first time</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#cronological-tasks">Cronological tasks</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#instances">Instances</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#code">Code</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#commands">Commands</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="command-samples.html">Command Samples</a></li>
+</ul>
+
+            
+          
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap">
+
+      
+      <nav class="wy-nav-top" role="navigation" aria-label="top navigation">
+        
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="index.html">Atlas</a>
+        
+      </nav>
+
+
+      
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+<div role="navigation" aria-label="breadcrumbs navigation">
+
+  <ul class="wy-breadcrumbs">
+    
+      <li><a href="index.html">Docs</a> &raquo;</li>
+        
+      <li>Running Atlas</li>
+    
+    
+      <li class="wy-breadcrumbs-aside">
+        
+            
+            <a href="_sources/running.txt" rel="nofollow"> View page source</a>
+          
+        
+      </li>
+    
+  </ul>
+
+  
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+            
+  <div class="section" id="running-atlas">
+<h1>Running Atlas<a class="headerlink" href="#running-atlas" title="Permalink to this headline">¶</a></h1>
+<div class="section" id="running-the-first-time">
+<h2>Running the first time<a class="headerlink" href="#running-the-first-time" title="Permalink to this headline">¶</a></h2>
+<p>Code items should be created first.</p>
+<p>You will need a <code class="docutils literal"><span class="pre">core</span></code> and <code class="docutils literal"><span class="pre">profile</span></code> with <code class="docutils literal"><span class="pre">meta.is_current:</span> <span class="pre">true</span></code> set.</p>
+</div>
+<div class="section" id="cronological-tasks">
+<h2>Cronological tasks<a class="headerlink" href="#cronological-tasks" title="Permalink to this headline">¶</a></h2>
+<ul class="simple">
+<li><dl class="first docutils">
+<dt>Every 5 minutes</dt>
+<dd><ul class="first last">
+<li>Available instances check - Maintains 5 <code class="docutils literal"><span class="pre">available</span></code> instances</li>
+<li>Delete stuck &#8216;pending&#8217; instances - Cleans up instances that fail to provision correctly.</li>
+</ul>
+</dd>
+</dl>
+</li>
+<li><dl class="first docutils">
+<dt>Every 60 minutes</dt>
+<dd><ul class="first last">
+<li>Cron - &#8216;launched&#8217; instances</li>
+<li>Remove orphan statistics - Remove statistics items that do not have a corelating instance record.</li>
+</ul>
+</dd>
+</dl>
+</li>
+<li><dl class="first docutils">
+<dt>Every 2 hours</dt>
+<dd><ul class="first last">
+<li>Cron - instances with the <code class="docutils literal"><span class="pre">cu_classes_bundle</span></code></li>
+<li>Take down old installed instances - On non-production environments, remove isntalled instances that are more than 35 days old.</li>
+</ul>
+</dd>
+</dl>
+</li>
+<li><dl class="first docutils">
+<dt>Every 3 hours</dt>
+<dd><ul class="first last">
+<li>Cron - &#8216;installed&#8217; instances</li>
+</ul>
+</dd>
+</dl>
+</li>
+<li><dl class="first docutils">
+<dt>Every 24 hours</dt>
+<dd><ul class="first last">
+<li>Replace available instances - Serves as routine integration testing.</li>
+<li>Verify statistics updating - Verify that active statistics items have been updated in the last 36 hours.</li>
+</ul>
+</dd>
+</dl>
+</li>
+</ul>
+</div>
+<div class="section" id="instances">
+<h2>Instances<a class="headerlink" href="#instances" title="Permalink to this headline">¶</a></h2>
+<p>Instance items are created with a &#8216;pending&#8217; status and can be assigned a specific core and/or profile when created. If a core or profile is not specified, the &#8216;current&#8217; version of the default is used.</p>
+</div>
+<div class="section" id="code">
+<h2>Code<a class="headerlink" href="#code" title="Permalink to this headline">¶</a></h2>
+<p>The safest option is always to use <strong>POST</strong> to create a new item and then to <strong>PATCH</strong> the instance to update the code for that instance.</p>
+<p>How to create or update code:</p>
+<ul class="simple">
+<li>No current version - <strong>POST</strong> new code item</li>
+<li>Stable version - <strong>POST</strong> new code item</li>
+<li>Version with error and new version does not require an update hook - <strong>PATCH</strong> existing code item</li>
+<li>Version with error and new version <em>does</em> require an update hook - <strong>POST</strong> new code item</li>
+</ul>
+</div>
+<div class="section" id="commands">
+<h2>Commands<a class="headerlink" href="#commands" title="Permalink to this headline">¶</a></h2>
+<ul>
+<li><dl class="first docutils">
+<dt>Schema notes:</dt>
+<dd><ul class="first last simple">
+<li><code class="docutils literal"><span class="pre">name</span></code> is an end user facing field that should describe the command.</li>
+<li><code class="docutils literal"><span class="pre">command</span></code> is the string that is run on the server(s). Commands do not support prompts and should exit with a <code class="docutils literal"><span class="pre">0</span></code> exit code, this means end drush commands like <cite>drush en [module_name] -y</cite> with <cite>-y</cite>.</li>
+<li><code class="docutils literal"><span class="pre">query</span></code> appended to <code class="docutils literal"><span class="pre">?where</span></code> in a call to the Atlas API. Special characters, including all symbols, need to be unicode encoded ([Unicode Character table](<a class="reference external" href="https://unicode-table.com/">https://unicode-table.com/</a>)).</li>
+<li><code class="docutils literal"><span class="pre">single_server</span></code> is useful for commands that affect only the database layer like <em>module enable</em> or <em>Drupal cache clear</em>.</li>
+</ul>
+</dd>
+</dl>
+</li>
+<li><dl class="first docutils">
+<dt>There are several commands that have hooks that interrupt the normal command flow. They are:</dt>
+<dd><ul class="first last simple">
+<li><code class="docutils literal"><span class="pre">clear_apc</span></code></li>
+<li><code class="docutils literal"><span class="pre">import_code</span></code></li>
+<li><code class="docutils literal"><span class="pre">correct_file_permissions</span></code></li>
+<li><code class="docutils literal"><span class="pre">update_settings_file</span></code></li>
+<li><code class="docutils literal"><span class="pre">update_homepage_extra_files</span></code></li>
+</ul>
+</dd>
+</dl>
+</li>
+<li><dl class="first docutils">
+<dt>To use a command, first <strong>POST</strong> to create the command. Then <strong>PATCH</strong> the item to &#8216;run&#8217; the command.</dt>
+<dd><div class="first last admonition note">
+<p class="first admonition-title">Note</p>
+<p class="last">In the future, commands will be run by sending a <strong>POST</strong> to <code class="docutils literal"><span class="pre">command/&lt;command_id&gt;/execute/</span></code>.</p>
+</div>
+</dd>
+</dl>
+</li>
+</ul>
+</div>
+</div>
+
+
+           </div>
+           <div class="articleComments">
+            
+           </div>
+          </div>
+          <footer>
+  
+    <div class="rst-footer-buttons" role="navigation" aria-label="footer navigation">
+      
+        <a href="command-samples.html" class="btn btn-neutral float-right" title="Command Samples" accesskey="n" rel="next">Next <span class="fa fa-arrow-circle-right"></span></a>
+      
+      
+        <a href="configuration.html" class="btn btn-neutral" title="Configuration and Deployment" accesskey="p" rel="prev"><span class="fa fa-arrow-circle-left"></span> Previous</a>
+      
+    </div>
+  
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>
+        &copy; Copyright 2016, University of Colorado Boulder.
+
+    </p>
+  </div>
+  Built with <a href="http://sphinx-doc.org/">Sphinx</a> using a <a href="https://github.com/snide/sphinx_rtd_theme">theme</a> provided by <a href="https://readthedocs.org">Read the Docs</a>. 
+
+</footer>
+
+        </div>
+      </div>
+
+    </section>
+
+  </div>
+  
+
+
+  
+
+    <script type="text/javascript">
+        var DOCUMENTATION_OPTIONS = {
+            URL_ROOT:'./',
+            VERSION:'1.1.0',
+            COLLAPSE_INDEX:false,
+            FILE_SUFFIX:'.html',
+            HAS_SOURCE:  true,
+            SOURCELINK_SUFFIX: ''
+        };
+    </script>
+      <script type="text/javascript" src="_static/jquery.js"></script>
+      <script type="text/javascript" src="_static/underscore.js"></script>
+      <script type="text/javascript" src="_static/doctools.js"></script>
+
+  
+
+  
+  
+    <script type="text/javascript" src="_static/js/theme.js"></script>
+  
+
+  
+  
+  <script type="text/javascript">
+      jQuery(function () {
+          SphinxRtdTheme.StickyNav.enable();
+      });
+  </script>
+   
+
+</body>
+</html>

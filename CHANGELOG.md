@@ -21,6 +21,8 @@ Resolves:
 - &#35;230 - Convert site to instance
 - &#35;231 - Add site
 - &#35;232 - Fix Siteimprove parameters
+- &#35;294 - Indicate that Atlas owns all files that it templates
+- &#35;298 - Read the Docs and Sphinx support.
 
 ## v1.0.17
 

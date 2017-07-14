@@ -16,7 +16,7 @@ About Atlas
 
 Atlas is a RESTful API that interacts with servers to deploy and maintain `Web Express`_ at University of Colorado Boulder.
 
-It is built using Python Eve_, Celery_, and Fabric_; and MongoDB_.
+Atlas is built using Python Eve_, Celery_, and Fabric_; and MongoDB_.
 
 Features
 -----------------

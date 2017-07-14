@@ -3,11 +3,13 @@ Configuration and Deployment
 
 Atlas is tested and run on RHEL 7 uing ``mod_wsgi`` and Apache 2.4 with the following additional packages installed:
 
-* ``python-ldap``
 * ``openldap``
-* ``mod_wsgi``
-* 
-* 
+* ``openldap-devel``
+* ``libffi-devel``
+* ``gcc``
+* ``openssl``
+* ``openssl-devel``
+
 
 Configuration files
 -----------------------

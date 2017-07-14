@@ -2,14 +2,14 @@ Running Atlas
 ========================
 
 Running the first time
-------------------------
+-------------------------
 
 Code items should be created first.
 
 You will need a ``core`` and ``profile`` with ``meta.is_current: true`` set.
 
 Cronological tasks
--------------------
+---------------------
 
 * Every 5 minutes
     * Available instances check - Maintains 5 ``available`` instances
@@ -26,11 +26,6 @@ Cronological tasks
     * Replace available instances - Serves as routine integration testing.
     * Verify statistics updating - Verify that active statistics items have been updated in the last 36 hours.
 
-Instances
------------
-
-Instance items are created with a 'pending' status and can be assigned a specific core and/or profile when created. If a core or profile is not specified, the 'current' version of the default is used.
-
 Code
 ----------
 
@@ -42,6 +37,26 @@ How to create or update code:
 * Stable version - **POST** new code item
 * Version with error and new version does not require an update hook - **PATCH** existing code item
 * Version with error and new version *does* require an update hook - **POST** new code item
+
+Instances and Routes
+-------------
+
+Instance items are created with a 'pending' status and can be assigned a specific core and/or profile when created. If a core or profile is not specified, the 'current' version of the default is used.
+
+Create an instance
+~~~~~~~~~~~~~~~~~~~~~~
+.. code-block:: bash
+
+    curl -i -v -X POST -d '{"status": "pending"}' -H 'Content-Type: application/json' -u 'USERNAME:PASSWORD' https://127.0.0.1/atlas/instance
+
+Update an instance
+~~~~~~~~~~~~~~~~~~~~~
+* Change the 'status' of an Instance to 'installed'
+    .. code-block:: bash
+
+        curl -i -v -X PATCH -d '{"status": "installed"}' -H "If-Match: 4173813fc614292febc79241a8b677266cbed826" -H 'Content-Type: application/json' -u 'USERNAME:PASSWORD' https://inventory.local/atlas/instance/
+
+
 
 Commands
 ---------------

@@ -7,6 +7,8 @@ import ldap
 import json
 import smtplib
 
+import OpenSSL
+
 from re import compile, search
 from cryptography.fernet import Fernet
 from random import choice

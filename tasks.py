@@ -358,7 +358,7 @@ def instance_remove(instance):
             for statistic in statistics['_items']:
                 utilities.delete_eve('statistics', statistic['_id'])
         execute(fabfile.instance_remove, instance=instance)
-    logger.debug('Site remove | %s', site)
+    logger.debug('Site remove | %s', instance)
 
     if environment != 'local':
         execute(fabfile.update_f5)

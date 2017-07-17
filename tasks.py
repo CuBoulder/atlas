@@ -30,10 +30,6 @@ celery = Celery('tasks')
 celery.config_from_object(config_celery)
 
 
-class CeleryException(Exception):
-    pass
-
-
 @celery.task
 def code_deploy(item):
     """
@@ -178,26 +174,22 @@ def site_provision(site):
     try:
         logger.debug('Site provision | Create database')
         result_create_database = execute(fabfile.create_database, site=site)
-    except CeleryException as e:
-        logger.error('Site provision failed | Database creation failed')
-        return result_create_database
+    except:
+        logger.error('Site provision failed | Database creation failed | %s',
+                     result_create_database)
 
     try:
         provision_task = execute(fabfile.site_provision, site=site)
-        if isinstance(provision_task.get('host_string', None), BaseException):
-            raise provision_task.get('host_string')
-    except CeleryException as e:
-        logger.error('Site provision failed | Error Message | %s', e.message)
+    except:
+        logger.error('Site provision failed | Error Message | %s', provision_task)
 
     logger.debug('Site provision | Provision Fabric task | %s', provision_task)
     logger.debug('Site provision | Provision Fabric task values | %s', provision_task.values)
 
     try:
         install_task = execute(fabfile.site_install, site=site)
-        if isinstance(install_task.get('host_string', None), BaseException):
-            raise install_task.get('host_string')
-    except CeleryException as e:
-        logger.error('Site install failed | Error Message | %s', e.message)
+    except:
+        logger.error('Site install failed | Error Message | %s', install_task)
 
     logger.debug('Site provision | Install Fabric task | %s', install_task)
     logger.debug('Site provision | Install Fabric task values | %s', install_task.values)

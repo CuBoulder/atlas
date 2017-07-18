@@ -510,7 +510,8 @@ def update_database(site):
 @roles('webserver_single')
 def registry_rebuild(site):
     """
-    Run a drush rr
+    Run a drush rr and drush cc drush. 
+    Drush command cache clear is a workaround, see #306.
 
     :param site: Site to run command on
     :return:
@@ -518,7 +519,7 @@ def registry_rebuild(site):
     print('Drush registry rebuild\n{0}'.format(site))
     code_directory_sid = '{0}/{1}/{1}'.format(sites_code_root, site['sid'])
     with cd(code_directory_sid):
-        run("drush rr")
+        run("drush rr; drush cc drush")
 
 
 @roles('webservers')
@@ -743,7 +744,7 @@ def create_settings_files(site):
 def install_site(profile_name, code_directory_current):
     with cd(code_directory_current):
         run('drush site-install -y {0}'.format(profile_name))
-        run('drush rr')
+        run('drush rr; drush cc drush')
 
 
 def clone_repo(git_url, checkout_item, destination):

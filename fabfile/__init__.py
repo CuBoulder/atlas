@@ -699,7 +699,7 @@ def create_settings_files(site):
                     use_jinja=True,
                     template_dir=template_dir,
                     backup=False,
-                    mode='0664')
+                    mode='0644')
 
     settings_variables = {
         'profile':profile_name,
@@ -718,7 +718,7 @@ def create_settings_files(site):
                     use_jinja=True,
                     template_dir=template_dir,
                     backup=False,
-                    mode='0664')
+                    mode='0644')
 
     local_post_settings_variables = {
         'sid':sid,
@@ -737,7 +737,7 @@ def create_settings_files(site):
                     use_jinja=True,
                     template_dir=template_dir,
                     backup=False,
-                    mode='0664')
+                    mode='0644')
 
 
 @runs_once

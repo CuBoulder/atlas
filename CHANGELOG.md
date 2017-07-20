@@ -1,5 +1,19 @@
 # Change log
 
+## v1.0.19
+
+Resolves:
+
+- &#35;306 - Add `drush cc drush` to registry rebuilds
+
+## v1.0.18
+
+Resolves:
+
+- &#35;272 - Add 'locked' status
+- Unbind LDAP
+- &#35;282 - Continue to try a squash this bug
+
 ## v1.0.17
 
 Resolves:
@@ -12,7 +26,7 @@ Resolves:
 - &#35;265 - Verify statistics objects are getting updated
 - &#35;251 - Stuck pending instances not being removed
 - &#35;269 - Capture all bundles as typed or other
-- &#35;282 - Settings files creation fails often. Switch to Fabric templating.
+- &#35;282 - Provision often fails, but the instance ends up 'available'. Settings files or DB creation fails. Switched to Fabric templating. Wrapped fabric commands in exception catching.
 
 ## v1.0.16
 

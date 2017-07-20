@@ -29,6 +29,15 @@ CELERYBEAT_SCHEDULE = {
             "exclude_packages": ["cu_classes_bundle"]
         },
     },
+    'locked_cron': {
+        'task': 'atlas.tasks.cron',
+        'schedule': timedelta(hours=6),
+        'kwargs': {
+            "type": "express",
+            "status": "locked",
+            "exclude_packages": ["cu_classes_bundle"]
+        },
+    },
     'classes_cron': {
         'task': 'atlas.tasks.cron',
         'schedule': timedelta(hours=2),

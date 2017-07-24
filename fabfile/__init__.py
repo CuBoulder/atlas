@@ -47,7 +47,7 @@ def code_deploy(item):
     """
     # Need warn only to allow the error to pass to celery.
     with settings(warn_only=True):
-        print('Code - Deploy\n{0}'.format(item))
+        print 'Code - Deploy\n{0}'.format(item)
         if item['meta']['code_type'] == 'library':
             code_type_dir = 'libraries'
         else:
@@ -59,9 +59,9 @@ def code_deploy(item):
             item['meta']['version'])
         create_directory_structure(code_folder)
         clone_task = clone_repo(item["git_url"], item["commit_hash"], code_folder)
-        print('Got clone response')
-        print(clone_task)
-        if clone_task == True:
+        print 'Got clone response'
+        print clone_task
+        if clone_task is True:
             if item['meta']['is_current']:
                 code_folder_current = '{0}/{1}/{2}/{2}-current'.format(
                     code_root,
@@ -483,7 +483,7 @@ def command_run(site, command):
     :param command: Command to run
     :return:
     """
-    print('Command - {0}\n{1}'.format(site['sid'], command))
+    print 'Command - {0}\n{1}'.format(site['sid'], command)
     web_directory = '{0}/{1}/{2}'.format(
         sites_web_root,
         site['type'],
@@ -500,11 +500,11 @@ def update_database(site):
     :param site: Site to run command on
     :return:
     """
-    print('Database Update\n{0}'.format(site))
+    print 'Database Update\n{0}'.format(site)
     code_directory_sid = '{0}/{1}/{1}'.format(sites_code_root, site['sid'])
     with cd(code_directory_sid):
-        print('Running database updates.')
-        run("drush updb -y")
+        print 'Running database updates.'
+        run('drush updb -y')
 
 
 @roles('webserver_single')
@@ -516,26 +516,26 @@ def registry_rebuild(site):
     :param site: Site to run command on
     :return:
     """
-    print('Drush registry rebuild\n{0}'.format(site))
+    print 'Drush registry rebuild\n{0}'.format(site)
     code_directory_sid = '{0}/{1}/{1}'.format(sites_code_root, site['sid'])
     with cd(code_directory_sid):
-        run("drush rr; drush cc drush")
+        run('drush rr; drush cc drush;')
 
 
 @roles('webservers')
 def clear_apc():
-    run("wget -q -O - http://localhost/sysadmintools/apc/clearapc.php")
+    run('wget -q -O - http://localhost/sysadmintools/apc/clearapc.php;')
 
 
 def drush_cache_clear(sid):
     code_directory_current = '{0}/{1}/current'.format(sites_code_root, sid)
     with cd(code_directory_current):
-        run("drush cc all")
+        run('drush cc all')
 
 
 @roles('webservers')
 def rewrite_symlinks(site):
-    print('Rewrite symlinks\n{0}'.format(site))
+    print 'Rewrite symlinks | {0}'.format(site)
     code_directory_current = '{0}/{1}/current'.format(sites_code_root, site['sid'])
     web_directory = '{0}/{1}/{2}'.format(sites_web_root, site['type'], site['sid'])
     if site['pool'] != 'poolb-homepage':

@@ -23,10 +23,9 @@ if path not in sys.path:
 
 # Fabric environmental settings.
 env.user = ssh_user
-# env.key_filename =
-
 # Allow ~/.ssh/config to be utilized.
 env.use_ssh_config = True
+env.ssh_config_path = ssh_user_config_path
 env.roledefs = serverdefs[environment]
 
 

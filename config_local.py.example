@@ -39,6 +39,7 @@ ldap_dns_domain_name = 'dc=DOMAIN,dc=TLD'
 # User that orchestration runs as.
 ssh_user = 'SSH_USER'
 ssh_user_group = 'SSH_USER_GROUP'
+ssh_user_config_path = 'SSH_USER_CONFIG_PATH'
 webserver_user = 'WEBSERVER_USER'
 webserver_user_group = 'WEBSERVER_USER_GROUP'
 database_user = 'DATABASE_USER'

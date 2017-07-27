@@ -392,7 +392,7 @@ def command_prepare(item):
     """
     logger.debug('Prepare Command\n{0}'.format(item))
     if item['command'] == 'clear_apc':
-        execute(fabfile.clear_apc())
+        execute(fabfile.clear_apc)
         return
     if item['command'] == 'import_code':
         utilities.import_code(item['query'])

@@ -66,10 +66,10 @@ class AtlasBasicAuth(BasicAuth):
             current_app.logger.debug('LDAP - {0} - Invalid credentials'.format(username))
         finally:
             try:
-                current_app.logger..debug('LDAP - unbind')
+                current_app.logger.debug('LDAP - unbind')
                 l.unbind()
             except ldap.LDAPError, e:
-                current_app.logger..error('LDAP - unbind failed')
+                current_app.logger.error('LDAP - unbind failed')
                 pass
 
         # Apparently this was a bad login attempt

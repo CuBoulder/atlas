@@ -37,10 +37,6 @@ celery = Celery('tasks')
 celery.config_from_object(config_celery)
 
 
-class CeleryException(Exception):
-    pass
-
-
 @celery.task
 def code_deploy(item):
     """

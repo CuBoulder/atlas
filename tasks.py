@@ -183,11 +183,18 @@ def instance_provision(instance):
     instance['status'] = 'available'
 
     try:
+        log.debug('Instance provision | Create database')
+        result_create_database = execute(fabfile.create_database, instance=instance)
+    except :
+        log.error('Instance provision failed | Database creation failed | %s', result_create_database)
+        return result_create_database
+
+    try:
         provision_task = execute(fabfile.instance_provision, instance=instance)
         if isinstance(provision_task.get('host_string', None), BaseException):
             raise provision_task.get('host_string')
-    except CeleryException as e:
-        log.info('Instance | Provision failed | %s', e.message)
+    except:
+        log.error('Instance provision failed | Error Message | %s', provision_task)
 
     log.debug('Instance | Provision Fabric task | %s', provision_task)
     log.debug('Instance | Provision Fabric task values | %s', provision_task.values)
@@ -196,8 +203,8 @@ def instance_provision(instance):
         install_task = execute(fabfile.instance_install, instance=instance)
         if isinstance(install_task.get('host_string', None), BaseException):
             raise install_task.get('host_string')
-    except CeleryException as e:
-        log.info('Instance | Install failed | %s', e.message)
+    except:
+        log.error('Site install failed | Error Message | %s', install_task)
 
     log.debug('Instance | Install Fabric task | %s', install_task)
     log.debug('Instance | Install Fabric task values | %s', install_task.values)
@@ -286,7 +293,7 @@ def instance_update(instance, updates, original):
 
     if updates.get('status'):
         log.debug('Found status change.')
-        if updates['status'] in ['installing', 'launching', 'take_down', 'restore']:
+        if updates['status'] in ['installing', 'launching', 'locked', 'take_down', 'restore']:
             if updates['status'] == 'installing':
                 log.debug('Status changed to installing')
                 # Set new status on instance record for update to settings files.
@@ -303,6 +310,9 @@ def instance_update(instance, updates, original):
                     execute(fabfile.diff_f5)
                     execute(fabfile.update_f5)
                 # Let fabric send patch since it is changing update group.
+            elif updates['status'] == 'locked':
+                logger.debug('Status changed to locked')
+                execute(fabfile.update_settings_file, site=site)
             elif updates['status'] == 'take_down':
                 log.debug('Status changed to take_down')
                 instance['status'] = 'down'
@@ -322,11 +332,13 @@ def instance_update(instance, updates, original):
                 patch = utilities.patch_eve('instance', instance['_id'], patch_payload)
                 log.debug(patch)
 
+    # Don't update settings files a second time if status is changing to 'locked'.
     if updates.get('settings'):
-        log.debug('Found settings change.')
-        if updates['settings'].get('page_cache_maximum_age') != original['settings'].get('page_cache_maximum_age'):
-            log.debug('Found page_cache_maximum_age change.')
-        execute(fabfile.update_settings_file, instance=instance)
+        if not updates.get('status') or updates['status'] != 'locked':
+            log.debug('Found settings change.')
+            if updates['settings'].get('page_cache_maximum_age') != original['settings'].get('page_cache_maximum_age'):
+                log.debug('Found page_cache_maximum_age change.')
+            execute(fabfile.update_settings_file, instance=instance)
 
     slack_title = '{0}/{1}'.format(base_urls[environment], instance['path'])
     slack_link = '{0}/{1}'.format(base_urls[environment], instance['path'])
@@ -389,7 +401,7 @@ def command_prepare(item):
     """
     log.debug('Command | %s', item)
     if item['command'] == 'clear_apc':
-        execute(fabfile.clear_apc())
+        execute(fabfile.clear_apc)
         return
     if item['command'] == 'import_code':
         utilities.import_code(item['query'])
@@ -503,7 +515,7 @@ def cron(instance_type=None, status=None, include_packages=None, exclude_package
         instance_query_string.append('"status":"{0}",'.format(status))
     else:
         log.debug('Cron | No status found')
-        instance_query_string.append('"status":{"$in":["installed","launched"]},')
+        instance_query_string.append('"status":{"$in":["installed","launched","locked"]},')
     if include_packages:
         log.debug('Cron | found include_packages')
         for package_name in include_packages:

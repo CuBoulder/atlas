@@ -189,6 +189,7 @@ instance_schema = {
             'installed',
             'launching',
             'launched',
+            'locked',
             'take_down',
             'down',
             'restore',
@@ -286,6 +287,9 @@ instance_schema = {
                 'type': 'datetime',
             },
             'launched': {
+                'type': 'datetime',
+            },
+            'locked': {
                 'type': 'datetime',
             },
             'taken_down': {
@@ -477,7 +481,7 @@ statistics_schema = {
             'email_address': {
                 'type': 'dict',
                 'schema': {
-                    'all': {
+                    'content_editor': {
                         'type': 'list',
                     },
                     'site_contact': {
@@ -488,7 +492,7 @@ statistics_schema = {
             'username': {
                 'type': 'dict',
                 'schema': {
-                    'all': {
+                    'content_editor': {
                         'type': 'list',
                     },
                     'site_contact': {

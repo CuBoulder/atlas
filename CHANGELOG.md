@@ -23,6 +23,19 @@ Resolves:
 - &#35;232 - Fix Siteimprove parameters
 - &#35;294 - Indicate that Atlas owns all files that it templates
 - &#35;298 - Read the Docs and Sphinx support.
+## v1.0.19
+
+Resolves:
+
+- &#35;306 - Add `drush cc drush` to registry rebuilds
+
+## v1.0.18
+
+Resolves:
+
+- &#35;272 - Add 'locked' status
+- Unbind LDAP
+- &#35;282 - Continue to try a squash this bug
 
 ## v1.0.17
 

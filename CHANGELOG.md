@@ -1,5 +1,11 @@
 # Change log
 
+## v1.0.19
+
+Resolves:
+
+- &#35;306 - Add `drush cc drush` to registry rebuilds
+
 ## v1.0.18
 
 Resolves:

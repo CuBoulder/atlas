@@ -317,11 +317,12 @@ def site_update(site, updates, original):
                 logger.debug(patch)
 
     # Don't update settings files a second time if status is changing to 'locked'.
-    if updates.get('settings') and updates['status'] != 'locked':
-        logger.debug('Found settings change.')
-        if updates['settings'].get('page_cache_maximum_age') != original['settings'].get('page_cache_maximum_age'):
-            logger.debug('Found page_cache_maximum_age change.')
-        execute(fabfile.update_settings_file, site=site)
+    if updates.get('settings'):
+        if not updates.get('status') or updates['status'] != 'locked':
+            logger.debug('Found settings change.')
+            if updates['settings'].get('page_cache_maximum_age') != original['settings'].get('page_cache_maximum_age'):
+                logger.debug('Found page_cache_maximum_age change.')
+            execute(fabfile.update_settings_file, site=site)
 
     slack_title = '{0}/{1}'.format(base_urls[environment], site['path'])
     slack_link = '{0}/{1}'.format(base_urls[environment], site['path'])
@@ -383,7 +384,7 @@ def command_prepare(item):
     """
     logger.debug('Prepare Command\n{0}'.format(item))
     if item['command'] == 'clear_apc':
-        execute(fabfile.clear_apc())
+        execute(fabfile.clear_apc)
         return
     if item['command'] == 'import_code':
         utilities.import_code(item['query'])

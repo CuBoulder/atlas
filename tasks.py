@@ -163,7 +163,7 @@ def site_provision(site):
     :param site: A single site.
     :return:
     """
-    logger.debug('Site provision| %s', site)
+    logger.debug('Site provision | %s', site)
     start_time = time.time()
     # 'db_key' needs to be added here and not in Eve so that the encryption
     # works properly.
@@ -174,9 +174,9 @@ def site_provision(site):
     try:
         logger.debug('Site provision | Create database')
         result_create_database = execute(fabfile.create_database, site=site)
+        logger.debug('Site provision | Database creation output | %s', result_create_database)
     except:
-        logger.error('Site provision failed | Database creation failed | %s',
-                     result_create_database)
+        logger.error('Site provision failed | Database creation failed')
 
     try:
         provision_task = execute(fabfile.site_provision, site=site)

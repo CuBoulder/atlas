@@ -8,6 +8,8 @@ import requests
 import re
 import os
 
+import mysql.connector as mariadb
+
 from fabric.contrib.files import append, exists, sed, upload_template
 from fabric.api import *
 from fabric.network import disconnect_all
@@ -602,46 +604,65 @@ def remove_symlink(symlink):
     run('rm -f {0}'.format(symlink))
 
 
-@runs_once
 def create_database(site):
     print 'Site Provision - {0} - Create DB'.format(site['_id'])
-    if environment != 'local':
-        os.environ['MYSQL_TEST_LOGIN_FILE'] = '/home/{0}/.mylogin.cnf'.format(
-            ssh_user)
-        mysql_login_path = "{0}_{1}".format(database_user, environment)
-        mysql_info = '{0} --login-path={1} -e'.format(mysql_path, mysql_login_path)
-        database_password = utilities.decrypt_string(site['db_key'])
-        local('{0} \'CREATE DATABASE `{1}`;\''.format(mysql_info, site['sid']))
-        # TODO: Make IP addresses config.
-        local("{0} \"CREATE USER '{1}'@'172.20.62.0/255.255.255.0' IDENTIFIED BY '{2}';\"".format(
-            mysql_info,
-            site['sid'],
-            database_password))
-        sql = "GRANT ALL PRIVILEGES ON {0}.* TO '{0}'@'172.20.62.0/255.255.255.0';".format(
-            site['sid'])
-        local("{0} \"{1}\"".format(mysql_info, sql))
-    else:
-        with settings(host_string='express.local'):
-            run("mysql -e 'create database `{}`;'".format(site['sid']))
+    # Start connection
+    host = serverdefs[environment]['database_servers']['master'] if environment != 'local' else 'express.local'
+    mariadb_connection = mariadb.connect(
+        user=database_user,
+        password=database_password,
+        host=host
+    )
+    cursor = mariadb_connection.cursor()
+
+    # Create database
+    try:
+        cursor.execute("CREATE DATABASE `%s`;", (site['sid']))
+    except mariadb.Error as error:
+        print "Error: {}".format(error)
+
+    instance_database_password = utilities.decrypt_string(site['db_key'])
+    # Add user
+    try:
+        cursor.execute("CREATE USER '%s'@'172.20.62.0/255.255.255.0' IDENTIFIED BY '%s';", (site['sid'], instance_database_password))
+    except mariadb.Error as error:
+        print "Error: {}".format(error)
+
+    # Grant privileges
+    try:
+        cursor.execute("GRANT ALL PRIVILEGES ON %s.* TO '%s'@'172.20.62.0/255.255.255.0';", (site['sid']))
+    except mariadb.Error as error:
+        print "Error: {}".format(error)
+
+    mariadb_connection.commit()
+    mariadb_connection.close()
 
 
-@runs_once
 def delete_database(site):
-    if environment != 'local':
-        # TODO: Make file location config.
-        os.environ['MYSQL_TEST_LOGIN_FILE'] = '/home/{0}/.mylogin.cnf'.format(
-            ssh_user)
-        mysql_login_path = "{0}_{1}".format(database_user, environment)
-        mysql_info = '{0} --login-path={1} -e'.format(mysql_path, mysql_login_path)
-        database_password = utilities.decrypt_string(site['db_key'])
-        local('{0} \'DROP DATABASE IF EXISTS `{1}`;\''.format(mysql_info, site['sid']))
-        # TODO: Make IP addresses config.
-        local("{0} \"DROP USER '{1}'@'172.20.62.0/255.255.255.0';\"".format(
-            mysql_info,
-            site['sid']))
-    else:
-        with settings(host_string='express.local'):
-            run("mysql -e 'DROP DATABASE IF EXISTS `{}`;'".format(site['sid']))
+    print 'Delete DB | {0}'.format(site['_id'])
+    # Start connection
+    host = serverdefs[environment]['database_servers']['master'] if environment != 'local' else 'express.local'
+    mariadb_connection = mariadb.connect(
+        user=database_user,
+        password=database_password,
+        host=host
+    )
+    cursor = mariadb_connection.cursor()
+
+    # Drop database
+    try:
+        cursor.execute("DROP DATABASE IF EXISTS `%s`;", (site['sid']))
+    except mariadb.Error as error:
+        print "Error: {}".format(error)
+
+    # Drop user
+    try:
+        cursor.execute("DROP USER '%s'@'172.20.62.0/255.255.255.0';", (site['sid']))
+    except mariadb.Error as error:
+        print "Error: {}".format(error)
+
+    mariadb_connection.commit()
+    mariadb_connection.close()
 
 
 def create_settings_files(site):

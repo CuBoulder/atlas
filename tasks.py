@@ -173,15 +173,16 @@ def site_provision(site):
 
     try:
         logger.debug('Site provision | Create database')
-        result_create_database = execute(fabfile.create_database, site=site)
-        logger.debug('Site provision | Database creation output | %s', result_create_database)
+        utilities.create_database(site['sid'], site['db_key'])
     except:
         logger.error('Site provision failed | Database creation failed')
+        raise
 
     try:
         provision_task = execute(fabfile.site_provision, site=site)
     except:
         logger.error('Site provision failed | Error Message | %s', provision_task)
+        raise
 
     logger.debug('Site provision | Provision Fabric task | %s', provision_task)
     logger.debug('Site provision | Provision Fabric task values | %s', provision_task.values)
@@ -359,6 +360,14 @@ def site_remove(site):
         if not statistics['_meta']['total'] == 0:
             for statistic in statistics['_items']:
                 utilities.delete_eve('statistics', statistic['_id'])
+
+        try:
+            logger.debug('Site remove | Delete database')
+            utilities.delete_database(site['sid'])
+        except:
+            logger.error('Site remove failed | Database remove failed')
+            raise
+
         execute(fabfile.site_remove, site=site)
 
     if environment != 'local':

@@ -8,8 +8,6 @@ import requests
 import re
 import os
 
-import mysql.connector as mariadb
-
 from fabric.contrib.files import append, exists, sed, upload_template
 from fabric.api import *
 from fabric.network import disconnect_all
@@ -421,8 +419,6 @@ def site_remove(site):
         site['type'],
         site['path'])
 
-    delete_database(site)
-
     remove_symlink(web_directory)
     remove_symlink(web_directory_path)
 
@@ -602,67 +598,6 @@ def remove_directory(folder):
 def remove_symlink(symlink):
     print('Remove symlink\n{0}'.format(symlink))
     run('rm -f {0}'.format(symlink))
-
-
-def create_database(site):
-    print 'Site Provision - {0} - Create DB'.format(site['_id'])
-    # Start connection
-    host = serverdefs[environment]['database_servers']['master'] if environment != 'local' else 'express.local'
-    mariadb_connection = mariadb.connect(
-        user=database_user,
-        password=database_password,
-        host=host
-    )
-    cursor = mariadb_connection.cursor()
-
-    # Create database
-    try:
-        cursor.execute("CREATE DATABASE `%s`;", (site['sid']))
-    except mariadb.Error as error:
-        print "Error: {}".format(error)
-
-    instance_database_password = utilities.decrypt_string(site['db_key'])
-    # Add user
-    try:
-        cursor.execute("CREATE USER '%s'@'172.20.62.0/255.255.255.0' IDENTIFIED BY '%s';", (site['sid'], instance_database_password))
-    except mariadb.Error as error:
-        print "Error: {}".format(error)
-
-    # Grant privileges
-    try:
-        cursor.execute("GRANT ALL PRIVILEGES ON %s.* TO '%s'@'172.20.62.0/255.255.255.0';", (site['sid']))
-    except mariadb.Error as error:
-        print "Error: {}".format(error)
-
-    mariadb_connection.commit()
-    mariadb_connection.close()
-
-
-def delete_database(site):
-    print 'Delete DB | {0}'.format(site['_id'])
-    # Start connection
-    host = serverdefs[environment]['database_servers']['master'] if environment != 'local' else 'express.local'
-    mariadb_connection = mariadb.connect(
-        user=database_user,
-        password=database_password,
-        host=host
-    )
-    cursor = mariadb_connection.cursor()
-
-    # Drop database
-    try:
-        cursor.execute("DROP DATABASE IF EXISTS `%s`;", (site['sid']))
-    except mariadb.Error as error:
-        print "Error: {}".format(error)
-
-    # Drop user
-    try:
-        cursor.execute("DROP USER '%s'@'172.20.62.0/255.255.255.0';", (site['sid']))
-    except mariadb.Error as error:
-        print "Error: {}".format(error)
-
-    mariadb_connection.commit()
-    mariadb_connection.close()
 
 
 def create_settings_files(site):

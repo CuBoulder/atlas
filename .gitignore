@@ -108,3 +108,6 @@ ENV/
 config_local.py
 config_servers.py
 *.dat
+
+#PyCharm Settings
+.idea

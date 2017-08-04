@@ -104,6 +104,40 @@ code_schema = {
     },
 }
 
+query_schema = {
+    'title': {
+        'type': 'string',
+        'required' : True,
+    },
+    'description': {
+        'type': 'string',
+    },
+    'endpoint': {
+        'type': 'list',
+        'allowed': ["code", "instance", "site", "statistic"],
+        'required': True,
+    },
+    # An embedded 'strongly-typed' dictionary.
+    'query': {
+        'type': 'string',
+        'unique': True,
+    },
+    'tags': {
+        'type': 'list',
+        'schema': {
+            'type': 'string',
+        }
+    },
+    'rank': {
+        'type': 'integer',
+    },
+    'created_by': {
+        'type': 'string',
+    },
+    'modified_by': {
+        'type': 'string',
+    },
+}
 
 # site schema.
 site_schema = {
@@ -806,6 +840,16 @@ instance = {
     'schema': instance_schema,
 }
 
+# Query resource
+query = {
+    'item_title': 'query',
+    'public_methods': ['GET'],
+    'public_item_methods': ['GET'],
+    'versioning': True,
+    'schema': query_schema,
+
+}
+
 # Site resource
 site = {
     'item_title': 'site',
@@ -855,6 +899,7 @@ DOMAIN = {
     'instance': instance,
     'code': code,
     'commands': commands,
+    'query': query,
     'statistics': statistics,
     'route': route,
 }

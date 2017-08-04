@@ -104,6 +104,7 @@ code_schema = {
     },
 }
 
+#Query Schema
 query_schema = {
     'title': {
         'type': 'string',

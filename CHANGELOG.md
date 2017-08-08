@@ -1,5 +1,20 @@
 # Change log
 
+## v1.0.21
+
+Resolves:
+
+- &#35;325 - Remove poola-custom
+- &#35;315 - Settings files - Conditional for DEV
+- &#35;319 - Adding query endpoint
+
+## v1.0.02
+
+Resolves:
+
+- &#35;313 - Fix clear APC command
+- &#35;309 - Switch to content editor
+
 ## v1.0.19
 
 Resolves:

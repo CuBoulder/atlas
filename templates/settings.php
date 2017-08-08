@@ -173,6 +173,10 @@ $conf['varnish_version'] = 3;
   $conf['varnish_control_key'] = substr(file_get_contents('/etc/varnish/secret'),0,-1);
 {% endif %}
 
+{% if environment == 'development' %}
+  $conf['drupal_http_request_fails'] = FALSE;
+{% endif %}
+
 // Google Analytics
 $conf['googleanalytics_account'] = 'UA-25752450-1';
 

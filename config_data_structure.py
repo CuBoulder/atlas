@@ -671,7 +671,6 @@ query = {
     'public_item_methods': ['GET'],
     'versioning': True,
     'schema': query_schema,
-
 }
 
 # Sites resource

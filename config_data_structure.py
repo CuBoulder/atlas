@@ -174,7 +174,7 @@ sites_schema = {
         'schema': {
             'page_cache_maximum_age': {
                 'type': 'integer',
-                'default': 600,
+                'default': 3600,
             },
             'siteimprove_site': {
                 'type': 'integer',

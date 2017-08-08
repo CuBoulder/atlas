@@ -155,7 +155,7 @@ sites_schema = {
     },
     'type': {
         'type': 'string',
-        'allowed':  ['custom', 'express', 'legacy', 'homepage'],
+        'allowed':  ['express', 'legacy', 'homepage'],
         'default': 'express',
     },
     'status': {
@@ -187,7 +187,6 @@ sites_schema = {
         'type': 'string',
         'allowed': [
             'poolb-express',
-            'poola-custom',
             'poolb-homepage',
             'WWWLegacy'],
         'default': 'poolb-express',

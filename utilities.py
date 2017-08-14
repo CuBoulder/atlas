@@ -181,7 +181,7 @@ def delete_database(site_sid):
     mariadb_connection = mariadb.connect(
         user=database_user,
         password=database_password,
-        host=host
+        host=host,
         port=serverdefs[environment]['database_servers']['port']
     )
     cursor = mariadb_connection.cursor()

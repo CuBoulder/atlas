@@ -194,7 +194,7 @@ def delete_database(site_sid):
 
     # Drop user
     try:
-        cursor.execute("DROP USER '%s'@'172.20.62.0/255.255.255.0';".format(site_sid))
+        cursor.execute("DROP USER '{0}'@'172.20.62.0/255.255.255.0';".format(site_sid))
     except mariadb.Error as error:
         print 'Drop User Error: {0}'.format(error)
 

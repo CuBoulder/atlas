@@ -132,11 +132,11 @@ def create_database(site_sid, site_db_key):
     """
     print 'Create Database | {0}'.format(site_sid)
     # Start connection
-    host = serverdefs[environment]['database_servers']['master'] if environment != 'local' else 'express.local'
     mariadb_connection = mariadb.connect(
         user=database_user,
         password=database_password,
-        host=host
+        host=serverdefs[environment]['database_servers']['master'],
+        port=serverdefs[environment]['database_servers']['port']
     )
 
     cursor = mariadb_connection.cursor()

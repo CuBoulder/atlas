@@ -188,7 +188,7 @@ def site_provision(site):
     logger.debug('Site provision | Provision Fabric task values | %s', provision_task.values)
 
     try:
-        result_correct_file_dir_permissions = execute(correct_file_directory_permissions, site=site)
+        result_correct_file_dir_permissions = execute(fabfile.correct_file_directory_permissions, site=site)
     except:
         logger.error('Site provision failed | Error Message | %s', result_correct_file_dir_permissions)
         raise

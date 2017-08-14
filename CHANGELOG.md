@@ -5,6 +5,7 @@
 Need to
 
 - Add variable (`database_password`) to `config_local.py`. See `config_local.py.example`.
+- Add variable (`database.port`) to `config_servers.py`. See `config_servers.py.example`.
 - Update python packages.
 
 Resolves:

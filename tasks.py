@@ -30,10 +30,6 @@ celery = Celery('tasks')
 celery.config_from_object(config_celery)
 
 
-class CeleryException(Exception):
-    pass
-
-
 @celery.task
 def code_deploy(item):
     """
@@ -167,7 +163,7 @@ def site_provision(site):
     :param site: A single site.
     :return:
     """
-    logger.debug('Site provision| %s', site)
+    logger.debug('Site provision | %s', site)
     start_time = time.time()
     # 'db_key' needs to be added here and not in Eve so that the encryption
     # works properly.
@@ -177,27 +173,24 @@ def site_provision(site):
 
     try:
         logger.debug('Site provision | Create database')
-        result_create_database = execute(fabfile.create_database, site=site)
-    except CeleryException as e:
+        utilities.create_database(site['sid'], site['db_key'])
+    except:
         logger.error('Site provision failed | Database creation failed')
-        return result_create_database
+        raise
 
     try:
         provision_task = execute(fabfile.site_provision, site=site)
-        if isinstance(provision_task.get('host_string', None), BaseException):
-            raise provision_task.get('host_string')
-    except CeleryException as e:
-        logger.error('Site provision failed | Error Message | %s', e.message)
+    except:
+        logger.error('Site provision failed | Error Message | %s', provision_task)
+        raise
 
     logger.debug('Site provision | Provision Fabric task | %s', provision_task)
     logger.debug('Site provision | Provision Fabric task values | %s', provision_task.values)
 
     try:
         install_task = execute(fabfile.site_install, site=site)
-        if isinstance(install_task.get('host_string', None), BaseException):
-            raise install_task.get('host_string')
-    except CeleryException as e:
-        logger.error('Site install failed | Error Message | %s', e.message)
+    except:
+        logger.error('Site install failed | Error Message | %s', install_task)
 
     logger.debug('Site provision | Install Fabric task | %s', install_task)
     logger.debug('Site provision | Install Fabric task values | %s', install_task.values)
@@ -367,6 +360,14 @@ def site_remove(site):
         if not statistics['_meta']['total'] == 0:
             for statistic in statistics['_items']:
                 utilities.delete_eve('statistics', statistic['_id'])
+
+        try:
+            logger.debug('Site remove | Delete database')
+            utilities.delete_database(site['sid'])
+        except:
+            logger.error('Site remove failed | Database remove failed')
+            raise
+
         execute(fabfile.site_remove, site=site)
 
     if environment != 'local':

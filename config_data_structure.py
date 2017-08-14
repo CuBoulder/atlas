@@ -459,9 +459,11 @@ statistics_schema = {
                 'schema': {
                     'content_editor': {
                         'type': 'list',
+                        'nullable': True,
                     },
                     'site_contact': {
                         'type': 'list',
+                        'nullable': True,
                     },
                 },
             },

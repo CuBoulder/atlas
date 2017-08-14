@@ -224,7 +224,6 @@ def site_provision(site):
         return result_correct_file_dir_permissions
 
 
-@roles('webserver_single')
 def site_install(site):
     code_directory = '{0}/{1}'.format(sites_code_root, site['sid'])
     code_directory_current = '{0}/current'.format(code_directory)
@@ -429,7 +428,7 @@ def site_remove(site):
 
     remove_directory(code_directory)
 
-
+@roles('webservers')
 def correct_file_directory_permissions(site):
     code_directory_sid = '{0}/{1}/{1}'.format(sites_code_root, site['sid'])
     web_directory_sid = '{0}/{1}/{2}'.format(sites_web_root, site['type'], site['sid'])
@@ -696,7 +695,7 @@ def create_settings_files(site):
                     mode='0644')
 
 
-@runs_once
+@roles('webserver_single')
 def install_site(profile_name, code_directory_current):
     with cd(code_directory_current):
         run('drush site-install -y {0}'.format(profile_name))

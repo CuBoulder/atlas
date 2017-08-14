@@ -224,7 +224,6 @@ def site_provision(site):
         return result_correct_file_dir_permissions
 
 
-@roles('webserver_single')
 def site_install(site):
     code_directory = '{0}/{1}'.format(sites_code_root, site['sid'])
     code_directory_current = '{0}/current'.format(code_directory)
@@ -419,8 +418,6 @@ def site_remove(site):
         site['type'],
         site['path'])
 
-    delete_database(site)
-
     remove_symlink(web_directory)
     remove_symlink(web_directory_path)
 
@@ -431,7 +428,7 @@ def site_remove(site):
 
     remove_directory(code_directory)
 
-
+@roles('webservers')
 def correct_file_directory_permissions(site):
     code_directory_sid = '{0}/{1}/{1}'.format(sites_code_root, site['sid'])
     web_directory_sid = '{0}/{1}/{2}'.format(sites_web_root, site['type'], site['sid'])
@@ -602,48 +599,6 @@ def remove_symlink(symlink):
     run('rm -f {0}'.format(symlink))
 
 
-@runs_once
-def create_database(site):
-    print 'Site Provision - {0} - Create DB'.format(site['_id'])
-    if environment != 'local':
-        os.environ['MYSQL_TEST_LOGIN_FILE'] = '/home/{0}/.mylogin.cnf'.format(
-            ssh_user)
-        mysql_login_path = "{0}_{1}".format(database_user, environment)
-        mysql_info = '{0} --login-path={1} -e'.format(mysql_path, mysql_login_path)
-        database_password = utilities.decrypt_string(site['db_key'])
-        local('{0} \'CREATE DATABASE `{1}`;\''.format(mysql_info, site['sid']))
-        # TODO: Make IP addresses config.
-        local("{0} \"CREATE USER '{1}'@'172.20.62.0/255.255.255.0' IDENTIFIED BY '{2}';\"".format(
-            mysql_info,
-            site['sid'],
-            database_password))
-        sql = "GRANT ALL PRIVILEGES ON {0}.* TO '{0}'@'172.20.62.0/255.255.255.0';".format(
-            site['sid'])
-        local("{0} \"{1}\"".format(mysql_info, sql))
-    else:
-        with settings(host_string='express.local'):
-            run("mysql -e 'create database `{}`;'".format(site['sid']))
-
-
-@runs_once
-def delete_database(site):
-    if environment != 'local':
-        # TODO: Make file location config.
-        os.environ['MYSQL_TEST_LOGIN_FILE'] = '/home/{0}/.mylogin.cnf'.format(
-            ssh_user)
-        mysql_login_path = "{0}_{1}".format(database_user, environment)
-        mysql_info = '{0} --login-path={1} -e'.format(mysql_path, mysql_login_path)
-        database_password = utilities.decrypt_string(site['db_key'])
-        local('{0} \'DROP DATABASE IF EXISTS `{1}`;\''.format(mysql_info, site['sid']))
-        # TODO: Make IP addresses config.
-        local("{0} \"DROP USER '{1}'@'172.20.62.0/255.255.255.0';\"".format(
-            mysql_info,
-            site['sid']))
-    else:
-        with settings(host_string='express.local'):
-            run("mysql -e 'DROP DATABASE IF EXISTS `{}`;'".format(site['sid']))
-
-
 def create_settings_files(site):
     sid = site['sid']
     if 'path' in site:
@@ -740,7 +695,7 @@ def create_settings_files(site):
                     mode='0644')
 
 
-@runs_once
+@roles('webserver_single')
 def install_site(profile_name, code_directory_current):
     with cd(code_directory_current):
         run('drush site-install -y {0}'.format(profile_name))

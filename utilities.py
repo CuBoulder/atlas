@@ -7,6 +7,9 @@ import ldap
 import json
 import smtplib
 
+import OpenSSL
+import mysql.connector as mariadb
+
 from re import compile, search
 from cryptography.fernet import Fernet
 from random import choice
@@ -120,6 +123,83 @@ def decrypt_string(string):
     msg = string.decode('hex')
     decrypted = cipher.decrypt(msg)
     return decrypted
+
+
+def create_database(site_sid, site_db_key):
+    """
+    Create a database and user for the
+    :param site: site object
+    """
+    print 'Create Database | {0}'.format(site_sid)
+    # Start connection
+    mariadb_connection = mariadb.connect(
+        user=database_user,
+        password=database_password,
+        host=serverdefs[environment]['database_servers']['master'],
+        port=serverdefs[environment]['database_servers']['port']
+    )
+
+    cursor = mariadb_connection.cursor()
+
+    # Create database
+    try:
+        cursor.execute("CREATE DATABASE `{0}`;".format(site_sid))
+    except mariadb.Error as error:
+        print 'Create Database Error: {0}'.format(error)
+        raise
+
+    instance_database_password = decrypt_string(site_db_key)
+    # Add user
+    try:
+        cursor.execute("CREATE USER '{0}'@'172.20.62.0/255.255.255.0' IDENTIFIED BY '{1}';".format(site_sid, instance_database_password))
+    except mariadb.Error as error:
+        print 'Create User Error: {0}'.format(error)
+        raise
+
+    # Grant privileges
+    try:
+        cursor.execute("GRANT ALL PRIVILEGES ON {0}.* TO '{0}'@'172.20.62.0/255.255.255.0';".format(site_sid))
+    except mariadb.Error as error:
+        print 'Grant Privileges Error: {0}'.format(error)
+        raise
+
+    mariadb_connection.commit()
+    mariadb_connection.close()
+
+    print 'Create Database | {0} | Success'.format(site_sid)
+
+
+def delete_database(site_sid):
+    """
+    Delete database and user
+
+    :param site_id: SID for instance to remove.
+    """
+    print 'Delete DB | {0}'.format(site_sid)
+    # Start connection
+    host = serverdefs[environment]['database_servers']['master'] if environment != 'local' else 'express.local'
+    mariadb_connection = mariadb.connect(
+        user=database_user,
+        password=database_password,
+        host=host,
+        port=serverdefs[environment]['database_servers']['port']
+    )
+    cursor = mariadb_connection.cursor()
+
+    # Drop database
+    try:
+        cursor.execute("DROP DATABASE IF EXISTS `{0}`;".format(site_sid))
+    except mariadb.Error as error:
+        print 'Drop Database Error: {0}'.format(error)
+
+    # Drop user
+    try:
+        cursor.execute("DROP USER '{0}'@'172.20.62.0/255.255.255.0';".format(site_sid))
+    except mariadb.Error as error:
+        print 'Drop User Error: {0}'.format(error)
+
+    mariadb_connection.commit()
+    mariadb_connection.close()
 
 
 def post_eve(resource, payload):

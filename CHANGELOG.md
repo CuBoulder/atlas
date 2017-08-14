@@ -1,5 +1,18 @@
 # Change log
 
+## v1.0.22
+
+Need to
+
+- Add variable (`database_password`) to `config_local.py`. See `config_local.py.example`.
+- Update python packages.
+
+Resolves:
+
+- &#35;282 - Provision often fails, but the instance ends up 'available'
+- &#35;317 - Switch to mysql-python connecter
+- &#35;326 - Make SO and CE user lists nullable
+
 ## v1.0.21
 
 Resolves:

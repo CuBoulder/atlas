@@ -216,13 +216,6 @@ def site_provision(site):
         print 'Update symlink failed.'
         return result_update_symlink_web
 
-    try:
-        result_correct_file_dir_permissions = execute(
-            correct_file_directory_permissions, site=site)
-    except FabricException:
-        print 'Correct file permissions failed.'
-        return result_correct_file_dir_permissions
-
 
 def site_install(site):
     code_directory = '{0}/{1}'.format(sites_code_root, site['sid'])

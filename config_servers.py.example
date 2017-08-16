@@ -19,6 +19,7 @@ serverdefs = {
             'slaves': [
                 'db-slave1.example.com',
             ],
+            'port': 3307,
         },
         'varnish_servers': [
             'varnish1.example.com',
@@ -47,6 +48,7 @@ serverdefs = {
             'slaves': [
                 'db-test-slave1.example.com',
             ],
+            'port': 3307,
         },
         'varnish_servers': [
             'varnish-test1.example.com',
@@ -74,6 +76,7 @@ serverdefs = {
             'slaves': [
                 'db-dev-slave1.example.com',
             ],
+            'port': 3307,
         },
         'varnish_servers': [
             'varnish-dev1.example.com',
@@ -92,6 +95,7 @@ serverdefs = {
         'webserver_single': ['express.local'],
         'database_servers': {
             'master': 'localhost',
+            'port': 3307,
         },
         'varnish_servers': ['localhost'],
         'memcache_servers': ['localhost:11211'],

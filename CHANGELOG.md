@@ -1,5 +1,11 @@
 # Change log
 
+## v1.0.24
+
+Resolves:
+
+- &#35;
+
 ## v1.0.23
 
 Resolves:

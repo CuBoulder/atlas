@@ -151,14 +151,20 @@ def create_database(site_sid, site_db_key):
     instance_database_password = decrypt_string(site_db_key)
     # Add user
     try:
-        cursor.execute("CREATE USER '{0}'@'172.20.62.0/255.255.255.0' IDENTIFIED BY '{1}';".format(site_sid, instance_database_password))
+        if environment != 'local':
+            cursor.execute("CREATE USER '{0}'@'172.20.62.0/255.255.255.0' IDENTIFIED BY '{1}';".format(site_sid, instance_database_password))
+        else:
+            cursor.execute("CREATE USER '{0}'@'{1}' IDENTIFIED BY '{2}';".format(site_sid, serverdefs[environment]['database_servers']['master'], instance_database_password))
     except mariadb.Error as error:
         print 'Create User Error: {0}'.format(error)
         raise
 
     # Grant privileges
     try:
-        cursor.execute("GRANT ALL PRIVILEGES ON {0}.* TO '{0}'@'172.20.62.0/255.255.255.0';".format(site_sid))
+        if environment != 'local':
+            cursor.execute("GRANT ALL PRIVILEGES ON {0}.* TO '{0}'@'172.20.62.0/255.255.255.0';".format(site_sid))
+        else:
+            cursor.execute("GRANT ALL PRIVILEGES ON {0}.* TO '{0}'@'{1}';".format(site_sid, serverdefs[environment]['database_servers']['master']))
     except mariadb.Error as error:
         print 'Grant Privileges Error: {0}'.format(error)
         raise

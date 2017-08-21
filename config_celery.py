@@ -26,7 +26,6 @@ CELERYBEAT_SCHEDULE = {
         'kwargs': {
             "type": "express",
             "status": "launched",
-            "exclude_packages": ["cu_classes_bundle"]
         },
     },
     'locked_cron': {
@@ -35,14 +34,6 @@ CELERYBEAT_SCHEDULE = {
         'kwargs': {
             "type": "express",
             "status": "locked",
-            "exclude_packages": ["cu_classes_bundle"]
-        },
-    },
-    'classes_cron': {
-        'task': 'atlas.tasks.cron',
-        'schedule': timedelta(hours=2),
-        'kwargs': {
-            "include_packages": ["cu_classes_bundle"]
         },
     },
     'installed_cron': {
@@ -51,7 +42,6 @@ CELERYBEAT_SCHEDULE = {
         'kwargs': {
             "type": "express",
             "status": "installed",
-            "exclude_packages": ["cu_classes_bundle"]
         },
     },
     'available_sites_check': {

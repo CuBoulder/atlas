@@ -1,5 +1,12 @@
 # Change log
 
+## v1.0.23
+
+Resolves:
+
+- &#35;305 - Support new cron command syntax
+- &#35;345 - Remove special handling for courses cron
+
 ## v1.0.22
 
 Need to

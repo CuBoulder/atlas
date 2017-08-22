@@ -186,7 +186,7 @@ def site_provision(site):
 
     if nfs_mount_files_dir:
         nfs_dir = nfs_mount_location[environment]
-        nfs_files_dir = '{0}/sitefiles/{1}/files'.format(nfs_dir, site['sid'])
+        nfs_files_dir = '{0}/{1}/files'.format(nfs_dir, site['sid'])
         try:
             result_create_nfs_files_dir = execute(
                 create_nfs_files_dir, nfs_dir=nfs_dir, site_sid=site['sid'])
@@ -351,7 +351,7 @@ def site_backup(site):
         site['sid'],
         date_time_string)
     nfs_dir = nfs_mount_location[environment]
-    nfs_files_dir = '{0}/sitefiles/{1}/files'.format(nfs_dir, site['sid'])
+    nfs_files_dir = '{0}/{1}/files'.format(nfs_dir, site['sid'])
     # Start the actual process.
     create_directory_structure(backup_path)
     with cd(web_directory):
@@ -416,7 +416,7 @@ def site_remove(site):
 
     if nfs_mount_files_dir:
         nfs_dir = nfs_mount_location[environment]
-        nfs_files_dir = '{0}/sitefiles/{1}'.format(nfs_dir, site['sid'])
+        nfs_files_dir = '{0}/{1}/files'.format(nfs_dir, site['sid'])
         remove_directory(nfs_files_dir)
 
     remove_directory(code_directory)
@@ -426,8 +426,8 @@ def correct_file_directory_permissions(site):
     code_directory_sid = '{0}/{1}/{1}'.format(sites_code_root, site['sid'])
     web_directory_sid = '{0}/{1}/{2}'.format(sites_web_root, site['type'], site['sid'])
     nfs_dir = nfs_mount_location[environment]
-    nfs_files_dir = '{0}/sitefiles/{1}/files'.format(nfs_dir, site['sid'])
-    nfs_files_tmp_dir = '{0}/sitefiles/{1}/tmp'.format(nfs_dir, site['sid'])
+    nfs_files_dir = '{0}/{1}/files'.format(nfs_dir, site['sid'])
+    nfs_files_tmp_dir = '{0}/{1}/tmp'.format(nfs_dir, site['sid'])
     with cd(code_directory_sid):
         run('chgrp -R {0} sites/default'.format(ssh_user_group))
         run('chmod -R 0775 sites/default')
@@ -568,8 +568,8 @@ def update_homepage_extra_files():
 # need to run it a single time. The extra work is worth the stability in provisions.
 #@runs_once
 def create_nfs_files_dir(nfs_dir, site_sid):
-    nfs_files_dir = '{0}/sitefiles/{1}/files'.format(nfs_dir, site_sid)
-    nfs_tmp_dir = '{0}/sitefiles/{1}/tmp'.format(nfs_dir, site_sid)
+    nfs_files_dir = '{0}/{1}/files'.format(nfs_dir, site_sid)
+    nfs_tmp_dir = '{0}/{1}/tmp'.format(nfs_dir, site_sid)
     create_directory_structure(nfs_files_dir)
     create_directory_structure(nfs_tmp_dir)
 
@@ -668,7 +668,7 @@ def create_settings_files(site):
                     backup=False,
                     mode='0644')
 
-    tmp_files_dir = nfs_mount_location_tmp[environment] + '/' + sid
+    tmp_files_dir = '{0}/{1}/tmp'.format(nfs_mount_location[environment], sid)
 
     local_post_settings_variables = {
         'sid':sid,

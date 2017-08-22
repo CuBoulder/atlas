@@ -668,11 +668,13 @@ def create_settings_files(site):
                     backup=False,
                     mode='0644')
 
+    tmp_files_dir = nfs_mount_location_tmp[environment] + '/' + sid
+
     local_post_settings_variables = {
         'sid':sid,
         'pw':database_password,
         'page_cache_maximum_age':page_cache_maximum_age,
-        'tmp_files_directory': nfs_mount_location_tmp[environment],
+        'tmp_files_directory': tmp_files_dir,
         'database_servers':env.roledefs['database_servers'],
         'memcache_servers':env.roledefs['memcache_servers'],
         'environment':environment if environment != 'prod' else ''

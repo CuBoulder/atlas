@@ -156,29 +156,26 @@ def site_provision(site):
     profile_name = profile['meta']['name']
 
     try:
-        result_create_dir_structure = execute(
-            create_directory_structure, folder=code_directory)
-    except FabricException:
+        execute(create_directory_structure, folder=code_directory)
+    except FabricException as e:
         print 'Create directory structure failed.'
-        return result_create_dir_structure
+        return e
 
     try:
-        result_create_dir_structure_web = execute(
-            create_directory_structure, folder=web_directory_type)
-    except FabricException:
+        execute(create_directory_structure, folder=web_directory_type)
+    except FabricException as e:
         print 'Create directory structure failed.'
-        return result_create_dir_structure_web
+        return e
 
     with cd(code_directory):
         core = utilities.get_code_name_version(site['code']['core'])
         run('drush dslm-new {0} {1}'.format(site['sid'], core))
 
     try:
-        result_update_symlink = execute(
-            update_symlink, source=code_directory_sid, destination=code_directory_current)
-    except FabricException:
+        execute(update_symlink, source=code_directory_sid, destination=code_directory_current)
+    except FabricException as e:
         print 'Update symlink failed.'
-        return result_update_symlink
+        return e
 
     with cd(code_directory_current):
         profile = utilities.get_code_name_version(site['code']['profile'])
@@ -188,33 +185,29 @@ def site_provision(site):
         nfs_dir = nfs_mount_location[environment]
         nfs_files_dir = '{0}/{1}/files'.format(nfs_dir, site['sid'])
         try:
-            result_create_nfs_files_dir = execute(
-                create_nfs_files_dir, nfs_dir=nfs_dir, site_sid=site['sid'])
-        except FabricException:
+            execute(create_nfs_files_dir, nfs_dir=nfs_dir, site_sid=site['sid'])
+        except FabricException as e:
             print 'Create nfs directory failed.'
-            return result_create_nfs_files_dir
+            return e
         # Replace default files dir with this one
         site_files_dir = code_directory_current + '/sites/default/files'
         try:
-            result_replace_files_directory = execute(
-                replace_files_directory, source=nfs_files_dir, destination=site_files_dir)
-        except FabricException:
+            execute(replace_files_directory, source=nfs_files_dir, destination=site_files_dir)
+        except FabricException as e:
             print 'Replace file directory failed.'
-            return result_replace_files_directory
+            return e
 
     try:
-        result_create_settings_files = execute(
-            create_settings_files, site=site)
-    except FabricException:
+        execute( create_settings_files, site=site)
+    except FabricException as e:
         print 'Settings file creation failed.'
-        return result_create_settings_files
+        return e
 
     try:
-        result_update_symlink_web = execute(
-            update_symlink, source=code_directory_current, destination=web_directory_sid)
-    except FabricException:
+        execute(update_symlink, source=code_directory_current, destination=web_directory_sid)
+    except FabricException as e:
         print 'Update symlink failed.'
-        return result_update_symlink_web
+        return e
 
 
 def site_install(site):
@@ -224,18 +217,16 @@ def site_install(site):
     profile_name = profile['meta']['name']
 
     try:
-        result_install_site = execute(
-            install_site, profile_name=profile_name, code_directory_current=code_directory_current)
-    except FabricException:
+        execute(install_site, profile_name=profile_name, code_directory_current=code_directory_current)
+    except FabricException as e:
         print 'Instance install failed.'
-        return result_install_site
+        return e
 
     try:
-        result_correct_file_dir_permissions = execute(
-            correct_file_directory_permissions, site=site)
-    except FabricException:
+        execute(correct_file_directory_permissions, site=site)
+    except FabricException as e:
         print 'Correct file permissions failed.'
-        return result_correct_file_dir_permissions
+        return e
 
 
 @roles('webservers')

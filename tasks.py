@@ -299,7 +299,6 @@ def site_update(site, updates, original):
                 execute(fabfile.update_settings_file, site=site)
                 execute(fabfile.site_launch, site=site)
                 if environment is not 'local':
-                    execute(fabfile.diff_f5)
                     execute(fabfile.update_f5)
                 # Let fabric send patch since it is changing update group.
             elif updates['status'] == 'locked':

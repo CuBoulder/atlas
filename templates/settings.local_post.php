@@ -3,10 +3,10 @@ global $conf;
 
 // Min cache lifetime 0, max defaults to 300 seconds.
 $conf['cache_lifetime'] = 0;
-$conf['page_cache_maximum_age'] = {{page_cache_maximum_age}};
+$conf['page_cache_maximum_age'] = {{ page_cache_maximum_age }};
 
 // Define tmp directory
-$conf['file_temporary_path'] = '/wwwng/sitefiles/{{sid}}/tmp';
+$conf['file_temporary_path'] = '{{ tmp_files_directory }}';
 
 {% if environment != 'local' %}
 $databases['default']['default'] = array(

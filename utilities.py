@@ -298,7 +298,7 @@ def delete_eve(resource, id):
         return r.text
 
 
-def get_current_code(name, type):
+def get_current_code(name, code_type):
     """
     Get the current code item for a given name and type.
 
@@ -306,10 +306,13 @@ def get_current_code(name, type):
     :param type: string
     :return: _id of the item.
     """
-    query = 'where={{"meta.name":"{0}","meta.code_type":"{1}","meta.is_current":true}}'.format(name, type)
-    current_get = get_eve('code', query)
-    print(current_get)
-    return current_get['_items'][0]['_id']
+    query = 'where={{"meta.name":"{0}","meta.code_type":"{1}","meta.is_current":true}}'.format(
+        name, code_type)
+    current_code = get_eve('code', query)
+    if current_code['_meta']['total'] != 0:
+        return current_code['_items'][0]['_id']
+    else:
+        return False
 
 
 def get_code(name, code_type=''):

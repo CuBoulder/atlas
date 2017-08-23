@@ -4,7 +4,7 @@
 
 Resolves:
 
-- &#35;
+- &#35;53 - Handle no code state better
 
 ## v1.0.23
 

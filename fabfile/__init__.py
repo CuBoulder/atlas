@@ -443,8 +443,12 @@ def command_run_single(site, command, warn_only=False):
         site['sid'])
     with settings(warn_only=warn_only):
         with cd(web_directory):
-            command_result = run("{0}".format(command), pty=False)
-            # Return the failure if there is one.
+            # If we are running a drush command, we run it as the webserver user.
+            if re.search('^drush', command):
+                command_result = run("sudo -u {0} {1}".format(webserver_user, command), pty=False)
+            else:
+                command_result = run("{0}".format(command), pty=False)
+                # Return the failure if there is one.
             if command_result.failed:
                 return command_result
 

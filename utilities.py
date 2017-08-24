@@ -151,14 +151,20 @@ def create_database(site_sid, site_db_key):
     instance_database_password = decrypt_string(site_db_key)
     # Add user
     try:
-        cursor.execute("CREATE USER '{0}'@'172.20.62.0/255.255.255.0' IDENTIFIED BY '{1}';".format(site_sid, instance_database_password))
+        if environment != 'local':
+            cursor.execute("CREATE USER '{0}'@'172.20.62.0/255.255.255.0' IDENTIFIED BY '{1}';".format(site_sid, instance_database_password))
+        else:
+            cursor.execute("CREATE USER '{0}'@'localhost' IDENTIFIED BY '{1}';".format(site_sid, instance_database_password))
     except mariadb.Error as error:
         print 'Create User Error: {0}'.format(error)
         raise
 
     # Grant privileges
     try:
-        cursor.execute("GRANT ALL PRIVILEGES ON {0}.* TO '{0}'@'172.20.62.0/255.255.255.0';".format(site_sid))
+        if environment != 'local':
+            cursor.execute("GRANT ALL PRIVILEGES ON {0}.* TO '{0}'@'172.20.62.0/255.255.255.0';".format(site_sid))
+        else:
+            cursor.execute("GRANT ALL PRIVILEGES ON {0}.* TO '{0}'@'localhost';".format(site_sid))
     except mariadb.Error as error:
         print 'Grant Privileges Error: {0}'.format(error)
         raise
@@ -292,7 +298,7 @@ def delete_eve(resource, id):
         return r.text
 
 
-def get_current_code(name, type):
+def get_current_code(name, code_type):
     """
     Get the current code item for a given name and type.
 
@@ -300,10 +306,13 @@ def get_current_code(name, type):
     :param type: string
     :return: _id of the item.
     """
-    query = 'where={{"meta.name":"{0}","meta.code_type":"{1}","meta.is_current":true}}'.format(name, type)
-    current_get = get_eve('code', query)
-    print(current_get)
-    return current_get['_items'][0]['_id']
+    query = 'where={{"meta.name":"{0}","meta.code_type":"{1}","meta.is_current":true}}'.format(
+        name, code_type)
+    current_code = get_eve('code', query)
+    if current_code['_meta']['total'] != 0:
+        return current_code['_items'][0]['_id']
+    else:
+        return False
 
 
 def get_code(name, code_type=''):

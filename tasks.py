@@ -473,7 +473,7 @@ def command_run(site, command, single_server, user=None):
     utilities.post_to_logstash_payload(payload=logstash_payload)
 
     # Cron handles its own messages.
-    if command != 'drush cron':
+    if command != 'drush elysia-cron run':
         slack_title = '{0}/{1}'.format(base_urls[environment], site['path'])
         slack_link = '{0}/{1}'.format(base_urls[environment], site['path'])
         slack_message = 'Command - Success'
@@ -542,7 +542,7 @@ def cron(type=None, status=None, include_packages=None, exclude_packages=None):
     sites = utilities.get_eve('sites', site_query)
     if not sites['_meta']['total'] == 0:
         for site in sites['_items']:
-            command_run.apply_async((site, 'drush cron', True), link=check_cron_result.s())
+            command_run.apply_async((site, 'drush elysia-cron run', True), link=check_cron_result.s())
 
 
 @celery.task
@@ -561,7 +561,7 @@ def check_cron_result(payload):
     instance_url = '{0}/{1}'.format(base_urls[environment], site_path)
     title = 'Run Command'
     instance_link = '<' + instance_url + '|' + instance_url + '>'
-    command = 'drush cron'
+    command = 'drush elysia-cron run'
     user = 'Celerybeat'
 
     # Only post if an error

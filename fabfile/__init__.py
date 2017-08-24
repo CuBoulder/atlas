@@ -533,10 +533,10 @@ def rewrite_symlinks(site):
 def update_settings_file(site):
     print('Update Settings Files - {0}'.format(site))
     try:
-        result_create_settings_files = execute(create_settings_files, site=site)
-    except FabricException:
+        execute(create_settings_files, site=site)
+    except FabricException as e:
         print 'Settings files creation failed.'
-        return result_create_settings_files
+        return e
 
 
 @roles('webservers')
@@ -584,11 +584,15 @@ def remove_symlink(symlink):
 
 
 def create_settings_files(site):
+    """
+    Create settings.local_pre.php, settings.php, and settings.local_post.php from templates and and
+    upload the resulting file to the webservers.
+    """
     sid = site['sid']
     if 'path' in site:
-        path = site['path']
+        site_path = site['path']
     else:
-        path = site['sid']
+        site_path = site['sid']
     # If the site is launching or launched, we add 'cu_path' and redirect the
     # p1 URL.
     status = site['status']
@@ -622,7 +626,7 @@ def create_settings_files(site):
         'atlas_url':atlas_url,
         'atlas_username':service_account_username,
         'atlas_password':service_account_password,
-        'path':path,
+        'path':site_path,
         'status':status,
         'pool':site['pool'],
         'atlas_statistics_id':statistics,
@@ -666,7 +670,7 @@ def create_settings_files(site):
         'pw':database_password,
         'page_cache_maximum_age':page_cache_maximum_age,
         'tmp_files_directory': tmp_files_dir,
-        'database_servers':env.roledefs['database_servers'],
+        'database_servers': env.roledefs['database_servers'] if environment == 'local' else 'localhost',
         'memcache_servers':env.roledefs['memcache_servers'],
         'environment':environment if environment != 'prod' else ''
     }

@@ -409,7 +409,7 @@ def site_remove(site):
 @roles('webservers')
 def correct_file_directory_permissions(site):
     code_directory = '{0}/{1}'.format(sites_code_root, site['sid'])
-    web_directory = '{0}/{1}/{2}'.format(sites_web_root, site['type'])
+    web_directory = '{0}/{1}'.format(sites_web_root, site['type'])
     nfs_dir = nfs_mount_location[environment]
     nfs_files_dir = '{0}/{1}/files'.format(nfs_dir, site['sid'])
     nfs_files_tmp_dir = '{0}/{1}/tmp'.format(nfs_dir, site['sid'])

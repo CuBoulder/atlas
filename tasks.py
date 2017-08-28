@@ -7,6 +7,7 @@ import sys
 import fabfile
 import time
 import json
+import re
 
 from celery import Celery
 from celery import group
@@ -428,7 +429,10 @@ def command_prepare(item):
                 # if item['command'] == 'site_backup':
                 #     execute(fabfile.site_backup, site=site)
                 #     continue
-                command_run.delay(site, item['command'], item['single_server'], item['modified_by'])
+                queue = 'command_queue'
+                if bool(re.search('cron', item['command'])):
+                    queue = 'cron_queue'
+                command_run.delay(site=site, command=item['command'], single_server=item['single_server'], user=item['modified_by'], queue=queue)
             # After all the commands run, flush APC.
             if item['command'] == 'update_settings_file':
                 logger.debug('Clear APC')

@@ -15,7 +15,7 @@ $databases['default']['default'] = array(
   'username' => '{{ sid }}',
   'password' => '{{ pw }}',
   'host' => '{{ database_servers.master }}',
-  'port' => '3307',
+  'port' => '{{ port }}',
   'prefix' => '',
 );
 {% if database_servers.slaves %}
@@ -27,7 +27,7 @@ $databases['default']['slave'][] = array(
   'username' => '{{ sid }}',
   'password' => '{{ pw }}',
   'host' => '{{ slave }}',
-  'port' => '3307',
+  'port' => '{{ port }}',
   'prefix' => '',
 );
 {% endfor %}
@@ -39,7 +39,7 @@ $databases['default']['default'] = array(
   'username' => '{{ sid }}',
   'password' => '{{ pw }}',
   'host' => 'localhost',
-  'port' => '3306',
+  'port' => '{{ port }}',
   'prefix' => '',
 );
 

@@ -687,7 +687,7 @@ def create_settings_files(site):
 @roles('webserver_single')
 def install_site(profile_name, code_directory_current):
     with cd(code_directory_current):
-        run('sudo -u {0} drush site-install -y {0}'.format(webserver_user, profile_name))
+        run('sudo -u {0} drush site-install -y {1}'.format(webserver_user, profile_name))
         run('sudo -u {0} drush rr; sudo -u {0} drush cc drush'.format(webserver_user))
 
 

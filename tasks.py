@@ -271,7 +271,7 @@ def site_update(site, updates, original):
             package_name_string = ""
             for package in site['code']['package']:
                 # Append the package name and a space.
-                package_name_string += utilities.get_code_name_version(package) + " "
+                package_name_string += utilities.get_code_label(package) + ", "
             # Strip the trailing space off the end.
             package_name_string = package_name_string.rstrip()
             if len(package_name_string) > 0:

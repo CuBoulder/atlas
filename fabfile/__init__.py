@@ -408,23 +408,23 @@ def site_remove(site):
 
 @roles('webservers')
 def correct_file_directory_permissions(site):
-    code_directory_sid = '{0}/{1}/{1}'.format(sites_code_root, site['sid'])
-    web_directory_sid = '{0}/{1}/{2}'.format(sites_web_root, site['type'], site['sid'])
+    code_directory = '{0}/{1}'.format(sites_code_root, site['sid'])
+    web_directory = '{0}/{1}/{2}'.format(sites_web_root, site['type'])
     nfs_dir = nfs_mount_location[environment]
     nfs_files_dir = '{0}/{1}/files'.format(nfs_dir, site['sid'])
     nfs_files_tmp_dir = '{0}/{1}/tmp'.format(nfs_dir, site['sid'])
-    with cd(code_directory_sid):
-        run('chgrp -R {0} sites/default'.format(ssh_user_group))
-        run('chmod -R 0775 sites/default')
+    with cd(code_directory):
+        run('chgrp -R {0} {1}'.format(webserver_user_group, site['sid']))
+        run('chmod -R 0775 {0}'.format(site['sid']))
     with cd(nfs_files_dir):
         run('chgrp -R {0} {1}'.format(webserver_user_group, nfs_files_dir))
         run('chmod -R 0775 {0}'.format(nfs_files_dir))
     with cd(nfs_files_tmp_dir):
         run('chgrp -R {0} {1}'.format(webserver_user_group, nfs_files_tmp_dir))
         run('chmod -R 0775 {0}'.format(nfs_files_tmp_dir))
-    with cd(web_directory_sid):
-        run('chmod -R 0775 sites/default')
-        run('chmod -R 0644 sites/default/*.php')
+    with cd(web_directory):
+        run('chmod -R 0775 {0}'.format(site['sid']))
+        run('chmod -R 0644 {0}/sites/default/*.php'.format(site['sid']))
 
 
 @roles('webserver_single')

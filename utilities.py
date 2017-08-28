@@ -152,7 +152,7 @@ def create_database(site_sid, site_db_key):
     # Add user
     try:
         if environment != 'local':
-            cursor.execute("CREATE USER '{0}'@'172.20.62.0/255.255.255.0' IDENTIFIED BY '{1}';".format(site_sid, instance_database_password))
+            cursor.execute("CREATE USER '{0}'@'172.20.%' IDENTIFIED BY '{1}';".format(site_sid, instance_database_password))
         else:
             cursor.execute("CREATE USER '{0}'@'localhost' IDENTIFIED BY '{1}';".format(site_sid, instance_database_password))
     except mariadb.Error as error:
@@ -162,7 +162,7 @@ def create_database(site_sid, site_db_key):
     # Grant privileges
     try:
         if environment != 'local':
-            cursor.execute("GRANT ALL PRIVILEGES ON {0}.* TO '{0}'@'172.20.62.0/255.255.255.0';".format(site_sid))
+            cursor.execute("GRANT ALL PRIVILEGES ON {0}.* TO '{0}'@'172.20.%';".format(site_sid))
         else:
             cursor.execute("GRANT ALL PRIVILEGES ON {0}.* TO '{0}'@'localhost';".format(site_sid))
     except mariadb.Error as error:

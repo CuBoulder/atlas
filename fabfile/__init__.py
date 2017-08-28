@@ -355,7 +355,7 @@ def site_backup(site):
     # Start the actual process.
     create_directory_structure(backup_path)
     with cd(web_directory):
-        run('drush sql-dump --result-file={0}'.format(database_result_file_path))
+        run('sudo -u {0} drush sql-dump --result-file={1}'.format(webserver_user, database_result_file_path))
         run('tar -czf {0} {1}'.format(files_result_file_path, nfs_files_dir))
 
 
@@ -385,7 +385,7 @@ def site_restore(site):
     update_symlink(code_directory_sid, code_directory_current)
     with cd(code_directory_current):
         # Run updates
-        action_0 = run("drush vset inactive_30_email FALSE; drush vset inactive_55_email FALSE; drush vset inactive_60_email FALSE;")
+        action_0 = run("sudo -u {0} drush vset inactive_30_email FALSE; sudo -u {0} drush vset inactive_55_email FALSE; sudo -u {0} drush vset inactive_60_email FALSE;".format(webserver_user))
         # TODO: See if this works as intended.
         if action_0.failed:
             return task
@@ -494,7 +494,7 @@ def update_database(site):
     code_directory_sid = '{0}/{1}/{1}'.format(sites_code_root, site['sid'])
     with cd(code_directory_sid):
         print 'Running database updates.'
-        run('drush updb -y')
+        run('sudo -u {0} drush updb -y'.format(webserver_user))
 
 
 @roles('webserver_single')
@@ -509,7 +509,7 @@ def registry_rebuild(site):
     print 'Drush registry rebuild\n{0}'.format(site)
     code_directory_sid = '{0}/{1}/{1}'.format(sites_code_root, site['sid'])
     with cd(code_directory_sid):
-        run('drush rr; drush cc drush;')
+        run('sudo -u {0} drush rr; sudo -u {0} drush cc drush;'.format(webserver_user))
 
 
 @roles('webservers')
@@ -520,7 +520,7 @@ def clear_apc():
 def drush_cache_clear(sid):
     code_directory_current = '{0}/{1}/current'.format(sites_code_root, sid)
     with cd(code_directory_current):
-        run('drush cc all')
+        run('sudo -u {0} drush cc all'.format(webserver_user))
 
 
 @roles('webservers')
@@ -695,8 +695,8 @@ def create_settings_files(site):
 @roles('webserver_single')
 def install_site(profile_name, code_directory_current):
     with cd(code_directory_current):
-        run('drush site-install -y {0}'.format(profile_name))
-        run('drush rr; drush cc drush')
+        run('sudo -u {0} drush site-install -y {1}'.format(webserver_user, profile_name))
+        run('sudo -u {0} drush rr; sudo -u {0} drush cc drush'.format(webserver_user))
 
 
 def clone_repo(git_url, checkout_item, destination):
@@ -896,7 +896,7 @@ def launch_site(site, gsa_collection=False):
                     clear_apc()
                     if gsa_collection:
                         # Set the collection name
-                        run("drush vset --yes google_appliance_collection {0}".format(gsa_collection))
+                        run("sudo -u {0} drush vset --yes google_appliance_collection {1}".format(webserver_user, gsa_collection))
                     # Clear caches at the end of the launch process to show
                     # correct pathologic rendered URLS.
                     drush_cache_clear(site['sid'])

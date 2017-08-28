@@ -146,12 +146,8 @@ def site_provision(site):
     code_directory = '{0}/{1}'.format(sites_code_root, site['sid'])
     code_directory_sid = '{0}/{1}'.format(code_directory, site['sid'])
     code_directory_current = '{0}/current'.format(code_directory)
-    web_directory_type = '{0}/{1}'.format(
-        sites_web_root,
-        site['type'])
-    web_directory_sid = '{0}/{1}'.format(
-        web_directory_type,
-        site['sid'])
+    web_directory_type = '{0}/{1}'.format(sites_web_root, env.host_string)
+    web_directory_sid = '{0}/{1}'.format(web_directory_type, site['sid'])
     profile = utilities.get_single_eve('code', site['code']['profile'])
     profile_name = profile['meta']['name']
 
@@ -323,24 +319,12 @@ def site_backup(site):
     """
     print('Site - Backup\m{0}'.format(site))
     # Setup all the variables we will need.
-    web_directory = '{0}/{1}/{2}'.format(
-        sites_web_root,
-        site['type'],
-        site['sid'])
+    web_directory = '{0}/{1}/{2}'.format(sites_web_root, env.host_string, site['sid'])
     date_string = datetime.now().strftime("%Y-%m-%d")
     date_time_string = datetime.now().strftime("%Y-%m-%d-%H:%M:%S")
-    backup_path = '{0}/{1}/{2}'.format(
-        backup_directory,
-        site['sid'],
-        date_string)
-    database_result_file_path = '{0}/{1}_{2}.sql'.format(
-        backup_path,
-        site['sid'],
-        date_time_string)
-    files_result_file_path = '{0}/{1}_{2}.tar.gz'.format(
-        backup_path,
-        site['sid'],
-        date_time_string)
+    backup_path = '{0}/{1}/{2}'.format(backup_directory, site['sid'], date_string)
+    database_result_file_path = '{0}/{1}_{2}.sql'.format(backup_path, site['sid'], date_time_string)
+    files_result_file_path = '{0}/{1}_{2}.tar.gz'.format(backup_path, site['sid'], date_time_string)
     nfs_dir = nfs_mount_location[environment]
     nfs_files_dir = '{0}/{1}/files'.format(nfs_dir, site['sid'])
     # Start the actual process.
@@ -356,9 +340,7 @@ def site_take_down(site):
     Point the site to the 'Down' page.
     """
     print('Site Take down\n{0}'.format(site))
-    code_directory_current = '{0}/{1}/current'.format(
-        sites_code_root,
-        site['sid'])
+    code_directory_current = '{0}/{1}/current'.format(sites_code_root, site['sid'])
     update_symlink(site_down_path, code_directory_current)
 
 
@@ -387,14 +369,8 @@ def site_remove(site):
     print('Site - Remove\n{0}'.format(site))
 
     code_directory = '{0}/{1}'.format(sites_code_root, site['sid'])
-    web_directory = '{0}/{1}/{2}'.format(
-        sites_web_root,
-        site['type'],
-        site['sid'])
-    web_directory_path = '{0}/{1}/{2}'.format(
-        sites_web_root,
-        site['type'],
-        site['path'])
+    web_directory = '{0}/{1}/{2}'.format( sites_web_root, env.host_string, site['sid'])
+    web_directory_path = '{0}/{1}/{2}'.format( sites_web_root, env.host_string, site['path'])
 
     remove_symlink(web_directory)
     remove_symlink(web_directory_path)
@@ -409,7 +385,7 @@ def site_remove(site):
 @roles('webservers')
 def correct_file_directory_permissions(site):
     code_directory = '{0}/{1}'.format(sites_code_root, site['sid'])
-    web_directory = '{0}/{1}'.format(sites_web_root, site['type'])
+    web_directory = '{0}/{1}'.format(sites_web_root, env.host_string)
     nfs_dir = nfs_mount_location[environment]
     nfs_files_dir = '{0}/{1}/files'.format(nfs_dir, site['sid'])
     nfs_files_tmp_dir = '{0}/{1}/tmp'.format(nfs_dir, site['sid'])
@@ -437,10 +413,7 @@ def command_run_single(site, command, warn_only=False):
     :return:
     """
     print('Command - Single Server - {0}\n{1}'.format(site['sid'], command))
-    web_directory = '{0}/{1}/{2}'.format(
-        sites_web_root,
-        site['type'],
-        site['sid'])
+    web_directory = '{0}/{1}/{2}'.format(sites_web_root, env.host_string, site['sid'])
     with settings(warn_only=warn_only):
         with cd(web_directory):
             # If we are running a drush command, we run it as the webserver user.
@@ -463,10 +436,7 @@ def command_run(site, command):
     :return:
     """
     print 'Command - {0}\n{1}'.format(site['sid'], command)
-    web_directory = '{0}/{1}/{2}'.format(
-        sites_web_root,
-        site['type'],
-        site['sid'])
+    web_directory = '{0}/{1}/{2}'.format(sites_web_root, env.host_string, site['sid'])
     with cd(web_directory):
         run('{0}'.format(command))
 
@@ -516,11 +486,11 @@ def drush_cache_clear(sid):
 def rewrite_symlinks(site):
     print 'Rewrite symlinks | {0}'.format(site)
     code_directory_current = '{0}/{1}/current'.format(sites_code_root, site['sid'])
-    web_directory = '{0}/{1}/{2}'.format(sites_web_root, site['type'], site['sid'])
+    web_directory = '{0}/{1}/{2}'.format(sites_web_root, env.host_string, site['sid'])
     if site['pool'] != 'poolb-homepage':
         update_symlink(code_directory_current, web_directory)
     if site['status'] == 'launched' and site['pool'] != 'poolb-homepage':
-        path_symlink = '{0}/{1}/{2}'.format(sites_web_root, site['type'], site['path'])
+        path_symlink = '{0}/{1}/{2}'.format(sites_web_root, env.host_string, site['path'])
         update_symlink(web_directory, path_symlink)
     if site['status'] == 'launched' and site['pool'] == 'poolb-homepage':
         web_directory = '{0}/{1}'.format(sites_web_root, 'homepage')

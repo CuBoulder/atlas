@@ -648,7 +648,7 @@ def cron_run(site):
     start_time = time.time()
     command = 'drush elysia-cron run'
     try:
-        execute(fabfile.command_run_single, site=site, command=command, warn_only=True)
+        execute(fabfile.command_run_single, site=site, command=command)
     except CronException as e:
         logger.error('Run Cron | %s | Cron failed | %s', site['sid'], e)
         raise

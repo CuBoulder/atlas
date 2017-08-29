@@ -544,26 +544,25 @@ def cron(type=None, status=None, include_packages=None, exclude_packages=None):
     site_query += '}'
     logger.debug('Query final - {0}'.format(site_query))
 
+    command = 'drush elysia-cron run'
     sites = utilities.get_eve('sites', site_query)
     if not sites['_meta']['total'] == 0:
         for site in sites['_items']:
-            cron_run.apply_async((site), link=check_cron_result.s())
+            cron_run.apply_async((site, command), link=check_cron_result.s())
 
 
 @celery.task
-def cron_run(site):
+def cron_run(site, command):
     """
     Run cron
 
     :param site: A complete site item.
-    :param command: Command to run.
-    :param single_server: boolean Run a single server or all servers.
-    :param user: string Username that called the command.
+    :param command: Cron command to run.
     :return:
     """
-    logger.info('Run Cron - {0}'.format(site['sid']))
+    logger.info('Run Cron | %s ', site['sid'])
     start_time = time.time()
-    command = 'drush elysia-cron run'
+
     try:
         execute(fabfile.command_run_single, site=site, command=command, warn_only=True)
     except Exception as e:

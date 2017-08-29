@@ -430,9 +430,16 @@ def command_prepare(item):
                 #     execute(fabfile.site_backup, site=site)
                 #     continue
                 queue = 'command_queue'
+                routing_key = 'command.run'
                 if bool(re.search('cron', item['command'])):
                     queue = 'cron_queue'
-                command_run.delay(site=site, command=item['command'], single_server=item['single_server'], user=item['modified_by'], queue=queue)
+                    routing_key = 'cron.run'
+                command_run.delay(site=site,
+                                  command=item['command'],
+                                  single_server=item['single_server'],
+                                  user=item['modified_by'],
+                                  queue=queue,
+                                  routing_key=routing_key)
             # After all the commands run, flush APC.
             if item['command'] == 'update_settings_file':
                 logger.debug('Clear APC')

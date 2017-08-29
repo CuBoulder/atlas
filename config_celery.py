@@ -1,6 +1,5 @@
 from datetime import timedelta
 from celery.schedules import crontab
-from kombu import Queue
 from config_local import *
 
 BROKER_URL='amqp://guest@localhost//'
@@ -15,25 +14,10 @@ CELERY_ENABLE_UTC = True
 # Time in seconds
 CELERYD_TASK_TIME_LIMIT = 600
 
-# Setup queues and routing to isolate cron.
-CELERY_DEFAULT_QUEUE = 'celery'
-CELERY_QUEUES = (
-    Queue('celery', routing_key='tasks.#'),
-    Queue('cron_queue', routing_key='cron.#'),
-    Queue('command_queue', routing_key='command.#'),
-)
-CELERY_DEFAULT_EXCHANGE = 'tasks'
-CELERY_DEFAULT_EXCHANGE_TYPE = 'topic'
-CELERY_DEFAULT_ROUTING_KEY = 'tasks.celery'
+# Setup routing to isolate routine cron from other commands..
 CELERY_ROUTES = {
-    'atlas.tasks.command_run': {
-        'queue': 'command_queue',
-        'routing_key': 'command.run',
-    },
-    'atlas.tasks.cron': {
-        'queue': 'cron_queue',
-        'routing_key': 'cron.run',
-    },
+    'atlas.tasks.command_run': {'queue': 'command_queue'},
+    'atlas.tasks.cron_run': {'queue': 'cron_queue'},
 }
 
 CELERYBEAT_SCHEDULE = {

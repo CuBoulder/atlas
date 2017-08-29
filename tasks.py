@@ -113,6 +113,7 @@ class CronException(Exception):
                 }
             )
             utilities.post_to_slack_payload(slack_payload)
+    pass
 
 
 

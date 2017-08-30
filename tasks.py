@@ -7,6 +7,7 @@ import sys
 import fabfile
 import time
 import json
+import re
 
 from celery import Celery
 from celery import group
@@ -28,6 +29,92 @@ logger = get_task_logger(__name__)
 # Create the Celery app object
 celery = Celery('tasks')
 celery.config_from_object(config_celery)
+
+class CronException(Exception):
+    def __init__(self, message, errors):
+
+        # Call the base class constructor with the parameters it needs
+        super(CronException, self).__init__(message)
+
+        # Now for your custom code...
+        self.errors = errors
+
+        logger.debug('Cron Error | %s', self.errors)
+        # Expand the list to the variables we need.
+        fabric_result, site_path = self.errors
+
+        logger.debug(fabric_result)
+        # The fabric_result is a dict of {hosts: result} from fabric.
+        # We loop through each row and add it to a new dict if value is not
+        # None.
+        # This uses constructor syntax https://doughellmann.com/blog/2012/11/12/the-performance-impact-of-using-dict-instead-of-in-cpython-2-7-2/.
+        errors_for_slack = {k: v for k, v in fabric_result.iteritems() if v is not None}
+
+        instance_url = '{0}/{1}'.format(base_urls[environment], site_path)
+        title = 'Run Command'
+        instance_link = '<' + instance_url + '|' + instance_url + '>'
+        command = 'drush elysia-cron run'
+        user = 'Celerybeat'
+
+        # Only post if an error
+        if errors_for_slack:
+            text = 'Error'
+            slack_color = 'danger'
+            slack_channel = 'cron-errors'
+
+            slack_fallback = instance_url + ' - ' + environment + ' - ' + command
+
+            slack_payload = {
+                # Channel will be overridden on local environments.
+                "channel": slack_channel,
+                "text": text,
+                "username": 'Atlas',
+                "attachments": [
+                    {
+                        "fallback": slack_fallback,
+                        "color": slack_color,
+                        "author_name": user,
+                        "title": title,
+                        "fields": [
+                            {
+                                "title": "Instance",
+                                "value": instance_link,
+                                "short": True
+                            },
+                            {
+                                "title": "Environment",
+                                "value": environment,
+                                "short": True
+                            },
+                            {
+                                "title": "Command",
+                                "value": command,
+                                "short": True
+                            }
+                        ],
+                    }
+                ],
+                "user": user
+            }
+
+            error_json = json.dumps(errors)
+            slack_payload['attachments'].append(
+                {
+                    "fallback": 'Error message',
+                    # A lighter red.
+                    "color": '#ee9999',
+                    "fields": [
+                        {
+                            "title": "Error message",
+                            "value": error_json,
+                            "short": False
+                        }
+                    ]
+                }
+            )
+            utilities.post_to_slack_payload(slack_payload)
+    pass
+
 
 
 @celery.task
@@ -428,7 +515,10 @@ def command_prepare(item):
                 # if item['command'] == 'site_backup':
                 #     execute(fabfile.site_backup, site=site)
                 #     continue
-                command_run.delay(site, item['command'], item['single_server'], item['modified_by'])
+                command_run.delay(site=site,
+                                  command=item['command'],
+                                  single_server=item['single_server'],
+                                  user=item['modified_by'])
             # After all the commands run, flush APC.
             if item['command'] == 'update_settings_file':
                 logger.debug('Clear APC')
@@ -543,85 +633,35 @@ def cron(type=None, status=None, include_packages=None, exclude_packages=None):
     sites = utilities.get_eve('sites', site_query)
     if not sites['_meta']['total'] == 0:
         for site in sites['_items']:
-            command_run.apply_async((site, 'drush elysia-cron run', True), link=check_cron_result.s())
+            cron_run.delay(site)
 
 
 @celery.task
-def check_cron_result(payload):
-    logger.debug('Check cron result')
-    # Expand the list to the variables we need.
-    fabric_result, site_path = payload
+def cron_run(site):
+    """
+    Run cron
 
-    logger.debug(fabric_result)
-    # The fabric_result is a dict of {hosts: result} from fabric.
-    # We loop through each row and add it to a new dict if value is not
-    # None.
-    # This uses constructor syntax https://doughellmann.com/blog/2012/11/12/the-performance-impact-of-using-dict-instead-of-in-cpython-2-7-2/.
-    errors = {k: v for k, v in fabric_result.iteritems() if v is not None}
-
-    instance_url = '{0}/{1}'.format(base_urls[environment], site_path)
-    title = 'Run Command'
-    instance_link = '<' + instance_url + '|' + instance_url + '>'
+    :param site: A complete site item.
+    :param command: Cron command to run.
+    :return:
+    """
+    logger.info('Run Cron | %s ', site['sid'])
+    start_time = time.time()
     command = 'drush elysia-cron run'
-    user = 'Celerybeat'
+    try:
+        execute(fabfile.command_run_single, site=site, command=command)
+    except CronException as e:
+        logger.error('Run Cron | %s | Cron failed | %s', site['sid'], e)
+        raise
 
-    # Only post if an error
-    if errors:
-        text = 'Error'
-        slack_color = 'danger'
-        slack_channel = 'cron-errors'
-
-        slack_fallback = instance_url + ' - ' + environment + ' - ' + command
-
-        slack_payload = {
-            # Channel will be overridden on local environments.
-            "channel": slack_channel,
-            "text": text,
-            "username": 'Atlas',
-            "attachments": [
-                {
-                    "fallback": slack_fallback,
-                    "color": slack_color,
-                    "author_name": user,
-                    "title": title,
-                    "fields": [
-                        {
-                            "title": "Instance",
-                            "value": instance_link,
-                            "short": True
-                        },
-                        {
-                            "title": "Environment",
-                            "value": environment,
-                            "short": True
-                        },
-                        {
-                            "title": "Command",
-                            "value": command,
-                            "short": True
+    logger.info('Run Cron | %s | Cron success', site['sid'])
+    command_time = time.time() - start_time
+    logstash_payload = {'command_time': command_time,
+                        'logsource': 'atlas',
+                        'command': command,
+                        'instance': site['sid']
                         }
-                    ],
-                }
-            ],
-            "user": user
-        }
-
-        error_json = json.dumps(errors)
-        slack_payload['attachments'].append(
-            {
-                "fallback": 'Error message',
-                # A lighter red.
-                "color": '#ee9999',
-                "fields": [
-                    {
-                        "title": "Error message",
-                        "value": error_json,
-                        "short": False
-                    }
-                ]
-            }
-        )
-        utilities.post_to_slack_payload(slack_payload)
+    utilities.post_to_logstash_payload(payload=logstash_payload)
 
 
 @celery.task

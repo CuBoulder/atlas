@@ -676,9 +676,9 @@ def create_settings_files(site):
         'sid':sid,
         'pw':database_password,
         'page_cache_maximum_age':page_cache_maximum_age,
-        'database_servers': env.roledefs['database_servers'] if environment == 'local' else 'localhost',
+        'database_servers': env.roledefs['database_servers'],
         'memcache_servers': env.roledefs['memcache_servers'],
-        'environment':environment if environment != 'prod' else ''
+        'environment':environment
     }
 
     print 'Settings Post Variables - {0}'.format(local_post_settings_variables)

@@ -336,7 +336,7 @@ def get_code(name, code_type=''):
 
 def get_code_name_version(code_id):
     """
-    Get the label and version for a code item.
+    Get the name and version for a code item.
     :param code_id: string '_id' for a code item
     :return: string 'label'-'version'
     """
@@ -344,6 +344,16 @@ def get_code_name_version(code_id):
     code_name = code['meta']['name']
     code_version = code['meta']['version']
     return '{0}-{1}'.format(code_name, code_version)
+
+
+def get_code_label(code_id):
+    """
+    Get the label for a code item.
+    :param code_id: string '_id' for a code item
+    :return: string 'label'-'version'
+    """
+    code = get_single_eve('code', code_id)
+    return code['meta']['label']
 
 
 def import_code(query):

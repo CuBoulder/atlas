@@ -146,7 +146,7 @@ def code_deploy(item):
 
     slack_payload = {
 
-        "text": 'Code Deploy',
+        "text": 'Code Deployed: {0}/code/{1}'.format(api_urls[environment], item['_id']),
         "username": 'Atlas',
         "attachments": [
             {
@@ -211,12 +211,14 @@ def code_update(updated_item, original_item):
     name = updated_item['meta']['name'] if updated_item['meta']['name'] else original_item['meta']['name']
     version = updated_item['meta']['version'] if updated_item['meta']['version'] else original_item['meta']['version']
     slack_title = '{0} - {1}'.format(name, version)
+    slack_link = '{0}/code/{1}'.format(api_urls[environment], updated_item['_id'])
     if False not in fab_task.values():
         slack_message = 'Code Update - Success'
         slack_color = 'good'
         utilities.post_to_slack(
             message=slack_message,
             title=slack_title,
+            link=slack_link,
             level=slack_color)
 
 
@@ -235,10 +237,12 @@ def code_remove(item):
                                      item['meta']['version'])
     if False not in fab_task.values():
         slack_message = 'Code Remove - Success'
+        slack_link = '{0}/code/{1}'.format(api_urls[environment], item['_id'])
         slack_color = 'good'
         utilities.post_to_slack(
             message=slack_message,
             title=slack_title,
+            link=slack_link,
             level=slack_color)
 
 

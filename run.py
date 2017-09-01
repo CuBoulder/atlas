@@ -154,7 +154,7 @@ def on_inserted_sites_callback(items):
                 tasks.site_import_from_inventory.delay(item)
 
 
-def on_insert_code_callback(items):
+def on_inserted_code_callback(items):
     """
     Deploy code onto servers as the items are created.
 
@@ -375,7 +375,7 @@ app.on_pre_POST_sites += pre_post_sites_callback
 app.on_pre_DELETE_code += pre_delete_code_callback
 app.on_pre_DELETE_sites += pre_delete_sites_callback
 # Database event hooks.
-app.on_insert_code += on_insert_code_callback
+app.on_inserted_code += on_inserted_code_callback
 app.on_insert_sites += on_insert_sites_callback
 app.on_inserted_sites += on_inserted_sites_callback
 app.on_update_code += on_update_code_callback

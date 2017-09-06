@@ -153,57 +153,63 @@ def site_provision(site):
 
     try:
         execute(create_directory_structure, folder=code_directory)
-    except FabricException as e:
+    except FabricException as error:
         print 'Create directory structure failed.'
-        return e
+        return error
 
     try:
         execute(create_directory_structure, folder=web_directory_type)
-    except FabricException as e:
+    except FabricException as error:
         print 'Create directory structure failed.'
-        return e
+        return error
 
     with cd(code_directory):
         core = utilities.get_code_name_version(site['code']['core'])
         run('drush dslm-new {0} {1}'.format(site['sid'], core))
+        # Find all directories and set perms to 0755.
+        run('find {0} -type d -exec chmod 0755 {{}} \\;'.format(code_directory_sid))
+        # Find all directories and set group to `webserver_user_group`.
+        run('find {0} -type d -exec chgrp {1} {{}} \\;'.format(code_directory_sid, webserver_user_group))
+        # Find all files and set perms to 0644.
+        run('find {0} -type f -exec chmod 0644 {{}} \\;'.format(code_directory_sid))
+        
+    with cd(code_directory_sid):
+        profile = utilities.get_code_name_version(site['code']['profile'])
+        run('drush dslm-add-profile {0}'.format(profile))
 
     try:
         execute(update_symlink, source=code_directory_sid, destination=code_directory_current)
-    except FabricException as e:
+    except FabricException as error:
         print 'Update symlink failed.'
-        return e
-
-    with cd(code_directory_current):
-        profile = utilities.get_code_name_version(site['code']['profile'])
-        run('drush dslm-add-profile {0}'.format(profile))
+        return error
 
     if nfs_mount_files_dir:
         nfs_dir = nfs_mount_location[environment]
         nfs_files_dir = '{0}/{1}/files'.format(nfs_dir, site['sid'])
         try:
             execute(create_nfs_files_dir, nfs_dir=nfs_dir, site_sid=site['sid'])
-        except FabricException as e:
+        except FabricException as error:
             print 'Create nfs directory failed.'
-            return e
+            return error
         # Replace default files dir with this one
         site_files_dir = code_directory_current + '/sites/default/files'
         try:
             execute(replace_files_directory, source=nfs_files_dir, destination=site_files_dir)
-        except FabricException as e:
+        except FabricException as error:
             print 'Replace file directory failed.'
-            return e
+            return error
 
     try:
-        execute( create_settings_files, site=site)
-    except FabricException as e:
+        execute(create_settings_files, site=site)
+    except FabricException as error:
         print 'Settings file creation failed.'
-        return e
+        return error
 
     try:
         execute(update_symlink, source=code_directory_current, destination=web_directory_sid)
-    except FabricException as e:
+    except FabricException as error:
         print 'Update symlink failed.'
-        return e
+        return error
 
 
 def site_install(site):
@@ -214,15 +220,9 @@ def site_install(site):
 
     try:
         execute(install_site, profile_name=profile_name, code_directory_current=code_directory_current)
-    except FabricException as e:
+    except FabricException as error:
         print 'Instance install failed.'
-        return e
-
-    try:
-        execute(correct_file_directory_permissions, site=site)
-    except FabricException as e:
-        print 'Correct file permissions failed.'
-        return e
+        return error
 
 
 @roles('webservers')
@@ -356,6 +356,12 @@ def site_restore(site):
         sites_code_root,
         site['sid'])
     update_symlink(code_directory_sid, code_directory_current)
+    with cd(code_directory_current):
+        # Run updates
+        action_0 = run("sudo -u {0} drush updb -y;".format(webserver_user))
+        # TODO: See if this works as intended.
+        if action_0.failed:
+            return task
 
 
 @roles('webservers')
@@ -381,26 +387,6 @@ def site_remove(site):
         remove_directory(nfs_files_dir)
 
     remove_directory(code_directory)
-
-@roles('webservers')
-def correct_file_directory_permissions(site):
-    code_directory = '{0}/{1}'.format(sites_code_root, site['sid'])
-    web_directory = '{0}/{1}'.format(sites_web_root, env.host_string)
-    nfs_dir = nfs_mount_location[environment]
-    nfs_files_dir = '{0}/{1}/files'.format(nfs_dir, site['sid'])
-    nfs_files_tmp_dir = '{0}/{1}/tmp'.format(nfs_dir, site['sid'])
-    with cd(code_directory):
-        run('chgrp -R {0} {1}'.format(webserver_user_group, site['sid']))
-        run('chmod -R 0775 {0}'.format(site['sid']))
-    with cd(nfs_files_dir):
-        run('chgrp -R {0} {1}'.format(webserver_user_group, nfs_files_dir))
-        run('chmod -R 0775 {0}'.format(nfs_files_dir))
-    with cd(nfs_files_tmp_dir):
-        run('chgrp -R {0} {1}'.format(webserver_user_group, nfs_files_tmp_dir))
-        run('chmod -R 0775 {0}'.format(nfs_files_tmp_dir))
-    with cd(web_directory):
-        run('chmod -R 0775 {0}'.format(site['sid']))
-        run('chmod -R 0644 {0}/sites/default/*.php'.format(site['sid']))
 
 
 @roles('webserver_single')
@@ -857,7 +843,7 @@ def launch_site(site, gsa_collection=False):
                     clear_apc()
                     if gsa_collection:
                         # Set the collection name
-                        run('sudo -u {0} drush vset --yes google_appliance_collection {0}'.format(webserver_user, gsa_collection))
+                        run("sudo -u {0} drush vset --yes google_appliance_collection {1}".format(webserver_user, gsa_collection))
                     # Clear caches at the end of the launch process to show
                     # correct pathologic rendered URLS.
                     drush_cache_clear(site['sid'])

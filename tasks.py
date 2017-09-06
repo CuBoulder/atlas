@@ -53,7 +53,7 @@ class CronException(Exception):
         instance_url = '{0}/{1}'.format(base_urls[environment], site_path)
         title = 'Run Command'
         instance_link = '<' + instance_url + '|' + instance_url + '>'
-        command = 'drush elysia-cron run'
+        command = 'sudo -u {0} drush elysia-cron run'.format(webserver_user)
         user = 'Celerybeat'
 
         # Only post if an error
@@ -563,24 +563,20 @@ def command_run(site, command, single_server, user=None):
                         }
     utilities.post_to_logstash_payload(payload=logstash_payload)
 
-    # Cron handles its own messages.
-    if command != 'drush elysia-cron run':
-        slack_title = '{0}/{1}'.format(base_urls[environment], site['path'])
-        slack_link = '{0}/{1}'.format(base_urls[environment], site['path'])
-        slack_message = 'Command - Success'
-        slack_color = 'good'
-        attachment_text = command
-        user = user
+    slack_title = '{0}/{1}'.format(base_urls[environment], site['path'])
+    slack_link = '{0}/{1}'.format(base_urls[environment], site['path'])
+    slack_message = 'Command - Success'
+    slack_color = 'good'
+    attachment_text = command
+    user = user
 
-        utilities.post_to_slack(
-            message=slack_message,
-            title=slack_title,
-            link=slack_link,
-            attachment_text=attachment_text,
-            level=slack_color,
-            user=user)
-    else:
-        return fabric_task_result, site['path']
+    utilities.post_to_slack(
+        message=slack_message,
+        title=slack_title,
+        link=slack_link,
+        attachment_text=attachment_text,
+        level=slack_color,
+        user=user)
 
 
 @celery.task
@@ -647,7 +643,7 @@ def cron_run(site):
     """
     logger.info('Run Cron | %s ', site['sid'])
     start_time = time.time()
-    command = 'drush elysia-cron run'
+    command = 'sudo -u {0} drush elysia-cron run'.format(webserver_user)
     try:
         execute(fabfile.command_run_single, site=site, command=command)
     except CronException as e:

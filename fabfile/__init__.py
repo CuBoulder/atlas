@@ -172,7 +172,8 @@ def site_provision(site):
         run('drush dslm-new {0} {1}'.format(site['sid'], core))
 
     try:
-        execute(set_file_permissions, site=site)
+        print 'Set file permissions failed.'
+        set_file_permissions(site=site)
     except FabricException as error:
         print 'Set file permissions failed.'
         return error
@@ -227,6 +228,16 @@ def site_install(site):
     except FabricException as error:
         print 'Instance install failed.'
         return error
+
+
+def set_file_permissions(site):
+    code_directory_sid = '{0}/{1}/{1}'.format(sites_code_root, site['sid'])
+    # Find all directories and set perms to 0755.
+    run('find {0} -type d -exec chmod 0755 {{}} \\;'.format(code_directory_sid))
+    # Find all directories and set group to `webserver_user_group`.
+    run('find {0} -type d -exec chgrp {1} {{}} \\;'.format(code_directory_sid, webserver_user_group))
+    # Find all files and set perms to 0644.
+    run('find {0} -type f -exec chmod 0644 {{}} \\;'.format(code_directory_sid))
 
 
 @roles('webservers')
@@ -411,37 +422,6 @@ def site_remove(site):
         remove_directory(nfs_files_dir)
 
     remove_directory(code_directory)
-
-@roles('webservers')
-def correct_file_directory_permissions(site):
-    code_directory_sid = '{0}/{1}/{1}'.format(sites_code_root, site['sid'])
-    web_directory_sid = '{0}/{1}/{2}'.format(sites_web_root, site['type'], site['sid'])
-    nfs_dir = nfs_mount_location[environment]
-    nfs_files_dir = '{0}/sitefiles/{1}/files'.format(nfs_dir, site['sid'])
-    nfs_files_tmp_dir = '{0}/sitefiles/{1}/tmp'.format(nfs_dir, site['sid'])
-    with cd(code_directory_sid):
-        run('chgrp -R {0} sites/default'.format(ssh_user_group))
-        run('chmod -R 0775 sites/default')
-    with cd(nfs_files_dir):
-        run('chgrp -R {0} {1}'.format(webserver_user_group, nfs_files_dir))
-        run('chmod -R 0775 {0}'.format(nfs_files_dir))
-    with cd(nfs_files_tmp_dir):
-        run('chgrp -R {0} {1}'.format(webserver_user_group, nfs_files_tmp_dir))
-        run('chmod -R 0775 {0}'.format(nfs_files_tmp_dir))
-    with cd(web_directory_sid):
-        run('chmod -R 0775 sites/default')
-        run('chmod -R 0644 sites/default/*.php')
-
-
-@roles('webservers')
-def set_file_permissions(site):
-    code_directory_sid = '{0}/{1}/{1}'.format(sites_code_root, site['sid'])
-    # Find all directories and set perms to 0755.
-    run('find {0} -type d -exec chmod 0755 {{}} \\;'.format(code_directory_sid))
-    # Find all directories and set group to `webserver_user_group`.
-    run('find {0} -type d -exec chgrp {1} {{}} \\;'.format(code_directory_sid, webserver_user_group))
-    # Find all files and set perms to 0644.
-    run('find {0} -type f -exec chmod 0644 {{}} \\;'.format(code_directory_sid))
 
 
 @roles('webserver_single')

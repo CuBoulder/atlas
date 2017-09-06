@@ -272,12 +272,6 @@ def site_provision(site):
         raise
 
     try:
-        execute(fabfile.correct_file_directory_permissions, site=site)
-    except Exception as error:
-        logger.error('Site provision failed | Error Message | %s', error)
-        raise
-
-    try:
         execute(fabfile.site_install, site=site)
     except Exception as error:
         logger.error('Site install failed | Error Message | %s', error)
@@ -496,9 +490,6 @@ def command_prepare(item):
         if not sites['_meta']['total'] == 0:
             for site in sites['_items']:
                 logger.debug('Command - {0}'.format(item['command']))
-                if item['command'] == 'correct_file_permissions':
-                    command_wrapper.delay(execute(fabfile.correct_file_directory_permissions, site=site))
-                    continue
                 if item['command'] == 'update_settings_file':
                     logger.debug('Update site\n{0}'.format(site))
                     command_wrapper.delay(execute(fabfile.update_settings_file, site=site))

@@ -9,6 +9,7 @@ Need to
 
 Resolves:
 
+- &#35;53 - Handle no code state better
 - &#35;352 - Separate cron properly
 - &#35;354 - Atlas package emails get confusing with several bundles
 - &#35;356 - Change to run drush as apache

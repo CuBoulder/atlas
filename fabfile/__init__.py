@@ -437,11 +437,11 @@ def correct_file_directory_permissions(site):
 def set_file_permissions(site):
     code_directory_sid = '{0}/{1}/{1}'.format(sites_code_root, site['sid'])
     # Find all directories and set perms to 0755.
-    run('find {0} -type d -exec chmod 0755 {{}} \;'.format(code_directory_sid))
+    run('find {0} -type d -exec chmod 0755 {{}} \\;'.format(code_directory_sid))
     # Find all directories and set group to `webserver_user_group`.
-    run('find {0} -type d -exec chgrp {1} {{}} \;'.format(code_directory_sid, webserver_user_group))
+    run('find {0} -type d -exec chgrp {1} {{}} \\;'.format(code_directory_sid, webserver_user_group))
     # Find all files and set perms to 0644.
-    run('find {0} -type f -exec chmod 0644 {{}} \;'.format(code_directory_sid))
+    run('find {0} -type f -exec chmod 0644 {{}} \\;'.format(code_directory_sid))
 
 
 @roles('webserver_single')

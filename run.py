@@ -27,6 +27,28 @@ def pre_post_callback(resource, request):
     app.logger.debug('POST to {0} resource\nRequest:\n{1}'.format(resource, request.json))
 
 
+def pre_post_sites_callback(request):
+    """
+    :param request: flask.request object
+    """
+    app.logger.debug('sites | POST | Pre post callback')
+    # Check to see if we have a current profile and core.
+    core = utilities.get_current_code(name=default_core, code_type='core')
+    app.logger.debug('sites | POST | Pre post callback | core | %s', core)
+    profile = utilities.get_current_code(name=default_profile, code_type='profile')
+    app.logger.debug('sites | POST | Pre post callback | profile | %s', profile)
+
+    if not core and not profile:
+        app.logger.error('sites | POST | Pre post callback | No current core or profile')
+        abort(409, 'Error: There is no current core or profile.')
+    elif not core:
+        app.logger.error('sites | POST | Pre post callback | No current core')
+        abort(409, 'Error: There is no current core.')
+    elif not profile:
+        app.logger.error('sites | POST | Pre post callback | No current profile')
+        abort(409, 'Error: There is no current profile.')
+
+
 def pre_delete_code_callback(request, lookup):
     """
     Make sure no sites are using the code.
@@ -93,13 +115,13 @@ def on_insert_sites_callback(items):
             # The 'get' method checks if the key exists.
             if item.get('code'):
                 if not item['code'].get('core'):
-                    item['code']['core'] = utilities.get_current_code(name=default_core, type='core')
+                    item['code']['core'] = utilities.get_current_code(name=default_core, code_type='core')
                 if not item['code'].get('profile'):
-                    item['code']['profile'] = utilities.get_current_code(name=default_profile, type='profile')
+                    item['code']['profile'] = utilities.get_current_code(name=default_profile, code_type='profile')
             else:
                 item['code'] = {}
-                item['code']['core'] = utilities.get_current_code(name=default_core, type='core')
-                item['code']['profile'] = utilities.get_current_code(name=default_profile, type='profile')
+                item['code']['core'] = utilities.get_current_code(name=default_core, code_type='core')
+                item['code']['profile'] = utilities.get_current_code(name=default_profile, code_type='profile')
             if not item['import_from_inventory']:
                 date_json = '{{"created":"{0} GMT"}}'.format(item['_created'])
                 item['dates'] = json.loads(date_json)
@@ -349,6 +371,7 @@ app.debug = True
 
 # Request event hooks.
 app.on_pre_POST += pre_post_callback
+app.on_pre_POST_sites += pre_post_sites_callback
 app.on_pre_DELETE_code += pre_delete_code_callback
 app.on_pre_DELETE_sites += pre_delete_sites_callback
 # Database event hooks.

@@ -36,10 +36,10 @@ $databases['default']['slave'][] = array(
 $databases['default']['default'] = array(
   'driver' => 'mysql',
   'database' => '{{ sid }}',
-  'username' => 'root',
-  'password' => 'root',
-  'host' => '{{ database_servers.master }}',
-  'port' => '3307',
+  'username' => '{{ sid }}',
+  'password' => '{{ pw }}',
+  'host' => 'localhost',
+  'port' => '3306',
   'prefix' => '',
 );
 

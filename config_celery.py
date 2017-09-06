@@ -43,10 +43,10 @@ CELERY_ROUTES = {
         'queue': 'command_queue'
     },
     'atlas.tasks.cron': {
-        'queue': 'command_queue'
+        'queue': 'cron_queue'
     },
-    'atlas.tasks.check_cron_result': {
-        'queue': 'command_queue'
+    'atlas.tasks.cron_run': {
+        'queue': 'cron_queue'
     },
     'atlas.tasks.available_sites_check': {
         'queue': 'atlas_queue'

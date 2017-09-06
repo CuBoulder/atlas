@@ -170,14 +170,13 @@ def site_provision(site):
     with cd(code_directory):
         core = utilities.get_code_name_version(site['code']['core'])
         run('drush dslm-new {0} {1}'.format(site['sid'], core))
-
-    try:
-        print 'Try file permissions.'
-        set_file_permissions(site=site)
-    except FabricException as error:
-        print 'Set file permissions failed.'
-        return error
-
+        # Find all directories and set perms to 0755.
+        run('find {0} -type d -exec chmod 0755 {{}} \\;'.format(code_directory_sid))
+        # Find all directories and set group to `webserver_user_group`.
+        run('find {0} -type d -exec chgrp {1} {{}} \\;'.format(code_directory_sid, webserver_user_group))
+        # Find all files and set perms to 0644.
+        run('find {0} -type f -exec chmod 0644 {{}} \\;'.format(code_directory_sid))
+        
     with cd(code_directory_sid):
         profile = utilities.get_code_name_version(site['code']['profile'])
         run('drush dslm-add-profile {0}'.format(profile))
@@ -228,17 +227,6 @@ def site_install(site):
     except FabricException as error:
         print 'Instance install failed.'
         return error
-
-
-def set_file_permissions(site):
-    print 'Start file permissions.'
-    code_directory_sid = '{0}/{1}/{1}'.format(sites_code_root, site['sid'])
-    # Find all directories and set perms to 0755.
-    run('find {0} -type d -exec chmod 0755 {{}} \\;'.format(code_directory_sid))
-    # Find all directories and set group to `webserver_user_group`.
-    run('find {0} -type d -exec chgrp {1} {{}} \\;'.format(code_directory_sid, webserver_user_group))
-    # Find all files and set perms to 0644.
-    run('find {0} -type f -exec chmod 0644 {{}} \\;'.format(code_directory_sid))
 
 
 @roles('webservers')

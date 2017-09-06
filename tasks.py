@@ -295,18 +295,18 @@ def site_provision(site):
     slack_title = '{0}/{1}'.format(base_urls[environment], site['path'])
     slack_link = '{0}/{1}'.format(base_urls[environment], site['path'])
     attachment_text = '{0}/sites/{1}'.format(api_urls[environment], site['_id'])
-    if False not in (provision_task.values() or install_task.values()):
-        slack_message = 'Site provision - Success - {0} seconds'.format(provision_time)
-        slack_color = 'good'
-        utilities.post_to_slack(
-            message=slack_message,
-            title=slack_title,
-            link=slack_link,
-            attachment_text=attachment_text,
-            level=slack_color)
-        logstash_payload = {'provision_time': provision_time,
-                            'logsource': 'atlas'}
-        utilities.post_to_logstash_payload(payload=logstash_payload)
+
+    slack_message = 'Site provision - Success - {0} seconds'.format(provision_time)
+    slack_color = 'good'
+    utilities.post_to_slack(
+        message=slack_message,
+        title=slack_title,
+        link=slack_link,
+        attachment_text=attachment_text,
+        level=slack_color)
+    logstash_payload = {'provision_time': provision_time,
+                        'logsource': 'atlas'}
+    utilities.post_to_logstash_payload(payload=logstash_payload)
 
 
 @celery.task

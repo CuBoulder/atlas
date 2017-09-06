@@ -261,33 +261,21 @@ def site_provision(site):
     try:
         logger.debug('Site provision | Create database')
         utilities.create_database(site['sid'], site['db_key'])
-    except:
-        logger.error('Site provision failed | Database creation failed')
+    except Exception as error:
+        logger.error('Site provision failed | Database creation failed | %s', error)
         raise
 
     try:
-        provision_task = execute(fabfile.site_provision, site=site)
-    except:
-        logger.error('Site provision failed | Error Message | %s', provision_task)
-        raise
-
-    logger.debug('Site provision | Provision Fabric task | %s', provision_task)
-    logger.debug('Site provision | Provision Fabric task values | %s', provision_task.values)
-
-    try:
-        result_correct_file_dir_permissions = execute(fabfile.correct_file_directory_permissions, site=site)
-    except:
-        logger.error('Site provision failed | Error Message | %s', result_correct_file_dir_permissions)
+        execute(fabfile.site_provision, site=site)
+    except Exception as error:
+        logger.error('Site provision failed | Error Message | %s', error)
         raise
 
     try:
-        install_task = execute(fabfile.site_install, site=site)
-    except:
-        logger.error('Site install failed | Error Message | %s', install_task)
+        execute(fabfile.site_install, site=site)
+    except Exception as error:
+        logger.error('Site install failed | Error Message | %s', error)
         raise
-
-    logger.debug('Site provision | Install Fabric task | %s', install_task)
-    logger.debug('Site provision | Install Fabric task values | %s', install_task.values)
 
     patch_payload = {'status': 'available',
                      'db_key': site['db_key'], 'statistics': site['statistics']}
@@ -307,18 +295,18 @@ def site_provision(site):
     slack_title = '{0}/{1}'.format(base_urls[environment], site['path'])
     slack_link = '{0}/{1}'.format(base_urls[environment], site['path'])
     attachment_text = '{0}/sites/{1}'.format(api_urls[environment], site['_id'])
-    if False not in (provision_task.values() or install_task.values()):
-        slack_message = 'Site provision - Success - {0} seconds'.format(provision_time)
-        slack_color = 'good'
-        utilities.post_to_slack(
-            message=slack_message,
-            title=slack_title,
-            link=slack_link,
-            attachment_text=attachment_text,
-            level=slack_color)
-        logstash_payload = {'provision_time': provision_time,
-                            'logsource': 'atlas'}
-        utilities.post_to_logstash_payload(payload=logstash_payload)
+
+    slack_message = 'Site provision - Success - {0} seconds'.format(provision_time)
+    slack_color = 'good'
+    utilities.post_to_slack(
+        message=slack_message,
+        title=slack_title,
+        link=slack_link,
+        attachment_text=attachment_text,
+        level=slack_color)
+    logstash_payload = {'provision_time': provision_time,
+                        'logsource': 'atlas'}
+    utilities.post_to_logstash_payload(payload=logstash_payload)
 
 
 @celery.task
@@ -502,9 +490,6 @@ def command_prepare(item):
         if not sites['_meta']['total'] == 0:
             for site in sites['_items']:
                 logger.debug('Command - {0}'.format(item['command']))
-                if item['command'] == 'correct_file_permissions':
-                    command_wrapper.delay(execute(fabfile.correct_file_directory_permissions, site=site))
-                    continue
                 if item['command'] == 'update_settings_file':
                     logger.debug('Update site\n{0}'.format(site))
                     command_wrapper.delay(execute(fabfile.update_settings_file, site=site))

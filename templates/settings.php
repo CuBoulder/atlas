@@ -170,7 +170,7 @@ $conf['reverse_proxy_header'] = 'X-Forwarded-For';
 $conf['varnish_control_terminal'] = '{{varnish_control}}';
 $conf['varnish_version'] = 4;
 {% if environment == 'local' %}
-  $conf['varnish_control_key'] = substr(file_get_contents('/etc/varnish/secret'),0,-1);
+  $conf['varnish_control_key'] = substr(file_get_contents('/data/varnish/secret'),0,-1);
 {% endif %}
 
 {% if environment == 'development' %}

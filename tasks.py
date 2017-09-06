@@ -267,19 +267,19 @@ def site_provision(site):
 
     try:
         execute(fabfile.site_provision, site=site)
-   except Exception as error:
+    except Exception as error:
         logger.error('Site provision failed | Error Message | %s', error)
         raise
 
     try:
         execute(fabfile.correct_file_directory_permissions, site=site)
-   except Exception as error:
+    except Exception as error:
         logger.error('Site provision failed | Error Message | %s', error)
         raise
 
     try:
         execute(fabfile.site_install, site=site)
-   except Exception as error:
+    except Exception as error:
         logger.error('Site install failed | Error Message | %s', error)
         raise
 

@@ -2,9 +2,16 @@
 
 ## v1.0.24
 
+Need to 
+
+- Make sure Atlas user can run `sudo -u [webserver_user] drush` without a password.
+- Update Celery queues to include a `cron_queue`.
+
 Resolves:
 
-- &#35;53 - Handle no code state better
+- &#35;352 - Separate cron properly
+- &#35;354 - Atlas package emails get confusing with several bundles
+- &#35;356 - Change to run drush as apache
 
 ## v1.0.23
 

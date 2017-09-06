@@ -8,19 +8,17 @@ import re
 import os
 
 # Set Atlas location
-atlas_location = os.path.dirname(os.path.realpath(__file__))
+ATLAS_LOCATION = os.path.dirname(os.path.realpath(__file__))
 
-# Import config_servers.py.
 try:
     from config_servers import *
 except ImportError:
-    raise Exception("You need a config_servers.py file!")
+    raise Exception("You need an config_servers.py file!")
 
-# Import config_local.py.
 try:
     from config_local import *
 except ImportError:
-    raise Exception("You need a config_local.py file!")
+    raise Exception("You need an config_local.py file!")
 
 # Verify code_root is correctly formed.
 begin_with_slash = re.compile("^/")
@@ -42,8 +40,8 @@ if trailing_slash.search(sites_web_root):
 
 
 # This allows us to use a self signed cert for local dev.
-ssl_verification = True
-if environment == 'local':
-    ssl_verification = False
+SSL_VERIFICATION = True
+if ENVIRONMENT == 'local':
+    SSL_VERIFICATION = False
 
-version_number = '1.0.24'
+VERSION_NUMBER = '2.0.0-dev'

@@ -21,13 +21,13 @@ path = '/data/code'
 if path not in sys.path:
     sys.path.append(path)
 
-# Fabric environmental settings.
+# Fabric ENVIRONMENTal settings.
 env.user = ssh_user
 # env.key_filename =
 
 # Allow ~/.ssh/config to be utilized.
 env.use_ssh_config = True
-env.roledefs = serverdefs[environment]
+env.roledefs = SERVERDEFS[ENVIRONMENT]
 
 
 # TODO: Figure out a better way to deal with the output. Calling functions via
@@ -185,7 +185,7 @@ def site_provision(site):
         run('drush dslm-add-profile {0}'.format(profile))
 
     if nfs_mount_files_dir:
-        nfs_dir = nfs_mount_location[environment]
+        nfs_dir = nfs_mount_location[ENVIRONMENT]
         nfs_files_dir = '{0}/sitefiles/{1}/files'.format(nfs_dir, site['sid'])
         try:
             result_create_nfs_files_dir = execute(
@@ -309,7 +309,7 @@ def site_launch(site):
         print 'Settings files creation failed.'
         return result_create_settings_files
 
-    if environment is 'prod' and site['pool'] is 'poolb-express':
+    if ENVIRONMENT is 'prod' and site['pool'] is 'poolb-express':
         # Create GSA collection if needed.
         gsa_task = create_gsa(site)
         if gsa_task is True:
@@ -350,7 +350,7 @@ def site_backup(site):
         backup_path,
         site['sid'],
         date_time_string)
-    nfs_dir = nfs_mount_location[environment]
+    nfs_dir = nfs_mount_location[ENVIRONMENT]
     nfs_files_dir = '{0}/sitefiles/{1}/files'.format(nfs_dir, site['sid'])
     # Start the actual process.
     create_directory_structure(backup_path)
@@ -415,7 +415,7 @@ def site_remove(site):
     remove_symlink(web_directory_path)
 
     if nfs_mount_files_dir:
-        nfs_dir = nfs_mount_location[environment]
+        nfs_dir = nfs_mount_location[ENVIRONMENT]
         nfs_files_dir = '{0}/sitefiles/{1}'.format(nfs_dir, site['sid'])
         remove_directory(nfs_files_dir)
 
@@ -425,7 +425,7 @@ def site_remove(site):
 def correct_file_directory_permissions(site):
     code_directory_sid = '{0}/{1}/{1}'.format(sites_code_root, site['sid'])
     web_directory_sid = '{0}/{1}/{2}'.format(sites_web_root, site['type'], site['sid'])
-    nfs_dir = nfs_mount_location[environment]
+    nfs_dir = nfs_mount_location[ENVIRONMENT]
     nfs_files_dir = '{0}/sitefiles/{1}/files'.format(nfs_dir, site['sid'])
     nfs_files_tmp_dir = '{0}/sitefiles/{1}/tmp'.format(nfs_dir, site['sid'])
     with cd(code_directory_sid):
@@ -616,7 +616,7 @@ def create_settings_files(site):
     else:
         siteimprove_group = None
     page_cache_maximum_age = site['settings']['page_cache_maximum_age']
-    atlas_url = '{0}/'.format(api_urls[environment])
+    atlas_url = '{0}/'.format(api_urls[ENVIRONMENT])
     database_password = utilities.decrypt_string(site['db_key'])
 
     profile = utilities.get_single_eve('code', site['code']['profile'])
@@ -633,8 +633,8 @@ def create_settings_files(site):
         'sid':sid,
         'atlas_id':id,
         'atlas_url':atlas_url,
-        'atlas_username':service_account_username,
-        'atlas_password':service_account_password,
+        'atlas_username':SERVICE_ACCOUNT_USERNAME,
+        'atlas_password':SERVICE_ACCOUNT_PASSWORD,
         'path':site_path,
         'status':status,
         'pool':site['pool'],
@@ -657,9 +657,9 @@ def create_settings_files(site):
         'profile':profile_name,
         'sid':sid,
         'reverse_proxies':env.roledefs['varnish_servers'],
-        'varnish_control':varnish_control_terminals[environment],
+        'varnish_control':varnish_control_terminals[ENVIRONMENT],
         'memcache_servers':env.roledefs['memcache_servers'],
-        'environment':environment if environment != 'prod' else ''
+        'ENVIRONMENT':ENVIRONMENT if ENVIRONMENT != 'prod' else ''
     }
 
     print 'Settings  Variables - {0}'.format(settings_variables)
@@ -676,9 +676,9 @@ def create_settings_files(site):
         'sid':sid,
         'pw':database_password,
         'page_cache_maximum_age':page_cache_maximum_age,
-        'database_servers': env.roledefs['database_servers'] if environment == 'local' else 'localhost',
+        'database_servers': env.roledefs['database_servers'] if ENVIRONMENT == 'local' else 'localhost',
         'memcache_servers': env.roledefs['memcache_servers'],
-        'environment':environment if environment != 'prod' else ''
+        'ENVIRONMENT':ENVIRONMENT if ENVIRONMENT != 'prod' else ''
     }
 
     print 'Settings Post Variables - {0}'.format(local_post_settings_variables)
@@ -925,18 +925,18 @@ def diff_f5():
     load_balancer_config_dir = '{0}/fabfile'.format(atlas_location)
     load_balancer_config_file = '{0}/{1}'.format(
         load_balancer_config_dir,
-        load_balancer_config_files[environment])
+        load_balancer_config_files[ENVIRONMENT])
     # If an older config file exists, copy it to a backup folder.
     if os.path.isfile(load_balancer_config_file):
         local('mv {0} {1}/f5_backups/{2}.{3}'.format(
             load_balancer_config_file,
             load_balancer_config_dir,
-            load_balancer_config_files[environment],
+            load_balancer_config_files[ENVIRONMENT],
             str(time()).split('.')[0]))
     # Copy config file from the f5 server to the Atlas server.
     local('scp {0}:/config/filestore/files_d/Common_d/data_group_d/\:Common\:{1}* {2}/{1}.tmp'.format(
-        serverdefs[environment]['load_balancers'][0],
-        load_balancer_config_files[environment],
+        SERVERDEFS[ENVIRONMENT]['load_balancers'][0],
+        load_balancer_config_files[ENVIRONMENT],
         load_balancer_config_dir))
 
     # Open file from f5
@@ -962,10 +962,10 @@ def diff_f5():
 
 def update_f5():
     # Like 'WWWNGProdDataGroup.dat'
-    old_file_name = load_balancer_config_files[environment]
+    old_file_name = load_balancer_config_files[ENVIRONMENT]
     # Like 'WWWNGDevDataGroup.dat.1402433484.bac'
     new_file_name = "{0}.{1}.bac".format(
-        load_balancer_config_files[environment],
+        load_balancer_config_files[ENVIRONMENT],
         str(time()).split('.')[0])
     load_balancer_config_dir = '{0}/fabfile'.format(atlas_location)
     sites = utilities.get_eve('sites', 'max_results=3000')
@@ -973,7 +973,7 @@ def update_f5():
     # TODO: delete old backups
 
     # Write data to file
-    with open("{0}/{1}".format(load_balancer_config_dir, load_balancer_config_files[environment]),
+    with open("{0}/{1}".format(load_balancer_config_dir, load_balancer_config_files[ENVIRONMENT]),
               "w") as ofile:
         for site in sites['_items']:
             if 'path' in site:
@@ -1000,9 +1000,9 @@ def exportf5(new_file_name, load_balancer_config_dir):
 
     """
     # Copy the new configuration file to the server.
-    put("{0}/{1}".format(load_balancer_config_dir, load_balancer_config_files[environment]), "/tmp")
+    put("{0}/{1}".format(load_balancer_config_dir, load_balancer_config_files[ENVIRONMENT]), "/tmp")
     # Load the new configuration.
-    run("tmsh modify sys file data-group {0} source-path file:/tmp/{0}".format(load_balancer_config_files[environment]))
+    run("tmsh modify sys file data-group {0} source-path file:/tmp/{0}".format(load_balancer_config_files[ENVIRONMENT]))
     run("tmsh save sys config")
-    run("tmsh run cm config-sync to-group {0}".format(load_balancer_config_group[environment]))
+    run("tmsh run cm config-sync to-group {0}".format(load_balancer_config_group[ENVIRONMENT]))
     disconnect_all()

@@ -1,30 +1,26 @@
-"""atlas.tasks
-
-Celery tasks for Atlas.
-
 """
-import sys
-import fabfile
+    atlas.tasks
+    ~~~~~~
+    Celery tasks for Atlas.
+"""
+import logging
 import time
 import json
-import re
 
 from celery import Celery
-from celery import group
-from celery.utils.log import get_task_logger
 from fabric.api import execute
 from datetime import datetime, timedelta
-from atlas.config import *
+
+from atlas import fabric_tasks
 from atlas import utilities
 from atlas import config_celery
+from atlas.config import *
 
-
-path = '/data/code'
-if path not in sys.path:
-    sys.path.append(path)
-
-# Setup logging
-logger = get_task_logger(__name__)
+# Setup a sub-logger
+# Best practice is to setup sub-loggers rather than passing the main logger between different parts of the application.
+# https://docs.python.org/3/library/logging.html#logging.getLogger and
+# https://stackoverflow.com/questions/39863718/how-can-i-log-outside-of-main-flask-module
+log = logging.getLogger('atlas.tasks')
 
 # Create the Celery app object
 celery = Celery('tasks')
@@ -39,11 +35,11 @@ class CronException(Exception):
         # Now for your custom code...
         self.errors = errors
 
-        logger.debug('Cron Error | %s', self.errors)
+        log.debug('Cron Error | %s', self.errors)
         # Expand the list to the variables we need.
         fabric_result, site_path = self.errors
 
-        logger.debug(fabric_result)
+        log.debug(fabric_result)
         # The fabric_result is a dict of {hosts: result} from fabric.
         # We loop through each row and add it to a new dict if value is not
         # None.
@@ -125,9 +121,9 @@ def code_deploy(item):
     :param item: The flask request.json object.
     :return:
     """
-    logger.debug('Code deploy - {0}'.format(item))
-    code_deploy_fabric_task_result = execute(fabfile.code_deploy, item=item)
-    logger.debug('Code Deploy - Fabric Result\n{0}'.format(code_deploy_fabric_task_result))
+    log.debug('Code deploy - {0}'.format(item))
+    code_deploy_fabric_task_result = execute(fabric_tasks.code_deploy, item=item)
+    log.debug('Code Deploy - Fabric Result\n{0}'.format(code_deploy_fabric_task_result))
 
     # The fabric_result is a dict of {hosts: result} from fabric.
     # We loop through each row and add it to a new dict if value is not
@@ -205,8 +201,8 @@ def code_update(updated_item, original_item):
     :param original_item:
     :return:
     """
-    logger.debug('Code update - {0}'.format(updated_item))
-    fab_task = execute(fabfile.code_update, updated_item=updated_item, original_item=original_item)
+    log.debug('Code update - {0}'.format(updated_item))
+    fab_task = execute(fabric_tasks.code_update, updated_item=updated_item, original_item=original_item)
 
     name = updated_item['meta']['name'] if updated_item['meta']['name'] else original_item['meta']['name']
     version = updated_item['meta']['version'] if updated_item['meta']['version'] else original_item['meta']['version']
@@ -228,8 +224,8 @@ def code_remove(item):
     :param item: Item to be removed.
     :return:
     """
-    logger.debug('Code remove - {0}'.format(item))
-    fab_task = execute(fabfile.code_remove, item=item)
+    log.debug('Code remove - {0}'.format(item))
+    fab_task = execute(fabric_tasks.code_remove, item=item)
 
     slack_title = '{0} - {1}'.format(item['meta']['name'],
                                      item['meta']['version'])
@@ -250,7 +246,7 @@ def site_provision(site):
     :param site: A single site.
     :return:
     """
-    logger.debug('Site provision | %s', site)
+    log.debug('Site provision | %s', site)
     start_time = time.time()
     # 'db_key' needs to be added here and not in Eve so that the encryption
     # works properly.
@@ -259,35 +255,35 @@ def site_provision(site):
     site['status'] = 'available'
 
     try:
-        logger.debug('Site provision | Create database')
+        log.debug('Site provision | Create database')
         utilities.create_database(site['sid'], site['db_key'])
     except:
-        logger.error('Site provision failed | Database creation failed')
+        log.error('Site provision failed | Database creation failed')
         raise
 
     try:
-        provision_task = execute(fabfile.site_provision, site=site)
+        provision_task = execute(fabric_tasks.site_provision, site=site)
     except:
-        logger.error('Site provision failed | Error Message | %s', provision_task)
+        log.error('Site provision failed | Error Message | %s', provision_task)
         raise
 
-    logger.debug('Site provision | Provision Fabric task | %s', provision_task)
-    logger.debug('Site provision | Provision Fabric task values | %s', provision_task.values)
+    log.debug('Site provision | Provision Fabric task | %s', provision_task)
+    log.debug('Site provision | Provision Fabric task values | %s', provision_task.values)
 
     try:
-        result_correct_file_dir_permissions = execute(fabfile.correct_file_directory_permissions, site=site)
+        result_correct_file_dir_permissions = execute(fabric_tasks.correct_file_directory_permissions, site=site)
     except:
-        logger.error('Site provision failed | Error Message | %s', result_correct_file_dir_permissions)
+        log.error('Site provision failed | Error Message | %s', result_correct_file_dir_permissions)
         raise
 
     try:
-        install_task = execute(fabfile.site_install, site=site)
+        install_task = execute(fabric_tasks.site_install, site=site)
     except:
-        logger.error('Site install failed | Error Message | %s', install_task)
+        log.error('Site install failed | Error Message | %s', install_task)
         raise
 
-    logger.debug('Site provision | Install Fabric task | %s', install_task)
-    logger.debug('Site provision | Install Fabric task values | %s', install_task.values)
+    log.debug('Site provision | Install Fabric task | %s', install_task)
+    log.debug('Site provision | Install Fabric task values | %s', install_task.values)
 
     patch_payload = {'status': 'available',
                      'db_key': site['db_key'], 'statistics': site['statistics']}
@@ -300,9 +296,9 @@ def site_provision(site):
     core_string = core['meta']['name'] + '-' + core['meta']['version']
 
     provision_time = time.time() - start_time
-    logger.info('Atlas operational statistic | Site Provision | %s | %s | %s ',
+    log.info('Atlas operational statistic | Site Provision | %s | %s | %s ',
                 core_string, profile_string, provision_time)
-    logger.debug('Site provision | Patch | %s', patch)
+    log.debug('Site provision | Patch | %s', patch)
 
     slack_title = '{0}/{1}'.format(base_urls[environment], site['path'])
     slack_link = '{0}/{1}'.format(base_urls[environment], site['path'])
@@ -331,28 +327,28 @@ def site_update(site, updates, original):
     :param original: Complete original site item.
     :return:
     """
-    logger.debug('Site update - {0}\n{1}\n\n{2}\n\n{3}'.format(site['_id'], site, updates, original))
+    log.debug('Site update - {0}\n{1}\n\n{2}\n\n{3}'.format(site['_id'], site, updates, original))
 
     if updates.get('code'):
-        logger.debug('Found code changes.')
+        log.debug('Found code changes.')
         core_change = False
         profile_change = False
         package_change = False
         if 'core' in updates['code']:
-            logger.debug('Found core change.')
+            log.debug('Found core change.')
             core_change = True
-            execute(fabfile.site_core_update, site=site)
+            execute(fabric_tasks.site_core_update, site=site)
         if 'profile' in updates['code']:
-            logger.debug('Found profile change.')
+            log.debug('Found profile change.')
             profile_change = True
-            execute(fabfile.site_profile_update, site=site, original=original, updates=updates)
+            execute(fabric_tasks.site_profile_update, site=site, original=original, updates=updates)
         if 'package' in updates['code']:
-            logger.debug('Found package changes.')
+            log.debug('Found package changes.')
             package_change = True
-            execute(fabfile.site_package_update, site=site)
+            execute(fabric_tasks.site_package_update, site=site)
         if core_change or profile_change or package_change:
-            execute(fabfile.registry_rebuild, site=site)
-            execute(fabfile.update_database, site=site)
+            execute(fabric_tasks.registry_rebuild, site=site)
+            execute(fabric_tasks.update_database, site=site)
         # Email notification if we updated packages.
         if 'package' in updates['code']:
             package_name_string = ""
@@ -371,53 +367,53 @@ def site_update(site, updates, original):
             utilities.send_email(message=message, subject=subject, to=to)
 
     if updates.get('status'):
-        logger.debug('Found status change.')
+        log.debug('Found status change.')
         if updates['status'] in ['installing', 'launching', 'locked', 'take_down', 'restore']:
             if updates['status'] == 'installing':
-                logger.debug('Status changed to installing')
+                log.debug('Status changed to installing')
                 # Set new status on site record for update to settings files.
                 site['status'] = 'installed'
-                execute(fabfile.update_settings_file, site=site)
-                execute(fabfile.clear_apc)
+                execute(fabric_tasks.update_settings_file, site=site)
+                execute(fabric_tasks.clear_apc)
                 patch_payload = '{"status": "installed"}'
             elif updates['status'] == 'launching':
-                logger.debug('Status changed to launching')
+                log.debug('Status changed to launching')
                 site['status'] = 'launched'
-                execute(fabfile.update_settings_file, site=site)
-                execute(fabfile.site_launch, site=site)
+                execute(fabric_tasks.update_settings_file, site=site)
+                execute(fabric_tasks.site_launch, site=site)
                 if environment is not 'local':
-                    execute(fabfile.diff_f5)
-                    execute(fabfile.update_f5)
+                    execute(fabric_tasks.diff_f5)
+                    execute(fabric_tasks.update_f5)
                 # Let fabric send patch since it is changing update group.
             elif updates['status'] == 'locked':
-                logger.debug('Status changed to locked')
-                execute(fabfile.update_settings_file, site=site)
+                log.debug('Status changed to locked')
+                execute(fabric_tasks.update_settings_file, site=site)
             elif updates['status'] == 'take_down':
-                logger.debug('Status changed to take_down')
+                log.debug('Status changed to take_down')
                 site['status'] = 'down'
-                execute(fabfile.update_settings_file, site=site)
-                # execute(fabfile.site_backup, site=site)
-                execute(fabfile.site_take_down, site=site)
+                execute(fabric_tasks.update_settings_file, site=site)
+                # execute(fabric_tasks.site_backup, site=site)
+                execute(fabric_tasks.site_take_down, site=site)
                 patch_payload = '{"status": "down"}'
             elif updates['status'] == 'restore':
-                logger.debug('Status changed to restore')
+                log.debug('Status changed to restore')
                 site['status'] = 'installed'
-                execute(fabfile.update_settings_file, site=site)
-                execute(fabfile.site_restore, site=site)
-                execute(fabfile.update_database, site=site)
+                execute(fabric_tasks.update_settings_file, site=site)
+                execute(fabric_tasks.site_restore, site=site)
+                execute(fabric_tasks.update_database, site=site)
                 patch_payload = '{"status": "installed"}'
 
             if updates['status'] != 'launching':
                 patch = utilities.patch_eve('sites', site['_id'], patch_payload)
-                logger.debug(patch)
+                log.debug(patch)
 
     # Don't update settings files a second time if status is changing to 'locked'.
     if updates.get('settings'):
         if not updates.get('status') or updates['status'] != 'locked':
-            logger.debug('Found settings change.')
+            log.debug('Found settings change.')
             if updates['settings'].get('page_cache_maximum_age') != original['settings'].get('page_cache_maximum_age'):
-                logger.debug('Found page_cache_maximum_age change.')
-            execute(fabfile.update_settings_file, site=site)
+                log.debug('Found page_cache_maximum_age change.')
+            execute(fabric_tasks.update_settings_file, site=site)
 
     slack_title = '{0}/{1}'.format(base_urls[environment], site['path'])
     slack_link = '{0}/{1}'.format(base_urls[environment], site['path'])
@@ -444,28 +440,28 @@ def site_remove(site):
     :param site: Item to be removed.
     :return:
     """
-    logger.debug('Site remove | %s', site)
+    log.debug('Site remove | %s', site)
     if site['type'] == 'express':
-        # execute(fabfile.site_backup, site=site)
+        # execute(fabric_tasks.site_backup, site=site)
         # Check if stats object exists for the site first.
         statistics_query = 'where={{"site":"{0}"}}'.format(site['_id'])
         statistics = utilities.get_eve('statistics', statistics_query)
-        logger.debug('Statistics | %s', statistics)
+        log.debug('Statistics | %s', statistics)
         if not statistics['_meta']['total'] == 0:
             for statistic in statistics['_items']:
                 utilities.delete_eve('statistics', statistic['_id'])
 
         try:
-            logger.debug('Site remove | Delete database')
+            log.debug('Site remove | Delete database')
             utilities.delete_database(site['sid'])
         except:
-            logger.error('Site remove failed | Database remove failed')
+            log.error('Site remove failed | Database remove failed')
             raise
 
-        execute(fabfile.site_remove, site=site)
+        execute(fabric_tasks.site_remove, site=site)
 
     if environment != 'local':
-        execute(fabfile.update_f5)
+        execute(fabric_tasks.update_f5)
 
     slack_title = '{0}/{1}'.format(base_urls[environment], site['path'])
     slack_message = 'Site Remove - Success'
@@ -485,9 +481,9 @@ def command_prepare(item):
     :param item: A complete command item, including new values.
     :return:
     """
-    logger.debug('Prepare Command\n{0}'.format(item))
+    log.debug('Prepare Command\n{0}'.format(item))
     if item['command'] == 'clear_apc':
-        execute(fabfile.clear_apc)
+        execute(fabric_tasks.clear_apc)
         return
     if item['command'] == 'import_code':
         utilities.import_code(item['query'])
@@ -498,22 +494,22 @@ def command_prepare(item):
     if item['query']:
         site_query = 'where={0}'.format(item['query'])
         sites = utilities.get_eve('sites', site_query)
-        logger.debug('Ran query\n{0}'.format(sites))
+        log.debug('Ran query\n{0}'.format(sites))
         if not sites['_meta']['total'] == 0:
             for site in sites['_items']:
-                logger.debug('Command - {0}'.format(item['command']))
+                log.debug('Command - {0}'.format(item['command']))
                 if item['command'] == 'correct_file_permissions':
-                    command_wrapper.delay(execute(fabfile.correct_file_directory_permissions, site=site))
+                    command_wrapper.delay(execute(fabric_tasks.correct_file_directory_permissions, site=site))
                     continue
                 if item['command'] == 'update_settings_file':
-                    logger.debug('Update site\n{0}'.format(site))
-                    command_wrapper.delay(execute(fabfile.update_settings_file, site=site))
+                    log.debug('Update site\n{0}'.format(site))
+                    command_wrapper.delay(execute(fabric_tasks.update_settings_file, site=site))
                     continue
                 if item['command'] == 'update_homepage_extra_files':
-                    command_wrapper.delay(execute(fabfile.update_homepage_extra_files))
+                    command_wrapper.delay(execute(fabric_tasks.update_homepage_extra_files))
                     continue
                 # if item['command'] == 'site_backup':
-                #     execute(fabfile.site_backup, site=site)
+                #     execute(fabric_tasks.site_backup, site=site)
                 #     continue
                 command_run.delay(site=site,
                                   command=item['command'],
@@ -521,8 +517,8 @@ def command_prepare(item):
                                   user=item['modified_by'])
             # After all the commands run, flush APC.
             if item['command'] == 'update_settings_file':
-                logger.debug('Clear APC')
-                command_wrapper.delay(execute(fabfile.clear_apc))
+                log.debug('Clear APC')
+                command_wrapper.delay(execute(fabric_tasks.clear_apc))
 
 
 @celery.task
@@ -532,7 +528,7 @@ def command_wrapper(fabric_command):
     :param fabric_command: Fabric command to call
     :return:
     """
-    logger.debug('Command wrapper')
+    log.debug('Command wrapper')
     return fabric_command
 
 
@@ -547,14 +543,14 @@ def command_run(site, command, single_server, user=None):
     :param user: string Username that called the command.
     :return:
     """
-    logger.debug('Run Command - {0} - {1} - {2}'.format(site['sid'], single_server, command))
+    log.debug('Run Command - {0} - {1} - {2}'.format(site['sid'], single_server, command))
     start_time = time.time()
     if single_server:
-        fabric_task_result = execute(fabfile.command_run_single, site=site, command=command, warn_only=True)
+        fabric_task_result = execute(fabric_tasks.command_run_single, site=site, command=command, warn_only=True)
     else:
-        fabric_task_result = execute(fabfile.command_run, site=site, command=command, warn_only=True)
+        fabric_task_result = execute(fabric_tasks.command_run, site=site, command=command, warn_only=True)
 
-    logger.debug('Command result - {0}'.format(fabric_task_result))
+    log.debug('Command result - {0}'.format(fabric_task_result))
     command_time = time.time() - start_time
     logstash_payload = {'command_time': command_time,
                         'logsource': 'atlas',
@@ -585,50 +581,50 @@ def command_run(site, command, single_server, user=None):
 
 @celery.task
 def cron(type=None, status=None, include_packages=None, exclude_packages=None):
-    logger.debug('Cron | Status - {0} | Include - {1} | Exclude - {2}'.format(status, include_packages, exclude_packages))
+    log.debug('Cron | Status - {0} | Include - {1} | Exclude - {2}'.format(status, include_packages, exclude_packages))
     # Build query.
     site_query_string = ['max_results=2000']
-    logger.debug('Cron - found argument')
+    log.debug('Cron - found argument')
     # Start by eliminating f5 records.
     site_query_string.append('&where={"f5only":false,')
     if type:
-        logger.debug('Cron - found type')
+        log.debug('Cron - found type')
         site_query_string.append('"type":"{0}",'.format(type))
     if status:
-        logger.debug('Cron - found status')
+        log.debug('Cron - found status')
         site_query_string.append('"status":"{0}",'.format(status))
     else:
-        logger.debug('Cron - No status found')
+        log.debug('Cron - No status found')
         site_query_string.append('"status":{"$in":["installed","launched","locked"]},')
     if include_packages:
-        logger.debug('Cron - found include_packages')
+        log.debug('Cron - found include_packages')
         for package_name in include_packages:
             packages = utilities.get_code(name=package_name)
             include_packages_ids = []
             if not packages['_meta']['total'] == 0:
                 for item in packages['_items']:
-                    logger.debug('Cron - include_packages item \n{0}'.format(item))
+                    log.debug('Cron - include_packages item \n{0}'.format(item))
                     include_packages_ids.append(str(item['_id']))
-                logger.debug('Cron - include_packages list \n{0}'.format(json.dumps(include_packages_ids)))
+                log.debug('Cron - include_packages list \n{0}'.format(json.dumps(include_packages_ids)))
                 site_query_string.append('"code.package": {{"$in": {0}}},'.format(json.dumps(include_packages_ids)))
     if exclude_packages:
-        logger.debug('Cron - found exclude_packages')
+        log.debug('Cron - found exclude_packages')
         for package_name in exclude_packages:
             packages = utilities.get_code(name=package_name)
             exclude_packages_ids = []
             if not packages['_meta']['total'] == 0:
                 for item in packages['_items']:
-                    logger.debug('Cron - exclude_packages item \n{0}'.format(item))
+                    log.debug('Cron - exclude_packages item \n{0}'.format(item))
                     exclude_packages_ids.append(str(item['_id']))
-                logger.debug('Cron - exclude_packages list \n{0}'.format(json.dumps(exclude_packages_ids)))
+                log.debug('Cron - exclude_packages list \n{0}'.format(json.dumps(exclude_packages_ids)))
                 site_query_string.append('"code.package": {{"$nin": {0}}},'.format(json.dumps(exclude_packages_ids)))
 
     site_query = ''.join(site_query_string)
-    logger.debug('Query after join - {0}'.format(site_query))
+    log.debug('Query after join - {0}'.format(site_query))
     site_query = site_query.rstrip('\,')
-    logger.debug('Query after rstrip - {0}'.format(site_query))
+    log.debug('Query after rstrip - {0}'.format(site_query))
     site_query += '}'
-    logger.debug('Query final - {0}'.format(site_query))
+    log.debug('Query final - {0}'.format(site_query))
 
     sites = utilities.get_eve('sites', site_query)
     if not sites['_meta']['total'] == 0:
@@ -645,16 +641,16 @@ def cron_run(site):
     :param command: Cron command to run.
     :return:
     """
-    logger.info('Run Cron | %s ', site['sid'])
+    log.info('Run Cron | %s ', site['sid'])
     start_time = time.time()
     command = 'drush elysia-cron run'
     try:
-        execute(fabfile.command_run_single, site=site, command=command)
+        execute(fabric_tasks.command_run_single, site=site, command=command)
     except CronException as e:
-        logger.error('Run Cron | %s | Cron failed | %s', site['sid'], e)
+        log.error('Run Cron | %s | Cron failed | %s', site['sid'], e)
         raise
 
-    logger.info('Run Cron | %s | Cron success', site['sid'])
+    log.info('Run Cron | %s | Cron success', site['sid'])
     command_time = time.time() - start_time
     logstash_payload = {'command_time': command_time,
                         'logsource': 'atlas',
@@ -690,7 +686,7 @@ def delete_stuck_pending_sites():
     """
     site_query = 'where={"status":"pending"}'
     sites = utilities.get_eve('sites', site_query)
-    logger.debug('Pending instances | %s', sites)
+    log.debug('Pending instances | %s', sites)
     # Loop through and remove sites that are more than 15 minutes old.
     if not sites['_meta']['total'] == 0:
         for site in sites['_items']:
@@ -701,7 +697,7 @@ def delete_stuck_pending_sites():
             # Get datetime now and calculate the age of the site. Since our timestamp is in GMT, we
             # need to use UTC.
             time_since_creation = datetime.utcnow() - date_created
-            logger.debug('%s has timedelta of %s. Created: %s Current: %s',
+            log.debug('%s has timedelta of %s. Created: %s Current: %s',
                          site['sid'],
                          time_since_creation,
                          date_created,
@@ -717,10 +713,10 @@ def delete_all_available_sites():
     """
     site_query = 'where={"status":"available"}'
     sites = utilities.get_eve('sites', site_query)
-    logger.debug('Sites\n %s', sites)
+    log.debug('Sites\n %s', sites)
     if not sites['_meta']['total'] == 0:
         for site in sites['_items']:
-            logger.debug('Site\n {0}'.format(site))
+            log.debug('Site\n {0}'.format(site))
             utilities.delete_eve('sites', site['_id'])
 
 
@@ -732,18 +728,18 @@ def delete_statistics_without_active_instance():
     site_query = 'where={"type":"express","f5only":false}'
     sites = utilities.get_eve('sites', site_query)
     statistics = utilities.get_eve('statistics')
-    logger.debug('Statistics | %s', statistics)
-    logger.debug('Sites | %s', sites)
+    log.debug('Statistics | %s', statistics)
+    log.debug('Sites | %s', sites)
     site_id_list = []
     # Make as list of ids for easy checking.
     if not statistics['_meta']['total'] == 0:
         if not sites['_meta']['total'] == 0:
             for site in sites['_items']:
                 site_id_list.append(site['_id'])
-                logger.debug('Sites list | %s', site_id_list)
+                log.debug('Sites list | %s', site_id_list)
         for statistic in statistics['_items']:
             if statistic['site'] not in site_id_list:
-                logger.debug('Statistic not in list | %s', statistic['_id'])
+                log.debug('Statistic not in list | %s', statistic['_id'])
                 utilities.delete_eve('statistics', statistic['_id'])
 
 
@@ -762,7 +758,7 @@ def take_down_installed_old_sites():
             # Get time now, Convert date_created to seconds from epoch and
             # calculate the age of the site.
             seconds_since_creation = time.time() - time.mktime(date_created)
-            logger.debug(
+            log.debug(
                 '{0} is {1} seconds old. Created: {2} Current: {3}'.format(
                     site['sid'],
                     seconds_since_creation,
@@ -785,17 +781,17 @@ def verify_statistics():
     statistics_query = 'where={{"_updated":{{"$lte":"{0}"}}}}'.format(
         time_ago.strftime("%Y-%m-%d %H:%M:%S GMT"))
     outdated_statistics = utilities.get_eve('statistics', statistics_query)
-    logger.debug('Old statistics time | %s', time_ago.strftime("%Y-%m-%d %H:%M:%S GMT"))
-    logger.debug('outdated_statistics items | %s', outdated_statistics)
+    log.debug('Old statistics time | %s', time_ago.strftime("%Y-%m-%d %H:%M:%S GMT"))
+    log.debug('outdated_statistics items | %s', outdated_statistics)
     statistic_id_list = []
     if not outdated_statistics['_meta']['total'] == 0:
         for outdated_statistic in outdated_statistics['_items']:
             statistic_id_list.append(outdated_statistic['_id'])
 
-        logger.debug('statistic_id_list | %s', statistic_id_list)
+        log.debug('statistic_id_list | %s', statistic_id_list)
 
         site_query = 'where={{"_id":{{"$in":{0}}}}}'.format(json.dumps(statistic_id_list))
-        logger.debug('Site query | %s', site_query)
+        log.debug('Site query | %s', site_query)
         sites = utilities.get_eve('sites', site_query)
         sites_id_list = []
         if not sites['_meta']['total'] == 0:

@@ -261,33 +261,27 @@ def site_provision(site):
     try:
         logger.debug('Site provision | Create database')
         utilities.create_database(site['sid'], site['db_key'])
-    except:
-        logger.error('Site provision failed | Database creation failed')
+    except Exception as error:
+        logger.error('Site provision failed | Database creation failed | %s', error)
         raise
 
     try:
-        provision_task = execute(fabfile.site_provision, site=site)
-    except:
-        logger.error('Site provision failed | Error Message | %s', provision_task)
-        raise
-
-    logger.debug('Site provision | Provision Fabric task | %s', provision_task)
-    logger.debug('Site provision | Provision Fabric task values | %s', provision_task.values)
-
-    try:
-        result_correct_file_dir_permissions = execute(fabfile.correct_file_directory_permissions, site=site)
-    except:
-        logger.error('Site provision failed | Error Message | %s', result_correct_file_dir_permissions)
+        execute(fabfile.site_provision, site=site)
+   except Exception as error:
+        logger.error('Site provision failed | Error Message | %s', error)
         raise
 
     try:
-        install_task = execute(fabfile.site_install, site=site)
-    except:
-        logger.error('Site install failed | Error Message | %s', install_task)
+        execute(fabfile.correct_file_directory_permissions, site=site)
+   except Exception as error:
+        logger.error('Site provision failed | Error Message | %s', error)
         raise
 
-    logger.debug('Site provision | Install Fabric task | %s', install_task)
-    logger.debug('Site provision | Install Fabric task values | %s', install_task.values)
+    try:
+        execute(fabfile.site_install, site=site)
+   except Exception as error:
+        logger.error('Site install failed | Error Message | %s', error)
+        raise
 
     patch_payload = {'status': 'available',
                      'db_key': site['db_key'], 'statistics': site['statistics']}

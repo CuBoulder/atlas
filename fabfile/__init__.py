@@ -177,7 +177,7 @@ def site_provision(site):
         print 'Set file permissions failed.'
         return error
 
-    with cd(code_directory_current):
+    with cd(code_directory_sid):
         profile = utilities.get_code_name_version(site['code']['profile'])
         run('drush dslm-add-profile {0}'.format(profile))
 

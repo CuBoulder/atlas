@@ -156,65 +156,64 @@ def site_provision(site):
     profile_name = profile['meta']['name']
 
     try:
-        result_create_dir_structure = execute(
-            create_directory_structure, folder=code_directory)
-    except FabricException:
+        execute(create_directory_structure, folder=code_directory)
+    except FabricException as error:
         print 'Create directory structure failed.'
-        return result_create_dir_structure
+        return error
 
     try:
-        result_create_dir_structure_web = execute(
-            create_directory_structure, folder=web_directory_type)
-    except FabricException:
+        execute(create_directory_structure, folder=web_directory_type)
+    except FabricException as error:
         print 'Create directory structure failed.'
-        return result_create_dir_structure_web
+        return error
 
     with cd(code_directory):
         core = utilities.get_code_name_version(site['code']['core'])
         run('drush dslm-new {0} {1}'.format(site['sid'], core))
 
     try:
-        result_update_symlink = execute(
-            update_symlink, source=code_directory_sid, destination=code_directory_current)
-    except FabricException:
-        print 'Update symlink failed.'
-        return result_update_symlink
+        execute(set_file_permissions, site=site)
+    except FabricException as error:
+        print 'Set file permissions failed.'
+        return error
 
     with cd(code_directory_current):
         profile = utilities.get_code_name_version(site['code']['profile'])
         run('drush dslm-add-profile {0}'.format(profile))
 
+    try:
+        execute(update_symlink, source=code_directory_sid, destination=code_directory_current)
+    except FabricException as error:
+        print 'Update symlink failed.'
+        return error
+
     if nfs_mount_files_dir:
         nfs_dir = nfs_mount_location[environment]
         nfs_files_dir = '{0}/sitefiles/{1}/files'.format(nfs_dir, site['sid'])
         try:
-            result_create_nfs_files_dir = execute(
-                create_nfs_files_dir, nfs_dir=nfs_dir, site_sid=site['sid'])
-        except FabricException:
+            execute(create_nfs_files_dir, nfs_dir=nfs_dir, site_sid=site['sid'])
+        except FabricException as error:
             print 'Create nfs directory failed.'
-            return result_create_nfs_files_dir
+            return error
         # Replace default files dir with this one
         site_files_dir = code_directory_current + '/sites/default/files'
         try:
-            result_replace_files_directory = execute(
-                replace_files_directory, source=nfs_files_dir, destination=site_files_dir)
-        except FabricException:
+            execute(replace_files_directory, source=nfs_files_dir, destination=site_files_dir)
+        except FabricException as error:
             print 'Replace file directory failed.'
-            return result_replace_files_directory
+            return error
 
     try:
-        result_create_settings_files = execute(
-            create_settings_files, site=site)
-    except FabricException:
+        execute(create_settings_files, site=site)
+    except FabricException as error:
         print 'Settings file creation failed.'
-        return result_create_settings_files
+        return error
 
     try:
-        result_update_symlink_web = execute(
-            update_symlink, source=code_directory_current, destination=web_directory_sid)
-    except FabricException:
+        execute(update_symlink, source=code_directory_current, destination=web_directory_sid)
+    except FabricException as error:
         print 'Update symlink failed.'
-        return result_update_symlink_web
+        return error
 
 
 def site_install(site):
@@ -224,18 +223,10 @@ def site_install(site):
     profile_name = profile['meta']['name']
 
     try:
-        result_install_site = execute(
-            install_site, profile_name=profile_name, code_directory_current=code_directory_current)
-    except FabricException:
+        execute(install_site, profile_name=profile_name, code_directory_current=code_directory_current)
+    except FabricException as error:
         print 'Instance install failed.'
-        return result_install_site
-
-    try:
-        result_correct_file_dir_permissions = execute(
-            correct_file_directory_permissions, site=site)
-    except FabricException:
-        print 'Correct file permissions failed.'
-        return result_correct_file_dir_permissions
+        return error
 
 
 @roles('webservers')
@@ -440,6 +431,18 @@ def correct_file_directory_permissions(site):
     with cd(web_directory_sid):
         run('chmod -R 0775 sites/default')
         run('chmod -R 0644 sites/default/*.php')
+
+
+@roles('webservers')
+def set_file_permissions(site):
+    code_directory_sid = '{0}/{1}/{1}'.format(sites_code_root, site['sid'])
+    'sudo find . -name "settings.php" -not -perm 644 -exec chmod 644 {} \;'
+    # Find all directories and set perms to 0755.
+    run('find {{0}} -type d -exec chmod 0755 {}\;'.format(code_directory_sid))
+    # Find all directories and set group to `webserver_user_group`.
+    run('find {{0}} -type d -exec chgrp {1} {}\;'.format(code_directory_sid, webserver_user_group))
+    # Find all files and set perms to 0644.
+    run('find {{0}} -type f -exec chmod 0644 {}\;')
 
 
 @roles('webserver_single')

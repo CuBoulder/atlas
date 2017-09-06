@@ -172,7 +172,7 @@ def site_provision(site):
         run('drush dslm-new {0} {1}'.format(site['sid'], core))
 
     try:
-        print 'Set file permissions failed.'
+        print 'Try file permissions.'
         set_file_permissions(site=site)
     except FabricException as error:
         print 'Set file permissions failed.'
@@ -231,6 +231,7 @@ def site_install(site):
 
 
 def set_file_permissions(site):
+    print 'Start file permissions.'
     code_directory_sid = '{0}/{1}/{1}'.format(sites_code_root, site['sid'])
     # Find all directories and set perms to 0755.
     run('find {0} -type d -exec chmod 0755 {{}} \\;'.format(code_directory_sid))

@@ -517,7 +517,11 @@ def create_nfs_files_dir(nfs_dir, site_sid):
     nfs_tmp_dir = '{0}/{1}/tmp'.format(nfs_dir, site_sid)
     create_directory_structure(nfs_files_dir)
     create_directory_structure(nfs_tmp_dir)
-
+    run('chown {0}:{1} {2}'.format(ssh_user, webserver_user_group, nfs_files_dir))
+    run('chown {0}:{1} {2}'.format(ssh_user, webserver_user_group, nfs_tmp_dir))
+    run('chmod 775 {0}'.format(nfs_files_dir))
+    run('chmod 775 {0}'.format(nfs_tmp_dir))
+    
 
 # Fabric utility functions.
 # TODO: Add decorator to run on a single host if called via 'execute'.

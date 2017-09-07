@@ -14,7 +14,8 @@ from datetime import datetime, timedelta
 from atlas import fabric_tasks
 from atlas import utilities
 from atlas import config_celery
-from atlas.config import *
+from atlas.config import (ENVIRONMENT, WEBSERVER_USER)
+from atlas.config_servers import (BASE_URLS, API_URLS)
 
 # Setup a sub-logger
 # Best practice is to setup sub-loggers rather than passing the main logger between different parts of the application.
@@ -46,10 +47,10 @@ class CronException(Exception):
         # This uses constructor syntax https://doughellmann.com/blog/2012/11/12/the-performance-impact-of-using-dict-instead-of-in-cpython-2-7-2/.
         errors_for_slack = {k: v for k, v in fabric_result.iteritems() if v is not None}
 
-        instance_url = '{0}/{1}'.format(base_urls[environment], site_path)
+        instance_url = '{0}/{1}'.format(BASE_URLS[ENVIRONMENT], site_path)
         title = 'Run Command'
         instance_link = '<' + instance_url + '|' + instance_url + '>'
-        command = 'sudo -u {0} drush elysia-cron run'.format(webserver_user)
+        command = 'sudo -u {0} drush elysia-cron run'.format(WEBSERVER_USER)
         user = 'Celerybeat'
 
         # Only post if an error
@@ -58,10 +59,10 @@ class CronException(Exception):
             slack_color = 'danger'
             slack_channel = 'cron-errors'
 
-            slack_fallback = instance_url + ' - ' + environment + ' - ' + command
+            slack_fallback = instance_url + ' - ' + ENVIRONMENT + ' - ' + command
 
             slack_payload = {
-                # Channel will be overridden on local environments.
+                # Channel will be overridden on local ENVIRONMENTs.
                 "channel": slack_channel,
                 "text": text,
                 "username": 'Atlas',
@@ -79,7 +80,7 @@ class CronException(Exception):
                             },
                             {
                                 "title": "Environment",
-                                "value": environment,
+                                "value": ENVIRONMENT,
                                 "short": True
                             },
                             {
@@ -121,9 +122,9 @@ def code_deploy(item):
     :param item: The flask request.json object.
     :return:
     """
-    log.debug('Code deploy - {0}'.format(item))
+    log.debug('Code deploy | %s', item)
     code_deploy_fabric_task_result = execute(fabric_tasks.code_deploy, item=item)
-    log.debug('Code Deploy - Fabric Result\n{0}'.format(code_deploy_fabric_task_result))
+    log.debug('Code Deploy | Deploy Error | %s', code_deploy_fabric_task_result)
 
     # The fabric_result is a dict of {hosts: result} from fabric.
     # We loop through each row and add it to a new dict if value is not
@@ -158,7 +159,7 @@ def code_deploy(item):
                     },
                     {
                         "title": "Environment",
-                        "value": environment,
+                        "value": ENVIRONMENT,
                         "short": True
                     },
                     {
@@ -201,7 +202,7 @@ def code_update(updated_item, original_item):
     :param original_item:
     :return:
     """
-    log.debug('Code update - {0}'.format(updated_item))
+    log.debug('Code update | %s', updated_item)
     fab_task = execute(fabric_tasks.code_update, updated_item=updated_item, original_item=original_item)
 
     name = updated_item['meta']['name'] if updated_item['meta']['name'] else original_item['meta']['name']
@@ -224,7 +225,7 @@ def code_remove(item):
     :param item: Item to be removed.
     :return:
     """
-    log.debug('Code remove - {0}'.format(item))
+    log.debug('Code remove | %s', item)
     fab_task = execute(fabric_tasks.code_remove, item=item)
 
     slack_title = '{0} - {1}'.format(item['meta']['name'],
@@ -258,23 +259,24 @@ def site_provision(site):
         log.debug('Site provision | Create database')
         utilities.create_database(site['sid'], site['db_key'])
     except Exception as error:
-        logger.error('Site provision failed | Database creation failed | %s', error)
+        log.error('Site provision failed | Database creation failed | %s', error)
         raise
 
     try:
-        execute(fabfile.site_provision, site=site)
+        execute(fabric_tasks.site_provision, site=site)
     except Exception as error:
-        logger.error('Site provision failed | Error Message | %s', error)
+        log.error('Site provision failed | Error Message | %s', error)
         raise
 
     try:
-        execute(fabfile.site_install, site=site)
+        execute(fabric_tasks.site_install, site=site)
     except Exception as error:
-        logger.error('Site install failed | Error Message | %s', error)
+        log.error('Site install failed | Error Message | %s', error)
         raise
 
     patch_payload = {'status': 'available',
-                     'db_key': site['db_key'], 'statistics': site['statistics']}
+                     'db_key': site['db_key'],
+                     'statistics': site['statistics']}
     patch = utilities.patch_eve('sites', site['_id'], patch_payload)
 
     profile = utilities.get_single_eve('code', site['code']['profile'])
@@ -288,9 +290,9 @@ def site_provision(site):
                 core_string, profile_string, provision_time)
     log.debug('Site provision | Patch | %s', patch)
 
-    slack_title = '{0}/{1}'.format(base_urls[environment], site['path'])
-    slack_link = '{0}/{1}'.format(base_urls[environment], site['path'])
-    attachment_text = '{0}/sites/{1}'.format(API_URLS[environment], site['_id'])
+    slack_title = '{0}/{1}'.format(BASE_URLS[ENVIRONMENT], site['path'])
+    slack_link = '{0}/{1}'.format(BASE_URLS[ENVIRONMENT], site['path'])
+    attachment_text = '{0}/sites/{1}'.format(API_URLS[ENVIRONMENT], site['_id'])
 
     slack_message = 'Site provision - Success - {0} seconds'.format(provision_time)
     slack_color = 'good'
@@ -346,11 +348,11 @@ def site_update(site, updates, original):
             # Strip the trailing space off the end.
             package_name_string = package_name_string.rstrip()
             if len(package_name_string) > 0:
-                subject = 'Package added - {0}/{1}'.format(base_urls[environment], site['path'])
-                message = "Requested packages have been added to {0}/{1}.\n\n{2}\n\n - Web Express Team\n\nLogin to the site: {0}/{1}/user?destination=admin/settings/admin/bundle/list".format(base_urls[environment], site['path'], package_name_string)
+                subject = 'Package added - {0}/{1}'.format(BASE_URLS[ENVIRONMENT], site['path'])
+                message = "Requested packages have been added to {0}/{1}.\n\n{2}\n\n - Web Express Team\n\nLogin to the site: {0}/{1}/user?destination=admin/settings/admin/bundle/list".format(BASE_URLS[ENVIRONMENT], site['path'], package_name_string)
             else:
-                subject = 'Packages removed - {0}/{1}'.format(base_urls[environment], site['path'])
-                message = "All packages have been removed from {0}/{1}.\n\n - Web Express Team.".format(base_urls[environment], site['path'])
+                subject = 'Packages removed - {0}/{1}'.format(BASE_URLS[ENVIRONMENT], site['path'])
+                message = "All packages have been removed from {0}/{1}.\n\n - Web Express Team.".format(BASE_URLS[ENVIRONMENT], site['path'])
             to = ['{0}@colorado.edu'.format(site['modified_by'])]
             utilities.send_email(message=message, subject=subject, to=to)
 
@@ -369,7 +371,7 @@ def site_update(site, updates, original):
                 site['status'] = 'launched'
                 execute(fabric_tasks.update_settings_file, site=site)
                 execute(fabric_tasks.site_launch, site=site)
-                if environment is not 'local':
+                if ENVIRONMENT is not 'local':
                     execute(fabric_tasks.diff_f5)
                     execute(fabric_tasks.update_f5)
                 # Let fabric send patch since it is changing update group.
@@ -403,12 +405,12 @@ def site_update(site, updates, original):
                 log.debug('Found page_cache_maximum_age change.')
             execute(fabric_tasks.update_settings_file, site=site)
 
-    slack_title = '{0}/{1}'.format(base_urls[environment], site['path'])
-    slack_link = '{0}/{1}'.format(base_urls[environment], site['path'])
+    slack_title = '{0}/{1}'.format(BASE_URLS[ENVIRONMENT], site['path'])
+    slack_link = '{0}/{1}'.format(BASE_URLS[ENVIRONMENT], site['path'])
     if site['pool'] == 'poolb-homepage' and site['type'] == 'express' and site['status'] in ['launching', 'launched']:
-        slack_title = base_urls[environment]
-        slack_link = base_urls[environment]
-    attachment_text = '{0}/sites/{1}'.format(API_URLS[environment], site['_id'])
+        slack_title = BASE_URLS[ENVIRONMENT]
+        slack_link = BASE_URLS[ENVIRONMENT]
+    attachment_text = '{0}/sites/{1}'.format(API_URLS[ENVIRONMENT], site['_id'])
     slack_message = 'Site Update - Success'
     slack_color = 'good'
     utilities.post_to_slack(
@@ -448,10 +450,10 @@ def site_remove(site):
 
         execute(fabric_tasks.site_remove, site=site)
 
-    if environment != 'local':
+    if ENVIRONMENT != 'local':
         execute(fabric_tasks.update_f5)
 
-    slack_title = '{0}/{1}'.format(base_urls[environment], site['path'])
+    slack_title = '{0}/{1}'.format(BASE_URLS[ENVIRONMENT], site['path'])
     slack_message = 'Site Remove - Success'
     slack_color = 'good'
     utilities.post_to_slack(
@@ -485,7 +487,7 @@ def command_prepare(item):
         log.debug('Ran query\n{0}'.format(sites))
         if not sites['_meta']['total'] == 0:
             for site in sites['_items']:
-                logger.debug('Command - {0}'.format(item['command']))
+                log.debug('Command - {0}'.format(item['command']))
                 if item['command'] == 'update_settings_file':
                     log.debug('Update site\n{0}'.format(site))
                     command_wrapper.delay(execute(fabric_tasks.update_settings_file, site=site))
@@ -544,8 +546,8 @@ def command_run(site, command, single_server, user=None):
                         }
     utilities.post_to_logstash_payload(payload=logstash_payload)
 
-    slack_title = '{0}/{1}'.format(base_urls[environment], site['path'])
-    slack_link = '{0}/{1}'.format(base_urls[environment], site['path'])
+    slack_title = '{0}/{1}'.format(BASE_URLS[ENVIRONMENT], site['path'])
+    slack_link = '{0}/{1}'.format(BASE_URLS[ENVIRONMENT], site['path'])
     slack_message = 'Command - Success'
     slack_color = 'good'
     attachment_text = command
@@ -624,7 +626,7 @@ def cron_run(site):
     """
     log.info('Run Cron | %s ', site['sid'])
     start_time = time.time()
-    command = 'sudo -u {0} drush elysia-cron run'.format(webserver_user)
+    command = 'sudo -u {0} drush elysia-cron run'.format(WEBSERVER_USER)
     try:
         execute(fabric_tasks.command_run_single, site=site, command=command)
     except CronException as e:
@@ -646,7 +648,7 @@ def available_sites_check():
     site_query = 'where={"status":{"$in":["pending","available"]}}'
     sites = utilities.get_eve('sites', site_query)
     actual_site_count = sites['_meta']['total']
-    if environment == "local":
+    if ENVIRONMENT == "local":
         desired_site_count = 2
     else:
         desired_site_count = 5
@@ -726,7 +728,7 @@ def delete_statistics_without_active_instance():
 
 @celery.task
 def take_down_installed_old_sites():
-    if environment != 'production':
+    if ENVIRONMENT != 'production':
         site_query = 'where={"status":"installed"}'
         sites = utilities.get_eve('sites', site_query)
         # Loop through and remove sites that are more than 35 days old.
@@ -781,7 +783,7 @@ def verify_statistics():
 
         slack_fallback = '{0} statistics items have not been updated in 36 hours.'.format(
             len(statistic_id_list))
-        slack_link = '{0}/statistics?{1}'.format(base_urls[environment], site_query)
+        slack_link = '{0}/statistics?{1}'.format(BASE_URLS[ENVIRONMENT], site_query)
         slack_payload = {
             "text": 'Outdated Statistics',
             "username": 'Atlas',
@@ -798,7 +800,7 @@ def verify_statistics():
                         },
                         {
                             "title": "Environment",
-                            "value": environment,
+                            "value": ENVIRONMENT,
                             "short": True
                         },
                     ],

@@ -26,7 +26,6 @@ from atlas.config import (ATLAS_LOCATION, ALLOWED_USERS, LDAP_SERVER, LDAP_ORG_U
                           SLACK_USERNAME, SLACK_URL, SEND_NOTIFICATION_EMAILS,
                           SEND_NOTIFICATION_FROM_EMAIL, EMAIL_HOST, EMAIL_PORT, EMAIL_USERNAME,
                           EMAIL_PASSWORD)
-
 from atlas.config_servers import (SERVERDEFS, API_URLS, LOGSTASH_URL)
 
 # Setup a sub-logger. See tasks.py for longer comment.

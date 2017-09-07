@@ -49,7 +49,7 @@ class CronException(Exception):
         instance_url = '{0}/{1}'.format(base_urls[environment], site_path)
         title = 'Run Command'
         instance_link = '<' + instance_url + '|' + instance_url + '>'
-        command = 'drush elysia-cron run'
+        command = 'sudo -u {0} drush elysia-cron run'.format(webserver_user)
         user = 'Celerybeat'
 
         # Only post if an error
@@ -257,33 +257,21 @@ def site_provision(site):
     try:
         log.debug('Site provision | Create database')
         utilities.create_database(site['sid'], site['db_key'])
-    except:
-        log.error('Site provision failed | Database creation failed')
+    except Exception as error:
+        logger.error('Site provision failed | Database creation failed | %s', error)
         raise
 
     try:
-        provision_task = execute(fabric_tasks.site_provision, site=site)
-    except:
-        log.error('Site provision failed | Error Message | %s', provision_task)
-        raise
-
-    log.debug('Site provision | Provision Fabric task | %s', provision_task)
-    log.debug('Site provision | Provision Fabric task values | %s', provision_task.values)
-
-    try:
-        result_correct_file_dir_permissions = execute(fabric_tasks.correct_file_directory_permissions, site=site)
-    except:
-        log.error('Site provision failed | Error Message | %s', result_correct_file_dir_permissions)
+        execute(fabfile.site_provision, site=site)
+    except Exception as error:
+        logger.error('Site provision failed | Error Message | %s', error)
         raise
 
     try:
-        install_task = execute(fabric_tasks.site_install, site=site)
-    except:
-        log.error('Site install failed | Error Message | %s', install_task)
+        execute(fabfile.site_install, site=site)
+    except Exception as error:
+        logger.error('Site install failed | Error Message | %s', error)
         raise
-
-    log.debug('Site provision | Install Fabric task | %s', install_task)
-    log.debug('Site provision | Install Fabric task values | %s', install_task.values)
 
     patch_payload = {'status': 'available',
                      'db_key': site['db_key'], 'statistics': site['statistics']}
@@ -303,18 +291,18 @@ def site_provision(site):
     slack_title = '{0}/{1}'.format(base_urls[environment], site['path'])
     slack_link = '{0}/{1}'.format(base_urls[environment], site['path'])
     attachment_text = '{0}/sites/{1}'.format(api_urls[environment], site['_id'])
-    if False not in (provision_task.values() or install_task.values()):
-        slack_message = 'Site provision - Success - {0} seconds'.format(provision_time)
-        slack_color = 'good'
-        utilities.post_to_slack(
-            message=slack_message,
-            title=slack_title,
-            link=slack_link,
-            attachment_text=attachment_text,
-            level=slack_color)
-        logstash_payload = {'provision_time': provision_time,
-                            'logsource': 'atlas'}
-        utilities.post_to_logstash_payload(payload=logstash_payload)
+
+    slack_message = 'Site provision - Success - {0} seconds'.format(provision_time)
+    slack_color = 'good'
+    utilities.post_to_slack(
+        message=slack_message,
+        title=slack_title,
+        link=slack_link,
+        attachment_text=attachment_text,
+        level=slack_color)
+    logstash_payload = {'provision_time': provision_time,
+                        'logsource': 'atlas'}
+    utilities.post_to_logstash_payload(payload=logstash_payload)
 
 
 @celery.task
@@ -497,10 +485,7 @@ def command_prepare(item):
         log.debug('Ran query\n{0}'.format(sites))
         if not sites['_meta']['total'] == 0:
             for site in sites['_items']:
-                log.debug('Command - {0}'.format(item['command']))
-                if item['command'] == 'correct_file_permissions':
-                    command_wrapper.delay(execute(fabric_tasks.correct_file_directory_permissions, site=site))
-                    continue
+                logger.debug('Command - {0}'.format(item['command']))
                 if item['command'] == 'update_settings_file':
                     log.debug('Update site\n{0}'.format(site))
                     command_wrapper.delay(execute(fabric_tasks.update_settings_file, site=site))
@@ -559,24 +544,20 @@ def command_run(site, command, single_server, user=None):
                         }
     utilities.post_to_logstash_payload(payload=logstash_payload)
 
-    # Cron handles its own messages.
-    if command != 'drush elysia-cron run':
-        slack_title = '{0}/{1}'.format(base_urls[environment], site['path'])
-        slack_link = '{0}/{1}'.format(base_urls[environment], site['path'])
-        slack_message = 'Command - Success'
-        slack_color = 'good'
-        attachment_text = command
-        user = user
+    slack_title = '{0}/{1}'.format(base_urls[environment], site['path'])
+    slack_link = '{0}/{1}'.format(base_urls[environment], site['path'])
+    slack_message = 'Command - Success'
+    slack_color = 'good'
+    attachment_text = command
+    user = user
 
-        utilities.post_to_slack(
-            message=slack_message,
-            title=slack_title,
-            link=slack_link,
-            attachment_text=attachment_text,
-            level=slack_color,
-            user=user)
-    else:
-        return fabric_task_result, site['path']
+    utilities.post_to_slack(
+        message=slack_message,
+        title=slack_title,
+        link=slack_link,
+        attachment_text=attachment_text,
+        level=slack_color,
+        user=user)
 
 
 @celery.task
@@ -643,7 +624,7 @@ def cron_run(site):
     """
     log.info('Run Cron | %s ', site['sid'])
     start_time = time.time()
-    command = 'drush elysia-cron run'
+    command = 'sudo -u {0} drush elysia-cron run'.format(webserver_user)
     try:
         execute(fabric_tasks.command_run_single, site=site, command=command)
     except CronException as e:

@@ -11,7 +11,10 @@ from hashlib import sha1
 from bson import ObjectId
 from atlas import tasks
 from atlas import utilities
-from config import atlas_location
+from atlas.config import (ATLAS_LOCATION)
+
+# Setup a sub-logger. See tasks.py for longer comment.
+log = logging.getLogger('atlas.callbacks')
 
 # Callbacks
 def pre_post_callback(resource, request):

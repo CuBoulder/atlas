@@ -587,7 +587,7 @@ def create_settings_files(site):
     else:
         siteimprove_group = None
     page_cache_maximum_age = site['settings']['page_cache_maximum_age']
-    atlas_url = '{0}/'.format(api_urls[ENVIRONMENT])
+    atlas_url = '{0}/'.format(API_URLS[ENVIRONMENT])
     database_password = utilities.decrypt_string(site['db_key'])
 
     profile = utilities.get_single_eve('code', site['code']['profile'])

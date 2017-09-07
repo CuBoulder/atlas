@@ -3,30 +3,31 @@ Utility functions.
 """
 import sys
 import logging
-
-
-
-import requests
-import ldap
 import json
 import smtplib
-
-import OpenSSL
-import mysql.connector as mariadb
-
-from re import compile, search
-from cryptography.fernet import Fernet
+from re import compile as re_compile
 from random import choice
 from string import lowercase
 from hashlib import sha1
-from eve.auth import BasicAuth
-from flask import current_app, g
 from email.mime.text import MIMEText
+
+from cryptography.fernet import Fernet
+from eve.auth import BasicAuth
+from flask import g
+import OpenSSL
+import mysql.connector as mariadb
+import requests
+import ldap
 
 from atlas.config import (ATLAS_LOCATION, ALLOWED_USERS, LDAP_SERVER, LDAP_ORG_UNIT,
                           LDAP_DNS_DOMAIN_NAME, ENCRYPTION_KEY, DATABASE_USER,
-                          DATABASE_PASSWORD, ENVIRONMENT, SLACK_NOTIFICATIONS, SERVERDEFS, API_URLS,
-                          SERVICE_ACCOUNT_USERNAME, SERVICE_ACCOUNT_PASSWORD, SSL_VERIFICATION)
+                          DATABASE_PASSWORD, ENVIRONMENT, SLACK_NOTIFICATIONS,
+                          SERVICE_ACCOUNT_USERNAME, SERVICE_ACCOUNT_PASSWORD, SSL_VERIFICATION,
+                          SLACK_USERNAME, SLACK_URL, SEND_NOTIFICATION_EMAILS,
+                          SEND_NOTIFICATION_FROM_EMAIL, EMAIL_HOST, EMAIL_PORT, EMAIL_USERNAME,
+                          EMAIL_PASSWORD)
+
+from atlas.config_servers import (SERVERDEFS, API_URLS, LOGSTASH_URL)
 
 # Setup a sub-logger. See tasks.py for longer comment.
 log = logging.getLogger('atlas.utilities')
@@ -152,9 +153,13 @@ def create_database(site_sid, site_db_key):
     # Add user
     try:
         if ENVIRONMENT != 'local':
-            cursor.execute("CREATE USER '{0}'@'172.20.62.0/255.255.255.0' IDENTIFIED BY '{1}';".format(site_sid, instance_database_password))
+            cursor.execute("CREATE USER '{0}'@'{1}' IDENTIFIED BY '{2}';".format(
+                site_sid,
+                SERVERDEFS[ENVIRONMENT]['database_servers']['user_ip_range'],
+                instance_database_password))
         else:
-            cursor.execute("CREATE USER '{0}'@'localhost' IDENTIFIED BY '{1}';".format(site_sid, instance_database_password))
+            cursor.execute("CREATE USER '{0}'@'localhost' IDENTIFIED BY '{1}';".format(
+                site_sid, instance_database_password))
     except mariadb.Error as error:
         log.error('Create User | %s | %s', site_sid, error)
         raise
@@ -162,7 +167,9 @@ def create_database(site_sid, site_db_key):
     # Grant privileges
     try:
         if ENVIRONMENT != 'local':
-            cursor.execute("GRANT ALL PRIVILEGES ON {0}.* TO '{0}'@'172.20.62.0/255.255.255.0';".format(site_sid))
+            cursor.execute("GRANT ALL PRIVILEGES ON {0}.* TO '{0}'@'{1}';".format(
+                site_sid,
+                SERVERDEFS[ENVIRONMENT]['database_servers']['user_ip_range']))
         else:
             cursor.execute("GRANT ALL PRIVILEGES ON {0}.* TO '{0}'@'localhost';".format(site_sid))
     except mariadb.Error as error:
@@ -199,7 +206,9 @@ def delete_database(site_sid):
 
     # Drop user
     try:
-        cursor.execute("DROP USER '{0}'@'172.20.62.0/255.255.255.0';".format(site_sid))
+        cursor.execute("DROP USER '{0}'@'{1}0';".format(
+            site_sid,
+            SERVERDEFS[ENVIRONMENT]['database_servers']['user_ip_range']))
     except mariadb.Error as error:
         log.error('Drop User | %s | %s', site_sid, error)
 
@@ -217,7 +226,8 @@ def post_eve(resource, payload):
     """
     url = "{0}/{1}".format(API_URLS[ENVIRONMENT], resource)
     headers = {"content-type": "application/json"}
-    r = requests.post(url, auth=(SERVICE_ACCOUNT_USERNAME, SERVICE_ACCOUNT_PASSWORD), headers=headers, verify=SSL_VERIFICATION, data=json.dumps(payload))
+    r = requests.post(url, auth=(SERVICE_ACCOUNT_USERNAME, SERVICE_ACCOUNT_PASSWORD),
+                      headers=headers, verify=SSL_VERIFICATION, data=json.dumps(payload))
     if r.ok:
         return r.json()
     else:
@@ -236,7 +246,7 @@ def get_eve(resource, query=None):
         url = "{0}/{1}?{2}".format(API_URLS[ENVIRONMENT], resource, query)
     else:
         url = "{0}/{1}".format(API_URLS[ENVIRONMENT], resource)
-    print(url)
+    log.debug('utilities | Get Eve | url - %s', url)
     r = requests.get(url, auth=(SERVICE_ACCOUNT_USERNAME, SERVICE_ACCOUNT_PASSWORD), verify=SSL_VERIFICATION)
     if r.ok:
         return r.json()
@@ -253,7 +263,7 @@ def get_single_eve(resource, id):
     :return: dict of items that match the query string.
     """
     url = "{0}/{1}/{2}".format(API_URLS[ENVIRONMENT], resource, id)
-    print(url)
+    log.debug('utilities | Get Eve Single | url - %s', url)
     r = requests.get(url, auth=(SERVICE_ACCOUNT_USERNAME, SERVICE_ACCOUNT_PASSWORD), verify=SSL_VERIFICATION)
     if r.ok:
         return r.json()
@@ -273,7 +283,8 @@ def patch_eve(resource, id, request_payload):
     url = "{0}/{1}/{2}".format(API_URLS[ENVIRONMENT], resource, id)
     get_etag = get_single_eve(resource, id)
     headers = {'Content-Type': 'application/json', 'If-Match': get_etag['_etag']}
-    r = requests.patch(url, headers=headers, data=json.dumps(request_payload), auth=(SERVICE_ACCOUNT_USERNAME, SERVICE_ACCOUNT_PASSWORD), verify=SSL_VERIFICATION)
+    r = requests.patch(url, headers=headers, data=json.dumps(request_payload), auth=(
+        SERVICE_ACCOUNT_USERNAME, SERVICE_ACCOUNT_PASSWORD), verify=SSL_VERIFICATION)
     if r.ok:
         return r.json()
     else:
@@ -291,7 +302,8 @@ def delete_eve(resource, id):
     url = "{0}/{1}/{2}".format(API_URLS[ENVIRONMENT], resource, id)
     get_etag = get_single_eve(resource, id)
     headers = {'Content-Type': 'application/json', 'If-Match': get_etag['_etag']}
-    r = requests.delete(url, headers=headers, auth=(SERVICE_ACCOUNT_USERNAME, SERVICE_ACCOUNT_PASSWORD), verify=SSL_VERIFICATION)
+    r = requests.delete(url, headers=headers, auth=(SERVICE_ACCOUNT_USERNAME,
+                                                    SERVICE_ACCOUNT_PASSWORD), verify=SSL_VERIFICATION)
     if r.ok:
         return r.status_code
     else:
@@ -364,7 +376,7 @@ def import_code(query):
     :param query: URL for JSON to import
     """
     r = requests.get(query)
-    log.debug('Impoer Code | JSON Import | %s', r.json())
+    log.debug('Import Code | JSON Import | %s', r.json())
     data = r.json()
     for code in data['_items']:
         payload = {
@@ -415,7 +427,7 @@ def rebalance_update_groups(item):
 
 
 # Deprecated use 'post_to_slack_payload'
-def post_to_slack(message, title, link='', attachment_text='', level='good', user=slack_username):
+def post_to_slack(message, title, link='', attachment_text='', level='good', user=SLACK_USERNAME):
     """
     Posts a message to a given channel using the Slack Incoming Webhooks API.
     Links should be in the message or attachment_text in the format:
@@ -439,7 +451,7 @@ def post_to_slack(message, title, link='', attachment_text='', level='good', use
     """
     # We want to notify the channel if we get a message with 'fail' in it.
     if SLACK_NOTIFICATIONS:
-        regexp = compile(r'fail')
+        regexp = re_compile(r'fail')
         if regexp.search(message) is not None:
             message_text = '<!channel> ' + ENVIRONMENT + ' - ' + message
         else:
@@ -460,7 +472,7 @@ def post_to_slack(message, title, link='', attachment_text='', level='good', use
             ]
         }
         if ENVIRONMENT == 'local':
-            payload['channel'] = '@{0}'.format(slack_username)
+            payload['channel'] = '@{0}'.format(SLACK_USERNAME)
         elif 'cron' in attachment_text:
             payload['channel'] = 'cron'
 
@@ -468,7 +480,7 @@ def post_to_slack(message, title, link='', attachment_text='', level='good', use
         # in any order. Using json=payload instead of data=json.dumps(payload)
         # so that we don't have to encode the dict ourselves. The Requests
         # library will do it for us.
-        r = requests.post(slack_url, json=payload)
+        r = requests.post(SLACK_URL, json=payload)
         if not r.ok:
             print r.text
 
@@ -481,13 +493,13 @@ def post_to_slack_payload(payload):
     """
     if SLACK_NOTIFICATIONS:
         if ENVIRONMENT == 'local':
-            payload['channel'] = '@{0}'.format(slack_username)
+            payload['channel'] = '@{0}'.format(SLACK_USERNAME)
 
         # We need 'json=payload' vs. 'payload' because arguments can be passed
         # in any order. Using json=payload instead of data=json.dumps(payload)
         # so that we don't have to encode the dict ourselves. The Requests
         # library will do it for us.
-        r = requests.post(slack_url, json=payload)
+        r = requests.post(SLACK_URL, json=payload)
         if not r.ok:
             print r.text
 
@@ -512,16 +524,16 @@ def send_email(message, subject, to):
     :param subject: content of the subject line
     :param to: list of email address(es) the email will be sent to
     """
-    if send_notification_emails:
+    if SEND_NOTIFICATION_EMAILS:
         # We only send plaintext to prevent abuse.
         msg = MIMEText(message, 'plain')
         msg['Subject'] = subject
-        msg['From'] = send_notification_from_email
+        msg['From'] = SEND_NOTIFICATION_FROM_EMAIL
         msg['To'] = ", ".join(to)
 
-        s = smtplib.SMTP(email_host, email_port)
+        s = smtplib.SMTP(EMAIL_HOST, EMAIL_PORT)
         s.starttls()
-        s.login(email_username, email_password)
-        s.sendmail(send_notification_from_email, to, msg.as_string())
+        s.login(EMAIL_USERNAME, EMAIL_PASSWORD)
+        s.sendmail(SEND_NOTIFICATION_FROM_EMAIL, to, msg.as_string())
         s.quit()
 

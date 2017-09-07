@@ -290,7 +290,7 @@ def site_provision(site):
 
     slack_title = '{0}/{1}'.format(base_urls[environment], site['path'])
     slack_link = '{0}/{1}'.format(base_urls[environment], site['path'])
-    attachment_text = '{0}/sites/{1}'.format(api_urls[environment], site['_id'])
+    attachment_text = '{0}/sites/{1}'.format(API_URLS[environment], site['_id'])
 
     slack_message = 'Site provision - Success - {0} seconds'.format(provision_time)
     slack_color = 'good'
@@ -408,7 +408,7 @@ def site_update(site, updates, original):
     if site['pool'] == 'poolb-homepage' and site['type'] == 'express' and site['status'] in ['launching', 'launched']:
         slack_title = base_urls[environment]
         slack_link = base_urls[environment]
-    attachment_text = '{0}/sites/{1}'.format(api_urls[environment], site['_id'])
+    attachment_text = '{0}/sites/{1}'.format(API_URLS[environment], site['_id'])
     slack_message = 'Site Update - Success'
     slack_color = 'good'
     utilities.post_to_slack(

@@ -13,7 +13,7 @@ from eve import Eve
 from flask import jsonify, make_response
 from atlas import callbacks
 from atlas import utilities
-from atlas_config import (ATLAS_LOCATION, VERSION_NUMBER, SSL_KEY_FILE, SSL_CRT_FILE)
+from atlas.config import (ATLAS_LOCATION, VERSION_NUMBER, SSL_KEY_FILE, SSL_CRT_FILE)
 
 
 if ATLAS_LOCATION not in sys.path:
@@ -31,6 +31,14 @@ SETTINGS_FILE = os.path.join(THIS_DIRECTORY, 'atlas/data_structure.py')
 app = Eve(import_name='atlas', auth=utilities.AtlasBasicAuth, settings=SETTINGS_FILE)
 # TODO: Remove debug mode.
 app.debug = True
+
+ # Enable logging to 'atlas.log' file
+LOG_HANDLER = TimedRotatingFileHandler('atlas.log', when='midnight', interval=1, backupCount=5)
+# The default log level is set to WARNING, so we have to explicitly set the
+# logging level to Debug.
+app.logger.setLevel(logging.DEBUG)
+# Append the handler to the default application logger
+app.logger.addHandler(LOG_HANDLER)
 
 # Specific callbacks.
 # Use pre event hooks if there is a chance you want to abort.
@@ -69,14 +77,6 @@ def version():
 
 # This config is only used when running via python, rather than mod_wsgi
 if __name__ == '__main__':
-    # Enable logging to 'atlas.log' file
-    handler = TimedRotatingFileHandler('atlas.log', when='midnight', interval=1, backupCount=5)
-    # The default log level is set to WARNING, so we have to explicitly set the
-    # logging level to Debug.
-    app.logger.setLevel(logging.DEBUG)
-    # Append the handler to the default application logger
-    app.logger.addHandler(handler)
-
     ctx = ssl.SSLContext(ssl.PROTOCOL_SSLv23)
     ctx.load_cert_chain(SSL_CRT_FILE, SSL_KEY_FILE)
 

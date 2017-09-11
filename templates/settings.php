@@ -167,10 +167,10 @@ $conf['reverse_proxy_addresses'] = array({% for ip in reverse_proxies -%}'{{ip}}
 // Drupal will look for IP in $_SERVER['X-Forwarded-For']
 $conf['reverse_proxy_header'] = 'X-Forwarded-For';
 // Define Varnish Server Pool and version.
-$conf['varnish_control_terminal'] = '{{varnish_control}}';
+$conf['varnish_control_terminal'] = '{{ varnish_control }}';
 $conf['varnish_version'] = 4;
 # Previously used a string trim to remove newline character, don't need it with file create by Ansible.
-$conf['varnish_control_key'] = file_get_contents('/data/varnish/secret');
+$conf['varnish_control_key'] = '{{ varnish_control_key }}';
 
 {% if environment == 'development' %}
   $conf['drupal_http_request_fails'] = FALSE;
@@ -178,11 +178,6 @@ $conf['varnish_control_key'] = file_get_contents('/data/varnish/secret');
 
 // Google Analytics
 $conf['googleanalytics_account'] = 'UA-25752450-1';
-
-// cu_classes_bundle API variables.
-$conf['cu_class_import_api_username'] = "CU_WS_CLASSSRCH_UCB_CUOL";
-$conf['cu_class_import_api_password'] = "YEF9BYQSfFr8UXNmDvM5";
-$conf['cu_class_import_institutions'] = array('B-CUBLD' => 'B-CUBLD');
 
 {% if environment == 'local' %}
 $conf['error_level'] = 2;

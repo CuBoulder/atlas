@@ -600,6 +600,7 @@ def create_settings_files(site):
         'sid':sid,
         'reverse_proxies':env.roledefs['varnish_servers'],
         'varnish_control':varnish_control_terminals[environment],
+        'varnish_control_key': varnish_control_key,
         'memcache_servers':env.roledefs['memcache_servers'],
         'environment':environment if environment != 'prod' else ''
     }

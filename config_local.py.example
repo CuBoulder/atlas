@@ -47,6 +47,9 @@ load_balancer_user = 'LOAD_BALANCER_USER'
 service_account_username = 'SERVICE_ACCOUNT'
 service_account_password = 'SERVICE_ACCOUNT_PASSWORD'
 
+# Varnish
+varnish_control_key: 'CONTROL_KEY'
+
 # Paths
 # Path for mysql command.
 mysql_path = 'mysql'

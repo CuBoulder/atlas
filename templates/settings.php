@@ -169,9 +169,8 @@ $conf['reverse_proxy_header'] = 'X-Forwarded-For';
 // Define Varnish Server Pool and version.
 $conf['varnish_control_terminal'] = '{{varnish_control}}';
 $conf['varnish_version'] = 4;
-{% if environment == 'local' %}
-  $conf['varnish_control_key'] = substr(file_get_contents('/data/varnish/secret'),0,-1);
-{% endif %}
+# Previously used a string trim to remove newline character, don't need it with file create by Ansible.
+$conf['varnish_control_key'] = file_get_contents('/data/varnish/secret');
 
 {% if environment == 'development' %}
   $conf['drupal_http_request_fails'] = FALSE;

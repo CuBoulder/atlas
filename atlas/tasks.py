@@ -228,8 +228,7 @@ def code_remove(item):
     log.debug('Code remove | %s', item)
     fab_task = execute(fabric_tasks.code_remove, item=item)
 
-    slack_title = '{0} - {1}'.format(item['meta']['name'],
-                                     item['meta']['version'])
+    slack_title = '{0} - {1}'.format(item['meta']['name'], item['meta']['version'])
     if False not in fab_task.values():
         slack_message = 'Code Remove - Success'
         slack_color = 'good'
@@ -287,7 +286,7 @@ def site_provision(site):
 
     provision_time = time.time() - start_time
     log.info('Atlas operational statistic | Site Provision | %s | %s | %s ',
-                core_string, profile_string, provision_time)
+             core_string, profile_string, provision_time)
     log.debug('Site provision | Patch | %s', patch)
 
     slack_title = '{0}/{1}'.format(BASE_URLS[ENVIRONMENT], site['path'])
@@ -302,8 +301,7 @@ def site_provision(site):
         link=slack_link,
         attachment_text=attachment_text,
         level=slack_color)
-    logstash_payload = {'provision_time': provision_time,
-                        'logsource': 'atlas'}
+    logstash_payload = {'provision_time': provision_time, 'logsource': 'atlas'}
     utilities.post_to_logstash_payload(payload=logstash_payload)
 
 
@@ -317,7 +315,8 @@ def site_update(site, updates, original):
     :param original: Complete original site item.
     :return:
     """
-    log.debug('Site update - {0}\n{1}\n\n{2}\n\n{3}'.format(site['_id'], site, updates, original))
+    log.debug('Site update | ID - %s | Site - %s | Updates - %s | Original - %s',
+              site['_id'], site, updates, original)
 
     if updates.get('code'):
         log.debug('Found code changes.')
@@ -367,12 +366,11 @@ def site_update(site, updates, original):
                 execute(fabric_tasks.clear_apc)
                 patch_payload = '{"status": "installed"}'
             elif updates['status'] == 'launching':
-                log.debug('Status changed to launching')
+                log.debug   ('Status changed to launching')
                 site['status'] = 'launched'
                 execute(fabric_tasks.update_settings_file, site=site)
                 execute(fabric_tasks.site_launch, site=site)
                 if ENVIRONMENT is not 'local':
-                    execute(fabric_tasks.diff_f5)
                     execute(fabric_tasks.update_f5)
                 # Let fabric send patch since it is changing update group.
             elif updates['status'] == 'locked':
@@ -533,17 +531,18 @@ def command_run(site, command, single_server, user=None):
     log.debug('Run Command - {0} - {1} - {2}'.format(site['sid'], single_server, command))
     start_time = time.time()
     if single_server:
-        fabric_task_result = execute(fabric_tasks.command_run_single, site=site, command=command, warn_only=True)
+        fabric_task_result = execute(fabric_tasks.command_run_single,
+                                     site=site, command=command, warn_only=True)
     else:
-        fabric_task_result = execute(fabric_tasks.command_run, site=site, command=command, warn_only=True)
+        fabric_task_result = execute(fabric_tasks.command_run, site=site,
+                                     command=command, warn_only=True)
 
     log.debug('Command result - {0}'.format(fabric_task_result))
     command_time = time.time() - start_time
     logstash_payload = {'command_time': command_time,
                         'logsource': 'atlas',
                         'command': command,
-                        'instance': site['sid']
-                        }
+                        'instance': site['sid']}
     utilities.post_to_logstash_payload(payload=logstash_payload)
 
     slack_title = '{0}/{1}'.format(BASE_URLS[ENVIRONMENT], site['path'])
@@ -563,16 +562,17 @@ def command_run(site, command, single_server, user=None):
 
 
 @celery.task
-def cron(type=None, status=None, include_packages=None, exclude_packages=None):
-    log.debug('Cron | Status - {0} | Include - {1} | Exclude - {2}'.format(status, include_packages, exclude_packages))
+def cron(site_type=None, status=None, include_packages=None, exclude_packages=None):
+    log.debug('Cron | Status - %s | Include - %s | Exclude - %s',
+              status, include_packages, exclude_packages)
     # Build query.
     site_query_string = ['max_results=2000']
     log.debug('Cron - found argument')
     # Start by eliminating f5 records.
     site_query_string.append('&where={"f5only":false,')
     if type:
-        log.debug('Cron - found type')
-        site_query_string.append('"type":"{0}",'.format(type))
+        log.debug('Cron - found site_type')
+        site_query_string.append('"type":"{0}",'.format(site_type))
     if status:
         log.debug('Cron - found status')
         site_query_string.append('"status":"{0}",'.format(status))
@@ -586,9 +586,9 @@ def cron(type=None, status=None, include_packages=None, exclude_packages=None):
             include_packages_ids = []
             if not packages['_meta']['total'] == 0:
                 for item in packages['_items']:
-                    log.debug('Cron - include_packages item \n{0}'.format(item))
+                    log.debug('Cron | Include_packages item - %s ', item)
                     include_packages_ids.append(str(item['_id']))
-                log.debug('Cron - include_packages list \n{0}'.format(json.dumps(include_packages_ids)))
+                log.debug('Cron | include_packages list - %s', json.dumps(include_packages_ids))
                 site_query_string.append('"code.package": {{"$in": {0}}},'.format(json.dumps(include_packages_ids)))
     if exclude_packages:
         log.debug('Cron - found exclude_packages')
@@ -597,17 +597,17 @@ def cron(type=None, status=None, include_packages=None, exclude_packages=None):
             exclude_packages_ids = []
             if not packages['_meta']['total'] == 0:
                 for item in packages['_items']:
-                    log.debug('Cron - exclude_packages item \n{0}'.format(item))
+                    log.debug('Cron | exclude_packages item - %s', item)
                     exclude_packages_ids.append(str(item['_id']))
-                log.debug('Cron - exclude_packages list \n{0}'.format(json.dumps(exclude_packages_ids)))
+                log.debug('Cron - exclude_packages list - %s', json.dumps(exclude_packages_ids))
                 site_query_string.append('"code.package": {{"$nin": {0}}},'.format(json.dumps(exclude_packages_ids)))
 
     site_query = ''.join(site_query_string)
-    log.debug('Query after join - {0}'.format(site_query))
+    log.debug('Query after join -| %s', site_query)
     site_query = site_query.rstrip('\,')
-    log.debug('Query after rstrip - {0}'.format(site_query))
+    log.debug('Query after rstrip | %s', site_query)
     site_query += '}'
-    log.debug('Query final - {0}'.format(site_query))
+    log.debug('Query final | %s', site_query)
 
     sites = utilities.get_eve('sites', site_query)
     if not sites['_meta']['total'] == 0:
@@ -638,8 +638,7 @@ def cron_run(site):
     logstash_payload = {'command_time': command_time,
                         'logsource': 'atlas',
                         'command': command,
-                        'instance': site['sid']
-                        }
+                        'instance': site['sid']}
     utilities.post_to_logstash_payload(payload=logstash_payload)
 
 

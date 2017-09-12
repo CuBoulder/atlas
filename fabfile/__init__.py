@@ -690,7 +690,7 @@ def launch_site(site):
     """
     Create symlinks with new site name.
     """
-    print ('Launch subtask')
+    print 'Launch subtask'
     code_directory = '{0}/{1}'.format(sites_code_root, site['sid'])
     code_directory_current = '{0}/current'.format(code_directory)
 

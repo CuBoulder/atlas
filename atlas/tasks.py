@@ -14,7 +14,7 @@ from datetime import datetime, timedelta
 from atlas import fabric_tasks
 from atlas import utilities
 from atlas import config_celery
-from atlas.config import (ENVIRONMENT, WEBSERVER_USER)
+from atlas.config import (ENVIRONMENT, WEBSERVER_USER, DESIRED_SITE_COUNT)
 from atlas.config_servers import (BASE_URLS, API_URLS)
 
 # Setup a sub-logger
@@ -693,15 +693,14 @@ def cron_run(site):
 
 @celery.task
 def available_sites_check():
+    """
+    Check to see how many instances we have ready to be handed out and add some more if needed.
+    """
     site_query = 'where={"status":{"$in":["pending","available"]}}'
     sites = utilities.get_eve('sites', site_query)
     actual_site_count = sites['_meta']['total']
-    if ENVIRONMENT == "local":
-        desired_site_count = 2
-    else:
-        desired_site_count = 5
-    if actual_site_count < desired_site_count:
-        needed_sites_count = desired_site_count - actual_site_count
+    if actual_site_count < DESIRED_SITE_COUNT:
+        needed_sites_count = DESIRED_SITE_COUNT - actual_site_count
         while needed_sites_count > 0:
             payload = {
                 "status": "pending",
@@ -713,7 +712,7 @@ def available_sites_check():
 @celery.task
 def delete_stuck_pending_sites():
     """
-    Task to delete pending sites that don't install for some reason.
+    Task to delete pending sites that don't provision correctly for some reason.
     """
     site_query = 'where={"status":"pending"}'
     sites = utilities.get_eve('sites', site_query)
@@ -728,12 +727,9 @@ def delete_stuck_pending_sites():
             # Get datetime now and calculate the age of the site. Since our timestamp is in GMT, we
             # need to use UTC.
             time_since_creation = datetime.utcnow() - date_created
-            log.debug('%s has timedelta of %s. Created: %s Current: %s',
-                         site['sid'],
-                         time_since_creation,
-                         date_created,
-                         datetime.utcnow())
-            if time_since_creation > timedelta(minutes=15):
+            log.debug('Pending instances | %s has timedelta of %s. Created: %s Current: %s',
+                      site['sid'], time_since_creation, date_created, datetime.utcnow())
+            if time_since_creation > timedelta(minutes=20):
                 utilities.delete_eve('sites', site['_id'])
 
 
@@ -744,15 +740,15 @@ def delete_all_available_sites():
     """
     site_query = 'where={"status":"available"}'
     sites = utilities.get_eve('sites', site_query)
-    log.debug('Sites\n %s', sites)
+    log.debug('Delete all available sites| Sites - %s', sites)
     if not sites['_meta']['total'] == 0:
         for site in sites['_items']:
-            log.debug('Site\n {0}'.format(site))
+            log.debug('Delete all available sites| Site - %s', site)
             utilities.delete_eve('sites', site['_id'])
 
 
 @celery.task
-def delete_statistics_without_active_instance():
+def remove_orphan_statistics():
     """
     Get a list of statistics and key them against a list of active instances.
     """
@@ -776,6 +772,9 @@ def delete_statistics_without_active_instance():
 
 @celery.task
 def take_down_installed_old_sites():
+    """
+    In non-prod environments, take down instances that are older than 35 days.
+    """
     if ENVIRONMENT != 'production':
         site_query = 'where={"status":"installed"}'
         sites = utilities.get_eve('sites', site_query)
@@ -784,18 +783,12 @@ def take_down_installed_old_sites():
             # Parse date string into structured time.
             # See https://docs.python.org/2/library/datetime.html#strftime-and-strptime-behavior
             # for mask format.
-            date_created = time.strptime(site['_created'],
-                                         "%Y-%m-%d %H:%M:%S %Z")
-            # Get time now, Convert date_created to seconds from epoch and
-            # calculate the age of the site.
+            date_created = time.strptime(site['_created'], "%Y-%m-%d %H:%M:%S %Z")
+            # Get time now, Convert date_created to seconds from epoch and calculate the age of the
+            # site.
             seconds_since_creation = time.time() - time.mktime(date_created)
-            log.debug(
-                '{0} is {1} seconds old. Created: {2} Current: {3}'.format(
-                    site['sid'],
-                    seconds_since_creation,
-                    time.mktime(date_created),
-                    time.time())
-            )
+            log.info('Take down old instances | %s is %s seconds old. Created: %s Current: %s',
+                     site['sid'], seconds_since_creation, time.mktime(date_created), time.time())
             # 35 days * 24 hrs * 60 min * 60 sec = 302400 seconds
             if seconds_since_creation > 3024000:
                 # Patch the status to 'take_down'.

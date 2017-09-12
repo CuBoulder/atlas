@@ -7,9 +7,13 @@ allowed_users = ['USER', 'USER2']
 # Symlink the files directory in from a NFS mount.
 # nfs_mount_location is set in config_server.py.
 nfs_mount_files_dir = True
-# Use f5 load balancer. You may need to override the configuration functions to
-# work with your environment.
+
+# Use a load balancer to route some traffic to another server pool. You will probably need to write
+# some custom functions to interact with the load balancer configuration.
 load_balancer = True
+
+# Number of instances to keep in 'available' state.
+DESIRED_SITE_COUNT = 5
 
 # The directory where assets will be stored.
 # Path should be relative to the root and should NOT include a trailing slash.

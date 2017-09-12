@@ -100,17 +100,20 @@ def on_insert_sites_callback(items):
             # The 'get' method checks if the key exists.
             if item.get('code'):
                 if not item['code'].get('core'):
-                    item['code']['core'] = utilities.get_current_code(name=DEFAULT_CORE, code_type='core')
+                    item['code']['core'] = utilities.get_current_code(
+                        name=DEFAULT_CORE, code_type='core')
                 if not item['code'].get('profile'):
-                    item['code']['profile'] = utilities.get_current_code(name=DEFAULT_PROFILE, code_type='profile')
+                    item['code']['profile'] = utilities.get_current_code(
+                        name=DEFAULT_PROFILE, code_type='profile')
             else:
                 item['code'] = {}
-                item['code']['core'] = utilities.get_current_code(name=DEFAULT_CORE, code_type='core')
-                item['code']['profile'] = utilities.get_current_code(name=DEFAULT_PROFILE, code_type='profile')
+                item['code']['core'] = utilities.get_current_code(
+                    name=DEFAULT_CORE, code_type='core')
+                item['code']['profile'] = utilities.get_current_code(
+                    name=DEFAULT_PROFILE, code_type='profile')
             if not item['import_from_inventory']:
                 date_json = '{{"created":"{0} GMT"}}'.format(item['_created'])
                 item['dates'] = json.loads(date_json)
-            log.debug('Ready to create item\n{0}'.format(item))
 
 
 def on_inserted_sites_callback(items):
@@ -119,24 +122,20 @@ def on_inserted_sites_callback(items):
 
     :param items: List of dicts for instances to be provisioned.
     """
-    log.debug(items)
+    log.debug('site | Site objects created | sites - %s', items)
     for item in items:
         log.debug(item)
+        log.debug('site | Site object created | site - %s', item)
         if item['type'] == 'express' and not item['f5only']:
-            log.debug(item)
             # Create statistics item
             statistics_payload = {}
             # Need to get the string out of the ObjectID.
             statistics_payload['site'] = str(item['_id'])
-            log.debug('Create Statistics item\n{0}'.format(statistics_payload))
+            log.debug('site | Create Statistics item - %s', statistics_payload)
             statistics = utilities.post_eve(resource='statistics', payload=statistics_payload)
-            log.debug(statistics)
             item['statistics'] = str(statistics['_id'])
-            log.debug('Ready to send to Celery\n{0}'.format(item))
-            if not item['import_from_inventory']:
-                tasks.site_provision.delay(item)
-            else:
-                tasks.site_import_from_inventory.delay(item)
+
+            tasks.site_provision.delay(item)
 
 
 def on_insert_code_callback(items):
@@ -148,19 +147,17 @@ def on_insert_code_callback(items):
 
     :param items: List of dicts for items to be created.
     """
-    log.debug(items)
+    log.debug('code | Inset | items - %s', items)
     for item in items:
-        if item.get('meta') and item['meta'].get('is_current') and item['meta']['is_current'] == True:
-            # Need a lowercase string when querying boolean values. Python
-            # stores it as 'True'.
-            query = 'where={{"meta.name":"{0}","meta.code_type":"{1}","meta.is_current": {2}}}'.format(item['meta']['name'], item['meta']['code_type'], str(item['meta']['is_current']).lower())
+        if item.get('meta') and item['meta'].get('is_current') and item['meta']['is_current'] is True:
+            query = 'where={{"meta.name":"{0}","meta.code_type":"{1}","meta.is_current": true}}'.format(item['meta']['name'], item['meta']['code_type'])
             code_get = utilities.get_eve('code', query)
-            log.debug(code_get)
+            log.debug('code | Inset | current code - %s', code_get)
             if code_get['_meta']['total'] != 0:
                 for code in code_get['_items']:
                     request_payload = {'meta.is_current': False}
                     utilities.patch_eve('code', code['_id'], request_payload)
-        log.debug('Ready to send to Celery\n{0}'.format(item))
+        log.debug('code | Inset | Ready to deploy item - %s', item)
         tasks.code_deploy.delay(item)
 
 
@@ -171,7 +168,7 @@ def pre_delete_sites_callback(request, lookup):
     :param request: flask.request object
     :param lookup:
     """
-    log.debug(lookup)
+    log.debug('sites | Pre Delete | lookup - %s', lookup)
     site = utilities.get_single_eve('sites', lookup['_id'])
     tasks.site_remove.delay(site)
 
@@ -182,7 +179,7 @@ def on_delete_item_code_callback(item):
 
     :param item:
     """
-    log.debug(item)
+    log.debug('code | on delete | item - %s', item)
     tasks.code_remove.delay(item)
 
 
@@ -193,16 +190,14 @@ def on_update_code_callback(updates, original):
     :param updates:
     :param original:
     """
-    log.debug(updates)
-    log.debug(original)
+    log.debug('code | on update | updates - %s | original - %s', updates, original)
     # If this 'is_current' PATCH code with the same name and code_type.
-    if updates.get('meta') and updates['meta'].get('is_current') and updates['meta']['is_current'] == True:
-        # If the name and code_type are not changing, we need to load them from
-        # the original.
+    if updates.get('meta') and updates['meta'].get('is_current') and updates['meta']['is_current'] is True:
+        # If the name and code_type are not changing, we need to load them from the original.
         name = updates['meta']['name'] if updates['meta'].get('name') else original['meta']['name']
         code_type = updates['meta']['code_type'] if updates['meta'].get('code_type') else original['meta']['code_type']
 
-        query = 'where={{"meta.name":"{0}","meta.code_type":"{1}","meta.is_current": {2}}}'.format(name, code_type, str(updates['meta']['is_current']).lower())
+        query = 'where={{"meta.name":"{0}","meta.code_type":"{1}","meta.is_current": true}}'.format(name, code_type)
         code_get = utilities.get_eve('code', query)
         # TODO: Filter out the item we are updating.
         log.debug(code_get)
@@ -224,7 +219,7 @@ def on_update_code_callback(updates, original):
     if updates.get('meta'):
         updated_item['meta'] = meta
 
-    log.debug('Ready to hand to Celery\n{0}\n{1}'.format(updated_item, original))
+    log.debug('code | on update | Ready to hand to Celery')
     tasks.code_update.delay(updated_item, original)
 
 

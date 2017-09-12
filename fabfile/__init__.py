@@ -289,20 +289,7 @@ def site_launch(site):
         print 'Settings files creation failed.'
         return result_create_settings_files
 
-    if environment is 'prod' and site['pool'] is 'poolb-express':
-        # Create GSA collection if needed.
-        gsa_task = create_gsa(site)
-        if gsa_task is True:
-            print 'GSA Collection - Success'
-            machine_name = machine_readable(site['path'])
-            launch_site(site=site, gsa_collection=machine_name)
-            return
-        else:
-            print 'GSA Collection - Failed'
-            launch_site(site=site)
-    else:
-        print 'Site launch - No GSA'
-        launch_site(site=site)
+    launch_site(site=site)
 
 
 @roles('webserver_single')
@@ -699,123 +686,7 @@ def machine_readable(string):
     return re.sub(r'\W+', '', new_string)
 
 
-# GSA utilities
-def create_gsa(site):
-    machine_name = machine_readable(site['path'])
-    if not gsa_collection_exists(machine_name):
-        index_path = "http://www.colorado.edu/{0}/".format(site['path'])
-        gsa_create_collection(machine_name, index_path)
-
-
-def gsa_collection_exists(name):
-    """
-    Return if a collection of the given name already exists.
-    """
-    raw = gsa_collection_data()
-    entries = gsa_all_collections(raw)
-    collections = gsa_parse_entries(entries)
-    return name in collections
-
-
-def gsa_create_collection(name, follow):
-    """
-    Creates a collection in the Google Search Appliance.
-    """
-    auth_token = gsa_auth()
-    url = "http://{0}:8000/feeds/collection".format(gsa_host)
-    headers = {"Content-Type": "application/atom+xml",
-               "Authorization": "GoogleLogin auth={0}".format(auth_token)}
-    payload = """<?xml version='1.0' encoding='UTF-8'?>
-<entry xmlns='http://www.w3.org/2005/Atom' xmlns:gsa='http://schemas.google.com/gsa/2007'>
-<gsa:content name='collectionName'>{0}</gsa:content>
-<gsa:content name='insertMethod'>customize</gsa:content>
-<gsa:content name='followURLs'>{1}</gsa:content>
-<gsa:content name='doNotCrawlURLs'></gsa:content>
-</entry>"""
-    payload = payload.format(name, follow)
-    r = requests.post(url, data=payload, headers=headers, verify=False)
-    if not r.ok:
-        print(r.text)
-
-
-def gsa_auth():
-    """
-    Gets an auth token from the GSA.
-    """
-    url = "https://{0}:8443/accounts/ClientLogin".format(gsa_host)
-    headers = {'Content-Type': 'application/x-www-form-urlencoded'}
-    r = requests.post(url, data="&Email={0}&Passwd={1}".format(gsa_username,
-                                                               gsa_password),
-                      headers=headers, verify=False)
-    if r.ok:
-        resp = r.text
-        p = re.compile("Auth=(.*)")
-        auth_token = p.findall(resp)[0]
-        return auth_token
-
-
-def gsa_collection_data():
-    """
-    Gets the list of collections
-    """
-    auth_token = gsa_auth()
-    url = "http://{0}:8000/feeds/collection".format(gsa_host)
-    headers = {"Content-Type": "application/atom+xml",
-               "Authorization": "GoogleLogin auth={0}".format(auth_token)}
-    r = requests.get(url, headers=headers, verify=False)
-    if r.ok:
-        return r.text
-
-
-def gsa_next_target(page):
-    """
-    Returns the next entry element
-    """
-    start_link = page.find('<entry')
-    if start_link == -1:
-        return None, 0
-    start_quote = page.find('>', start_link)
-    end_quote = page.find('</entry>', start_quote + 1)
-    entry = page[start_quote + 1:end_quote]
-    return entry, end_quote
-
-
-def gsa_all_collections(page):
-    """
-    Helper for collection_exists. Iterates through the <entry> elements in the text.
-    """
-    entries = []
-    while True:
-        entry, endpos = gsa_next_target(page)
-        if entry:
-            entries.append(entry)
-            page = page[endpos:]
-        else:
-            break
-    return entries
-
-
-def gsa_parse_entries(entries):
-    """
-    Parses out the entries in the XML returned by the GSA into a dict.
-    """
-    collections = {}
-
-    for entry in entries:
-        # id = entry[entry.find("<id>")+4:entry.find("</id>")]
-        needle = "<gsa:content name='entryID'>"
-        start = entry.find(needle) + len(needle)
-        name = entry[start:entry.find("</gsa:content>", start)]
-        needle = "<gsa:content name='followURLs'>"
-        start = entry.find(needle) + len(needle)
-        follow = entry[start:entry.find("</gsa:content>", start)]
-        follow = follow.split("\\n")
-        collections[name] = follow
-
-    return collections
-
-
-def launch_site(site, gsa_collection=False):
+def launch_site(site):
     """
     Create symlinks with new site name.
     """
@@ -836,14 +707,10 @@ def launch_site(site, gsa_collection=False):
                 # Create a new symlink using site's updated path
                 if not exists(web_directory_path):
                     update_symlink(code_directory_current, site['path'])
-                # enter new site directory
                 with cd(web_directory_path):
                     clear_apc()
-                    if gsa_collection:
-                        # Set the collection name
-                        run("sudo -u {0} drush vset --yes google_appliance_collection {1}".format(webserver_user, gsa_collection))
-                    # Clear caches at the end of the launch process to show
-                    # correct pathologic rendered URLS.
+                    # Clear caches at the end of the launch process to show correct pathologic
+                    # rendered URLS.
                     drush_cache_clear(site['sid'])
             # Assign it to an update group.
             update_group = randint(0, 10)
@@ -851,7 +718,6 @@ def launch_site(site, gsa_collection=False):
             web_directory = '{0}/{1}'.format(sites_web_root, 'homepage')
             with cd(sites_web_root):
                 update_symlink(code_directory_current, web_directory)
-                # enter new site directory
             with cd(web_directory):
                 clear_apc()
                 drush_cache_clear(site['sid'])

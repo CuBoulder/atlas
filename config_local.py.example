@@ -65,6 +65,9 @@ slack_notify = True
 slack_url = 'SLACK_URL'
 slack_username = 'SLACK_USERNAME'
 
+# Logstash statistics logging
+SEND_LOGSTASH_STATISTICS = False
+
 ######### BETA CONFIG #########
 ## Notifications
 send_notification_emails = True

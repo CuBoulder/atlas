@@ -494,15 +494,15 @@ def post_to_slack_payload(payload):
 
 def post_to_logstash_payload(payload):
     """
-    Posts a message to our logstash instance.
+    Posts a message to a logstash instance.
 
     :param payload: JSON encoded payload.
     """
-    if environment != 'local':
-        r = requests.post(logstash_url, json=payload)
-        if not r.ok:
-            print r.text
-
+    if SEND_LOGSTASH_STATISTICS:
+        try:
+            requests.post(logstash_url, json=payload)
+        except Exception as error:
+            print error
 
 
 def send_email(message, subject, to):

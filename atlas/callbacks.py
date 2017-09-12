@@ -197,20 +197,19 @@ def on_update_code_callback(updates, original):
         name = updates['meta']['name'] if updates['meta'].get('name') else original['meta']['name']
         code_type = updates['meta']['code_type'] if updates['meta'].get('code_type') else original['meta']['code_type']
 
-        query = 'where={{"meta.name":"{0}","meta.code_type":"{1}","meta.is_current": true}}'.format(name, code_type)
+        query = 'where={{"meta.name":"{0}","meta.code_type":"{1}","meta.is_current": true}}'.format(
+            name, code_type)
         code_get = utilities.get_eve('code', query)
         # TODO: Filter out the item we are updating.
-        log.debug(code_get)
+        log.debug('code | on update | Current code - %s', code_get)
 
         for code in code_get['_items']:
             request_payload = {'meta.is_current': False}
             utilities.patch_eve('code', code['_id'], request_payload)
 
-    # We need the whole record so that we can manipulate code in the right
-    # place.
-    # Copy 'original' to a new dict, then update it with values from 'updates'
-    # to create an item to deploy. Need to do the same process for meta first,
-    # otherwise the update will fully overwrite.
+    # We need the whole record so that we can manipulate code in the right place.
+    # Copy 'original' to a new dict, then update it with values from 'updates' to create an item to
+    # deploy. Need to do the same process for meta first, otherwise the update will fully overwrite.
     if updates.get('meta'):
         meta = original['meta'].copy()
         meta.update(updates['meta'])

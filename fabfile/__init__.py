@@ -699,18 +699,7 @@ def update_symlink(source, destination):
     if exists(destination):
         run('rm {0}'.format(destination))
     run('ln -s {0} {1}'.format(source, destination))
-
-
-def machine_readable(string):
-    """
-    Replace all spaces with underscores and remove any non-alphanumeric
-    characters.
-
-    :param string:
-    """
-    new_string = string.lower().replace(" ", "_")
-    return re.sub(r'\W+', '', new_string)
-
+    
 
 def launch_site(site):
     """

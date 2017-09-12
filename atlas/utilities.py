@@ -472,8 +472,6 @@ def post_to_slack(message, title, link='', attachment_text='', level='good', use
         }
         if ENVIRONMENT == 'local':
             payload['channel'] = '@{0}'.format(SLACK_USERNAME)
-        elif 'cron' in attachment_text:
-            payload['channel'] = 'cron'
 
         # We need 'json=payload' vs. 'payload' because arguments can be passed
         # in any order. Using json=payload instead of data=json.dumps(payload)
@@ -516,23 +514,24 @@ def post_to_logstash_payload(payload):
 
 
 
-def send_email(message, subject, to):
+def send_email(email_message, email_subject, email_to):
     """
     Sends email
-    :param message: content of the email to be sent.
-    :param subject: content of the subject line
-    :param to: list of email address(es) the email will be sent to
+
+    :param email_message: content of the email to be sent.
+    :param email_subject: content of the subject line
+    :param email_to: list of email address(es) the email will be sent to
     """
     if SEND_NOTIFICATION_EMAILS:
         # We only send plaintext to prevent abuse.
-        msg = MIMEText(message, 'plain')
-        msg['Subject'] = subject
+        msg = MIMEText(email_message, 'plain')
+        msg['Subject'] = email_subject
         msg['From'] = SEND_NOTIFICATION_FROM_EMAIL
-        msg['To'] = ", ".join(to)
+        msg['To'] = ", ".join(email_to)
 
         s = smtplib.SMTP(EMAIL_HOST, EMAIL_PORT)
         s.starttls()
         s.login(EMAIL_USERNAME, EMAIL_PASSWORD)
-        s.sendmail(SEND_NOTIFICATION_FROM_EMAIL, to, msg.as_string())
+        s.sendmail(SEND_NOTIFICATION_FROM_EMAIL, email_to, msg.as_string())
         s.quit()
 

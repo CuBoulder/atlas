@@ -319,20 +319,20 @@ def site_update(site, updates, original):
               site['_id'], site, updates, original)
 
     if updates.get('code'):
-        log.debug('Found code changes.')
+        log.debug('Site update | ID - %s | Found code changes', site['_id'])
         core_change = False
         profile_change = False
         package_change = False
         if 'core' in updates['code']:
-            log.debug('Found core change.')
+            log.debug('Site update | ID - %s | Found core change', site['_id'])
             core_change = True
             execute(fabric_tasks.site_core_update, site=site)
         if 'profile' in updates['code']:
-            log.debug('Found profile change.')
+            log.debug('Site update | ID - %s | Found profile change', site['_id'])
             profile_change = True
             execute(fabric_tasks.site_profile_update, site=site, original=original, updates=updates)
         if 'package' in updates['code']:
-            log.debug('Found package changes.')
+            log.debug('Site update | ID - %s | Found package changes', site['_id'])
             package_change = True
             execute(fabric_tasks.site_package_update, site=site)
         if core_change or profile_change or package_change:
@@ -347,26 +347,27 @@ def site_update(site, updates, original):
             # Strip the trailing space off the end.
             package_name_string = package_name_string.rstrip()
             if len(package_name_string) > 0:
-                subject = 'Package added - {0}/{1}'.format(BASE_URLS[ENVIRONMENT], site['path'])
-                message = "Requested packages have been added to {0}/{1}.\n\n{2}\n\n - Web Express Team\n\nLogin to the site: {0}/{1}/user?destination=admin/settings/admin/bundle/list".format(BASE_URLS[ENVIRONMENT], site['path'], package_name_string)
+                subject = 'Package(s) added - {0}/{1}'.format(BASE_URLS[ENVIRONMENT], site['path'])
+                message = "We added the requested packages to {0}/{1}.\n\n{2}\n\n - Web Express Team\n\nLogin to the site: {0}/{1}/user?destination=admin/settings/admin/bundle/list".format(BASE_URLS[ENVIRONMENT], site['path'], package_name_string)
             else:
                 subject = 'Packages removed - {0}/{1}'.format(BASE_URLS[ENVIRONMENT], site['path'])
-                message = "All packages have been removed from {0}/{1}.\n\n - Web Express Team.".format(BASE_URLS[ENVIRONMENT], site['path'])
-            to = ['{0}@colorado.edu'.format(site['modified_by'])]
-            utilities.send_email(message=message, subject=subject, to=to)
+                message = "We removed all packages from {0}/{1}.\n\n - Web Express Team.".format(
+                    BASE_URLS[ENVIRONMENT], site['path'])
+            email_to = ['{0}@colorado.edu'.format(site['modified_by'])]
+            utilities.send_email(email_message=message, email_subject=subject, email_to=email_to)
 
     if updates.get('status'):
-        log.debug('Found status change.')
+        log.debug('Site update | ID - %s | Found status change', site['_id'])
         if updates['status'] in ['installing', 'launching', 'locked', 'take_down', 'restore']:
             if updates['status'] == 'installing':
-                log.debug('Status changed to installing')
+                log.debug('Site update | ID - %s | Status changed to installing')
                 # Set new status on site record for update to settings files.
                 site['status'] = 'installed'
                 execute(fabric_tasks.update_settings_file, site=site)
                 execute(fabric_tasks.clear_apc)
                 patch_payload = '{"status": "installed"}'
             elif updates['status'] == 'launching':
-                log.debug   ('Status changed to launching')
+                log.debug('Site update | ID - %s | Status changed to launching', site['_id'])
                 site['status'] = 'launched'
                 execute(fabric_tasks.update_settings_file, site=site)
                 execute(fabric_tasks.site_launch, site=site)
@@ -374,17 +375,17 @@ def site_update(site, updates, original):
                     execute(fabric_tasks.update_f5)
                 # Let fabric send patch since it is changing update group.
             elif updates['status'] == 'locked':
-                log.debug('Status changed to locked')
+                log.debug('Site update | ID - %s | Status changed to locked', site['_id'])
                 execute(fabric_tasks.update_settings_file, site=site)
             elif updates['status'] == 'take_down':
-                log.debug('Status changed to take_down')
+                log.debug('Site update | ID - %s | Status changed to take_down', site['_id'])
                 site['status'] = 'down'
                 execute(fabric_tasks.update_settings_file, site=site)
                 # execute(fabric_tasks.site_backup, site=site)
                 execute(fabric_tasks.site_take_down, site=site)
                 patch_payload = '{"status": "down"}'
             elif updates['status'] == 'restore':
-                log.debug('Status changed to restore')
+                log.debug('Site update | ID - %s | Status changed to restore', site['_id'])
                 site['status'] = 'installed'
                 execute(fabric_tasks.update_settings_file, site=site)
                 execute(fabric_tasks.site_restore, site=site)
@@ -403,21 +404,37 @@ def site_update(site, updates, original):
                 log.debug('Found page_cache_maximum_age change.')
             execute(fabric_tasks.update_settings_file, site=site)
 
-    slack_title = '{0}/{1}'.format(BASE_URLS[ENVIRONMENT], site['path'])
-    slack_link = '{0}/{1}'.format(BASE_URLS[ENVIRONMENT], site['path'])
-    if site['pool'] == 'poolb-homepage' and site['type'] == 'express' and site['status'] in ['launching', 'launched']:
-        slack_title = BASE_URLS[ENVIRONMENT]
-        slack_link = BASE_URLS[ENVIRONMENT]
-    attachment_text = '{0}/sites/{1}'.format(API_URLS[ENVIRONMENT], site['_id'])
-    slack_message = 'Site Update - Success'
+    slack_title = 'Site Update - Success'
+    slack_text = 'Site Update - Success - {0}/{1}'.format(BASE_URLS[ENVIRONMENT], site['path'])
     slack_color = 'good'
-    utilities.post_to_slack(
-        message=slack_message,
-        title=slack_title,
-        link=slack_link,
-        attachment_text=attachment_text,
-        level=slack_color,
-        user=updates['modified_by'])
+    slack_link = '{0}/{1}'.format(BASE_URLS[ENVIRONMENT], site['path'])
+
+    slack_payload = {
+        "text": slack_text,
+        "username": 'Atlas',
+        "attachments": [
+            {
+                "fallback": slack_text,
+                "color": slack_color,
+                "author_name": updates['modified_by'],
+                "title": slack_title,
+                "fields": [
+                    {
+                        "title": "Instance",
+                        "value": slack_link,
+                        "short": True
+                    },
+                    {
+                        "title": "Environment",
+                        "value": ENVIRONMENT,
+                        "short": True
+                    },
+                ],
+            }
+        ],
+        "user": updates['modified_by']
+    }
+    utilities.post_to_slack_payload(slack_payload)
 
 
 @celery.task
@@ -442,24 +459,47 @@ def site_remove(site):
         try:
             log.debug('Site remove | Delete database')
             utilities.delete_database(site['sid'])
-        except:
-            log.error('Site remove failed | Database remove failed')
-            raise
+        except Exception as error:
+            log.error('Site remove failed | Database remove failed | %s', error)
+            # Want to keep trying to remove instances even if DB remove fails.
+            pass
 
         execute(fabric_tasks.site_remove, site=site)
 
-    if ENVIRONMENT != 'local':
+    if ENVIRONMENT != 'local' and site['type'] == 'legacy':
         execute(fabric_tasks.update_f5)
 
     slack_title = '{0}/{1}'.format(BASE_URLS[ENVIRONMENT], site['path'])
-    slack_message = 'Site Remove - Success'
+    slack_text = 'Site Remove - Success - {0}/{1}'.format(BASE_URLS[ENVIRONMENT], site['path'])
     slack_color = 'good'
-    utilities.post_to_slack(
-        message=slack_message,
-        title=slack_title,
-        level=slack_color,
-        user=site['modified_by'])
+    slack_link = '{0}/{1}'.format(BASE_URLS[ENVIRONMENT], site['path'])
 
+    slack_payload = {
+        "text": slack_text,
+        "username": 'Atlas',
+        "attachments": [
+            {
+                "fallback": slack_text,
+                "color": slack_color,
+                "author_name": site['modified_by'],
+                "title": slack_title,
+                "fields": [
+                    {
+                        "title": "Instance",
+                        "value": slack_link,
+                        "short": True
+                    },
+                    {
+                        "title": "Environment",
+                        "value": ENVIRONMENT,
+                        "short": True
+                    },
+                ],
+            }
+        ],
+        "user": site['modified_by']
+    }
+    utilities.post_to_slack_payload(slack_payload)
 
 @celery.task
 def command_prepare(item):
@@ -469,7 +509,7 @@ def command_prepare(item):
     :param item: A complete command item, including new values.
     :return:
     """
-    log.debug('Prepare Command\n{0}'.format(item))
+    log.debug('Prepare Command | Item - %s', item)
     if item['command'] == 'clear_apc':
         execute(fabric_tasks.clear_apc)
         return
@@ -482,27 +522,26 @@ def command_prepare(item):
     if item['query']:
         site_query = 'where={0}'.format(item['query'])
         sites = utilities.get_eve('sites', site_query)
-        log.debug('Ran query\n{0}'.format(sites))
+        log.debug('Prepare Command | Item - %s | Ran query - %s', item['_id'], sites)
         if not sites['_meta']['total'] == 0:
             for site in sites['_items']:
                 log.debug('Command - {0}'.format(item['command']))
                 if item['command'] == 'update_settings_file':
-                    log.debug('Update site\n{0}'.format(site))
+                    log.debug(
+                        'Prepare Command | Item - %s | Update Settings file | Instance - %s', item['_id'], site['_id'])
                     command_wrapper.delay(execute(fabric_tasks.update_settings_file, site=site))
                     continue
                 if item['command'] == 'update_homepage_extra_files':
+                    log.debug('Prepare Command | Item - %s | Update Homepage Extra files | Instance - %s', item['_id'], site['_id'])
                     command_wrapper.delay(execute(fabric_tasks.update_homepage_extra_files))
                     continue
-                # if item['command'] == 'site_backup':
-                #     execute(fabric_tasks.site_backup, site=site)
-                #     continue
                 command_run.delay(site=site,
                                   command=item['command'],
                                   single_server=item['single_server'],
                                   user=item['modified_by'])
             # After all the commands run, flush APC.
             if item['command'] == 'update_settings_file':
-                log.debug('Clear APC')
+                log.debug('Prepare Command | Item - %s | Clear APC', item['_id'])
                 command_wrapper.delay(execute(fabric_tasks.clear_apc))
 
 

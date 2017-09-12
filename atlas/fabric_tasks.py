@@ -485,7 +485,9 @@ def registry_rebuild(site):
 
 @roles('webservers')
 def clear_apc():
-    run('wget -q -O - http://localhost/sysadmintools/apc/clearapc.php;')
+    # TODO Fix for OPCache
+    #run('wget -q -O - http://localhost/sysadmintools/apc/clearapc.php;')
+    return True
 
 
 def drush_cache_clear(sid):
@@ -927,7 +929,7 @@ def diff_f5():
         if not api_sites or len(api_sites['_items']) == 0:
             subject = 'Site record missing'
             message = "Path '{0}' is in the f5, but does not have a site record.".format(path)
-            utilities.send_email(message=message, subject=subject, to=devops_team)
+            utilities.send_email(email_message=message, email_subject=subject, email_to=devops_team)
             print ("The f5 has an entry for '{0}' without a corresponding site record.".format(path))
 
 

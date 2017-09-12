@@ -40,18 +40,19 @@ class AtlasBasicAuth(BasicAuth):
     """
     Basic Authentication
     """
-    def check_auth(self, username, password, allowed_roles=['default'], resource='default', method='default'):
+    def check_auth(self, username, password):
+        """
+        Check user supplied credentials against LDAP.
+        """
         # Check if username is in 'allowed users' defined in config_local.py
         if username not in ALLOWED_USERS:
             return False
-        # Test credentials against LDAP.
-        # Initialize LDAP. The initialize() method returns an LDAPObject
-        # object, which contains methods for performing LDAP operations and
-        # retrieving information about the LDAP connection and transactions.
+        # Initialize LDAP. The initialize() method returns an LDAPObject object, which contains 
+        # methods for performing LDAP operations and retrieving information about the LDAP 
+        # connection and transactions.
         l = ldap.initialize(LDAP_SERVER)
 
-        # Start the connection in a secure manner. Catch any errors and print
-        # the description if present.
+        # Start the connection using TLS.
         try:
             l.start_tls_s()
         except ldap.LDAPError, e:
@@ -61,21 +62,21 @@ class AtlasBasicAuth(BasicAuth):
             else:
                 log.error(e)
 
-        ldap_distinguished_name = "uid={0},ou={1},{2}".format(username, LDAP_ORG_UNIT, LDAP_DNS_DOMAIN_NAME)
+        ldap_distinguished_name = "uid={0},ou={1},{2}".format(
+            username, LDAP_ORG_UNIT, LDAP_DNS_DOMAIN_NAME)
         log.debug(ldap_distinguished_name)
 
         # Add the username as a Flask application global.
         g.username = username
 
         try:
-            # Try a synchronous bind (we want synchronous so that the command
-            # is blocked until the bind gets a result. If you can bind, the
-            # credentials are valid.
+            # Try a synchronous bind (we want synchronous so that the command is blocked until the 
+            # bind gets a result. If you can bind, the credentials are valid.
             l.simple_bind_s(ldap_distinguished_name, password)
             log.debug('LDAP | %s | Bind successful', username)
             return True
         except ldap.INVALID_CREDENTIALS:
-            log.debug('LDAP | %s | Invalid credentials',username)
+            log.debug('LDAP | %s | Invalid credentials', username)
         finally:
             try:
                 log.debug('LDAP | unbind')
@@ -99,8 +100,7 @@ def randomstring(length=14):
 
 def mysql_password():
     """
-    Hash string twice with SHA1 and return uppercase hex digest, prepended with
-    an astrix.
+    Hash string twice with SHA1 and return uppercase hex digest, prepended with an asterisk.
 
     This function is identical to the MySQL PASSWORD() function.
     """
@@ -112,6 +112,9 @@ def mysql_password():
 
 # See https://cryptography.io/en/latest/fernet/#implementation
 def encrypt_string(string):
+    """
+    Use Fernet symmetric encryption to encrypt a string.
+    """
     cipher = Fernet(ENCRYPTION_KEY)
     msg = cipher.encrypt(string)
     encrypted = msg.encode('hex')
@@ -119,6 +122,9 @@ def encrypt_string(string):
 
 
 def decrypt_string(string):
+    """
+    Use Fernet symmetric encryption to decrypt a string.
+    """
     cipher = Fernet(ENCRYPTION_KEY)
     msg = string.decode('hex')
     decrypted = cipher.decrypt(msg)
@@ -225,12 +231,12 @@ def post_eve(resource, payload):
     """
     url = "{0}/{1}".format(API_URLS[ENVIRONMENT], resource)
     headers = {"content-type": "application/json"}
-    r = requests.post(url, auth=(SERVICE_ACCOUNT_USERNAME, SERVICE_ACCOUNT_PASSWORD),
-                      headers=headers, verify=SSL_VERIFICATION, data=json.dumps(payload))
-    if r.ok:
-        return r.json()
-    else:
-        return r.text
+    try:
+        r = requests.post(url, auth=(SERVICE_ACCOUNT_USERNAME, SERVICE_ACCOUNT_PASSWORD), headers=headers, verify=SSL_VERIFICATION, data=json.dumps(payload))
+    except Exception as error:
+        log.error('POST to Atlas | URL - %s | Error - %s', url, error)
+
+    return r.json()
 
 
 def get_eve(resource, query=None):
@@ -246,11 +252,14 @@ def get_eve(resource, query=None):
     else:
         url = "{0}/{1}".format(API_URLS[ENVIRONMENT], resource)
     log.debug('utilities | Get Eve | url - %s', url)
-    r = requests.get(url, auth=(SERVICE_ACCOUNT_USERNAME, SERVICE_ACCOUNT_PASSWORD), verify=SSL_VERIFICATION)
-    if r.ok:
-        return r.json()
-    else:
-        return r.text
+
+    try:
+        r = requests.get(url, auth=(SERVICE_ACCOUNT_USERNAME,
+                                    SERVICE_ACCOUNT_PASSWORD), verify=SSL_VERIFICATION)
+    except Exception as error:
+        log.error('GET to Atlas | URL - %s | Error - %s', url, error)
+
+    return r.json()
 
 
 def get_single_eve(resource, id):
@@ -263,11 +272,14 @@ def get_single_eve(resource, id):
     """
     url = "{0}/{1}/{2}".format(API_URLS[ENVIRONMENT], resource, id)
     log.debug('utilities | Get Eve Single | url - %s', url)
-    r = requests.get(url, auth=(SERVICE_ACCOUNT_USERNAME, SERVICE_ACCOUNT_PASSWORD), verify=SSL_VERIFICATION)
-    if r.ok:
-        return r.json()
-    else:
-        return r.text
+
+    try:
+        r = requests.get(url, auth=(SERVICE_ACCOUNT_USERNAME,
+                                    SERVICE_ACCOUNT_PASSWORD), verify=SSL_VERIFICATION)
+    except Exception as error:
+        log.error('GET to Single item in Atlas | URL - %s | Error - %s', url, error)
+
+    return r.json()
 
 
 def patch_eve(resource, id, request_payload):
@@ -282,12 +294,14 @@ def patch_eve(resource, id, request_payload):
     url = "{0}/{1}/{2}".format(API_URLS[ENVIRONMENT], resource, id)
     get_etag = get_single_eve(resource, id)
     headers = {'Content-Type': 'application/json', 'If-Match': get_etag['_etag']}
-    r = requests.patch(url, headers=headers, data=json.dumps(request_payload), auth=(
-        SERVICE_ACCOUNT_USERNAME, SERVICE_ACCOUNT_PASSWORD), verify=SSL_VERIFICATION)
-    if r.ok:
-        return r.json()
-    else:
-        return r.text
+
+    try:
+        r = requests.patch(url, headers=headers, data=json.dumps(request_payload), auth=(
+            SERVICE_ACCOUNT_USERNAME, SERVICE_ACCOUNT_PASSWORD), verify=SSL_VERIFICATION)
+    except Exception as error:
+        log.error('PATCH to Atlas | URL - %s | Error - %s', url, error)
+
+    return r.json()
 
 
 def delete_eve(resource, id):
@@ -301,12 +315,13 @@ def delete_eve(resource, id):
     url = "{0}/{1}/{2}".format(API_URLS[ENVIRONMENT], resource, id)
     get_etag = get_single_eve(resource, id)
     headers = {'Content-Type': 'application/json', 'If-Match': get_etag['_etag']}
-    r = requests.delete(url, headers=headers, auth=(SERVICE_ACCOUNT_USERNAME,
-                                                    SERVICE_ACCOUNT_PASSWORD), verify=SSL_VERIFICATION)
-    if r.ok:
-        return r.status_code
-    else:
-        return r.text
+    try:
+        r = requests.delete(url, headers=headers, auth=(
+            SERVICE_ACCOUNT_USERNAME, SERVICE_ACCOUNT_PASSWORD), verify=SSL_VERIFICATION)
+    except Exception as error:
+        log.error('DELETE to Atlas | URL - %s | Error - %s', url, error)
+
+    return r.status_code
 
 
 def get_current_code(name, code_type):
@@ -335,9 +350,7 @@ def get_code(name, code_type=''):
     :return: _id of the item.
     """
     if code_type:
-        query = 'where={{"meta.name":"{0}","meta.code_type":"{1}"}}'.format(
-            name,
-            code_type)
+        query = 'where={{"meta.name":"{0}","meta.code_type":"{1}"}}'.format(name, code_type)
     else:
         query = 'where={{"meta.name":"{0}"}}'.format(name)
     code_get = get_eve('code', query)
@@ -369,8 +382,8 @@ def get_code_label(code_id):
 
 def import_code(query):
     """
-    Import code definitions from a URL. Should be a JSON file export from Atlas
-     or a live Atlas code endpoint.
+    Import code definitions from a URL. Should be a JSON file export from Atlas or a live Atlas code
+    endpoint.
 
     :param query: URL for JSON to import
     """
@@ -425,65 +438,9 @@ def rebalance_update_groups(item):
                     patch_eve('sites', site['_id'], patch_payload)
 
 
-# Deprecated use 'post_to_slack_payload'
-def post_to_slack(message, title, link='', attachment_text='', level='good', user=SLACK_USERNAME):
-    """
-    Posts a message to a given channel using the Slack Incoming Webhooks API.
-    Links should be in the message or attachment_text in the format:
-    `<https://www.colorado.edu/p1234|New Website>`.
-
-    Message Output Format:
-        Atlas [BOT] - 3:00 PM
-        `message`
-        # `title` (with `link`)
-        # `attachment_text`
-
-
-    :param message: Text that appears before the attachment
-    :param title: Often the name of the site
-    :param link: Often a link to the site
-    :param attachment_text: Description of result of action
-    :param level: 'Level' creates the color bar next to the fields.
-     Values for level are 'good' (green), 'warning' (orange), 'danger' (red)
-     or a hex value.
-     :param user: The user that called the action.
-    """
-    # We want to notify the channel if we get a message with 'fail' in it.
-    if SLACK_NOTIFICATIONS:
-        regexp = re_compile(r'fail')
-        if regexp.search(message) is not None:
-            message_text = '<!channel> ' + ENVIRONMENT + ' - ' + message
-        else:
-            message_text = ENVIRONMENT + ' - ' + message
-        fallback = title + ' - ' + link + ' - ' + attachment_text
-        payload = {
-            "text": message_text,
-            "username": 'Atlas',
-            "attachments": [
-                {
-                    "fallback": fallback,
-                    "color": level,
-                    "author_name": user,
-                    "title": title,
-                    "title_link": link,
-                    "text": attachment_text,
-                }
-            ]
-        }
-        if ENVIRONMENT == 'local':
-            payload['channel'] = '@{0}'.format(SLACK_USERNAME)
-
-        # We need 'json=payload' vs. 'payload' because arguments can be passed
-        # in any order. Using json=payload instead of data=json.dumps(payload)
-        # so that we don't have to encode the dict ourselves. The Requests
-        # library will do it for us.
-        r = requests.post(SLACK_URL, json=payload)
-        if not r.ok:
-            print r.text
-
 def post_to_slack_payload(payload):
     """
-    Posts a message to a given channel using the Slack Incoming Webhooks API. 
+    Posts a message to a given channel using the Slack Incoming Webhooks API.
     See https://api.slack.com/docs/message-formatting.
 
     :param payload: Payload suitable for POSTing to Slack.
@@ -508,9 +465,10 @@ def post_to_logstash_payload(payload):
     :param payload: JSON encoded payload.
     """
     if ENVIRONMENT != 'local':
-        r = requests.post(logstash_url, json=payload)
-        if not r.ok:
-            print r.text
+        try:
+            r = requests.post(LOGSTASH_URL, json=payload)
+        except Exception as error:
+            log.error('POST to Logstash | %s', error)
 
 
 

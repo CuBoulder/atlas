@@ -492,4 +492,3 @@ def send_email(email_message, email_subject, email_to):
         s.login(EMAIL_USERNAME, EMAIL_PASSWORD)
         s.sendmail(SEND_NOTIFICATION_FROM_EMAIL, email_to, msg.as_string())
         s.quit()
-

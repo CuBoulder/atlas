@@ -2,19 +2,16 @@
 Callbacks for Eve event hooks.
 """
 import logging
-
-
-
 import random
 import json
-import ssl
+from hashlib import sha1
 
 from flask import abort, g
-from hashlib import sha1
 from bson import ObjectId
+
 from atlas import tasks
 from atlas import utilities
-from atlas.config import (ATLAS_LOCATION)
+from atlas.config import (ATLAS_LOCATION, DEFAULT_CORE, DEFAULT_PROFILE)
 
 # Setup a sub-logger. See tasks.py for longer comment.
 log = logging.getLogger('atlas.callbacks')
@@ -25,28 +22,28 @@ def pre_post_callback(resource, request):
     :param resource: resource accessed
     :param request: flask.request object
     """
-    app.logger.debug('POST to {0} resource\nRequest:\n{1}'.format(resource, request.json))
+    log.debug('POST | Resource - %s | %s', resource, request)
 
 
 def pre_post_sites_callback(request):
     """
     :param request: flask.request object
     """
-    app.logger.debug('sites | POST | Pre post callback')
+    log.debug('sites | POST | Pre post callback')
     # Check to see if we have a current profile and core.
-    core = utilities.get_current_code(name=default_core, code_type='core')
-    app.logger.debug('sites | POST | Pre post callback | core | %s', core)
-    profile = utilities.get_current_code(name=default_profile, code_type='profile')
-    app.logger.debug('sites | POST | Pre post callback | profile | %s', profile)
+    core = utilities.get_current_code(name=DEFAULT_CORE, code_type='core')
+    log.debug('sites | POST | Pre post callback | core | %s', core)
+    profile = utilities.get_current_code(name=DEFAULT_PROFILE, code_type='profile')
+    log.debug('sites | POST | Pre post callback | profile | %s', profile)
 
     if not core and not profile:
-        app.logger.error('sites | POST | Pre post callback | No current core or profile')
+        log.error('sites | POST | Pre post callback | No current core or profile')
         abort(409, 'Error: There is no current core or profile.')
     elif not core:
-        app.logger.error('sites | POST | Pre post callback | No current core')
+        log.error('sites | POST | Pre post callback | No current core')
         abort(409, 'Error: There is no current core.')
     elif not profile:
-        app.logger.error('sites | POST | Pre post callback | No current profile')
+        log.error('sites | POST | Pre post callback | No current profile')
         abort(409, 'Error: There is no current profile.')
 
 
@@ -58,30 +55,17 @@ def pre_delete_code_callback(request, lookup):
     :param lookup:
     """
     code = utilities.get_single_eve('code', lookup['_id'])
-    app.logger.debug(code)
-
-    # Check for code that declares this as a dependency.
-    code_query = 'where={{"meta.dependency":"{0}"}}'.format(code['_id'])
-    code_items = utilities.get_eve('code', code_query)
-    app.logger.debug(code_items)
-    if not code_items['_meta']['total'] == 0:
-        code_list = []
-        for item in code_items['_items']:
-            # Create a list of sites that use this code item.
-            code_list.append(item['_id'])
-        code_list_full = ', '.join(code_list)
-        app.logger.error('Code item is a dependency of one or more code items:\n{0}'.format(code_list_full))
-        abort(409, 'A conflict happened while processing the request. Code item is a dependency of one or more code items.')
+    log.debug('code | Delete | code - %s', code)
 
     # Check for sites using this piece of code.
     if code['meta']['code_type'] in ['module', 'theme', 'library']:
         code_type = 'package'
     else:
         code_type = code['meta']['code_type']
-    app.logger.debug(code_type)
+    log.debug('code | Delete | code - %s | code_type - %s',code['_id'], code_type)
     site_query = 'where={{"code.{0}":"{1}"}}'.format(code_type, code['_id'])
     sites = utilities.get_eve('sites', site_query)
-    app.logger.debug(sites)
+    log.debug('code | Delete | code - %s | sites result - %s',code['_id'],  sites)
     if not sites['_meta']['total'] == 0:
         site_list = []
         for site in sites['_items']:
@@ -92,7 +76,7 @@ def pre_delete_code_callback(request, lookup):
             else:
                 site_list.append(site['_id'])
         site_list_full = ', '.join(site_list)
-        app.logger.error('Code item is in use by one or more sites:\n{0}'.format(site_list_full))
+        log.error('code | Delete | code - %s | ode item is in use by one or more sites - %s', code['_id'], site_list_full)
         abort(409, 'A conflict happened while processing the request. Code item is in use by one or more sites.')
 
 
@@ -102,9 +86,9 @@ def on_insert_sites_callback(items):
 
     :param items: List of dicts for items to be created.
     """
-    app.logger.debug(items)
+    log.debug(items)
     for item in items:
-        app.logger.debug(item)
+        log.debug(item)
         if item['type'] == 'express' and not item['f5only']:
             if not item.get('sid'):
                 item['sid'] = 'p1' + sha1(utilities.randomstring()).hexdigest()[0:10]
@@ -116,17 +100,17 @@ def on_insert_sites_callback(items):
             # The 'get' method checks if the key exists.
             if item.get('code'):
                 if not item['code'].get('core'):
-                    item['code']['core'] = utilities.get_current_code(name=default_core, code_type='core')
+                    item['code']['core'] = utilities.get_current_code(name=DEFAULT_CORE, code_type='core')
                 if not item['code'].get('profile'):
-                    item['code']['profile'] = utilities.get_current_code(name=default_profile, code_type='profile')
+                    item['code']['profile'] = utilities.get_current_code(name=DEFAULT_PROFILE, code_type='profile')
             else:
                 item['code'] = {}
-                item['code']['core'] = utilities.get_current_code(name=default_core, code_type='core')
-                item['code']['profile'] = utilities.get_current_code(name=default_profile, code_type='profile')
+                item['code']['core'] = utilities.get_current_code(name=DEFAULT_CORE, code_type='core')
+                item['code']['profile'] = utilities.get_current_code(name=DEFAULT_PROFILE, code_type='profile')
             if not item['import_from_inventory']:
                 date_json = '{{"created":"{0} GMT"}}'.format(item['_created'])
                 item['dates'] = json.loads(date_json)
-            app.logger.debug('Ready to create item\n{0}'.format(item))
+            log.debug('Ready to create item\n{0}'.format(item))
 
 
 def on_inserted_sites_callback(items):
@@ -135,20 +119,20 @@ def on_inserted_sites_callback(items):
 
     :param items: List of dicts for instances to be provisioned.
     """
-    app.logger.debug(items)
+    log.debug(items)
     for item in items:
-        app.logger.debug(item)
+        log.debug(item)
         if item['type'] == 'express' and not item['f5only']:
-            app.logger.debug(item)
+            log.debug(item)
             # Create statistics item
             statistics_payload = {}
             # Need to get the string out of the ObjectID.
             statistics_payload['site'] = str(item['_id'])
-            app.logger.debug('Create Statistics item\n{0}'.format(statistics_payload))
+            log.debug('Create Statistics item\n{0}'.format(statistics_payload))
             statistics = utilities.post_eve(resource='statistics', payload=statistics_payload)
-            app.logger.debug(statistics)
+            log.debug(statistics)
             item['statistics'] = str(statistics['_id'])
-            app.logger.debug('Ready to send to Celery\n{0}'.format(item))
+            log.debug('Ready to send to Celery\n{0}'.format(item))
             if not item['import_from_inventory']:
                 tasks.site_provision.delay(item)
             else:
@@ -164,19 +148,19 @@ def on_insert_code_callback(items):
 
     :param items: List of dicts for items to be created.
     """
-    app.logger.debug(items)
+    log.debug(items)
     for item in items:
         if item.get('meta') and item['meta'].get('is_current') and item['meta']['is_current'] == True:
             # Need a lowercase string when querying boolean values. Python
             # stores it as 'True'.
             query = 'where={{"meta.name":"{0}","meta.code_type":"{1}","meta.is_current": {2}}}'.format(item['meta']['name'], item['meta']['code_type'], str(item['meta']['is_current']).lower())
             code_get = utilities.get_eve('code', query)
-            app.logger.debug(code_get)
+            log.debug(code_get)
             if code_get['_meta']['total'] != 0:
                 for code in code_get['_items']:
                     request_payload = {'meta.is_current': False}
                     utilities.patch_eve('code', code['_id'], request_payload)
-        app.logger.debug('Ready to send to Celery\n{0}'.format(item))
+        log.debug('Ready to send to Celery\n{0}'.format(item))
         tasks.code_deploy.delay(item)
 
 
@@ -187,7 +171,7 @@ def pre_delete_sites_callback(request, lookup):
     :param request: flask.request object
     :param lookup:
     """
-    app.logger.debug(lookup)
+    log.debug(lookup)
     site = utilities.get_single_eve('sites', lookup['_id'])
     tasks.site_remove.delay(site)
 
@@ -198,7 +182,7 @@ def on_delete_item_code_callback(item):
 
     :param item:
     """
-    app.logger.debug(item)
+    log.debug(item)
     tasks.code_remove.delay(item)
 
 
@@ -209,8 +193,8 @@ def on_update_code_callback(updates, original):
     :param updates:
     :param original:
     """
-    app.logger.debug(updates)
-    app.logger.debug(original)
+    log.debug(updates)
+    log.debug(original)
     # If this 'is_current' PATCH code with the same name and code_type.
     if updates.get('meta') and updates['meta'].get('is_current') and updates['meta']['is_current'] == True:
         # If the name and code_type are not changing, we need to load them from
@@ -221,7 +205,7 @@ def on_update_code_callback(updates, original):
         query = 'where={{"meta.name":"{0}","meta.code_type":"{1}","meta.is_current": {2}}}'.format(name, code_type, str(updates['meta']['is_current']).lower())
         code_get = utilities.get_eve('code', query)
         # TODO: Filter out the item we are updating.
-        app.logger.debug(code_get)
+        log.debug(code_get)
 
         for code in code_get['_items']:
             request_payload = {'meta.is_current': False}
@@ -240,7 +224,7 @@ def on_update_code_callback(updates, original):
     if updates.get('meta'):
         updated_item['meta'] = meta
 
-    app.logger.debug('Ready to hand to Celery\n{0}\n{1}'.format(updated_item, original))
+    log.debug('Ready to hand to Celery\n{0}\n{1}'.format(updated_item, original))
     tasks.code_update.delay(updated_item, original)
 
 
@@ -251,7 +235,7 @@ def on_update_sites_callback(updates, original):
     :param updates:
     :param original:
     """
-    app.logger.debug('Update Site\n{0}\n\n{1}'.format(updates, original))
+    log.debug('Update Site\n{0}\n\n{1}'.format(updates, original))
     site_type = updates['type'] if updates.get('type') else original['type']
     if site_type == 'express':
         site = original.copy()
@@ -268,13 +252,13 @@ def on_update_sites_callback(updates, original):
                     if value not in dependencies_list:
                         # Use 'extend' vs 'append' to prevent nested list.
                         dependencies_list.extend(value)
-                app.logger.debug(dependencies_list)
+                log.debug(dependencies_list)
             # List of declared dependencies is built, now we need to recurse.
             if dependencies_list:
                 for value in dependencies_list:
                     # Need to convert ObjectID to string for lookup.
                     code_item = utilities.get_single_eve('code', value)
-                    app.logger.debug(code_item)
+                    log.debug(code_item)
                     if code_item['meta'].get('dependency'):
                         for key, value in code_item['meta'].iteritems():
                             if key == 'dependency':
@@ -284,7 +268,7 @@ def on_update_sites_callback(updates, original):
                                         # ObjectID.
                                         id_list.append(ObjectId(list_item))
                                     dependencies_list.extend(id_list)
-                app.logger.debug(dependencies_list)
+                log.debug(dependencies_list)
                 # Time to replace the package list.
                 updates['code']['package'] = dependencies_list
         if updates.get('dates'):
@@ -311,7 +295,7 @@ def on_update_sites_callback(updates, original):
 
                 updates['dates'] = json.loads(date_json)
 
-        app.logger.debug('Ready to hand to Celery\n{0}\n{1}'.format(site, updates))
+        log.debug('Ready to hand to Celery\n{0}\n{1}'.format(site, updates))
         tasks.site_update.delay(site, updates, original)
 
 
@@ -324,7 +308,7 @@ def on_update_commands_callback(updates, original):
     """
     item = original.copy()
     item.update(updates)
-    app.logger.debug('Update command\n\nItem\n{0}\n\nUpdate\n{1}\n\nOriginal\n{2}'.format(item, updates, original))
+    log.debug('Update command\n\nItem\n{0}\n\nUpdate\n{1}\n\nOriginal\n{2}'.format(item, updates, original))
     tasks.command_prepare.delay(item)
 
 

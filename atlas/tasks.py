@@ -525,10 +525,8 @@ def command_prepare(item):
         log.debug('Prepare Command | Item - %s | Ran query - %s', item['_id'], sites)
         if not sites['_meta']['total'] == 0:
             for site in sites['_items']:
-                log.debug('Command - {0}'.format(item['command']))
                 if item['command'] == 'update_settings_file':
-                    log.debug(
-                        'Prepare Command | Item - %s | Update Settings file | Instance - %s', item['_id'], site['_id'])
+                    log.debug('Prepare Command | Item - %s | Update Settings file | Instance - %s', item['_id'], site['_id'])
                     command_wrapper.delay(execute(fabric_tasks.update_settings_file, site=site))
                     continue
                 if item['command'] == 'update_homepage_extra_files':
@@ -552,7 +550,7 @@ def command_wrapper(fabric_command):
     :param fabric_command: Fabric command to call
     :return:
     """
-    log.debug('Command wrapper')
+    log.debug('Command wrapper | %s', fabric_command)
     return fabric_command
 
 
@@ -567,7 +565,8 @@ def command_run(site, command, single_server, user=None):
     :param user: string Username that called the command.
     :return:
     """
-    log.debug('Run Command - {0} - {1} - {2}'.format(site['sid'], single_server, command))
+    log.debug('Run Command | Site - %s | Single server- %s | Command - %s',
+              site['sid'], single_server, command)
     start_time = time.time()
     if single_server:
         fabric_task_result = execute(fabric_tasks.command_run_single,
@@ -576,29 +575,61 @@ def command_run(site, command, single_server, user=None):
         fabric_task_result = execute(fabric_tasks.command_run, site=site,
                                      command=command, warn_only=True)
 
-    log.debug('Command result - {0}'.format(fabric_task_result))
+    
     command_time = time.time() - start_time
+    log.debug('Run Command | Site - %s | Command - %s | Time - %s | Result - %s',
+              site['sid'], command, time, fabric_task_result)
+    
     logstash_payload = {'command_time': command_time,
                         'logsource': 'atlas',
                         'command': command,
                         'instance': site['sid']}
     utilities.post_to_logstash_payload(payload=logstash_payload)
 
+
     slack_title = '{0}/{1}'.format(BASE_URLS[ENVIRONMENT], site['path'])
-    slack_link = '{0}/{1}'.format(BASE_URLS[ENVIRONMENT], site['path'])
-    slack_message = 'Command - Success'
+    slack_text = 'Command - Success - {0}/{1}'.format(BASE_URLS[ENVIRONMENT], site['path'])
     slack_color = 'good'
-    attachment_text = command
-    user = user
+    slack_link = '{0}/{1}'.format(BASE_URLS[ENVIRONMENT], site['path'])
 
-    utilities.post_to_slack(
-        message=slack_message,
-        title=slack_title,
-        link=slack_link,
-        attachment_text=attachment_text,
-        level=slack_color,
-        user=user)
+    slack_payload = {
+        "text": slack_text,
+        "username": 'Atlas',
+        "attachments": [
+            {
+                "fallback": slack_text,
+                "color": slack_color,
+                "author_name": site['modified_by'],
+                "title": slack_title,
+                "fields": [
+                    {
+                        "title": "Command",
+                        "value": command,
+                        "short": True
+                    },
+                    {
+                        "title": "Command Time",
+                        "value": command_time,
+                        "short": True
+                    },
+                    {
+                        "title": "Instance",
+                        "value": slack_link,
+                        "short": True
+                    },
+                    {
+                        "title": "Environment",
+                        "value": ENVIRONMENT,
+                        "short": True
+                    },
+                ],
+            }
+        ],
+    }
+    if user:
+        slack_payload['user'] = user
 
+    utilities.post_to_slack_payload(slack_payload)
 
 @celery.task
 def cron(site_type=None, status=None, include_packages=None, exclude_packages=None):

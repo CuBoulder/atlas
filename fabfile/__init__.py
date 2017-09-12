@@ -579,7 +579,6 @@ def create_settings_files(site):
         'atlas_password':service_account_password,
         'path':site_path,
         'status':status,
-        'pool':site['pool'],
         'instance_type': site['type'],
         'atlas_statistics_id':statistics,
         'siteimprove_site':siteimprove_site,

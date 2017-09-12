@@ -51,11 +51,6 @@ service_account_password = 'SERVICE_ACCOUNT_PASSWORD'
 # Path for mysql command.
 mysql_path = 'mysql'
 
-# Google Search Appliance credentials
-gsa_host = 'HOSTNAME'
-gsa_username = 'USER'
-gsa_password = 'PASSWORD'
-
 # Slack integration. Enter URL for channel to post DEV, TEST, and PROD messages
 # to. Enter a slack username to have messages from LOCAL go to the specific user.
 slack_notify = True

@@ -22,6 +22,7 @@ $conf["siteimprove_group"] = "{{siteimprove_group}}";
 
 $path = "{{path}}";
 $pool = "{{pool}}";
+$atlas_type = "{{instance_type}}"
 
 {% if status in ['launched', 'launching'] %}
 $launched = TRUE;

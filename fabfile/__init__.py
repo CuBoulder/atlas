@@ -580,6 +580,7 @@ def create_settings_files(site):
         'path':site_path,
         'status':status,
         'pool':site['pool'],
+        'instance_type': site['type'],
         'atlas_statistics_id':statistics,
         'siteimprove_site':siteimprove_site,
         'siteimprove_group':siteimprove_group
@@ -602,7 +603,7 @@ def create_settings_files(site):
         'varnish_control':varnish_control_terminals[environment],
         'varnish_control_key': varnish_control_key,
         'memcache_servers':env.roledefs['memcache_servers'],
-        'environment':environment if environment != 'prod' else ''
+        'environment': environment if environment != 'prod' else ''
     }
 
     print 'Settings  Variables - {0}'.format(settings_variables)

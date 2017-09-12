@@ -17,25 +17,25 @@ if (file_exists($local_pre_settings)) {
 
 if (isset($launched) && $launched && isset($conf["cu_path"])) {
   if (isset($_SERVER['OSR_ENV'])) {
-    if ($_SERVER['HTTP_HOST'] == 'www.colorado.edu' &&
+    if ($_SERVER['OSR_ENV'] == 'prod' &&
       strpos($_SERVER['REQUEST_URI'], $conf['cu_sid']) !== false) {
       header('HTTP/1.0 301 Moved Permanently');
       header('Location: https://www-https.colorado.edu'. str_replace($conf['cu_sid'], $conf["cu_path"], $_SERVER['REQUEST_URI']));
       exit();
     }
-    elseif ($_SERVER['HTTP_HOST'] == 'www-test.colorado.edu' &&
+    elseif ($_SERVER['OSR_ENV'] == 'test' &&
       strpos($_SERVER['REQUEST_URI'], $conf['cu_sid']) !== false) {
       header('HTTP/1.0 301 Moved Permanently');
       header('Location: https://www-test-https.colorado.edu'. str_replace($conf['cu_sid'], $conf["cu_path"], $_SERVER['REQUEST_URI']));
       exit();
     }
-    elseif ($_SERVER['HTTP_HOST'] == 'www-dev.colorado.edu' &&
+    elseif ($_SERVER['OSR_ENV'] == 'dev' &&
       strpos($_SERVER['REQUEST_URI'], $conf['cu_sid']) !== false) {
       header('HTTP/1.0 301 Moved Permanently');
       header('Location: https://www-dev-https.colorado.edu'. str_replace($conf['cu_sid'], $conf["cu_path"], $_SERVER['REQUEST_URI']));
       exit();
     }
-    elseif ($_SERVER['HTTP_HOST'] == 'express.local' &&
+    elseif ($_SERVER['OSR_ENV'] == 'local' &&
       strpos($_SERVER['REQUEST_URI'], $conf['cu_sid']) !== false) {
       header('HTTP/1.0 301 Moved Permanently');
       header('Location: https://express.local'. str_replace($conf['cu_sid'], $conf["cu_path"], $_SERVER['REQUEST_URI']));
@@ -105,24 +105,21 @@ if (isset($_SERVER['OSR_ENV'])) {
   global $base_url;
 
   switch($_SERVER['OSR_ENV']) {
-    case 'development':
-      $base_url .= 'www-dev-https.colorado.edu';
+    case 'prod':
+      $base_url .= 'www-https.colorado.edu';
       break;
-
     case 'test':
       $base_url .= 'www-test-https.colorado.edu';
       break;
-
-    case 'production':
-      $base_url .= 'www-https.colorado.edu';
+    case 'dev':
+      $base_url .= 'www-dev-https.colorado.edu';
       break;
-
     case 'express_local':
       $base_url .= 'express.local';
       break;
   }
 
-  if ($pool != "poolb-homepage") {
+  if ($atlas_type = "express") {
     $base_url .= '/' . $path;
   }
 }
@@ -146,7 +143,6 @@ $conf['reverse_proxy_header'] = 'X-Forwarded-For';
 // Define Varnish Server Pool and version.
 $conf['varnish_control_terminal'] = '{{ varnish_control }}';
 $conf['varnish_version'] = 4;
-# Previously used a string trim to remove newline character, don't need it with file create by Ansible.
 $conf['varnish_control_key'] = '{{ varnish_control_key }}';
 
 {% if environment == 'development' %}

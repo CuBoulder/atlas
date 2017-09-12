@@ -862,43 +862,27 @@ def launch_site(site, gsa_collection=False):
 
 
 def update_f5():
-    # Like 'WWWNGProdDataGroup.dat'
-    old_file_name = load_balancer_config_files[environment]
-    # Like 'WWWNGDevDataGroup.dat.1402433484.bac'
-    new_file_name = "{0}.{1}.bac".format(
-        load_balancer_config_files[environment],
-        str(time()).split('.')[0])
+    """
+    Create a local file that defines the Legacy routing.
+    """
     load_balancer_config_dir = '{0}/fabfile'.format(atlas_location)
-    sites = utilities.get_eve('sites', 'max_results=3000')
-
-    # TODO: delete old backups
-
+    sites = utilities.get_eve('sites', 'where={"type":"legacy"}&max_results=3000')
     # Write data to file
     with open("{0}/{1}".format(load_balancer_config_dir, load_balancer_config_files[environment]),
               "w") as ofile:
         for site in sites['_items']:
             if 'path' in site:
-                # If a site is down or scheduled for deletion, skip to the next
-                # site.
-                if 'status' in site and (site['status'] == 'down' or site['status'] == 'delete'):
-                    continue
                 # In case a path was saved with a leading slash
                 path = site["path"] if site["path"][0] == '/' else '/' + site["path"]
-                # Ignore 'p1' paths but let the /p1 pattern through
-                if not path.startswith("/p1") or len(path) == 3:
-                    ofile.write('"{0}" := "{1}",\n'.format(path, site['pool']))
+                ofile.write('"{0}" := "legacy",\n'.format(path))
 
-    execute(exportf5,
-            new_file_name=new_file_name,
-            load_balancer_config_dir=load_balancer_config_dir)
+    execute(exportf5, load_balancer_config_dir=load_balancer_config_dir)
 
 
-@roles('load_balancers')
-def exportf5(new_file_name, load_balancer_config_dir):
+@roles('load_balancer')
+def exportf5(load_balancer_config_dir):
     """
-    Backup configuration file on f5 server, replace the active file, and reload
-    the configuration.
-
+    Replace the active file, and reload/sync the configuration.
     """
     # Copy the new configuration file to the server.
     put("{0}/{1}".format(load_balancer_config_dir, load_balancer_config_files[environment]), "/tmp")

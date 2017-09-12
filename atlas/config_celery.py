@@ -25,7 +25,6 @@ CELERYBEAT_SCHEDULE = {
         'task': 'atlas.tasks.cron',
         'schedule': timedelta(minutes=60),
         'kwargs': {
-            "type": "express",
             "status": "launched",
         },
     },
@@ -33,7 +32,6 @@ CELERYBEAT_SCHEDULE = {
         'task': 'atlas.tasks.cron',
         'schedule': timedelta(hours=6),
         'kwargs': {
-            "type": "express",
             "status": "locked",
         },
     },
@@ -41,7 +39,6 @@ CELERYBEAT_SCHEDULE = {
         'task': 'atlas.tasks.cron',
         'schedule': timedelta(hours=3),
         'kwargs': {
-            "type": "express",
             "status": "installed",
         },
     },

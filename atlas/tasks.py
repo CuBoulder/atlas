@@ -632,52 +632,31 @@ def command_run(site, command, single_server, user=None):
     utilities.post_to_slack_payload(slack_payload)
 
 @celery.task
-def cron(site_type=None, status=None, include_packages=None, exclude_packages=None):
-    log.debug('Cron | Status - %s | Include - %s | Exclude - %s',
-              status, include_packages, exclude_packages)
+def cron(status=None):
+    """
+    Prepare cron tasks and send them to subtasks.
+    """
+    log.info('Prepare Cron | Status - %s', status)
     # Build query.
     site_query_string = ['max_results=2000']
-    log.debug('Cron - found argument')
-    # Start by eliminating f5 records.
-    site_query_string.append('&where={"f5only":false,')
-    if type:
-        log.debug('Cron - found site_type')
-        site_query_string.append('"type":"{0}",'.format(site_type))
+    log.debug('Prepare Cron | Found argument')
+    # Start by eliminating f5-only and legacy items.
+    site_query_string.append('&where={"f5only":false,"type":"express",')
     if status:
-        log.debug('Cron - found status')
+        log.debug('Prepare Cron | Found status')
         site_query_string.append('"status":"{0}",'.format(status))
     else:
-        log.debug('Cron - No status found')
+        log.debug('Prepare Cron | No status found')
         site_query_string.append('"status":{"$in":["installed","launched","locked"]},')
-    if include_packages:
-        log.debug('Cron - found include_packages')
-        for package_name in include_packages:
-            packages = utilities.get_code(name=package_name)
-            include_packages_ids = []
-            if not packages['_meta']['total'] == 0:
-                for item in packages['_items']:
-                    log.debug('Cron | Include_packages item - %s ', item)
-                    include_packages_ids.append(str(item['_id']))
-                log.debug('Cron | include_packages list - %s', json.dumps(include_packages_ids))
-                site_query_string.append('"code.package": {{"$in": {0}}},'.format(json.dumps(include_packages_ids)))
-    if exclude_packages:
-        log.debug('Cron - found exclude_packages')
-        for package_name in exclude_packages:
-            packages = utilities.get_code(name=package_name)
-            exclude_packages_ids = []
-            if not packages['_meta']['total'] == 0:
-                for item in packages['_items']:
-                    log.debug('Cron | exclude_packages item - %s', item)
-                    exclude_packages_ids.append(str(item['_id']))
-                log.debug('Cron - exclude_packages list - %s', json.dumps(exclude_packages_ids))
-                site_query_string.append('"code.package": {{"$nin": {0}}},'.format(json.dumps(exclude_packages_ids)))
 
     site_query = ''.join(site_query_string)
-    log.debug('Query after join -| %s', site_query)
+    log.debug('Prepare Cron |Query after join -| %s', site_query)
+    # Remove trailing comma.
     site_query = site_query.rstrip('\,')
-    log.debug('Query after rstrip | %s', site_query)
+    log.debug('Prepare Cron |Query after rstrip | %s', site_query)
+    # Add closing brace.
     site_query += '}'
-    log.debug('Query final | %s', site_query)
+    log.debug('Prepare Cron |Query final | %s', site_query)
 
     sites = utilities.get_eve('sites', site_query)
     if not sites['_meta']['total'] == 0:
@@ -699,8 +678,8 @@ def cron_run(site):
     command = 'sudo -u {0} drush elysia-cron run'.format(WEBSERVER_USER)
     try:
         execute(fabric_tasks.command_run_single, site=site, command=command)
-    except CronException as e:
-        log.error('Run Cron | %s | Cron failed | %s', site['sid'], e)
+    except CronException as error:
+        log.error('Run Cron | %s | Cron failed | %s', site['sid'], error)
         raise
 
     log.info('Run Cron | %s | Cron success', site['sid'])

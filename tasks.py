@@ -628,7 +628,8 @@ def cron_run(site):
     """
     logger.info('Run Cron | %s ', site['sid'])
     start_time = time.time()
-    command = 'sudo -u {0} drush elysia-cron run'.format(webserver_user)
+    site_uri = base_urls[environment] + '/' + site['sid']
+    command = 'sudo -u {0} drush elysia-cron run --uri={1}'.format(webserver_user, site_uri)
     try:
         execute(fabfile.command_run_single, site=site, command=command)
     except CronException as e:

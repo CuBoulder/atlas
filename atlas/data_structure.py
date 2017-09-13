@@ -40,7 +40,7 @@ ENFORCE_IF_MATCH = True
 
 # Code schema. Defines a code asset that can be applied to a site.
 # We nest in 'meta' to allow us to check for a unique combo
-code_schema = {
+CODE_SCHEMA = {
     'meta': {
         'type': 'dict',
         'unique': True,
@@ -103,7 +103,7 @@ code_schema = {
     },
 }
 
-query_schema = {
+QUERY_SCHEMA = {
     'title': {
         'type': 'string',
         'required' : True,
@@ -139,7 +139,7 @@ query_schema = {
 }
 
 # Site schema.
-sites_schema = {
+SITES_SCHEMA = {
     'path': {
         'type': 'string',
         'unique': True,
@@ -290,7 +290,7 @@ sites_schema = {
     },
 }
 
-statistics_schema = {
+STATISTICS_SCHEMA = {
     'site': {
         'type': 'objectid',
         'data_relation': {
@@ -622,7 +622,7 @@ statistics_schema = {
     },
 }
 
-commands_schema = {
+COMMANDS_SCHEMA = {
     'name': {
         'type': 'string',
         'minlength': 3,
@@ -656,26 +656,26 @@ Definitions of Resources.
 Tells Eve what methods and schemas apply to a given resource.
 """
 # Code resource
-code = {
+CODE = {
     'item_title': 'code',
     'public_methods': ['GET'],
     'public_item_methods': ['GET'],
     'versioning': True,
     'soft_delete': True,
-    'schema': code_schema,
+    'schema': CODE_SCHEMA,
 }
 
 # Query resource
-query = {
+QUERY = {
     'item_title': 'query',
     'public_methods': ['GET'],
     'public_item_methods': ['GET'],
     'versioning': True,
-    'schema': query_schema,
+    'schema': QUERY_SCHEMA,
 }
 
 # Sites resource
-sites = {
+SITES = {
     'item_title': 'site',
     # Allow lookup by 'sid' in addition to '_id'
     'additional_lookup': {
@@ -686,38 +686,35 @@ sites = {
     'public_item_methods': ['GET'],
     'versioning': True,
     'soft_delete': True,
-    'schema': sites_schema,
+    'schema': SITES_SCHEMA,
 }
 
 # Statistics resource
-statistics = {
+STATISTICS = {
     'item_title': 'statistics',
     'public_methods': ['GET'],
     'public_item_methods': ['GET'],
     'versioning': True,
     'soft_delete': True,
-    'schema': statistics_schema,
+    'schema': STATISTICS_SCHEMA,
 }
 
 # Command resource
-# Empty public_item_methods means that you can't call actual commands without
-# authentication. Anonymous users can list the commands, but not call them.
-commands = {
+# Empty public_item_methods means that you can't call actual commands without authentication.
+# Anonymous users can list the commands, but not call them.
+COMMANDS = {
     'item_title': 'commands',
     'public_methods': ['GET'],
     'public_item_methods': [],
     'versioning': True,
-    'schema': commands_schema,
+    'schema': COMMANDS_SCHEMA,
 }
 
-#
 # Domain definition. Tells Eve what resources are available on this domain.
-#
-
 DOMAIN = {
-    'sites': sites,
-    'code': code,
-    'commands': commands,
-    'query': query,
-    'statistics': statistics,
+    'sites': SITES,
+    'code': CODE,
+    'commands': COMMANDS,
+    'query': QUERY,
+    'statistics': STATISTICS,
 }

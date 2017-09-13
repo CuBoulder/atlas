@@ -1,8 +1,10 @@
+"""
+Celery Config, Celerybeat schedule.
+"""
 from datetime import timedelta
 from celery.schedules import crontab
-from config_local import *
 
-BROKER_URL='amqp://guest@localhost//'
+BROKER_URL = 'amqp://guest@localhost//'
 CELERY_RESULT_BACKEND = 'mongodb://localhost:27017/'
 CELERY_MONGODB_BACKEND_SETTINGS = {
     'database': 'celery',

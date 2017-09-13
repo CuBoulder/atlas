@@ -21,21 +21,21 @@ except ImportError:
     raise Exception("You need an config_local.py file!")
 
 # Verify code_root is correctly formed.
-begin_with_slash = re.compile("^/")
-trailing_slash = re.compile("/$")
+LEADING_SLASH = re.compile("^/")
+TRAILING_SLASH = re.compile("/$")
 # Uses re.match primitive to look from the beginning.
-if not begin_with_slash.match(CODE_ROOT):
+if not LEADING_SLASH.match(CODE_ROOT):
     raise Exception("'code_root' should begin with a slash.")
-if not begin_with_slash.match(SITES_WEB_ROOT):
+if not LEADING_SLASH.match(SITES_WEB_ROOT):
     raise Exception("'sites_web_root' should begin with a slash.")
-if not begin_with_slash.match(SITES_CODE_ROOT):
+if not LEADING_SLASH.match(SITES_CODE_ROOT):
     raise Exception("'sites_code_root' should begin with a slash.")
 # Uses re.search primitive to look anywhere in the string.
-if trailing_slash.search(CODE_ROOT):
+if TRAILING_SLASH.search(CODE_ROOT):
     raise Exception("'code_root' should not have a trailing slash.")
-if trailing_slash.search(SITES_WEB_ROOT):
+if TRAILING_SLASH.search(SITES_WEB_ROOT):
     raise Exception("'sites_web_root' should not have a trailing slash.")
-if trailing_slash.search(SITES_WEB_ROOT):
+if TRAILING_SLASH.search(SITES_WEB_ROOT):
     raise Exception("'sites_web_root' should not have a trailing slash.")
 
 

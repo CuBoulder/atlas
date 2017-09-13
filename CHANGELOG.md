@@ -14,6 +14,10 @@ Resolves:
 - &#35;354 - Atlas package emails get confusing with several bundles
 - &#35;356 - Change to run drush as apache
 
+Hotfix:
+
+- &#35;381 - Add --uri to cron commands
+
 ## v1.0.23
 
 Resolves:

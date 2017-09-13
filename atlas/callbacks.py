@@ -11,7 +11,7 @@ from bson import ObjectId
 
 from atlas import tasks
 from atlas import utilities
-from atlas.config import (ATLAS_LOCATION, DEFAULT_CORE, DEFAULT_PROFILE)
+from atlas.config import (ATLAS_LOCATION, DEFAULT_CORE, DEFAULT_PROFILE, SERVICE_ACCOUNT_USERNAME)
 
 # Setup a sub-logger. See tasks.py for longer comment.
 log = logging.getLogger('atlas.callbacks')
@@ -229,7 +229,7 @@ def on_update_sites_callback(updates, original):
     :param updates:
     :param original:
     """
-    log.debug('Update Site\n{0}\n\n{1}'.format(updates, original))
+    log.debug('sites | Update | Updates - %s | Original - %s', updates, original)
     site_type = updates['type'] if updates.get('type') else original['type']
     if site_type == 'express':
         site = original.copy()
@@ -239,32 +239,6 @@ def on_update_sites_callback(updates, original):
             code = original['code'].copy()
             code.update(updates['code'])
             site['code'] = code
-            dependencies_list = []
-            id_list = []
-            for key, value in updates['code'].iteritems():
-                if key == 'package':
-                    if value not in dependencies_list:
-                        # Use 'extend' vs 'append' to prevent nested list.
-                        dependencies_list.extend(value)
-                log.debug(dependencies_list)
-            # List of declared dependencies is built, now we need to recurse.
-            if dependencies_list:
-                for value in dependencies_list:
-                    # Need to convert ObjectID to string for lookup.
-                    code_item = utilities.get_single_eve('code', value)
-                    log.debug(code_item)
-                    if code_item['meta'].get('dependency'):
-                        for key, value in code_item['meta'].iteritems():
-                            if key == 'dependency':
-                                if value not in dependencies_list:
-                                    for list_item in value:
-                                        # Convert each id string to a proper
-                                        # ObjectID.
-                                        id_list.append(ObjectId(list_item))
-                                    dependencies_list.extend(id_list)
-                log.debug(dependencies_list)
-                # Time to replace the package list.
-                updates['code']['package'] = dependencies_list
         if updates.get('dates'):
             dates = original['dates'].copy()
             dates.update(updates['dates'])
@@ -275,22 +249,22 @@ def on_update_sites_callback(updates, original):
             site['settings'] = settings
 
         if updates.get('status'):
-            if updates['status'] in ['installing', 'launching', 'take_down','restore']:
+            if updates['status'] in ['installing', 'launching', 'take_down', 'restore']:
                 if updates['status'] == 'installing':
                     date_json = '{{"assigned":"{0} GMT"}}'.format(updates['_updated'])
                 elif updates['status'] == 'launching':
                     date_json = '{{"launched":"{0} GMT"}}'.format(updates['_updated'])
                 elif updates['status'] == 'locked':
-                    date_json = '{{"locked":""}}'.format(updates['_updated'])
+                    date_json = '{{"locked":""}}'
                 elif updates['status'] == 'take_down':
                     date_json = '{{"taken_down":"{0} GMT"}}'.format(updates['_updated'])
                 elif updates['status'] == 'restore':
-                    date_json = '{{"taken_down":""}}'.format(updates['_updated'])
+                    date_json = '{{"taken_down":""}}'
 
                 updates['dates'] = json.loads(date_json)
 
-        log.debug('Ready to hand to Celery\n{0}\n{1}'.format(site, updates))
-        tasks.site_update.delay(site, updates, original)
+        log.debug('sites | Update | Ready for Celery | Site - %s | Updates - %s', site, updates)
+        tasks.site_update.delay(site=site, updates=updates, original=original)
 
 
 def on_update_commands_callback(updates, original):
@@ -302,7 +276,7 @@ def on_update_commands_callback(updates, original):
     """
     item = original.copy()
     item.update(updates)
-    log.debug('Update command\n\nItem\n{0}\n\nUpdate\n{1}\n\nOriginal\n{2}'.format(item, updates, original))
+    log.debug('command | Update | Item - %s | Update - %s | Original - %s', item, updates, original)
     tasks.command_prepare.delay(item)
 
 
@@ -311,6 +285,9 @@ def on_update_commands_callback(updates, original):
 # us. If someone is querying the API directly, they will user their own
 # username and we need to add that.
 def pre_insert(resource, items):
+    """
+    On POST, get the username from the request and add it to the record.
+    """
     username = g.get('username', None)
     if username is not None:
         for item in items:
@@ -319,17 +296,23 @@ def pre_insert(resource, items):
 
 
 def pre_update(resource, updates, original):
+    """
+    On PATCH, get the username from the request and add it to the record if one was not provided.
+    """
     # Only update if a username was not provided.
     if not updates.get('modified_by'):
         username = g.get('username', None)
         if username is not None:
-            if username is not service_account_username:
+            if username is not SERVICE_ACCOUNT_USERNAME:
                 updates['modified_by'] = username
 
 def pre_replace(resource, item, original):
+    """
+    On PUT, get the username from the request and add it to the record if one was not provided.
+    """
     # Only update if a username was not provided.
     if not item.get('modified_by'):
         username = g.get('username', None)
         if username is not None:
-            if username is not service_account_username:
+            if username is not SERVICE_ACCOUNT_USERNAME:
                 item['modified_by'] = username

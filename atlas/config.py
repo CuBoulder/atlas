@@ -24,18 +24,18 @@ except ImportError:
 begin_with_slash = re.compile("^/")
 trailing_slash = re.compile("/$")
 # Uses re.match primitive to look from the beginning.
-if not begin_with_slash.match(code_root):
+if not begin_with_slash.match(CODE_ROOT):
     raise Exception("'code_root' should begin with a slash.")
-if not begin_with_slash.match(sites_web_root):
+if not begin_with_slash.match(SITES_WEB_ROOT):
     raise Exception("'sites_web_root' should begin with a slash.")
-if not begin_with_slash.match(sites_code_root):
+if not begin_with_slash.match(SITES_CODE_ROOT):
     raise Exception("'sites_code_root' should begin with a slash.")
 # Uses re.search primitive to look anywhere in the string.
-if trailing_slash.search(code_root):
+if trailing_slash.search(CODE_ROOT):
     raise Exception("'code_root' should not have a trailing slash.")
-if trailing_slash.search(sites_web_root):
+if trailing_slash.search(SITES_WEB_ROOT):
     raise Exception("'sites_web_root' should not have a trailing slash.")
-if trailing_slash.search(sites_web_root):
+if trailing_slash.search(SITES_WEB_ROOT):
     raise Exception("'sites_web_root' should not have a trailing slash.")
 
 

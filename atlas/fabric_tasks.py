@@ -3,10 +3,9 @@ Fabric Commands
 
 Commands that run on servers to do the actual work.
 """
-import sys
+import logging
 import requests
 import re
-import os
 
 from fabric.contrib.files import append, exists, sed, upload_template
 from fabric.api import *
@@ -14,24 +13,20 @@ from fabric.network import disconnect_all
 from random import randint
 from time import time
 from datetime import datetime
-from atlas.config import *
 from atlas import utilities
+from atlas.config import (ENVIRONMENT, SSH_USER, CODE_ROOT, SITES_CODE_ROOT, SITES_WEB_ROOT,
+                          WEBSERVER_USER, WEBSERVER_USER_GROUP, NFS_MOUNT_FILES_DIR)
+from atlas.config_servers import (SERVERDEFS, NFS_MOUNT_LOCATION)
 
-path = '/data/code'
-if path not in sys.path:
-    sys.path.append(path)
+# Setup a sub-logger. See tasks.py for longer comment.
+log = logging.getLogger('atlas.fabric_tasks')
 
-# Fabric ENVIRONMENTal settings.
-env.user = ssh_user
-# env.key_filename =
+# Fabric environmental settings.
+env.user = SSH_USER
 
 # Allow ~/.ssh/config to be utilized.
 env.use_ssh_config = True
 env.roledefs = SERVERDEFS[ENVIRONMENT]
-
-
-# TODO: Figure out a better way to deal with the output. Calling functions via
-# 'var = execute(func)' seems to suppress a lot of the output.
 
 class FabricException(Exception):
     pass
@@ -47,24 +42,24 @@ def code_deploy(item):
     """
     # Need warn only to allow the error to pass to celery.
     with settings(warn_only=True):
-        print 'Code - Deploy\n{0}'.format(item)
+        log.info('Code | Deploy | Item - %s', item)
         if item['meta']['code_type'] == 'library':
             code_type_dir = 'libraries'
         else:
             code_type_dir = item['meta']['code_type'] + 's'
         code_folder = '{0}/{1}/{2}/{2}-{3}'.format(
-            code_root,
+            CODE_ROOT,
             code_type_dir,
             item['meta']['name'],
             item['meta']['version'])
         create_directory_structure(code_folder)
         clone_task = clone_repo(item["git_url"], item["commit_hash"], code_folder)
-        print 'Got clone response'
-        print clone_task
+        log.debug('Code | Deploy | Item - %s | Got clone response', item['_id'])
+        log.debug('Code | Deploy | Item - %s | Clone result - %s', item['_id'], clone_task)
         if clone_task is True:
             if item['meta']['is_current']:
                 code_folder_current = '{0}/{1}/{2}/{2}-current'.format(
-                    code_root,
+                    CODE_ROOT,
                     code_type_dir,
                     item['meta']['name'])
                 update_symlink(code_folder, code_folder_current)
@@ -81,15 +76,13 @@ def code_update(updated_item, original_item):
     :param original_item:
     :return:
     """
-    print('Code - Update\nUpdated Item\n{0}\n\nOriginal Item\n{1}'.format(
-        updated_item,
-        original_item))
+    log.info('Code | Update | Updates - %s | Original - %s', updated_item, original_item)
     if updated_item['meta']['code_type'] == 'library':
         code_type_dir = 'libraries'
     else:
         code_type_dir = updated_item['meta']['code_type'] + 's'
     code_folder = '{0}/{1}/{2}/{2}-{3}'.format(
-        code_root,
+        CODE_ROOT,
         code_type_dir,
         updated_item['meta']['name'],
         updated_item['meta']['version'])
@@ -100,7 +93,7 @@ def code_update(updated_item, original_item):
         checkout_repo(updated_item["commit_hash"], code_folder)
         if updated_item['meta']['is_current']:
             code_folder_current = '{0}/{1}/{2}/{2}-current'.format(
-                code_root,
+                CODE_ROOT,
                 code_type_dir,
                 updated_item['meta']['name'])
             update_symlink(code_folder, code_folder_current)
@@ -114,20 +107,20 @@ def code_remove(item):
     :param item: Item to remove
     :return:
     """
-    print('Code - Remove\n{0}'.format(item))
+    log.info('Code | Remove | Item - %s', item)
     if item['meta']['code_type'] == 'library':
         code_type_dir = 'libraries'
     else:
         code_type_dir = item['meta']['code_type'] + 's'
     code_folder = '{0}/{1}/{2}/{2}-{3}'.format(
-        code_root,
+        CODE_ROOT,
         code_type_dir,
         item['meta']['name'],
         item['meta']['version'])
     remove_directory(code_folder)
     if item['meta']['is_current']:
         code_folder_current = '{0}/{1}/{2}/{2}-current'.format(
-            code_root,
+            CODE_ROOT,
             code_type_dir,
             item['meta']['name'])
         remove_symlink(code_folder_current)
@@ -143,28 +136,23 @@ def site_provision(site):
     """
     print 'Site Provision - {0} - {1}'.format(site['_id'], site)
 
-    code_directory = '{0}/{1}'.format(sites_code_root, site['sid'])
+    code_directory = '{0}/{1}'.format(SITES_CODE_ROOT, site['sid'])
     code_directory_sid = '{0}/{1}'.format(code_directory, site['sid'])
     code_directory_current = '{0}/current'.format(code_directory)
-    web_directory_type = '{0}/{1}'.format(
-        sites_web_root,
-        site['type'])
-    web_directory_sid = '{0}/{1}'.format(
-        web_directory_type,
-        site['sid'])
+    web_directory_type = '{0}/{1}'.format(SITES_WEB_ROOT, site['type'])
+    web_directory_sid = '{0}/{1}'.format(web_directory_type, site['sid'])
     profile = utilities.get_single_eve('code', site['code']['profile'])
-    profile_name = profile['meta']['name']
 
     try:
         execute(create_directory_structure, folder=code_directory)
     except FabricException as error:
-        print 'Create directory structure failed.'
+        log.error('Site | Provision | Create directory structure failed | Error - %s', error)
         return error
 
     try:
         execute(create_directory_structure, folder=web_directory_type)
     except FabricException as error:
-        print 'Create directory structure failed.'
+        log.error('Site | Provision | Create directory structure failed | Error - %s', error)
         return error
 
     with cd(code_directory):
@@ -173,10 +161,10 @@ def site_provision(site):
         # Find all directories and set perms to 0755.
         run('find {0} -type d -exec chmod 0755 {{}} \\;'.format(code_directory_sid))
         # Find all directories and set group to `webserver_user_group`.
-        run('find {0} -type d -exec chgrp {1} {{}} \\;'.format(code_directory_sid, webserver_user_group))
+        run('find {0} -type d -exec chgrp {1} {{}} \\;'.format(code_directory_sid, WEBSERVER_USER_GROUP))
         # Find all files and set perms to 0644.
         run('find {0} -type f -exec chmod 0644 {{}} \\;'.format(code_directory_sid))
-        
+
     with cd(code_directory_sid):
         profile = utilities.get_code_name_version(site['code']['profile'])
         run('drush dslm-add-profile {0}'.format(profile))
@@ -184,40 +172,40 @@ def site_provision(site):
     try:
         execute(update_symlink, source=code_directory_sid, destination=code_directory_current)
     except FabricException as error:
-        print 'Update symlink failed.'
+        log.error('Site | Provision | Update symlink failed | Error - %s', error)
         return error
 
-    if nfs_mount_files_dir:
-        nfs_dir = nfs_mount_location[ENVIRONMENT]
+    if NFS_MOUNT_FILES_DIR:
+        nfs_dir = NFS_MOUNT_LOCATION[ENVIRONMENT]
         nfs_files_dir = '{0}/sitefiles/{1}/files'.format(nfs_dir, site['sid'])
         try:
             execute(create_nfs_files_dir, nfs_dir=nfs_dir, site_sid=site['sid'])
         except FabricException as error:
-            print 'Create nfs directory failed.'
+            log.error('Site | Provision | Create nfs directory failed | Error - %s', error)
             return error
         # Replace default files dir with this one
         site_files_dir = code_directory_current + '/sites/default/files'
         try:
             execute(replace_files_directory, source=nfs_files_dir, destination=site_files_dir)
         except FabricException as error:
-            print 'Replace file directory failed.'
+            log.error('Site | Provision | Replace file directory failed | Error - %s', error)
             return error
 
     try:
         execute(create_settings_files, site=site)
     except FabricException as error:
-        print 'Settings file creation failed.'
+        log.error('Site | Provision | Settings file creation failed | Error - %s', error)
         return error
 
     try:
         execute(update_symlink, source=code_directory_current, destination=web_directory_sid)
     except FabricException as error:
-        print 'Update symlink failed.'
+        log.error('Site | Provision | Update symlink failed | Error - %s', error)
         return error
 
 
 def site_install(site):
-    code_directory = '{0}/{1}'.format(sites_code_root, site['sid'])
+    code_directory = '{0}/{1}'.format(SITES_CODE_ROOT, site['sid'])
     code_directory_current = '{0}/current'.format(code_directory)
     profile = utilities.get_single_eve('code', site['code']['profile'])
     profile_name = profile['meta']['name']
@@ -232,7 +220,7 @@ def site_install(site):
 @roles('webservers')
 def site_package_update(site):
     print('Site Package Update\n{0}'.format(site))
-    code_directory_sid = '{0}/{1}/{1}'.format(sites_code_root, site['sid'])
+    code_directory_sid = '{0}/{1}/{1}'.format(SITES_CODE_ROOT, site['sid'])
     packages_directory = '{0}/sites/all'.format(code_directory_sid)
 
     package_name_string = ""
@@ -254,7 +242,7 @@ def site_package_update(site):
 @roles('webservers')
 def site_core_update(site):
     print('Site Core Update\n{0}'.format(site))
-    code_directory_sid = '{0}/{1}/{1}'.format(sites_code_root, site['sid'])
+    code_directory_sid = '{0}/{1}/{1}'.format(SITES_CODE_ROOT, site['sid'])
     core_string = utilities.get_code_name_version(site['code']['core'])
 
     with cd(code_directory_sid):
@@ -264,7 +252,7 @@ def site_core_update(site):
 @roles('webservers')
 def site_profile_update(site, original, updates):
     print('Site Profile Update\n{0}'.format(site))
-    code_directory_sid = '{0}/{1}/{1}'.format(sites_code_root, site['sid'])
+    code_directory_sid = '{0}/{1}/{1}'.format(SITES_CODE_ROOT, site['sid'])
     old_profile = utilities.get_single_eve('code', original['code']['profile'])
     new_profile = utilities.get_single_eve('code', site['code']['profile'])
     new_profile_full_string = utilities.get_code_name_version(site['code']['profile'])
@@ -272,7 +260,7 @@ def site_profile_update(site, original, updates):
     with cd(code_directory_sid + '/profiles'):
         run("rm {0}; ln -s {1}/profiles/{2}/{3} {2}".format(
             old_profile['meta']['name'],
-            code_root,
+            CODE_ROOT,
             new_profile['meta']['name'],
             new_profile_full_string))
 
@@ -280,14 +268,14 @@ def site_profile_update(site, original, updates):
 @roles('webservers')
 def site_profile_swap(site):
     print('Site Profile Update\n{0}'.format(site))
-    code_directory_sid = '{0}/{1}/{1}'.format(sites_code_root, site['sid'])
+    code_directory_sid = '{0}/{1}/{1}'.format(SITES_CODE_ROOT, site['sid'])
     profile = utilities.get_single_eve('code', site['code']['profile'])
     new_profile_full_string = utilities.get_code_name_version(site['code']['profile'])
 
     with cd(code_directory_sid + '/profiles'):
         run("rm {0}; ln -s {1}/profiles/{2}/{3} {2}".format(
             profile['meta']['name'],
-            code_root,
+            CODE_ROOT,
             profile['meta']['name'],
             new_profile_full_string))
 
@@ -311,7 +299,7 @@ def site_backup(site):
     print('Site - Backup\m{0}'.format(site))
     # Setup all the variables we will need.
     web_directory = '{0}/{1}/{2}'.format(
-        sites_web_root,
+        SITES_WEB_ROOT,
         site['type'],
         site['sid'])
     date_string = datetime.now().strftime("%Y-%m-%d")
@@ -328,7 +316,7 @@ def site_backup(site):
         backup_path,
         site['sid'],
         date_time_string)
-    nfs_dir = nfs_mount_location[ENVIRONMENT]
+    nfs_dir = NFS_MOUNT_LOCATION[ENVIRONMENT]
     nfs_files_dir = '{0}/sitefiles/{1}/files'.format(nfs_dir, site['sid'])
     # Start the actual process.
     create_directory_structure(backup_path)
@@ -344,7 +332,7 @@ def site_take_down(site):
     """
     print('Site Take down\n{0}'.format(site))
     code_directory_current = '{0}/{1}/current'.format(
-        sites_code_root,
+        SITES_CODE_ROOT,
         site['sid'])
     update_symlink(site_down_path, code_directory_current)
 
@@ -355,10 +343,10 @@ def site_restore(site):
     Point the site to the current release.
     """
     code_directory_current = '{0}/{1}/current'.format(
-        sites_code_root,
+        SITES_CODE_ROOT,
         site['sid'])
     code_directory_sid = '{0}/{1}/{1}'.format(
-        sites_code_root,
+        SITES_CODE_ROOT,
         site['sid'])
     update_symlink(code_directory_sid, code_directory_current)
     with cd(code_directory_current):
@@ -379,21 +367,21 @@ def site_remove(site):
     """
     print('Site - Remove\n{0}'.format(site))
 
-    code_directory = '{0}/{1}'.format(sites_code_root, site['sid'])
+    code_directory = '{0}/{1}'.format(SITES_CODE_ROOT, site['sid'])
     web_directory = '{0}/{1}/{2}'.format(
-        sites_web_root,
+        SITES_WEB_ROOT,
         site['type'],
         site['sid'])
     web_directory_path = '{0}/{1}/{2}'.format(
-        sites_web_root,
+        SITES_WEB_ROOT,
         site['type'],
         site['path'])
 
     remove_symlink(web_directory)
     remove_symlink(web_directory_path)
 
-    if nfs_mount_files_dir:
-        nfs_dir = nfs_mount_location[ENVIRONMENT]
+    if NFS_MOUNT_FILES_DIR:
+        nfs_dir = NFS_MOUNT_LOCATION[ENVIRONMENT]
         nfs_files_dir = '{0}/sitefiles/{1}'.format(nfs_dir, site['sid'])
         remove_directory(nfs_files_dir)
 
@@ -411,7 +399,7 @@ def command_run_single(site, command, warn_only=False):
     """
     print('Command - Single Server - {0}\n{1}'.format(site['sid'], command))
     web_directory = '{0}/{1}/{2}'.format(
-        sites_web_root,
+        SITES_WEB_ROOT,
         site['type'],
         site['sid'])
     with settings(warn_only=warn_only):
@@ -433,7 +421,7 @@ def command_run(site, command):
     """
     print 'Command - {0}\n{1}'.format(site['sid'], command)
     web_directory = '{0}/{1}/{2}'.format(
-        sites_web_root,
+        SITES_WEB_ROOT,
         site['type'],
         site['sid'])
     with cd(web_directory):
@@ -449,7 +437,7 @@ def update_database(site):
     :return:
     """
     print 'Database Update\n{0}'.format(site)
-    code_directory_sid = '{0}/{1}/{1}'.format(sites_code_root, site['sid'])
+    code_directory_sid = '{0}/{1}/{1}'.format(SITES_CODE_ROOT, site['sid'])
     with cd(code_directory_sid):
         print 'Running database updates.'
         run('sudo -u {0} drush updb -y'.format(WEBSERVER_USER))
@@ -465,7 +453,7 @@ def registry_rebuild(site):
     :return:
     """
     print 'Drush registry rebuild\n{0}'.format(site)
-    code_directory_sid = '{0}/{1}/{1}'.format(sites_code_root, site['sid'])
+    code_directory_sid = '{0}/{1}/{1}'.format(SITES_CODE_ROOT, site['sid'])
     with cd(code_directory_sid):
         run('sudo -u {0} drush rr; sudo -u {0} drush cc drush;'.format(WEBSERVER_USER))
 
@@ -478,7 +466,7 @@ def clear_apc():
 
 
 def drush_cache_clear(sid):
-    code_directory_current = '{0}/{1}/current'.format(sites_code_root, sid)
+    code_directory_current = '{0}/{1}/current'.format(SITES_CODE_ROOT, sid)
     with cd(code_directory_current):
         run('sudo -u {0} drush cc all'.format(WEBSERVER_USER))
 
@@ -486,15 +474,15 @@ def drush_cache_clear(sid):
 @roles('webservers')
 def rewrite_symlinks(site):
     print 'Rewrite symlinks | {0}'.format(site)
-    code_directory_current = '{0}/{1}/current'.format(sites_code_root, site['sid'])
-    web_directory = '{0}/{1}/{2}'.format(sites_web_root, site['type'], site['sid'])
+    code_directory_current = '{0}/{1}/current'.format(SITES_CODE_ROOT, site['sid'])
+    web_directory = '{0}/{1}/{2}'.format(SITES_WEB_ROOT, site['type'], site['sid'])
     if site['pool'] != 'poolb-homepage':
         update_symlink(code_directory_current, web_directory)
     if site['status'] == 'launched' and site['pool'] != 'poolb-homepage':
-        path_symlink = '{0}/{1}/{2}'.format(sites_web_root, site['type'], site['path'])
+        path_symlink = '{0}/{1}/{2}'.format(SITES_WEB_ROOT, site['type'], site['path'])
         update_symlink(web_directory, path_symlink)
     if site['status'] == 'launched' and site['pool'] == 'poolb-homepage':
-        web_directory = '{0}/{1}'.format(sites_web_root, 'homepage')
+        web_directory = '{0}/{1}'.format(SITES_WEB_ROOT, 'homepage')
         update_symlink(code_directory_current, web_directory)
 
 
@@ -516,7 +504,7 @@ def update_homepage_extra_files():
     """
     send_from_robots = '{0}/files/homepage_robots'.format(atlas_location)
     send_from_htaccess = '{0}/files/homepage_htaccess'.format(atlas_location)
-    send_to = '{0}/homepage'.format(sites_web_root)
+    send_to = '{0}/homepage'.format(SITES_WEB_ROOT)
     run("chmod -R u+w {}".format(send_to))
     run("rm -f {0}/robots.txt".format(send_to))
     put(send_from_robots, "{0}/robots.txt".format(send_to))
@@ -586,7 +574,7 @@ def create_settings_files(site):
 
     print template_dir
 
-    destination = "{0}/{1}/{1}/sites/default".format(sites_code_root, site['sid'])
+    destination = "{0}/{1}/{1}/sites/default".format(SITES_CODE_ROOT, site['sid'])
 
     local_pre_settings_variables = {
         'profile': profile_name,
@@ -708,12 +696,12 @@ def launch_site(site):
     Create symlinks with new site name.
     """
     print ('Launch subtask')
-    code_directory = '{0}/{1}'.format(sites_code_root, site['sid'])
+    code_directory = '{0}/{1}'.format(SITES_CODE_ROOT, site['sid'])
     code_directory_current = '{0}/current'.format(code_directory)
 
     if site['pool'] in ['poolb-express', 'poolb-homepage'] and site['type'] == 'express':
         if site['pool'] == 'poolb-express':
-            web_directory = '{0}/{1}'.format(sites_web_root, site['type'])
+            web_directory = '{0}/{1}'.format(SITES_WEB_ROOT, site['type'])
             web_directory_path = '{0}/{1}'.format(web_directory, site['path'])
             with cd(web_directory):
                 # If the path is nested like 'lab/atlas', make the 'lab' directory
@@ -732,8 +720,8 @@ def launch_site(site):
             # Assign it to an update group.
             update_group = randint(0, 10)
         if site['pool'] == 'poolb-homepage':
-            web_directory = '{0}/{1}'.format(sites_web_root, 'homepage')
-            with cd(sites_web_root):
+            web_directory = '{0}/{1}'.format(SITES_WEB_ROOT, 'homepage')
+            with cd(SITES_WEB_ROOT):
                 update_symlink(code_directory_current, web_directory)
             with cd(web_directory):
                 clear_apc()

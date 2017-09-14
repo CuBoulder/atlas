@@ -16,7 +16,7 @@ Resolves:
 
 Hotfix:
 
-- &#35;381 - Add --uri to cron commands
+- &#35;381 - Add --uri to drush commands
 
 ## v1.0.23
 

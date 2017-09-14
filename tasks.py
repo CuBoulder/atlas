@@ -639,7 +639,7 @@ def cron_run(site):
     logger.info('Run Cron | %s ', site['sid'])
     start_time = time.time()
    
-    if site['type'] is not 'homepage'
+    if site['type'] is not 'homepage':
         uri = base_urls[environment] + '/' + site['path']
     else:
         uri = base_urls[environment]

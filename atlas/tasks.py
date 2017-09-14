@@ -565,15 +565,24 @@ def command_run(site, command, single_server, user=None):
     :param user: string Username that called the command.
     :return:
     """
-    log.debug('Run Command | Site - %s | Single server- %s | Command - %s',
-              site['sid'], single_server, command)
+    log.debug('Run Command - {0} - {1} - {2}'.format(site['sid'], single_server, command))
+    
+    # 'match' searches for strings that begin with
+    if command.startswith('drush'):
+        if site['type'] is not 'homepage':
+            uri = BASE_URLS[ENVIRONMENT] + '/' + site['path']
+        else:
+            uri = BASE_URLS[ENVIRONMENT]
+        # Add user prefix and URI suffix
+        altered_command = 'sudo -u {0} '.format(WEBSERVER_USER) + command + ' --uri={0}'.format(uri)
+
     start_time = time.time()
     if single_server:
-        fabric_task_result = execute(fabric_tasks.command_run_single,
-                                     site=site, command=command, warn_only=True)
+        fabric_task_result = execute(
+            fabric_tasks.command_run_single, site=site, command=altered_command, warn_only=True)
     else:
-        fabric_task_result = execute(fabric_tasks.command_run, site=site,
-                                     command=command, warn_only=True)
+        fabric_task_result = execute(
+            fabric_tasks.command_run, site=site, command=altered_command, warn_only=True)
 
     
     command_time = time.time() - start_time
@@ -591,6 +600,7 @@ def command_run(site, command, single_server, user=None):
     slack_text = 'Command - Success - {0}/{1}'.format(BASE_URLS[ENVIRONMENT], site['path'])
     slack_color = 'good'
     slack_link = '{0}/{1}'.format(BASE_URLS[ENVIRONMENT], site['path'])
+    user = user
 
     slack_payload = {
         "text": slack_text,
@@ -604,7 +614,7 @@ def command_run(site, command, single_server, user=None):
                 "fields": [
                     {
                         "title": "Command",
-                        "value": command,
+                        "value": altered_command,
                         "short": True
                     },
                     {
@@ -675,7 +685,12 @@ def cron_run(site):
     """
     log.info('Run Cron | %s ', site['sid'])
     start_time = time.time()
-    command = 'sudo -u {0} drush elysia-cron run'.format(WEBSERVER_USER)
+   
+    if site['type'] is not 'homepage':
+        uri = BASE_URLS[ENVIRONMENT] + '/' + site['path']
+    else:
+        uri = BASE_URLS[ENVIRONMENT]
+    command = 'sudo -u {0} drush elysia-cron run --uri={1}'.format(WEBSERVER_USER, uri)
     try:
         execute(fabric_tasks.command_run_single, site=site, command=command)
     except CronException as error:

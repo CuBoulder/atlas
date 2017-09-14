@@ -203,19 +203,41 @@ def code_update(updated_item, original_item):
     :return:
     """
     log.debug('Code update | %s', updated_item)
-    fab_task = execute(fabric_tasks.code_update, updated_item=updated_item, original_item=original_item)
+    fab_task = execute(fabric_tasks.code_update, updated_item=updated_item,
+                       original_item=original_item)
 
     name = updated_item['meta']['name'] if updated_item['meta']['name'] else original_item['meta']['name']
     version = updated_item['meta']['version'] if updated_item['meta']['version'] else original_item['meta']['version']
-    slack_title = '{0} - {1}'.format(name, version)
-    if False not in fab_task.values():
-        slack_message = 'Code Update - Success'
-        slack_color = 'good'
-        utilities.post_to_slack(
-            message=slack_message,
-            title=slack_title,
-            level=slack_color)
 
+    if False not in fab_task.values():
+        slack_title = 'Code Update - Success'
+        slack_color = 'good'
+        code_string = '{0} - {1}'.format(name, version)
+
+        slack_payload = {
+            "text": slack_title,
+            "username": 'Atlas',
+            "attachments": [
+                {
+                    "fallback": slack_title,
+                    "color": slack_color,
+                    "title": slack_title,
+                    "fields": [
+                        {
+                            "title": "Code",
+                            "value": code_string,
+                            "short": True
+                        },
+                        {
+                            "title": "Environment",
+                            "value": ENVIRONMENT,
+                            "short": True
+                        },
+                    ],
+                }
+            ],
+        }
+        utilities.post_to_slack_payload(slack_payload)
 
 @celery.task
 def code_remove(item):
@@ -228,15 +250,36 @@ def code_remove(item):
     log.debug('Code remove | %s', item)
     fab_task = execute(fabric_tasks.code_remove, item=item)
 
-    slack_title = '{0} - {1}'.format(item['meta']['name'], item['meta']['version'])
     if False not in fab_task.values():
-        slack_message = 'Code Remove - Success'
+        # Slack notification
+        slack_title = 'Code Remove - Success'
         slack_color = 'good'
-        utilities.post_to_slack(
-            message=slack_message,
-            title=slack_title,
-            level=slack_color)
+        code_string = '{0} - {1}'.format(item['meta']['name'], item['meta']['version'])
 
+        slack_payload = {
+            "text": slack_title,
+            "username": 'Atlas',
+            "attachments": [
+                {
+                    "fallback": slack_title,
+                    "color": slack_color,
+                    "title": slack_title,
+                    "fields": [
+                        {
+                            "title": "Code",
+                            "value": code_string,
+                            "short": True
+                        },
+                        {
+                            "title": "Environment",
+                            "value": ENVIRONMENT,
+                            "short": True
+                        },
+                    ],
+                }
+            ],
+        }
+        utilities.post_to_slack_payload(slack_payload)
 
 @celery.task
 def site_provision(site):
@@ -289,18 +332,43 @@ def site_provision(site):
              core_string, profile_string, provision_time)
     log.debug('Site provision | Patch | %s', patch)
 
-    slack_title = '{0}/{1}'.format(BASE_URLS[ENVIRONMENT], site['path'])
-    slack_link = '{0}/{1}'.format(BASE_URLS[ENVIRONMENT], site['path'])
-    attachment_text = '{0}/sites/{1}'.format(API_URLS[ENVIRONMENT], site['_id'])
-
-    slack_message = 'Site provision - Success - {0} seconds'.format(provision_time)
+    # Slack notification
+    slack_title = 'Site provision - Success'
+    slack_text = 'Site provision - Success - {0}/{1}'.format(BASE_URLS[ENVIRONMENT], site['path'])
     slack_color = 'good'
-    utilities.post_to_slack(
-        message=slack_message,
-        title=slack_title,
-        link=slack_link,
-        attachment_text=attachment_text,
-        level=slack_color)
+    slack_link = '{0}/{1}'.format(BASE_URLS[ENVIRONMENT], site['path'])
+
+    slack_payload = {
+        "text": slack_text,
+        "username": 'Atlas',
+        "attachments": [
+            {
+                "fallback": slack_text,
+                "color": slack_color,
+                "title": slack_title,
+                "fields": [
+                    {
+                        "title": "Instance",
+                        "value": slack_link,
+                        "short": True
+                    },
+                    {
+                        "title": "Time",
+                        "value": provision_time + ' sec',
+                        "short": True
+                    },
+                    {
+                        "title": "Environment",
+                        "value": ENVIRONMENT,
+                        "short": True
+                    },
+                ],
+            }
+        ],
+    }
+    utilities.post_to_slack_payload(slack_payload)
+
+    # Logstash statistics
     logstash_payload = {'provision_time': provision_time, 'logsource': 'atlas'}
     utilities.post_to_logstash_payload(payload=logstash_payload)
 

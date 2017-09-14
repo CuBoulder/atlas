@@ -47,8 +47,8 @@ class AtlasBasicAuth(BasicAuth):
         # Check if username is in 'allowed users' defined in config_local.py
         if username not in ALLOWED_USERS:
             return False
-        # Initialize LDAP. The initialize() method returns an LDAPObject object, which contains 
-        # methods for performing LDAP operations and retrieving information about the LDAP 
+        # Initialize LDAP. The initialize() method returns an LDAPObject object, which contains
+        # methods for performing LDAP operations and retrieving information about the LDAP
         # connection and transactions.
         l = ldap.initialize(LDAP_SERVER)
 
@@ -70,7 +70,7 @@ class AtlasBasicAuth(BasicAuth):
         g.username = username
 
         try:
-            # Try a synchronous bind (we want synchronous so that the command is blocked until the 
+            # Try a synchronous bind (we want synchronous so that the command is blocked until the
             # bind gets a result. If you can bind, the credentials are valid.
             l.simple_bind_s(ldap_distinguished_name, password)
             log.debug('LDAP | %s | Bind successful', username)

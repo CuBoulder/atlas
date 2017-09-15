@@ -532,11 +532,21 @@ def command_run(site, command, single_server, user=None):
     :return:
     """
     logger.debug('Run Command - {0} - {1} - {2}'.format(site['sid'], single_server, command))
+    
+    # 'match' searches for strings that begin with
+    if command.startswith('drush'):
+        if site['type'] is not 'homepage':
+            uri = base_urls[environment] + '/' + site['path']
+        else:
+            uri = base_urls[environment]
+        # Add user prefix and URI suffix
+        altered_command = 'sudo -u {0} '.format(webserver_user) + command + ' --uri={0}'.format(uri)
+
     start_time = time.time()
     if single_server:
-        fabric_task_result = execute(fabfile.command_run_single, site=site, command=command, warn_only=True)
+        fabric_task_result = execute(fabfile.command_run_single, site=site, command=altered_command, warn_only=True)
     else:
-        fabric_task_result = execute(fabfile.command_run, site=site, command=command, warn_only=True)
+        fabric_task_result = execute(fabfile.command_run, site=site, command=altered_command, warn_only=True)
 
     logger.debug('Command result - {0}'.format(fabric_task_result))
     command_time = time.time() - start_time
@@ -551,7 +561,7 @@ def command_run(site, command, single_server, user=None):
     slack_link = '{0}/{1}'.format(base_urls[environment], site['path'])
     slack_message = 'Command - Success'
     slack_color = 'good'
-    attachment_text = command
+    attachment_text = altered_command
     user = user
 
     utilities.post_to_slack(
@@ -627,7 +637,12 @@ def cron_run(site):
     """
     logger.info('Run Cron | %s ', site['sid'])
     start_time = time.time()
-    command = 'sudo -u {0} drush elysia-cron run'.format(webserver_user)
+   
+    if site['type'] is not 'homepage':
+        uri = base_urls[environment] + '/' + site['path']
+    else:
+        uri = base_urls[environment]
+    command = 'sudo -u {0} drush elysia-cron run --uri={1}'.format(webserver_user, uri)
     try:
         execute(fabfile.command_run_single, site=site, command=command)
     except CronException as e:

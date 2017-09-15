@@ -602,7 +602,7 @@ def create_settings_files(site):
                     backup=False,
                     mode='0644')
 
-    tmp_files_dir = '{0}/{1}/tmp'.format(nfs_mount_location[environment], sid)
+    tmp_files_dir = '/tmp/{0}'.format(sid)
 
     local_post_settings_variables = {
         'sid':sid,

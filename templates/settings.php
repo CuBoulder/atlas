@@ -156,12 +156,8 @@ $conf['googleanalytics_account'] = 'UA-25752450-1';
 $conf['error_level'] = 2;
 {% endif %}
 
-
-// Define tmp directory. We are running php-fpm runs with a private tmp dir
-// (systemd parameter), so this is not actually '/tmp', it ends up at something like
-// '/tmp/systemd-private-89726b4b4ad147c4ab282ca08bbda8dc-php-fpm.service-C8L7Xa/tmp/'
-// But systemd handles all that for us.
 $conf['file_temporary_path'] = '/tmp';
+
 /**
  * Include a post local settings file if it exists.
  */

@@ -405,7 +405,7 @@ def site_update(site, updates, original):
             execute(fabfile.update_settings_file, site=site)
 
     # Only need to update the f5 if this is a legacy instance.
-    if site['type'] = 'legacy':
+    if site['type'] == 'legacy':
         execute(fabfile.update_f5)
 
     slack_title = '{0}/{1}'.format(base_urls[environment], site['path'])

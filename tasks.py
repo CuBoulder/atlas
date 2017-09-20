@@ -453,7 +453,7 @@ def site_remove(site):
 
         execute(fabfile.site_remove, site=site)
 
-    if site['type'] = 'legacy':
+    if site['type'] == 'legacy':
         execute(fabfile.update_f5)
 
     slack_title = '{0}/{1}'.format(base_urls[environment], site['path'])

@@ -683,37 +683,35 @@ def launch_site(site):
     code_directory = '{0}/{1}'.format(sites_code_root, site['sid'])
     code_directory_current = '{0}/current'.format(code_directory)
 
-    if site['pool'] in ['poolb-express', 'poolb-homepage'] and site['type'] == 'express':
-        if site['pool'] == 'poolb-express':
-            web_directory = '{0}/{1}'.format(sites_web_root, site['type'])
-            web_directory_path = '{0}/{1}'.format(web_directory, site['path'])
-            with cd(web_directory):
-                # If the path is nested like 'lab/atlas', make the 'lab' directory
-                if "/" in site['path']:
-                    lead_path = "/".join(site['path'].split("/")[:-1])
-                    create_directory_structure(lead_path)
+    if site['pool'] == 'poolb-express':
+        web_directory_path = '{0}/{1}'.format(web_directory, site['path'])
+        with cd(sites_web_root):
+            # If the path is nested like 'lab/atlas', make the 'lab' directory
+            if "/" in site['path']:
+                lead_path = "/".join(site['path'].split("/")[:-1])
+                create_directory_structure(lead_path)
 
-                # Create a new symlink using site's updated path
-                if not exists(web_directory_path):
-                    update_symlink(code_directory_current, site['path'])
-                with cd(web_directory_path):
-                    clear_apc()
-                    # Clear caches at the end of the launch process to show correct pathologic
-                    # rendered URLS.
-                    drush_cache_clear(site['sid'])
-            # Assign it to an update group.
-            update_group = randint(0, 10)
-        if site['pool'] == 'poolb-homepage':
-            web_directory = '{0}/{1}'.format(sites_web_root, 'homepage')
-            with cd(sites_web_root):
-                update_symlink(code_directory_current, web_directory)
-            with cd(web_directory):
+            # Create a new symlink using site's updated path
+            if not exists(web_directory_path):
+                update_symlink(code_directory_current, site['path'])
+            with cd(web_directory_path):
                 clear_apc()
+                # Clear caches at the end of the launch process to show correct pathologic
+                # rendered URLS.
                 drush_cache_clear(site['sid'])
-            # Assign site to update group 12.
-            update_group = 12
-        payload = {'status': 'launched', 'update_group': update_group}
-        utilities.patch_eve('sites', site['_id'], payload)
+        # Assign it to an update group.
+        update_group = randint(0, 10)
+    if site['pool'] == 'poolb-homepage':
+        web_directory = '{0}/{1}'.format(sites_web_root, 'homepage')
+        with cd(sites_web_root):
+            update_symlink(code_directory_current, web_directory)
+        with cd(web_directory):
+            clear_apc()
+            drush_cache_clear(site['sid'])
+        # Assign site to update group 12.
+        update_group = 12
+    payload = {'status': 'launched', 'update_group': update_group}
+    utilities.patch_eve('sites', site['_id'], payload)
 
 
 def update_f5():

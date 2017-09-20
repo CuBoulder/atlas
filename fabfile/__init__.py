@@ -439,8 +439,8 @@ def registry_rebuild(site):
 
 @roles('webservers')
 def clear_apc():
-    run('wget -q -O - http://localhost/sysadmintools/apc/clearapc.php;')
-
+    #run('wget -q -O - http://localhost/sysadmintools/apc/clearapc.php;')
+    True
 
 def drush_cache_clear(sid):
     code_directory_current = '{0}/{1}/current'.format(sites_code_root, sid)

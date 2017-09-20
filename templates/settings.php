@@ -106,16 +106,16 @@ if (isset($_SERVER['OSR_ENV'])) {
 
   switch($_SERVER['OSR_ENV']) {
     case 'prod':
-      $base_url .= 'www-https.colorado.edu';
+      $base_url .= 'https://www-https.colorado.edu';
       break;
     case 'test':
-      $base_url .= 'www-test-https.colorado.edu';
+      $base_url .= 'https://www-test-https.colorado.edu';
       break;
     case 'dev':
-      $base_url .= 'www-dev-https.colorado.edu';
+      $base_url .= 'https://www-dev-https.colorado.edu';
       break;
     case 'express_local':
-      $base_url .= 'express.local';
+      $base_url .= 'https://express.local';
       break;
   }
 

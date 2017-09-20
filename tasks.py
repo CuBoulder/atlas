@@ -373,8 +373,6 @@ def site_update(site, updates, original):
                 site['status'] = 'launched'
                 execute(fabfile.update_settings_file, site=site)
                 execute(fabfile.site_launch, site=site)
-                if environment is not 'local':
-                    execute(fabfile.update_f5)
                 # Let fabric send patch since it is changing update group.
             elif updates['status'] == 'locked':
                 logger.debug('Status changed to locked')
@@ -405,6 +403,10 @@ def site_update(site, updates, original):
             if updates['settings'].get('page_cache_maximum_age') != original['settings'].get('page_cache_maximum_age'):
                 logger.debug('Found page_cache_maximum_age change.')
             execute(fabfile.update_settings_file, site=site)
+
+    # Only need to update the f5 if this is a legacy instance.
+    if site['type'] = 'legacy':
+        execute(fabfile.update_f5)
 
     slack_title = '{0}/{1}'.format(base_urls[environment], site['path'])
     slack_link = '{0}/{1}'.format(base_urls[environment], site['path'])
@@ -451,7 +453,7 @@ def site_remove(site):
 
         execute(fabfile.site_remove, site=site)
 
-    if environment != 'local':
+    if site['type'] = 'legacy':
         execute(fabfile.update_f5)
 
     slack_title = '{0}/{1}'.format(base_urls[environment], site['path'])

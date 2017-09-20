@@ -684,7 +684,7 @@ def launch_site(site):
     code_directory_current = '{0}/current'.format(code_directory)
 
     if site['pool'] == 'poolb-express':
-        web_directory_path = '{0}/{1}'.format(web_directory, site['path'])
+        web_directory_path = '{0}/{1}'.format(sites_code_root, site['path'])
         with cd(sites_web_root):
             # If the path is nested like 'lab/atlas', make the 'lab' directory
             if "/" in site['path']:
@@ -704,8 +704,8 @@ def launch_site(site):
     if site['pool'] == 'poolb-homepage':
         web_directory = '{0}/{1}'.format(sites_web_root, 'homepage')
         with cd(sites_web_root):
-            update_symlink(code_directory_current, web_directory)
-        with cd(web_directory):
+            update_symlink(code_directory_current, sites_code_root)
+        with cd(sites_code_root):
             clear_apc()
             drush_cache_clear(site['sid'])
         # Assign site to update group 12.

@@ -365,6 +365,14 @@ app = Eve(auth=utilities.AtlasBasicAuth, settings=settings)
 # TODO: Remove debug mode.
 app.debug = True
 
+# Enable logging to 'atlas.log' file
+handler = logging.FileHandler(LOG_LOCATION)
+# The default log level is set to WARNING, so we have to explicitly set the
+# logging level to Debug.
+app.logger.setLevel(logging.DEBUG)
+# Append the handler to the default application logger
+app.logger.addHandler(handler)
+
 # Specific callbacks.
 # Use pre event hooks if there is a chance you want to abort.
 # Use DB hooks if you want to modify data on the way in.
@@ -402,13 +410,5 @@ def version():
 
 
 if __name__ == '__main__':
-    # Enable logging to 'atlas.log' file
-    handler = logging.FileHandler('atlas.log')
-    # The default log level is set to WARNING, so we have to explicitly set the
-    # logging level to Debug.
-    app.logger.setLevel(logging.DEBUG)
-    # Append the handler to the default application logger
-    app.logger.addHandler(handler)
-
     # This goes last.
     app.run(host='0.0.0.0', ssl_context='adhoc')

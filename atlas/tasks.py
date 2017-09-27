@@ -370,10 +370,6 @@ def site_provision(site):
     }
     utilities.post_to_slack_payload(slack_payload)
 
-    # Logstash statistics
-    logstash_payload = {'provision_time': provision_time, 'logsource': 'atlas'}
-    utilities.post_to_logstash_payload(payload=logstash_payload)
-
 
 @celery.task
 def site_update(site, updates, original):
@@ -659,13 +655,6 @@ def command_run(site, command, single_server, user=None):
     log.debug('Run Command | Site - %s | Command - %s | Time - %s | Result - %s',
               site['sid'], command, time, fabric_task_result)
 
-    logstash_payload = {'command_time': command_time,
-                        'logsource': 'atlas',
-                        'command': command,
-                        'instance': site['sid']}
-    utilities.post_to_logstash_payload(payload=logstash_payload)
-
-
     slack_title = '{0}/{1}'.format(BASE_URLS[ENVIRONMENT], site['path'])
     slack_text = 'Command - Success - {0}/{1}'.format(BASE_URLS[ENVIRONMENT], site['path'])
     slack_color = 'good'
@@ -768,13 +757,8 @@ def cron_run(site):
         log.error('Run Cron | %s | Cron failed | %s', site['sid'], error)
         raise
 
-    log.info('Run Cron | %s | Cron success', site['sid'])
     command_time = time.time() - start_time
-    logstash_payload = {'command_time': command_time,
-                        'logsource': 'atlas',
-                        'command': command,
-                        'instance': site['sid']}
-    utilities.post_to_logstash_payload(payload=logstash_payload)
+    log.info('Run Cron | %s | Cron success | %s', site['sid'], command_time)
 
 
 @celery.task

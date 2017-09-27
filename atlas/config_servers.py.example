@@ -132,9 +132,6 @@ API_URLS = {
     'local': 'https://inventory.local/atlas',
 }
 
-# Logstash URL for reporting Atlas data
-LOGSTASH_URL = 'http://logstash.example.com:81'
-
 LOAD_BALANCER_CONFIG_FILES = {
     'production': 'ProdDataGroup.dat',
     'test': 'TestDataGroup.dat',

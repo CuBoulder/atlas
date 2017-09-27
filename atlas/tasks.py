@@ -7,9 +7,9 @@ import logging
 import time
 import json
 
+from datetime import datetime, timedelta
 from celery import Celery
 from fabric.api import execute
-from datetime import datetime, timedelta
 
 from atlas import fabric_tasks
 from atlas import utilities
@@ -26,6 +26,7 @@ log = logging.getLogger('atlas.tasks')
 # Create the Celery app object
 celery = Celery('tasks')
 celery.config_from_object(config_celery)
+
 
 class CronException(Exception):
     def __init__(self, message, errors):
@@ -111,7 +112,6 @@ class CronException(Exception):
             )
             utilities.post_to_slack_payload(slack_payload)
     pass
-
 
 
 @celery.task
@@ -239,6 +239,7 @@ def code_update(updated_item, original_item):
         }
         utilities.post_to_slack_payload(slack_payload)
 
+
 @celery.task
 def code_remove(item):
     """
@@ -280,6 +281,7 @@ def code_remove(item):
             ],
         }
         utilities.post_to_slack_payload(slack_payload)
+
 
 @celery.task
 def site_provision(site):
@@ -569,6 +571,7 @@ def site_remove(site):
     }
     utilities.post_to_slack_payload(slack_payload)
 
+
 @celery.task
 def command_prepare(item):
     """
@@ -634,7 +637,7 @@ def command_run(site, command, single_server, user=None):
     :return:
     """
     log.debug('Run Command - {0} - {1} - {2}'.format(site['sid'], single_server, command))
-    
+
     # 'match' searches for strings that begin with
     if command.startswith('drush'):
         if site['type'] is not 'homepage':
@@ -652,11 +655,10 @@ def command_run(site, command, single_server, user=None):
         fabric_task_result = execute(
             fabric_tasks.command_run, site=site, command=altered_command, warn_only=True)
 
-    
     command_time = time.time() - start_time
     log.debug('Run Command | Site - %s | Command - %s | Time - %s | Result - %s',
               site['sid'], command, time, fabric_task_result)
-    
+
     logstash_payload = {'command_time': command_time,
                         'logsource': 'atlas',
                         'command': command,
@@ -708,6 +710,7 @@ def command_run(site, command, single_server, user=None):
         slack_payload['user'] = user
 
     utilities.post_to_slack_payload(slack_payload)
+
 
 @celery.task
 def cron(status=None):

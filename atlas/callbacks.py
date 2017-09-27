@@ -16,6 +16,7 @@ from atlas.config import (ATLAS_LOCATION, DEFAULT_CORE, DEFAULT_PROFILE, SERVICE
 # Setup a sub-logger. See tasks.py for longer comment.
 log = logging.getLogger('atlas.callbacks')
 
+
 # Callbacks
 def pre_post_callback(resource, request):
     """
@@ -62,10 +63,10 @@ def pre_delete_code_callback(request, lookup):
         code_type = 'package'
     else:
         code_type = code['meta']['code_type']
-    log.debug('code | Delete | code - %s | code_type - %s',code['_id'], code_type)
+    log.debug('code | Delete | code - %s | code_type - %s', code['_id'], code_type)
     site_query = 'where={{"code.{0}":"{1}"}}'.format(code_type, code['_id'])
     sites = utilities.get_eve('sites', site_query)
-    log.debug('code | Delete | code - %s | sites result - %s',code['_id'],  sites)
+    log.debug('code | Delete | code - %s | sites result - %s', code['_id'], sites)
     if not sites['_meta']['total'] == 0:
         site_list = []
         for site in sites['_items']:
@@ -76,7 +77,8 @@ def pre_delete_code_callback(request, lookup):
             else:
                 site_list.append(site['_id'])
         site_list_full = ', '.join(site_list)
-        log.error('code | Delete | code - %s | ode item is in use by one or more sites - %s', code['_id'], site_list_full)
+        log.error('code | Delete | code - %s | ode item is in use by one or more sites - %s',
+                  code['_id'], site_list_full)
         abort(409, 'A conflict happened while processing the request. Code item is in use by one or more sites.')
 
 
@@ -200,7 +202,6 @@ def on_update_code_callback(updates, original):
         query = 'where={{"meta.name":"{0}","meta.code_type":"{1}","meta.is_current": true}}'.format(
             name, code_type)
         code_get = utilities.get_eve('code', query)
-        # TODO: Filter out the item we are updating.
         log.debug('code | on update | Current code - %s', code_get)
 
         for code in code_get['_items']:

@@ -22,7 +22,8 @@ PAGINATION_DEFAULT = 500
 
 # Add support for CORS
 X_DOMAINS = '*'
-X_HEADERS = ['Access-Control-Allow-Origin', 'If-Match', 'Authorization', 'User-Agent', 'Content-Type']
+X_HEADERS = ['Access-Control-Allow-Origin', 'If-Match',
+             'Authorization', 'User-Agent', 'Content-Type']
 
 # Allow $regex filtering. Default config blocks where and regex.
 MONGO_QUERY_BLACKLIST = ['$where']
@@ -106,7 +107,7 @@ CODE_SCHEMA = {
 QUERY_SCHEMA = {
     'title': {
         'type': 'string',
-        'required' : True,
+        'required': True,
     },
     'description': {
         'type': 'string',
@@ -116,7 +117,6 @@ QUERY_SCHEMA = {
         'allowed': ["code", "site", "statistic"],
         'required': True,
     },
-    # An embedded 'strongly-typed' dictionary.
     'query': {
         'type': 'string',
         'unique': True,
@@ -255,7 +255,7 @@ SITES_SCHEMA = {
     'dates': {
         'type': 'dict',
         'schema': {
-            # See https://docs.python.org/2/library/datetime.html#datetime.datetime for datetime format.
+            # See https://docs.python.org/2/library/datetime.html#datetime.datetime for format.
             'created': {
                 'type': 'datetime',
             },

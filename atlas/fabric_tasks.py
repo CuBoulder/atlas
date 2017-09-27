@@ -1,7 +1,7 @@
 """
-Fabric Commands
-
-Commands that run on servers to do the actual work.
+    atlas.fabric_tasks
+    ~~~~
+    Commands that run on servers to do the actual work.
 """
 import logging
 import requests
@@ -17,7 +17,7 @@ from atlas import utilities
 from atlas.config import (ATLAS_LOCATION, ENVIRONMENT, SSH_USER, CODE_ROOT, SITES_CODE_ROOT,
                           SITES_WEB_ROOT, WEBSERVER_USER, WEBSERVER_USER_GROUP, NFS_MOUNT_FILES_DIR,
                           BACKUPS_PATH, SERVICE_ACCOUNT_USERNAME, SERVICE_ACCOUNT_PASSWORD,
-                          SITE_DOWN_PATH)
+                          SITE_DOWN_PATH, LOAD_BALANCER)
 from atlas.config_servers import (SERVERDEFS, NFS_MOUNT_LOCATION, API_URLS,
                                   VARNISH_CONTROL_TERMINALS, LOAD_BALANCER_CONFIG_FILES,
                                   LOAD_BALANCER_CONFIG_GROUP)
@@ -34,6 +34,7 @@ env.roledefs = SERVERDEFS[ENVIRONMENT]
 
 class FabricException(Exception):
     pass
+
 
 # Code Commands.
 @roles('webservers')
@@ -440,7 +441,6 @@ def registry_rebuild(site):
 
 @roles('webservers')
 def clear_apc():
-    # TODO Fix for OPCache
     #run('wget -q -O - http://localhost/sysadmintools/apc/clearapc.php;')
     return True
 
@@ -648,7 +648,7 @@ def clone_repo(git_url, checkout_item, destination):
 
 def checkout_repo(checkout_item, destination):
     log.info('fabric_tasks | Checkout Repo | Destination - %s | Checkout - %s',
-            destination, checkout_item)
+             destination, checkout_item)
     with cd(destination):
         run('git reset --hard')
         run('git fetch --all')
@@ -666,7 +666,7 @@ def update_symlink(source, destination):
     if exists(destination):
         run('rm {0}'.format(destination))
     run('ln -s {0} {1}'.format(source, destination))
-    
+
 
 def launch_site(site):
     """
@@ -750,21 +750,14 @@ def diff_f5():
             subject = 'Site record missing'
             message = "Path '{0}' is in the f5, but does not have a site record.".format(path)
             utilities.send_email(email_message=message, email_subject=subject, email_to=devops_team)
-            print ("The f5 has an entry for '{0}' without a corresponding site record.".format(path))
+            print("The f5 has an entry for '{0}' without a corresponding site record.".format(path))
 
 
 def update_f5():
     if LOAD_BALANCER:
-        # Like 'WWWNGProdDataGroup.dat'
-        old_file_name = LOAD_BALANCER_CONFIG_FILES[ENVIRONMENT]
-        # Like 'WWWNGDevDataGroup.dat.1402433484.bac'
-        new_file_name = "{0}.{1}.bac".format(
-            LOAD_BALANCER_CONFIG_FILES[ENVIRONMENT],
-            str(time()).split('.')[0])
+        file_name = 
         load_balancer_config_dir = '{0}/fabfile'.format(ATLAS_LOCATION)
         sites = utilities.get_eve('sites', 'max_results=3000')
-
-        # TODO: delete old backups
 
         # Write data to file
         with open("{0}/{1}".format(load_balancer_config_dir, LOAD_BALANCER_CONFIG_FILES[ENVIRONMENT]),
@@ -782,12 +775,12 @@ def update_f5():
                         ofile.write('"{0}" := "{1}",\n'.format(path, site['pool']))
 
         execute(exportf5,
-                new_file_name=new_file_name,
+                file_name=LOAD_BALANCER_CONFIG_FILES[ENVIRONMENT],
                 load_balancer_config_dir=load_balancer_config_dir)
 
 
 @roles('load_balancers')
-def exportf5(new_file_name, load_balancer_config_dir):
+def exportf5(file_name, load_balancer_config_dir):
     """
     Backup configuration file on f5 server, replace the active file, and reload
     the configuration.
@@ -795,9 +788,9 @@ def exportf5(new_file_name, load_balancer_config_dir):
     """
     if LOAD_BALANCER:
         # Copy the new configuration file to the server.
-        put("{0}/{1}".format(load_balancer_config_dir, LOAD_BALANCER_CONFIG_FILES[ENVIRONMENT]), "/tmp")
+        put("{0}/{1}".format(load_balancer_config_dir, file_name), "/tmp")
         # Load the new configuration.
-        run("tmsh modify sys file data-group {0} source-path file:/tmp/{0}".format(LOAD_BALANCER_CONFIG_FILES[ENVIRONMENT]))
+        run("tmsh modify sys file data-group {0} source-path file:/tmp/{0}".format(file_name))
         run("tmsh save sys config")
         run("tmsh run cm config-sync to-group {0}".format(LOAD_BALANCER_CONFIG_GROUP[ENVIRONMENT]))
         disconnect_all()

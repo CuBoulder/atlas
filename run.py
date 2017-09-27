@@ -32,7 +32,7 @@ app = Eve(import_name='atlas', auth=utilities.AtlasBasicAuth, settings=SETTINGS_
 # TODO: Remove debug mode.
 app.debug = True
 
- # Enable logging to 'atlas.log' file
+# Enable logging to 'atlas.log' file
 LOG_HANDLER = TimedRotatingFileHandler('atlas.log', when='midnight', interval=1, backupCount=5)
 # The default log level is set to WARNING, so we have to explicitly set the
 # logging level to Debug.

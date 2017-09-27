@@ -1,0 +1,69 @@
+"""
+    atlas_config_local.py
+    ~~~~
+    Atlas per server configuration.
+"""
+ENVIRONMENT = 'local'
+SSL_KEY_FILE = '/path/to/cert.key'
+SSL_CRT_FILE = '/path/to/cert.cert'
+
+# List of usernames that are allowed to interact with the API
+ALLOWED_USERS = ['sample_user', 'other_user']
+
+# Symlink the files directory in from a NFS mount. Mount is set in atlas.config_server.py.
+NFS_MOUNT_FILES_DIR = True
+
+# Use a load balancer to route some traffic to another server pool. You will probably need to write
+# some custom functions to interact with the load balancer configuration.
+LOAD_BALANCER = True
+
+# Number of instances to keep in 'available' state.
+DESIRED_SITE_COUNT = 2
+
+# The directory where assets will be stored.
+# Path should be absolute and should NOT include a trailing slash. We use separate site_web_root and
+# site_code_root to make it easy to switch to the down page.
+CODE_ROOT = '/data/atlas/code'
+SITES_WEB_ROOT = '/htdocs'
+SITES_CODE_ROOT = '/data/atlas/sites'
+SITE_DOWN_PATH = '/data/code/down'
+BACKUPS_PATH = '/data/atlas/backups'
+
+# Default core and profile names for site creation.
+DEFAULT_CORE = 'drupal'
+DEFAULT_PROFILE = 'express'
+
+# Encryption Key. See https://cryptography.io/en/latest/fernet/ to generate a URL-safe
+# base64-encoded 32-byte key.
+ENCRYPTION_KEY = 'key'
+
+# LDAP configuration.
+LDAP_SERVER = 'ldaps://directory.colorado.edu:636'
+LDAP_ORG_UNIT = 'Users'
+LDAP_DNS_DOMAIN_NAME = 'dc=colorado,dc=edu'
+
+# User information for ssh and file permissions.
+SSH_USER = 'atlas_user'
+WEBSERVER_USER = 'webserver_user'
+WEBSERVER_USER_GROUP = 'webserver_group'
+DATABASE_USER = 'db_user'
+DATABASE_PASSWORD = 'db_creds'
+SERVICE_ACCOUNT_USERNAME = 'atlas_drupal'
+SERVICE_ACCOUNT_PASSWORD = 'atlas_drupal_creds'
+
+# Slack integration. Enter URL for channel to post DEV, TEST, and PROD messages
+# to. Enter a slack username to have messages from LOCAL go to the specific user.
+SLACK_NOTIFICATIONS = True
+SLACK_URL = 'SLACK_URL'
+SLACK_USERNAME = 'slackbot'
+
+# Logstash statistics logging
+SEND_LOGSTASH_STATISTICS = False
+
+# SMTP email notifications for failed tasks
+SEND_NOTIFICATION_EMAILS = False
+SEND_NOTIFICATION_FROM_EMAIL = ''
+EMAIL_HOST = ''
+EMAIL_PORT = 587
+EMAIL_USERNAME = ''
+EMAIL_PASSWORD = ''

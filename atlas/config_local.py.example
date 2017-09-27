@@ -58,9 +58,6 @@ SLACK_NOTIFICATIONS = True
 SLACK_URL = 'SLACK_URL'
 SLACK_USERNAME = 'slackbot'
 
-# Logstash statistics logging
-SEND_LOGSTASH_STATISTICS = False
-
 # SMTP email notifications for failed tasks
 SEND_NOTIFICATION_EMAILS = False
 SEND_NOTIFICATION_FROM_EMAIL = ''

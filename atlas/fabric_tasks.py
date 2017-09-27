@@ -755,7 +755,6 @@ def diff_f5():
 
 def update_f5():
     if LOAD_BALANCER:
-        file_name = 
         load_balancer_config_dir = '{0}/fabfile'.format(ATLAS_LOCATION)
         sites = utilities.get_eve('sites', 'max_results=3000')
 

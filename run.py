@@ -13,7 +13,7 @@ from eve import Eve
 from flask import jsonify, make_response
 from atlas import callbacks
 from atlas import utilities
-from atlas.config import (ATLAS_LOCATION, VERSION_NUMBER, SSL_KEY_FILE, SSL_CRT_FILE)
+from atlas.config import (ATLAS_LOCATION, VERSION_NUMBER, SSL_KEY_FILE, SSL_CRT_FILE, LOG_LOCATION)
 
 
 if ATLAS_LOCATION not in sys.path:
@@ -33,7 +33,7 @@ app = Eve(import_name='atlas', auth=utilities.AtlasBasicAuth, settings=SETTINGS_
 app.debug = True
 
 # Enable logging to 'atlas.log' file
-LOG_HANDLER = TimedRotatingFileHandler('atlas.log', when='midnight', interval=1, backupCount=5)
+LOG_HANDLER = TimedRotatingFileHandler(LOG_LOCATION, when='midnight', interval=1, backupCount=5)
 # The default log level is set to WARNING, so we have to explicitly set the
 # logging level to Debug.
 app.logger.setLevel(logging.DEBUG)

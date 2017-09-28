@@ -40,7 +40,7 @@ class AtlasBasicAuth(BasicAuth):
     """
     Basic Authentication
     """
-    def check_auth(self, username, password):
+    def check_auth(self, username, password, allowed_roles=['default'], resource='default', method='default'):
         """
         Check user supplied credentials against LDAP.
         """

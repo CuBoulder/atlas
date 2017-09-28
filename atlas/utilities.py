@@ -26,7 +26,7 @@ from atlas.config import (ATLAS_LOCATION, ALLOWED_USERS, LDAP_SERVER, LDAP_ORG_U
                           SLACK_USERNAME, SLACK_URL, SEND_NOTIFICATION_EMAILS,
                           SEND_NOTIFICATION_FROM_EMAIL, EMAIL_HOST, EMAIL_PORT, EMAIL_USERNAME,
                           EMAIL_PASSWORD)
-from atlas.config_servers import (SERVERDEFS, API_URLS, LOGSTASH_URL)
+from atlas.config_servers import (SERVERDEFS, API_URLS)
 
 # Setup a sub-logger. See tasks.py for longer comment.
 log = logging.getLogger('atlas.utilities')
@@ -456,20 +456,6 @@ def post_to_slack_payload(payload):
         r = requests.post(SLACK_URL, json=payload)
         if not r.ok:
             print r.text
-
-
-def post_to_logstash_payload(payload):
-    """
-    Posts a message to our logstash instance.
-
-    :param payload: JSON encoded payload.
-    """
-    if ENVIRONMENT != 'local':
-        try:
-            r = requests.post(LOGSTASH_URL, json=payload)
-        except Exception as error:
-            log.error('POST to Logstash | %s', error)
-
 
 
 def send_email(email_message, email_subject, email_to):

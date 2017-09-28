@@ -8,7 +8,7 @@ import re
 import os
 
 from atlas.config_servers import (SERVERDEFS, VARNISH_CONTROL_TERMINALS, NFS_MOUNT_LOCATION,
-                                  BASE_URLS, API_URLS, LOGSTASH_URL, LOAD_BALANCER_CONFIG_FILES,
+                                  BASE_URLS, API_URLS, LOAD_BALANCER_CONFIG_FILES,
                                   LOAD_BALANCER_CONFIG_GROUP)
 from atlas.config_local import (ENVIRONMENT, SSL_KEY_FILE, SSL_CRT_FILE, ALLOWED_USERS,
                                 NFS_MOUNT_FILES_DIR, LOAD_BALANCER, DESIRED_SITE_COUNT, CODE_ROOT,
@@ -18,9 +18,8 @@ from atlas.config_local import (ENVIRONMENT, SSL_KEY_FILE, SSL_CRT_FILE, ALLOWED
                                 WEBSERVER_USER_GROUP, DATABASE_USER, DATABASE_PASSWORD,
                                 SERVICE_ACCOUNT_USERNAME, SERVICE_ACCOUNT_PASSWORD,
                                 SLACK_NOTIFICATIONS, SLACK_URL, SLACK_USERNAME,
-                                SEND_LOGSTASH_STATISTICS, SEND_NOTIFICATION_EMAILS,
-                                SEND_NOTIFICATION_FROM_EMAIL, EMAIL_HOST, EMAIL_PORT,
-                                EMAIL_USERNAME, EMAIL_PASSWORD)
+                                SEND_NOTIFICATION_EMAILS, SEND_NOTIFICATION_FROM_EMAIL, EMAIL_HOST,
+                                EMAIL_PORT, EMAIL_USERNAME, EMAIL_PASSWORD, LOG_LOCATION)
 
 # Set Atlas location
 ATLAS_LOCATION = os.path.dirname(os.path.realpath(__file__))

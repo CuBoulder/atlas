@@ -6,6 +6,7 @@
 ENVIRONMENT = 'local'
 SSL_KEY_FILE = '/path/to/cert.key'
 SSL_CRT_FILE = '/path/to/cert.cert'
+LOG_LOCATION = '/data/logs/atlas.log'
 
 # List of usernames that are allowed to interact with the API
 ALLOWED_USERS = ['sample_user', 'other_user']
@@ -56,9 +57,6 @@ SERVICE_ACCOUNT_PASSWORD = 'atlas_drupal_creds'
 SLACK_NOTIFICATIONS = True
 SLACK_URL = 'SLACK_URL'
 SLACK_USERNAME = 'slackbot'
-
-# Logstash statistics logging
-SEND_LOGSTASH_STATISTICS = False
 
 # SMTP email notifications for failed tasks
 SEND_NOTIFICATION_EMAILS = False

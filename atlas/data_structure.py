@@ -178,9 +178,9 @@ SITES_SCHEMA = {
         'type': 'string',
         'allowed': [
             'local',
-            'development',
+            'dev',
             'test',
-            'production'
+            'prod'
         ],
     },
     'pool': {

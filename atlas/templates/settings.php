@@ -132,7 +132,7 @@ if (isset($_SERVER["WWWNG_ENV"]) || PHP_SAPI === "cli") {
         break;
 
       case 'cust_prod':
-        $conf['environment_indicator_text'] = 'PRODUCTION';
+        $conf['environment_indicator_text'] = 'PROD';
         $conf['environment_indicator_color'] = 'red';
         $base_url .= 'www.colorado.edu';
         break;
@@ -173,7 +173,7 @@ $conf['varnish_version'] = 3;
   $conf['varnish_control_key'] = substr(file_get_contents('/etc/varnish/secret'),0,-1);
 {% endif %}
 
-{% if environment == 'development' %}
+{% if environment == 'dev' %}
   $conf['drupal_http_request_fails'] = FALSE;
 {% endif %}
 

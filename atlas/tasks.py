@@ -291,7 +291,7 @@ def site_provision(site):
     :param site: A single site.
     :return:
     """
-    log.debug('Site provision | %s', site)
+    log.info('Site provision | %s', site)
     start_time = time.time()
     # 'db_key' needs to be added here and not in Eve so that the encryption
     # works properly.

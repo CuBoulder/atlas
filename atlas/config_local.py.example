@@ -37,6 +37,7 @@ DEFAULT_PROFILE = 'express'
 # Encryption Key. See https://cryptography.io/en/latest/fernet/ to generate a URL-safe
 # base64-encoded 32-byte key.
 ENCRYPTION_KEY = 'key'
+VARNISH_CONTROL_KEY = 'key'
 
 # LDAP configuration.
 LDAP_SERVER = 'ldaps://directory.colorado.edu:636'

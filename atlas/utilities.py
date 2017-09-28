@@ -164,7 +164,7 @@ def create_database(site_sid, site_db_key):
         if ENVIRONMENT != 'local':
             cursor.execute("GRANT ALL PRIVILEGES ON {0}.* TO '{0}'@'{1}';".format(
                 site_sid,
-                SERVERDEFS[ENVIRONMENT]['database_servers']['user_ip_range']))
+                SERVERDEFS[ENVIRONMENT]['database_servers']['user_host_pattern']))
         else:
             cursor.execute("GRANT ALL PRIVILEGES ON {0}.* TO '{0}'@'localhost';".format(site_sid))
     except mariadb.Error as error:

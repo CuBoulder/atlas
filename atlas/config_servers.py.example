@@ -1,10 +1,10 @@
 """
-Server configuration file for Atlas
-
-All server definitions go here.
+    atlas.config_servers.py
+    ~~~~~~
+    Server configuration file for Atlas
 """
 # Servers manipulate using Fabric.
-serverdefs = {
+SERVERDEFS = {
     'production': {
         'webservers': [
             'webserver1.example.com',
@@ -93,7 +93,7 @@ serverdefs = {
     },
 }
 
-varnish_control_terminals = {
+VARNISH_CONTROL_TERMINALS = {
     'production': 'varnish1.example.com:6082 varnish2.example.com:6082',
     'test': 'varnish-test1.example.com:6082 varnish-test2.example.com:6082',
     'development': 'varnish-dev1.example.com:6082',
@@ -101,35 +101,35 @@ varnish_control_terminals = {
 }
 
 # See config_local.py for switch.
-nfs_mount_location = {
+NFS_MOUNT_LOCATION = {
     'production': '/path/to/mount',
     'test': '/path/to/mount',
     'development': '/path/to/mount',
-    'local': '/wwwng',
+    'local': '/path/to/mount',
 }
 
-base_urls = {
+BASE_URLS = {
     'production': 'http://www.example.com',
     'test': 'http://www-test.example.com',
     'development': 'http://www-development.example.com',
     'local': 'http://express.local',
 }
 
-api_urls = {
+API_URLS = {
     'production': 'https://atlas.example.com/atlas',
     'test': 'https://atlas-test.example.com/atlas',
     'development': 'https://atlas-development.example.com/atlas',
     'local': 'https://inventory.local/atlas',
 }
 
-load_balancer_config_files = {
-    'production': 'WWWNGProdDataGroup.dat',
-    'test': 'WWWNGTestDataGroup.dat',
-    'development': 'WWWNGDevDataGroup.dat',
+LOAD_BALANCER_CONFIG_FILES = {
+    'production': 'ProdDataGroup.dat',
+    'test': 'TestDataGroup.dat',
+    'development': 'DevDataGroup.dat',
 }
 
 # Needed for reload configuration commands.
-load_balancer_config_group = {
+LOAD_BALANCER_CONFIG_GROUP = {
     'production': 'lb-prod1-2',
     'test': 'lb-test1-2',
     'development': 'lb-dev1-2',

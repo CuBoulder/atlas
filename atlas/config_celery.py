@@ -1,8 +1,10 @@
+"""
+Celery Config, Celerybeat schedule.
+"""
 from datetime import timedelta
 from celery.schedules import crontab
-from config_local import *
 
-BROKER_URL='amqp://guest@localhost//'
+BROKER_URL = 'amqp://guest@localhost//'
 CELERY_RESULT_BACKEND = 'mongodb://localhost:27017/'
 CELERY_MONGODB_BACKEND_SETTINGS = {
     'database': 'celery',
@@ -73,7 +75,6 @@ CELERYBEAT_SCHEDULE = {
         'task': 'atlas.tasks.cron',
         'schedule': timedelta(minutes=60),
         'kwargs': {
-            "type": "express",
             "status": "launched",
         },
     },
@@ -81,7 +82,6 @@ CELERYBEAT_SCHEDULE = {
         'task': 'atlas.tasks.cron',
         'schedule': timedelta(hours=6),
         'kwargs': {
-            "type": "express",
             "status": "locked",
         },
     },
@@ -89,7 +89,6 @@ CELERYBEAT_SCHEDULE = {
         'task': 'atlas.tasks.cron',
         'schedule': timedelta(hours=3),
         'kwargs': {
-            "type": "express",
             "status": "installed",
         },
     },
@@ -106,7 +105,7 @@ CELERYBEAT_SCHEDULE = {
         'schedule': crontab(minute=0, hour=3),
     },
     'remove_orphan_statistics': {
-        'task': 'atlas.tasks.delete_statistics_without_active_instance',
+        'task': 'atlas.tasks.remove_orphan_statistics',
         'schedule': timedelta(minutes=60),
     },
     'remove_stale_installed_sites': {

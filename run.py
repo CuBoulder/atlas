@@ -29,8 +29,6 @@ SETTINGS_FILE = os.path.join(THIS_DIRECTORY, 'atlas/data_structure.py')
 # Use our HTTP Basic Auth class which checks against LDAP.
 # Import the data structures and Eve settings.
 app = Eve(import_name='atlas', auth=utilities.AtlasBasicAuth, settings=SETTINGS_FILE)
-# TODO: Remove debug mode.
-app.debug = True
 
 # Enable logging to 'atlas.log' file
 LOG_HANDLER = TimedRotatingFileHandler(LOG_LOCATION, when='midnight', interval=1, backupCount=5)

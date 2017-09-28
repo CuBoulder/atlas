@@ -145,7 +145,7 @@ $conf['varnish_control_terminal'] = '{{ varnish_control }}';
 $conf['varnish_version'] = 4;
 $conf['varnish_control_key'] = '{{ varnish_control_key }}';
 
-{% if environment == 'development' %}
+{% if environment == 'dev' %}
   $conf['drupal_http_request_fails'] = FALSE;
 {% endif %}
 

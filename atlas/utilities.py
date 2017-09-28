@@ -52,16 +52,6 @@ class AtlasBasicAuth(BasicAuth):
         # connection and transactions.
         l = ldap.initialize(LDAP_SERVER)
 
-        # Start the connection using TLS.
-        try:
-            l.start_tls_s()
-        except ldap.LDAPError, e:
-            log.error(e.message)
-            if type(e.message) == dict and e.message.has_key('desc'):
-                log.error(e.message['desc'])
-            else:
-                log.error(e)
-
         ldap_distinguished_name = "uid={0},ou={1},{2}".format(
             username, LDAP_ORG_UNIT, LDAP_DNS_DOMAIN_NAME)
         log.debug(ldap_distinguished_name)

@@ -125,5 +125,3 @@ LOAD_BALANCER_CONFIG_GROUP = {
     'test': 'lb-test1-2',
     'dev': 'lb-dev1-2',
 }
-
-VARNISH_CONTROL_KEY = 'key'

@@ -124,17 +124,6 @@ if (isset($_SERVER['OSR_ENV'])) {
   }
 }
 
-// Memcache
-$conf['memcache_key_prefix'] = $conf['cu_sid'];
-{% if environment != 'local' %}
-$conf['memcache_servers'] = array(
-  {% for ip in memcache_servers -%}
-  '{{ip}}' => 'default',
-  {% endfor %}
-);
-{% endif %}
-
-
 // Varnish
 $conf['reverse_proxy'] = TRUE;
 $conf['reverse_proxy_addresses'] = array({% for ip in reverse_proxies -%}'{{ip}}',{% endfor %});

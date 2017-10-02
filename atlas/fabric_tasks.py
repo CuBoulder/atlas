@@ -578,7 +578,6 @@ def create_settings_files(site):
         'reverse_proxies':env.roledefs['varnish_servers'],
         'varnish_control': VARNISH_CONTROL_TERMINALS[ENVIRONMENT],
         'varnish_control_key': VARNISH_CONTROL_KEY,
-        'memcache_servers':env.roledefs['memcache_servers'],
         'environment': ENVIRONMENT
     }
 
@@ -599,7 +598,6 @@ def create_settings_files(site):
         'pw': database_password,
         'page_cache_maximum_age': page_cache_maximum_age,
         'database_servers':  env.roledefs['database_servers'],
-        'memcache_servers':  env.roledefs['memcache_servers'],
         'environment':  ENVIRONMENT
     }
 

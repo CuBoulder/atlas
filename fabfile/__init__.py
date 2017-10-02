@@ -593,6 +593,8 @@ def create_settings_files(site):
     profile = utilities.get_single_eve('code', site['code']['profile'])
     profile_name = profile['meta']['name']
 
+    cse_creator = site['settings']['cse_creator']
+    cse_id = site['settings']['cse_id']
     template_dir = '{0}/templates'.format(atlas_location)
 
     print template_dir
@@ -611,8 +613,8 @@ def create_settings_files(site):
         'pool':site['pool'],
         'atlas_statistics_id':statistics,
         'siteimprove_site':siteimprove_site,
-        'siteimprove_group':siteimprove_group
-        'cse_creator': cse_creator
+        'siteimprove_group':siteimprove_group,
+        'cse_creator': cse_creator,
         'cse_id': cse_id
     }
 

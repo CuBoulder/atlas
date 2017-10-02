@@ -216,12 +216,11 @@ sites_schema = {
                 'type': 'integer',
             },
             'cse_creator': {
-                'type': 'string'
+                'type': 'string',
             },
             'cse_id': {
                  'type': 'string'
              }
-             #jesustag
 },
     },
     'tag': {

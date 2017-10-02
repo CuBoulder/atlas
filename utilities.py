@@ -207,6 +207,20 @@ def delete_database(site_sid):
     mariadb_connection.commit()
     mariadb_connection.close()
 
+def post_cse(resource, payload):
+    """
+    Make calls to the Atlas API.
+
+    :param resource: A resource as defined in config_data_structure.py
+    :param payload: argument string
+    """
+    url = "{0}/{1}".format(api_urls[environment], resource)
+    headers = {"content-type": "application/json"}
+    r = requests.post(url, auth=(service_account_username, service_account_password), headers=headers, verify=ssl_verification, data=json.dumps(payload))
+    if r.ok:
+        return r.json()
+    else:
+        return r.text
 
 def post_eve(resource, payload):
     """
@@ -259,7 +273,6 @@ def get_single_eve(resource, id):
         return r.json()
     else:
         return r.text
-
 
 def patch_eve(resource, id, request_payload):
     """
@@ -354,6 +367,21 @@ def get_code_label(code_id):
     """
     code = get_single_eve('code', code_id)
     return code['meta']['label']
+
+#patch_cse(settings, site['_id'] ,payload dictionary)
+def patch_google_cse(resource, id, request_payload):
+    """
+    Patch items in the Atlas API.
+
+    :param resource:
+    :param id:
+    :param request_payload:
+    :return:
+    """
+    url = "{0}/{1}/{2}".format(api_urls[environment], resource, id)
+    get_etag = get_single_eve(resource, id)
+    headers = {'Content-Type': 'application/json', 'If-Match': get_etag['_etag']}
+    r = requests.patch(url, headers=headers, data=json.dumps(request_payload), auth=(service_account_username, service_account_password), verify=ssl_verification)
 
 
 def import_code(query):

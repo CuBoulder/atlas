@@ -215,7 +215,14 @@ sites_schema = {
             'siteimprove_group': {
                 'type': 'integer',
             },
-        },
+            'cse_creator': {
+                'type': 'string'
+            },
+            'cse_id': {
+                 'type': 'string'
+             }
+             #jesustag
+},
     },
     'tag': {
         'type': 'list',

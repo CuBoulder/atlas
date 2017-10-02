@@ -612,6 +612,8 @@ def create_settings_files(site):
         'atlas_statistics_id':statistics,
         'siteimprove_site':siteimprove_site,
         'siteimprove_group':siteimprove_group
+        'cse_creator': cse_creator
+        'cse_id': cse_id
     }
 
     print 'Settings Pre Variables - {0}'.format(local_pre_settings_variables)

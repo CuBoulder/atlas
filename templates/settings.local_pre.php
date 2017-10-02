@@ -20,6 +20,9 @@ $conf["atlas_statistics_id"] = "{{atlas_statistics_id}}";
 $conf["siteimprove_site"] = "{{siteimprove_site}}";
 $conf["siteimprove_group"] = "{{siteimprove_group}}";
 
+$conf['cse_creator'] = 'Gabriel Ortiz';
+$conf['cse_id'] = '23406';
+
 $path = "{{path}}";
 $pool = "{{pool}}";
 

@@ -221,7 +221,7 @@ sites_schema = {
             'cse_id': {
                 'type': 'string',
              },
-             'google_cse_csx' {
+             'google_cse_csx': {
                 'type': 'string'
              }
 },

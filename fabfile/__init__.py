@@ -593,9 +593,10 @@ def create_settings_files(site):
     profile = utilities.get_single_eve('code', site['code']['profile'])
     profile_name = profile['meta']['name']
 
-    cse_creator = site['settings']['cse_creator']
-    cse_id = site['settings']['cse_id']
-    google_cse_csx = site['settings']['google_cse_csx']
+    if ('cse_creator' in site['settings']) and ('cse_id' in site['settings']) :
+        google_cse_csx = site['settings']['cse_creator'] + ':' + site['settings']['cse_id']
+    else:
+        google_cse_csx = None
 
     template_dir = '{0}/templates'.format(atlas_location)
 
@@ -616,8 +617,6 @@ def create_settings_files(site):
         'atlas_statistics_id':statistics,
         'siteimprove_site':siteimprove_site,
         'siteimprove_group':siteimprove_group,
-        'cse_creator': cse_creator,
-        'cse_id': cse_id
         'google_cse_csx': google_cse_csx
     }
 

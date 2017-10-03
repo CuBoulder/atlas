@@ -20,9 +20,14 @@ $conf["atlas_statistics_id"] = "{{atlas_statistics_id}}";
 $conf["siteimprove_site"] = "{{siteimprove_site}}";
 $conf["siteimprove_group"] = "{{siteimprove_group}}";
 
-$conf["cse_creator"] = "{{cse_creator}}";
-$conf["cse_id"] = "{{cse_id}}";
-$conf["cse_id"] = "{{google_cse_csx}}";
+
+{% if google_cse_csx %}
+$conf["google_cse_cx"] = "{{google_cse_csx}}";
+{% else %}
+$conf["google_cse_cx"] = NULL;
+{% endif %}
+
+
 
 $path = "{{path}}";
 $pool = "{{pool}}";

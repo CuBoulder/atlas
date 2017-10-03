@@ -4,15 +4,14 @@
     Commands that run on servers to do the actual work.
 """
 import logging
-import requests
-import re
 
-from fabric.contrib.files import append, exists, sed, upload_template
+from random import randint
+from datetime import datetime
+
+from fabric.contrib.files import exists, upload_template
 from fabric.api import *
 from fabric.network import disconnect_all
-from random import randint
-from time import time
-from datetime import datetime
+
 from atlas import utilities
 from atlas.config import (ATLAS_LOCATION, ENVIRONMENT, SSH_USER, CODE_ROOT, SITES_CODE_ROOT,
                           SITES_WEB_ROOT, WEBSERVER_USER, WEBSERVER_USER_GROUP, NFS_MOUNT_FILES_DIR,
@@ -708,50 +707,6 @@ def launch_site(site):
         utilities.patch_eve('sites', site['_id'], payload)
 
 
-def diff_f5():
-    """
-    Copy f5 configuration file to local sever, parse txt and create or update
-    site items.
-
-    """
-    load_balancer_config_dir = '{0}/fabfile'.format(ATLAS_LOCATION)
-    load_balancer_config_file = '{0}/{1}'.format(
-        load_balancer_config_dir,
-        LOAD_BALANCER_CONFIG_FILES[ENVIRONMENT])
-    # If an older config file exists, copy it to a backup folder.
-    if os.path.isfile(load_balancer_config_file):
-        local('mv {0} {1}/f5_backups/{2}.{3}'.format(
-            load_balancer_config_file,
-            load_balancer_config_dir,
-            LOAD_BALANCER_CONFIG_FILES[ENVIRONMENT],
-            str(time()).split('.')[0]))
-    # Copy config file from the f5 server to the Atlas server.
-    local('scp {0}:/config/filestore/files_d/Common_d/data_group_d/\:Common\:{1}* {2}/{1}.tmp'.format(
-        SERVERDEFS[ENVIRONMENT]['load_balancers'][0],
-        LOAD_BALANCER_CONFIG_FILES[ENVIRONMENT],
-        load_balancer_config_dir))
-
-    # Open file from f5
-    with open('{0}.tmp'.format(load_balancer_config_file), "r") as ifile:
-        data = ifile.read()
-    # Use regex to parse out path values
-    p = re.compile('"(.+/?)" := "(\w+(-\w+)?)",')
-    sites = p.findall(data)
-    # Iterate through sites found in f5 data
-    for site in sites:
-        # Get path without leading slash
-        path = site[0][1:]
-
-        site_query = 'where={{"path":"{0}"}}'.format(path)
-        api_sites = utilities.get_eve('sites', site_query)
-
-        if not api_sites or len(api_sites['_items']) == 0:
-            subject = 'Site record missing'
-            message = "Path '{0}' is in the f5, but does not have a site record.".format(path)
-            utilities.send_email(email_message=message, email_subject=subject, email_to=devops_team)
-            print("The f5 has an entry for '{0}' without a corresponding site record.".format(path))
-
-
 def update_f5():
     if LOAD_BALANCER:
         load_balancer_config_dir = '{0}/fabfile'.format(ATLAS_LOCATION)
@@ -767,10 +722,10 @@ def update_f5():
                     if 'status' in site and (site['status'] == 'down' or site['status'] == 'delete'):
                         continue
                     # In case a path was saved with a leading slash
-                    path = site["path"] if site["path"][0] == '/' else '/' + site["path"]
+                    instance_path = site["path"] if site["path"][0] == '/' else '/' + site["path"]
                     # Ignore 'p1' paths but let the /p1 pattern through
-                    if not path.startswith("/p1") or len(path) == 3:
-                        ofile.write('"{0}" := "{1}",\n'.format(path, site['pool']))
+                    if not instance_path.startswith("/p1") or len(instance_path) == 3:
+                        ofile.write('"{0}" := "{1}",\n'.format(instance_path, site['pool']))
 
         execute(exportf5,
                 file_name=LOAD_BALANCER_CONFIG_FILES[ENVIRONMENT],

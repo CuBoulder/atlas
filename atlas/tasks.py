@@ -356,7 +356,7 @@ def site_provision(site):
                     },
                     {
                         "title": "Time",
-                        "value": provision_time + ' sec',
+                        "value": str(provision_time) + ' sec',
                         "short": True
                     },
                     {

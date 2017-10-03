@@ -52,6 +52,16 @@ class AtlasBasicAuth(BasicAuth):
         # connection and transactions.
         l = ldap.initialize(LDAP_SERVER)
 
+        # Start the connection using TLS.
+        try:
+            l.start_tls_s()
+        except ldap.LDAPError, e:
+            log.error(e.message)
+            if type(e.message) == dict and e.message.has_key('desc'):
+                log.error(e.message['desc'])
+            else:
+                log.error(e)
+
         ldap_distinguished_name = "uid={0},ou={1},{2}".format(
             username, LDAP_ORG_UNIT, LDAP_DNS_DOMAIN_NAME)
         log.debug(ldap_distinguished_name)
@@ -150,7 +160,7 @@ def create_database(site_sid, site_db_key):
         if ENVIRONMENT != 'local':
             cursor.execute("CREATE USER '{0}'@'{1}' IDENTIFIED BY '{2}';".format(
                 site_sid,
-                SERVERDEFS[ENVIRONMENT]['database_servers']['user_host_pattern'],
+                SERVERDEFS[ENVIRONMENT]['database_servers']['user_ip_range'],
                 instance_database_password))
         else:
             cursor.execute("CREATE USER '{0}'@'localhost' IDENTIFIED BY '{1}';".format(
@@ -164,7 +174,7 @@ def create_database(site_sid, site_db_key):
         if ENVIRONMENT != 'local':
             cursor.execute("GRANT ALL PRIVILEGES ON {0}.* TO '{0}'@'{1}';".format(
                 site_sid,
-                SERVERDEFS[ENVIRONMENT]['database_servers']['user_host_pattern']))
+                SERVERDEFS[ENVIRONMENT]['database_servers']['user_ip_range']))
         else:
             cursor.execute("GRANT ALL PRIVILEGES ON {0}.* TO '{0}'@'localhost';".format(site_sid))
     except mariadb.Error as error:
@@ -203,7 +213,7 @@ def delete_database(site_sid):
     try:
         cursor.execute("DROP USER '{0}'@'{1}0';".format(
             site_sid,
-            SERVERDEFS[ENVIRONMENT]['database_servers']['user_host_pattern']))
+            SERVERDEFS[ENVIRONMENT]['database_servers']['user_ip_range']))
     except mariadb.Error as error:
         log.error('Drop User | %s | %s', site_sid, error)
 

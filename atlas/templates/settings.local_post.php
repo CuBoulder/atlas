@@ -11,22 +11,24 @@ $databases['default']['default'] = array(
   'database' => '{{ sid }}',
   'username' => '{{ sid }}',
   'password' => '{{ pw }}',
-  'host' => '127.0.0.1',
-  'port' => '3306',
+  'host' => '{{ database_servers.master }}',
+  'port' => '{{ database_servers.port }}',
   'prefix' => '',
 );
-
-// Define our slave connection.
+{% if database_servers.slaves %}
+{% for slave in database_servers.slaves -%}
+// Define our slave database(s)
 $databases['default']['slave'][] = array(
   'driver' => 'mysql',
   'database' => '{{ sid }}',
   'username' => '{{ sid }}',
   'password' => '{{ pw }}',
-  'host' => '127.0.0.1',
-  'port' => '3307',
+  'host' => '{{ slave }}',
+  'port' => '{{ database_servers.port }}',
   'prefix' => '',
 );
-
+{% endfor %}
+{% endif %}
 {% else %}
 $databases['default']['default'] = array(
   'driver' => 'mysql',

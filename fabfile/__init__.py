@@ -595,6 +595,8 @@ def create_settings_files(site):
 
     cse_creator = site['settings']['cse_creator']
     cse_id = site['settings']['cse_id']
+    google_cse_csx = site['settings']['google_cse_csx']
+
     template_dir = '{0}/templates'.format(atlas_location)
 
     print template_dir
@@ -616,6 +618,7 @@ def create_settings_files(site):
         'siteimprove_group':siteimprove_group,
         'cse_creator': cse_creator,
         'cse_id': cse_id
+        'google_cse_csx': google_cse_csx
     }
 
     print 'Settings Pre Variables - {0}'.format(local_pre_settings_variables)

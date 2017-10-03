@@ -219,7 +219,10 @@ sites_schema = {
                 'type': 'string',
             },
             'cse_id': {
-                 'type': 'string'
+                'type': 'string',
+             },
+             'google_cse_csx' {
+                'type': 'string'
              }
 },
     },

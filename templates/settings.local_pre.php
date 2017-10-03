@@ -22,6 +22,7 @@ $conf["siteimprove_group"] = "{{siteimprove_group}}";
 
 $conf["cse_creator"] = "{{cse_creator}}";
 $conf["cse_id"] = "{{cse_id}}";
+$conf["cse_id"] = "{{google_cse_csx}}";
 
 $path = "{{path}}";
 $pool = "{{pool}}";

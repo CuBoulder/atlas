@@ -405,7 +405,7 @@ def site_update(site, updates, original):
             logger.debug('Found settings change.')
             if updates['settings'].get('page_cache_maximum_age') != original['settings'].get('page_cache_maximum_age'):
                 logger.debug('Found page_cache_maximum_age change.')
-            execute(fabfile.update_settings_file, site=site)-
+            execute(fabfile.update_settings_file, site=site)
 
     slack_title = '{0}/{1}'.format(base_urls[environment], site['path'])
     slack_link = '{0}/{1}'.format(base_urls[environment], site['path'])

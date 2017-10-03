@@ -350,7 +350,7 @@ def get_code_label(code_id):
     Get the label for a code item.
     :param code_id: string '_id' for a code item
     :return: string 'label'-'version'
-    """-
+    """
     code = get_single_eve('code', code_id)
     return code['meta']['label']
 

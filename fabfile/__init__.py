@@ -485,7 +485,7 @@ def registry_rebuild(site):
 
 @roles('webservers')
 def clear_apc():
-    run('wget -q -O - https://localhost/sysadmintools/apc/clearapc.php;')
+    run('wget -q -O - http://localhost/sysadmintools/apc/clearapc.php;')
 
 
 def drush_cache_clear(sid):

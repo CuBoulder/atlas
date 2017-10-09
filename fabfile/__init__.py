@@ -735,7 +735,7 @@ def machine_readable(string):
 def create_gsa(site):
     machine_name = machine_readable(site['path'])
     if not gsa_collection_exists(machine_name):
-        index_path = "http://www.colorado.edu/{0}/".format(site['path'])
+        index_path = "https://www.colorado.edu/{0}/".format(site['path'])
         gsa_create_collection(machine_name, index_path)
 
 

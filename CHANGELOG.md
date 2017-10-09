@@ -1,5 +1,13 @@
 # Change log
 
+## v1.0.25
+
+Resolves:
+
+- Add fields to support CSE
+- Express/&#35;1536 - Use HTTPS everywhere
+
+
 ## v1.0.24
 
 Need to 

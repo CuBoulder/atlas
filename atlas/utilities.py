@@ -160,7 +160,7 @@ def create_database(site_sid, site_db_key):
         if ENVIRONMENT != 'local':
             cursor.execute("CREATE USER '{0}'@'{1}' IDENTIFIED BY '{2}';".format(
                 site_sid,
-                SERVERDEFS[ENVIRONMENT]['database_servers']['user_ip_range'],
+                SERVERDEFS[ENVIRONMENT]['database_servers']['user_host_pattern'],
                 instance_database_password))
         else:
             cursor.execute("CREATE USER '{0}'@'localhost' IDENTIFIED BY '{1}';".format(
@@ -174,7 +174,7 @@ def create_database(site_sid, site_db_key):
         if ENVIRONMENT != 'local':
             cursor.execute("GRANT ALL PRIVILEGES ON {0}.* TO '{0}'@'{1}';".format(
                 site_sid,
-                SERVERDEFS[ENVIRONMENT]['database_servers']['user_ip_range']))
+                SERVERDEFS[ENVIRONMENT]['database_servers']['user_host_pattern']))
         else:
             cursor.execute("GRANT ALL PRIVILEGES ON {0}.* TO '{0}'@'localhost';".format(site_sid))
     except mariadb.Error as error:
@@ -213,7 +213,7 @@ def delete_database(site_sid):
     try:
         cursor.execute("DROP USER '{0}'@'{1}0';".format(
             site_sid,
-            SERVERDEFS[ENVIRONMENT]['database_servers']['user_ip_range']))
+            SERVERDEFS[ENVIRONMENT]['database_servers']['user_host_pattern']))
     except mariadb.Error as error:
         log.error('Drop User | %s | %s', site_sid, error)
 

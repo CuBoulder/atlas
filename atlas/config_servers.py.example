@@ -5,7 +5,7 @@
 """
 # Servers manipulate using Fabric.
 SERVERDEFS = {
-    'prod': {
+    'production': {
         'webservers': [
             'webserver1.example.com',
             'webserver2.example.com',
@@ -57,7 +57,7 @@ SERVERDEFS = {
             'lb-test2.example.com',
         ],
     },
-    'dev': {
+    'development': {
         'webservers': [
             'webserver-dev1.example.com',
 
@@ -95,43 +95,43 @@ SERVERDEFS = {
 }
 
 VARNISH_CONTROL_TERMINALS = {
-    'prod': 'varnish1.example.com:6082 varnish2.example.com:6082',
+    'production': 'varnish1.example.com:6082 varnish2.example.com:6082',
     'test': 'varnish-test1.example.com:6082 varnish-test2.example.com:6082',
-    'dev': 'varnish-dev1.example.com:6082',
+    'development': 'varnish-dev1.example.com:6082',
     'local': 'localhost:6082',
 }
 
 # See config_local.py for switch.
 NFS_MOUNT_LOCATION = {
-    'prod': '/path/to/mount',
+    'production': '/path/to/mount',
     'test': '/path/to/mount',
-    'dev': '/path/to/mount',
+    'development': '/path/to/mount',
     'local': '/path/to/mount',
 }
 
 BASE_URLS = {
-    'prod': 'http://www.example.com',
+    'production': 'http://www.example.com',
     'test': 'http://www-test.example.com',
-    'dev': 'http://www-dev.example.com',
+    'development': 'http://www-dev.example.com',
     'local': 'http://express.local',
 }
 
 API_URLS = {
-    'prod': 'https://atlas.example.com/atlas',
+    'production': 'https://atlas.example.com/atlas',
     'test': 'https://atlas-test.example.com/atlas',
-    'dev': 'https://atlas-dev.example.com/atlas',
+    'development': 'https://atlas-dev.example.com/atlas',
     'local': 'https://inventory.local/atlas',
 }
 
 LOAD_BALANCER_CONFIG_FILES = {
-    'prod': 'ProdDataGroup.dat',
+    'production': 'ProdDataGroup.dat',
     'test': 'TestDataGroup.dat',
-    'dev': 'DevDataGroup.dat',
+    'development': 'DevDataGroup.dat',
 }
 
 # Needed for reload configuration commands.
 LOAD_BALANCER_CONFIG_GROUP = {
-    'prod': 'lb-prod1-2',
+    'production': 'lb-prod1-2',
     'test': 'lb-test1-2',
-    'dev': 'lb-dev1-2',
+    'development': 'lb-dev1-2',
 }

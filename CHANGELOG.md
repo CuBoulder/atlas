@@ -1,5 +1,12 @@
 # Change log
 
+## v1.0.26
+
+Resolves:
+
+- &#35;392 - When an instance gets taken down, delete it's statistic or update the status
+- &#35;394 - Add days_since_last_login as int like days_since_last_edit
+
 ## v1.0.25
 
 Resolves:

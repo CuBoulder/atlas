@@ -4,7 +4,10 @@
     Commands that run on servers to do the actual work.
 """
 import logging
+import os
+import re
 
+import requests
 from random import randint
 from datetime import datetime
 
@@ -709,13 +712,17 @@ def launch_site(site):
 
 
 def update_f5():
+    """
+    Create a local file that defines the Legacy routing.
+    """
     if LOAD_BALANCER:
         load_balancer_config_dir = '{0}/fabfile'.format(ATLAS_LOCATION)
-        sites = utilities.get_eve('sites', 'max_results=3000')
-
+        sites = utilities.get_eve('sites', 'where={"type":"legacy"}&max_results=3000')
         # Write data to file
-        with open("{0}/{1}".format(load_balancer_config_dir, LOAD_BALANCER_CONFIG_FILES[ENVIRONMENT]),
-                "w") as ofile:
+        file_name = "{0}/{1}".format(load_balancer_config_dir, LOAD_BALANCER_CONFIG_FILES[ENVIRONMENT])
+        if not os.path.isfile(file_name):
+            file(file_name, 'w').close()
+        with open( file_name, "w") as ofile:
             for site in sites['_items']:
                 if 'path' in site:
                     # If a site is down or scheduled for deletion, skip to the next

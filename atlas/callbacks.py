@@ -138,6 +138,8 @@ def on_inserted_sites_callback(items):
             item['statistics'] = str(statistics['_id'])
 
             tasks.site_provision.delay(item)
+        if item['type'] == 'legacy' or item['f5only']:
+            tasks.update_f5.delay()
 
 
 def on_insert_code_callback(items):

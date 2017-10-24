@@ -935,3 +935,9 @@ def verify_statistics():
         }
 
         utilities.post_to_slack_payload(slack_payload)
+
+
+@celery.task
+def update_f5():
+    if ENVIRONMENT != 'local':
+        execute(fabric_tasks.update_f5)

@@ -338,6 +338,9 @@ statistics_schema = {
     'days_since_last_edit': {
         'type': 'integer',
     },
+    'days_since_last_login': {
+        'type': 'integer',
+    },
     'beans_total': {
         'type': 'integer',
     },

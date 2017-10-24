@@ -4,8 +4,10 @@
     Commands that run on servers to do the actual work.
 """
 import logging
-import requests
+import os
 import re
+
+import requests
 
 from fabric.contrib.files import append, exists, sed, upload_template
 from fabric.api import *
@@ -713,8 +715,10 @@ def update_f5():
     load_balancer_config_dir = '{0}/fabfile'.format(ATLAS_LOCATION)
     sites = utilities.get_eve('sites', 'where={"type":"legacy"}&max_results=3000')
     # Write data to file
-    with open("{0}/{1}".format(load_balancer_config_dir, LOAD_BALANCER_CONFIG_FILES[ENVIRONMENT]),
-              "w") as ofile:
+    file_name = "{0}/{1}".format(load_balancer_config_dir, LOAD_BALANCER_CONFIG_FILES[ENVIRONMENT])
+    if not os.path.isfile(file_name):
+        file(file_name, 'w').close()
+    with open( file_name, "w") as ofile:
         for site in sites['_items']:
             if 'path' in site:
                 # In case a path was saved with a leading slash

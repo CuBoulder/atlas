@@ -366,7 +366,7 @@ def site_update(site, updates, original):
                 # Set new status on site record for update to settings files.
                 site['status'] = 'installed'
                 execute(fabfile.update_settings_file, site=site)
-                execute(fabfile.clear_apc)
+                execute(fabfile.clear_php_cache)
                 patch_payload = '{"status": "installed"}'
             elif updates['status'] == 'launching':
                 logger.debug('Status changed to launching')
@@ -482,8 +482,8 @@ def command_prepare(item):
     :return:
     """
     logger.debug('Prepare Command\n{0}'.format(item))
-    if item['command'] == 'clear_apc':
-        execute(fabfile.clear_apc)
+    if item['command'] == 'clear_php_cache':
+        execute(fabfile.clear_php_cache)
         return
     if item['command'] == 'import_code':
         utilities.import_code(item['query'])
@@ -514,8 +514,8 @@ def command_prepare(item):
                                   user=item['modified_by'])
             # After all the commands run, flush APC.
             if item['command'] == 'update_settings_file':
-                logger.debug('Clear APC')
-                command_wrapper.delay(execute(fabfile.clear_apc))
+                logger.debug('Clear PHP Cache')
+                command_wrapper.delay(execute(fabfile.clear_php_cache))
 
 
 @celery.task

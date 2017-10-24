@@ -484,8 +484,8 @@ def registry_rebuild(site):
 
 
 @roles('webservers')
-def clear_apc():
-    run('wget -q -O - http://localhost/sysadmintools/apc/clearapc.php;')
+def clear_php_cache():
+    run('wget -q -O - http://localhost/sysadmintools/opcache/reset.php;')
 
 
 def drush_cache_clear(sid):
@@ -870,7 +870,7 @@ def launch_site(site, gsa_collection=False):
                     update_symlink(code_directory_current, site['path'])
                 # enter new site directory
                 with cd(web_directory_path):
-                    clear_apc()
+                    clear_php_cache()
                     if gsa_collection:
                         # Set the collection name
                         run("sudo -u {0} drush vset --yes google_appliance_collection {1}".format(webserver_user, gsa_collection))
@@ -885,7 +885,7 @@ def launch_site(site, gsa_collection=False):
                 update_symlink(code_directory_current, web_directory)
                 # enter new site directory
             with cd(web_directory):
-                clear_apc()
+                clear_php_cache()
                 drush_cache_clear(site['sid'])
             # Assign site to update group 12.
             update_group = 12

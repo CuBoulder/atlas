@@ -557,7 +557,7 @@ def create_settings_files(site):
     """
     sid = site['sid']
     if site['pool'] == 'poolb-homepage':
-        site_path = None
+        site_path = ''
     elif 'path' in site:
         site_path = site['path']
     else:

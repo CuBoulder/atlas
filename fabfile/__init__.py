@@ -556,7 +556,9 @@ def create_settings_files(site):
     upload the resulting file to the webservers.
     """
     sid = site['sid']
-    if 'path' in site:
+    if site['pool'] == 'poolb-homepage':
+        site_path = None
+    elif 'path' in site:
         site_path = site['path']
     else:
         site_path = site['sid']

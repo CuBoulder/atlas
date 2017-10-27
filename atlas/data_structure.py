@@ -457,6 +457,10 @@ STATISTICS_SCHEMA = {
             'email_address': {
                 'type': 'dict',
                 'schema': {
+                    'edit_my_content': {
+                        'type': 'list',
+                        'nullable': True,
+                    },
                     'content_editor': {
                         'type': 'list',
                         'nullable': True,
@@ -470,6 +474,9 @@ STATISTICS_SCHEMA = {
             'username': {
                 'type': 'dict',
                 'schema': {
+                    'edit_my_content': {
+                        'type': 'list',
+                    },
                     'content_editor': {
                         'type': 'list',
                     },
@@ -481,8 +488,19 @@ STATISTICS_SCHEMA = {
             'no_valid_owner': {
                 'type': 'boolean',
             },
-            'count': {
-                'type': 'integer',
+            'counts': {
+                'type': 'dict',
+                'schema': {
+                    'edit_my_content': {
+                        'type': 'integer',
+                    },
+                    'content_editor': {
+                        'type': 'integer',
+                    },
+                    'site_contact': {
+                        'type': 'integer',
+                    },
+                },
             },
         },
     },

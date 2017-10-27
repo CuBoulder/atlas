@@ -716,7 +716,7 @@ def update_f5():
     Create a local file that defines the Legacy routing.
     """
     if LOAD_BALANCER:
-        load_balancer_config_dir = '{0}/fabfile'.format(ATLAS_LOCATION)
+        load_balancer_config_dir = '{0}/atlas/files'.format(ATLAS_LOCATION)
         sites = utilities.get_eve('sites', 'where={"type":"legacy"}&max_results=3000')
         # Write data to file
         file_name = "{0}/{1}".format(load_balancer_config_dir, LOAD_BALANCER_CONFIG_FILES[ENVIRONMENT])

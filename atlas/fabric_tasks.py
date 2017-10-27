@@ -717,7 +717,7 @@ def update_f5():
     """
     if LOAD_BALANCER:
         load_balancer_config_dir = "{0}/files".format(ATLAS_LOCATION)
-        sites = utilities.get_eve('sites', 'where={"type":"legacy"}&max_results=3000')
+        sites = utilities.get_eve('sites', 'max_results=3000')
         # Write data to file
         file_name = "{0}/{1}".format(load_balancer_config_dir, LOAD_BALANCER_CONFIG_FILES[ENVIRONMENT])
         if not os.path.isfile(file_name):

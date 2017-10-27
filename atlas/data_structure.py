@@ -488,8 +488,19 @@ STATISTICS_SCHEMA = {
             'no_valid_owner': {
                 'type': 'boolean',
             },
-            'count': {
-                'type': 'integer',
+            'counts': {
+                'type': 'dict',
+                'schema': {
+                    'edit_my_content': {
+                        'type': 'integer',
+                    },
+                    'content_editor': {
+                        'type': 'integer',
+                    },
+                    'site_contact': {
+                        'type': 'integer',
+                    },
+                },
             },
         },
     },

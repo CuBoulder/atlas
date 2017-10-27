@@ -718,7 +718,7 @@ def update_f5():
     if LOAD_BALANCER:
         sites = utilities.get_eve('sites', 'where={"type":"legacy"}&max_results=3000')
         # Write data to file
-        file_name = "{0}/atlas/files/{1}".format(ATLAS_LOCATION, LOAD_BALANCER_CONFIG_FILES[ENVIRONMENT])
+        file_name = "{0}/files/{1}".format(ATLAS_LOCATION, LOAD_BALANCER_CONFIG_FILES[ENVIRONMENT])
         if not os.path.isfile(file_name):
              log.debug('fabric_tasks | update f5 | file does not exist')
             file(file_name, 'w').close()

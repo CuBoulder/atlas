@@ -271,7 +271,6 @@ def get_single_eve(resource, id):
 
     return r.json()
 
-
 def patch_eve(resource, id, request_payload):
     """
     Patch items in the Atlas API.

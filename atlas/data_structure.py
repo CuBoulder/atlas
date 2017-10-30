@@ -215,6 +215,12 @@ SITES_SCHEMA = {
             'siteimprove_group': {
                 'type': 'integer',
             },
+            'cse_creator': {
+                'type': 'string',
+            },
+            'cse_id': {
+                'type': 'string',
+            },
         },
     },
     'tag': {
@@ -330,6 +336,9 @@ STATISTICS_SCHEMA = {
         'type': 'string',
     },
     'days_since_last_edit': {
+        'type': 'integer',
+    },
+    'days_since_last_login': {
         'type': 'integer',
     },
     'beans_total': {

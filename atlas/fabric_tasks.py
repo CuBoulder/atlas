@@ -524,7 +524,9 @@ def create_settings_files(site):
     upload the resulting file to the webservers.
     """
     sid = site['sid']
-    if 'path' in site:
+    if site['pool'] == 'poolb-homepage':
+        site_path = ''
+    elif 'path' in site:
         site_path = site['path']
     else:
         site_path = site['sid']
@@ -547,8 +549,12 @@ def create_settings_files(site):
     profile = utilities.get_single_eve('code', site['code']['profile'])
     profile_name = profile['meta']['name']
 
-    template_dir = '{0}/templates'.format(ATLAS_LOCATION)
+    if ('cse_creator' in site['settings']) and ('cse_id' in site['settings']) :
+        google_cse_csx = site['settings']['cse_creator'] + ':' + site['settings']['cse_id']
+    else:
+        google_cse_csx = None
 
+    template_dir = '{0}/templates'.format(ATLAS_LOCATION)
     destination = "{0}/{1}/{1}/sites/default".format(SITES_CODE_ROOT, site['sid'])
 
     local_pre_settings_variables = {
@@ -563,7 +569,8 @@ def create_settings_files(site):
         'pool': site['pool'],
         'atlas_statistics_id': statistics,
         'siteimprove_site': siteimprove_site,
-        'siteimprove_group': siteimprove_group
+        'siteimprove_group': siteimprove_group,
+        'google_cse_csx': google_cse_csx
     }
 
     log.info('fabric_tasks | Create Settings file | Settings Pre Variables - %s',

@@ -450,6 +450,14 @@ def site_update(site, updates, original):
                 # execute(fabric_tasks.site_backup, site=site)
                 execute(fabric_tasks.site_take_down, site=site)
                 patch_payload = '{"status": "down"}'
+                # Soft delete stats when we take down an instance.
+                statistics_query = 'where={{"site":"{0}"}}'.format(site['_id'])
+                statistics = utilities.get_eve('statistics', statistics_query)
+                logger.debug('Statistics | %s', statistics)
+                if not statistics['_meta']['total'] == 0:
+                    for statistic in statistics['_items']:
+                        utilities.delete_eve('statistics', statistic['_id'])
+
             elif updates['status'] == 'restore':
                 log.debug('Site update | ID - %s | Status changed to restore', site['_id'])
                 site['status'] = 'installed'

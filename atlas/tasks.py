@@ -389,21 +389,42 @@ def site_update(site, updates, original):
         core_change = False
         profile_change = False
         package_change = False
+        code_to_update= []
         if 'core' in updates['code']:
             log.debug('Site update | ID - %s | Found core change', site['_id'])
             core_change = True
             execute(fabric_tasks.site_core_update, site=site)
+            code_to_update.extend(updates['code']['core'])
         if 'profile' in updates['code']:
             log.debug('Site update | ID - %s | Found profile change', site['_id'])
             profile_change = True
             execute(fabric_tasks.site_profile_update, site=site, original=original, updates=updates)
+            code_to_update.extend(updates['code']['profile'])
         if 'package' in updates['code']:
             log.debug('Site update | ID - %s | Found package changes', site['_id'])
             package_change = True
             execute(fabric_tasks.site_package_update, site=site)
-        if core_change or profile_change or package_change:
-            execute(fabric_tasks.registry_rebuild, site=site)
-            execute(fabric_tasks.update_database, site=site)
+            code_to_update.extend(updates['code']['package'])
+        if code_to_update:
+            # Figure out what deploy parameters we need to deal with
+            deploy_registry_rebuild = False
+            deploy_cache_clear = False
+            deploy_update_database = False
+            log.debug('Site update | ID - %s | Deploy | Code to update - %s', site['_id'], code_to_update)
+            code_items = utilities.get_code(code_to_update)
+            for code in code_items:
+                if code['deploy']['registry_rebuild']:
+                    deploy_registry_rebuild = True
+                if code['deploy']['cache_clear']:
+                    deploy_cache_clear = True
+                if code['deploy']['update_database']:
+                    deploy_update_database = True
+            if deploy_registry_rebuild:
+                execute(fabric_tasks.registry_rebuild, site=site)
+            if deploy_cache_clear:
+                execute(fabric_tasks.cache_clear, site=site)
+            if deploy_update_database:
+                execute(fabric_tasks.update_database, site=site)
         # Email notification if we updated packages.
         if 'package' in updates['code']:
             package_name_string = ""

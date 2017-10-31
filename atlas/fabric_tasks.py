@@ -441,8 +441,8 @@ def registry_rebuild(site):
 
 
 @roles('webservers')
-def clear_apc():
-    run('wget -q -O - http://localhost/sysadmintools/apc/clearapc.php;')
+def clear_php_cache():
+    run('wget -q -O - http://localhost/sysadmintools/opcache/reset.php;')
     return True
 
 
@@ -698,9 +698,7 @@ def launch_site(site):
                 if not exists(web_directory_path):
                     update_symlink(code_directory_current, site['path'])
                 with cd(web_directory_path):
-                    clear_apc()
-                    # Clear caches at the end of the launch process to show correct pathologic
-                    # rendered URLS.
+                    clear_php_cache()
                     drush_cache_clear(site['sid'])
             # Assign it to an update group.
             update_group = randint(0, 10)
@@ -709,7 +707,7 @@ def launch_site(site):
             with cd(SITES_WEB_ROOT):
                 update_symlink(code_directory_current, web_directory)
             with cd(web_directory):
-                clear_apc()
+                clear_php_cache()
                 drush_cache_clear(site['sid'])
             # Assign site to update group 12.
             update_group = 12

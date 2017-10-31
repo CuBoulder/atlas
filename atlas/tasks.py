@@ -430,7 +430,7 @@ def site_update(site, updates, original):
                 # Set new status on site record for update to settings files.
                 site['status'] = 'installed'
                 execute(fabric_tasks.update_settings_file, site=site)
-                execute(fabric_tasks.clear_apc)
+                execute(fabric_tasks.clear_php_cache)
                 patch_payload = '{"status": "installed"}'
             elif updates['status'] == 'launching':
                 log.debug('Site update | ID - %s | Status changed to launching', site['_id'])
@@ -584,9 +584,9 @@ def command_prepare(item):
     :param item: A complete command item, including new values.
     :return:
     """
-    log.debug('Prepare Command | Item - %s', item)
-    if item['command'] == 'clear_apc':
-        execute(fabric_tasks.clear_apc)
+    logger.debug('Prepare Command\n{0}'.format(item))
+    if item['command'] == 'clear_php_cache':
+        execute(fabric_tasks.clear_php_cache)
         return
     if item['command'] == 'import_code':
         utilities.import_code(item['query'])
@@ -614,8 +614,8 @@ def command_prepare(item):
                                   user=item['modified_by'])
             # After all the commands run, flush APC.
             if item['command'] == 'update_settings_file':
-                log.debug('Prepare Command | Item - %s | Clear APC', item['_id'])
-                command_wrapper.delay(execute(fabric_tasks.clear_apc))
+                log.debug('Prepare Command | Item - %s | Clear PHP Cache', item['_id'])
+                command_wrapper.delay(execute(fabric_tasks.clear_php_cache))
 
 
 @celery.task

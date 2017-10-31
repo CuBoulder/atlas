@@ -61,8 +61,7 @@ def code_deploy(item):
             item['meta']['version'])
         create_directory_structure(code_folder)
         clone_task = clone_repo(item["git_url"], item["commit_hash"], code_folder)
-        log.debug('Code | Deploy | Item - %s | Got clone response', item['_id'])
-        log.debug('Code | Deploy | Item - %s | Clone result - %s', item['_id'], clone_task)
+        log.debug('Code | Deploy | Clone result - %s', clone_task)
         if clone_task is True:
             if item['meta']['is_current']:
                 code_folder_current = '{0}/{1}/{2}/{2}-current'.format(

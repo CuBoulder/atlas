@@ -317,6 +317,9 @@ STATISTICS_SCHEMA = {
     'nodes_total': {
         'type': 'integer',
     },
+    'node_revision_total': {
+        'type': 'integer',
+    },
     'nodes_by_type': {
         'type': 'dict',
         'schema': {

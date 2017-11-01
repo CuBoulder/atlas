@@ -1,5 +1,22 @@
 # Change log
 
+## v2.0.0
+
+This release restructures Atlas and allows the Eve portion to be run from the command line.
+
+Resolves:
+
+&#35;371 Refactor code to run as a proper python application
+&#35;329 Remove code dependencies Code
+&#35;378 Switch from APC to OPCache clearing
+&#35;331 Standardize logging structure
+&#35;397 Homepage sitemap.xml includes P1
+&#35;383 Pull stats from logs, not HTTP input
+&#35;368 Bug in slack post Bug
+&#35;391 Add `node_revision_total`
+&#35;386 Update DB settings
+&#35;200 Delete GSA code Instance
+
 ## v1.0.26
 
 Resolves:

@@ -151,17 +151,17 @@ def on_insert_code_callback(items):
 
     :param items: List of dicts for items to be created.
     """
-    log.debug('code | Inset | items - %s', items)
+    log.debug('code | Insert | items - %s', items)
     for item in items:
         if item.get('meta') and item['meta'].get('is_current') and item['meta']['is_current'] is True:
             query = 'where={{"meta.name":"{0}","meta.code_type":"{1}","meta.is_current": true}}'.format(item['meta']['name'], item['meta']['code_type'])
             code_get = utilities.get_eve('code', query)
-            log.debug('code | Inset | current code - %s', code_get)
+            log.debug('code | Insert | current code - %s', code_get)
             if code_get['_meta']['total'] != 0:
                 for code in code_get['_items']:
                     request_payload = {'meta.is_current': False}
                     utilities.patch_eve('code', code['_id'], request_payload)
-        log.debug('code | Inset | Ready to deploy item - %s', item)
+        log.debug('code | Insert | Ready to deploy item - %s', item)
         tasks.code_deploy.delay(item)
 
 
@@ -308,6 +308,7 @@ def pre_update(resource, updates, original):
         if username is not None:
             if username is not SERVICE_ACCOUNT_USERNAME:
                 updates['modified_by'] = username
+
 
 def pre_replace(resource, item, original):
     """

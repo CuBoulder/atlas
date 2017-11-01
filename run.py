@@ -32,10 +32,9 @@ app = Eve(import_name='atlas', auth=utilities.AtlasBasicAuth, settings=SETTINGS_
 # TODO: Remove debug mode.
 app.debug = True
 
-# Enable logging to 'atlas.log' file
-LOG_HANDLER = TimedRotatingFileHandler(LOG_LOCATION, when='midnight', interval=1, backupCount=5)
-# The default log level is set to WARNING, so we have to explicitly set the
-# logging level to Debug.
+# Enable logging to 'atlas.log' file.
+LOG_HANDLER = WatchedFileHandler(LOG_LOCATION)
+# The default log level is set to WARNING, so we have to explicitly set the logging level to Debug.
 app.logger.setLevel(logging.DEBUG)
 # Append the handler to the default application logger
 app.logger.addHandler(LOG_HANDLER)
@@ -62,7 +61,6 @@ app.on_update += callbacks.pre_update
 app.on_replace += callbacks.pre_replace
 
 
-
 @app.errorhandler(409)
 def custom409(error):
     response = jsonify({'message': error.description})
@@ -74,6 +72,7 @@ def custom409(error):
 def version():
     response = make_response(VERSION_NUMBER)
     return response
+
 
 # This config is only used when running via python, rather than mod_wsgi
 if __name__ == '__main__':

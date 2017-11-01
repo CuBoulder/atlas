@@ -111,14 +111,14 @@ NFS_MOUNT_LOCATION = {
 BASE_URLS = {
     'production': 'http://www.example.com',
     'test': 'http://www-test.example.com',
-    'development': 'http://www-development.example.com',
+    'development': 'http://www-dev.example.com',
     'local': 'http://express.local',
 }
 
 API_URLS = {
     'production': 'https://atlas.example.com/atlas',
     'test': 'https://atlas-test.example.com/atlas',
-    'development': 'https://atlas-development.example.com/atlas',
+    'development': 'https://atlas-dev.example.com/atlas',
     'local': 'https://inventory.local/atlas',
 }
 

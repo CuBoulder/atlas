@@ -215,6 +215,12 @@ SITES_SCHEMA = {
             'siteimprove_group': {
                 'type': 'integer',
             },
+            'cse_creator': {
+                'type': 'string',
+            },
+            'cse_id': {
+                'type': 'string',
+            },
         },
     },
     'tag': {
@@ -311,6 +317,9 @@ STATISTICS_SCHEMA = {
     'nodes_total': {
         'type': 'integer',
     },
+    'node_revision_total': {
+        'type': 'integer',
+    },
     'nodes_by_type': {
         'type': 'dict',
         'schema': {
@@ -330,6 +339,9 @@ STATISTICS_SCHEMA = {
         'type': 'string',
     },
     'days_since_last_edit': {
+        'type': 'integer',
+    },
+    'days_since_last_login': {
         'type': 'integer',
     },
     'beans_total': {
@@ -457,6 +469,10 @@ STATISTICS_SCHEMA = {
             'email_address': {
                 'type': 'dict',
                 'schema': {
+                    'edit_my_content': {
+                        'type': 'list',
+                        'nullable': True,
+                    },
                     'content_editor': {
                         'type': 'list',
                         'nullable': True,
@@ -470,6 +486,9 @@ STATISTICS_SCHEMA = {
             'username': {
                 'type': 'dict',
                 'schema': {
+                    'edit_my_content': {
+                        'type': 'list',
+                    },
                     'content_editor': {
                         'type': 'list',
                     },
@@ -481,8 +500,19 @@ STATISTICS_SCHEMA = {
             'no_valid_owner': {
                 'type': 'boolean',
             },
-            'count': {
-                'type': 'integer',
+            'counts': {
+                'type': 'dict',
+                'schema': {
+                    'edit_my_content': {
+                        'type': 'integer',
+                    },
+                    'content_editor': {
+                        'type': 'integer',
+                    },
+                    'site_contact': {
+                        'type': 'integer',
+                    },
+                },
             },
         },
     },

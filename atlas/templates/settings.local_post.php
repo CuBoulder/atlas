@@ -39,5 +39,4 @@ $databases['default']['default'] = array(
   'port' => '{{ port }}',
   'prefix' => '',
 );
-
 {% endif %}

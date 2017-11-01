@@ -453,7 +453,7 @@ def site_update(site, updates, original):
                 # Soft delete stats when we take down an instance.
                 statistics_query = 'where={{"site":"{0}"}}'.format(site['_id'])
                 statistics = utilities.get_eve('statistics', statistics_query)
-                logger.debug('Statistics | %s', statistics)
+                log.debug('Statistics | %s', statistics)
                 if not statistics['_meta']['total'] == 0:
                     for statistic in statistics['_items']:
                         utilities.delete_eve('statistics', statistic['_id'])
@@ -584,7 +584,7 @@ def command_prepare(item):
     :param item: A complete command item, including new values.
     :return:
     """
-    logger.debug('Prepare Command\n{0}'.format(item))
+    log.debug('Prepare Command\n{0}'.format(item))
     if item['command'] == 'clear_php_cache':
         execute(fabric_tasks.clear_php_cache)
         return

@@ -34,6 +34,7 @@ env.user = SSH_USER
 env.use_ssh_config = True
 env.roledefs = SERVERDEFS[ENVIRONMENT]
 
+
 class FabricException(Exception):
     pass
 
@@ -549,7 +550,7 @@ def create_settings_files(site):
     profile = utilities.get_single_eve('code', site['code']['profile'])
     profile_name = profile['meta']['name']
 
-    if ('cse_creator' in site['settings']) and ('cse_id' in site['settings']) :
+    if ('cse_creator' in site['settings']) and ('cse_id' in site['settings']):
         google_cse_csx = site['settings']['cse_creator'] + ':' + site['settings']['cse_id']
     else:
         google_cse_csx = None
@@ -728,7 +729,7 @@ def update_f5():
         if not os.path.isfile(file_name):
             log.debug('fabric_tasks | update f5 | file does not exist')
             file(file_name, 'w').close()
-        with open( file_name, "w") as ofile:
+        with open(file_name, "w") as ofile:
             for site in sites['_items']:
                 if 'path' in site:
                     # If a site is down or scheduled for deletion, skip to the next

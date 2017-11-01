@@ -307,6 +307,7 @@ def pre_update(resource, updates, original):
             if username is not SERVICE_ACCOUNT_USERNAME:
                 updates['modified_by'] = username
 
+
 def pre_replace(resource, item, original):
     """
     On PUT, get the username from the request and add it to the record if one was not provided.

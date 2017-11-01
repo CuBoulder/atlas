@@ -103,6 +103,7 @@ def code_update(updated_item, original_item):
                 code_type_dir,
                 updated_item['meta']['name'])
             update_symlink(code_folder, code_folder_current)
+    clear_php_cache()
 
 
 @roles('webservers')

@@ -34,6 +34,7 @@ env.user = SSH_USER
 env.use_ssh_config = True
 env.roledefs = SERVERDEFS[ENVIRONMENT]
 
+
 class FabricException(Exception):
     pass
 
@@ -61,8 +62,7 @@ def code_deploy(item):
             item['meta']['version'])
         create_directory_structure(code_folder)
         clone_task = clone_repo(item["git_url"], item["commit_hash"], code_folder)
-        log.debug('Code | Deploy | Item - %s | Got clone response', item['_id'])
-        log.debug('Code | Deploy | Item - %s | Clone result - %s', item['_id'], clone_task)
+        log.debug('Code | Deploy | Clone result - %s', clone_task)
         if clone_task is True:
             if item['meta']['is_current']:
                 code_folder_current = '{0}/{1}/{2}/{2}-current'.format(
@@ -104,6 +104,7 @@ def code_update(updated_item, original_item):
                 code_type_dir,
                 updated_item['meta']['name'])
             update_symlink(code_folder, code_folder_current)
+    clear_php_cache()
 
 
 @roles('webservers')
@@ -442,8 +443,8 @@ def registry_rebuild(site):
 
 
 @roles('webservers')
-def clear_apc():
-    run('wget -q -O - http://localhost/sysadmintools/apc/clearapc.php;')
+def clear_php_cache():
+    run('wget -q -O - http://localhost/sysadmintools/opcache/reset.php;')
     return True
 
 
@@ -531,7 +532,9 @@ def create_settings_files(site):
     upload the resulting file to the webservers.
     """
     sid = site['sid']
-    if 'path' in site:
+    if site['pool'] == 'poolb-homepage':
+        site_path = ''
+    elif 'path' in site:
         site_path = site['path']
     else:
         site_path = site['sid']
@@ -554,8 +557,12 @@ def create_settings_files(site):
     profile = utilities.get_single_eve('code', site['code']['profile'])
     profile_name = profile['meta']['name']
 
-    template_dir = '{0}/templates'.format(ATLAS_LOCATION)
+    if ('cse_creator' in site['settings']) and ('cse_id' in site['settings']):
+        google_cse_csx = site['settings']['cse_creator'] + ':' + site['settings']['cse_id']
+    else:
+        google_cse_csx = None
 
+    template_dir = '{0}/templates'.format(ATLAS_LOCATION)
     destination = "{0}/{1}/{1}/sites/default".format(SITES_CODE_ROOT, site['sid'])
 
     local_pre_settings_variables = {
@@ -570,7 +577,8 @@ def create_settings_files(site):
         'pool': site['pool'],
         'atlas_statistics_id': statistics,
         'siteimprove_site': siteimprove_site,
-        'siteimprove_group': siteimprove_group
+        'siteimprove_group': siteimprove_group,
+        'google_cse_csx': google_cse_csx
     }
 
     log.info('fabric_tasks | Create Settings file | Settings Pre Variables - %s',
@@ -699,9 +707,7 @@ def launch_site(site):
                 if not exists(web_directory_path):
                     update_symlink(code_directory_current, site['path'])
                 with cd(web_directory_path):
-                    clear_apc()
-                    # Clear caches at the end of the launch process to show correct pathologic
-                    # rendered URLS.
+                    clear_php_cache()
                     drush_cache_clear(site['sid'])
             # Assign it to an update group.
             update_group = randint(0, 10)
@@ -710,7 +716,7 @@ def launch_site(site):
             with cd(SITES_WEB_ROOT):
                 update_symlink(code_directory_current, web_directory)
             with cd(web_directory):
-                clear_apc()
+                clear_php_cache()
                 drush_cache_clear(site['sid'])
             # Assign site to update group 12.
             update_group = 12
@@ -730,7 +736,7 @@ def update_f5():
         if not os.path.isfile(file_name):
             log.debug('fabric_tasks | update f5 | file does not exist')
             file(file_name, 'w').close()
-        with open( file_name, "w") as ofile:
+        with open(file_name, "w") as ofile:
             for site in sites['_items']:
                 if 'path' in site:
                     # If a site is down or scheduled for deletion, skip to the next

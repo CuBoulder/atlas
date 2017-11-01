@@ -20,25 +20,25 @@ if (isset($launched) && $launched && isset($conf["cu_path"])) {
     if ($_SERVER['HTTP_HOST'] == 'www.colorado.edu' &&
       strpos($_SERVER['REQUEST_URI'], $conf['cu_sid']) !== false) {
       header('HTTP/1.0 301 Moved Permanently');
-      header('Location: http://www.colorado.edu'. str_replace($conf['cu_sid'], $conf["cu_path"], $_SERVER['REQUEST_URI']));
+      header('Location: https://www.colorado.edu'. str_replace($conf['cu_sid'], $conf["cu_path"], $_SERVER['REQUEST_URI']));
       exit();
     }
     elseif ($_SERVER['HTTP_HOST'] == 'www-test.colorado.edu' &&
       strpos($_SERVER['REQUEST_URI'], $conf['cu_sid']) !== false) {
       header('HTTP/1.0 301 Moved Permanently');
-      header('Location: http://www-test.colorado.edu'. str_replace($conf['cu_sid'], $conf["cu_path"], $_SERVER['REQUEST_URI']));
+      header('Location: https://www-test.colorado.edu'. str_replace($conf['cu_sid'], $conf["cu_path"], $_SERVER['REQUEST_URI']));
       exit();
     }
     elseif ($_SERVER['HTTP_HOST'] == 'www-dev.colorado.edu' &&
       strpos($_SERVER['REQUEST_URI'], $conf['cu_sid']) !== false) {
       header('HTTP/1.0 301 Moved Permanently');
-      header('Location: http://www-dev.colorado.edu'. str_replace($conf['cu_sid'], $conf["cu_path"], $_SERVER['REQUEST_URI']));
+      header('Location: https://www-dev.colorado.edu'. str_replace($conf['cu_sid'], $conf["cu_path"], $_SERVER['REQUEST_URI']));
       exit();
     }
     elseif ($_SERVER['HTTP_HOST'] == 'express.local' &&
       strpos($_SERVER['REQUEST_URI'], $conf['cu_sid']) !== false) {
       header('HTTP/1.0 301 Moved Permanently');
-      header('Location: http://express.local'. str_replace($conf['cu_sid'], $conf["cu_path"], $_SERVER['REQUEST_URI']));
+      header('Location: https://express.local'. str_replace($conf['cu_sid'], $conf["cu_path"], $_SERVER['REQUEST_URI']));
       exit();
     }
   }
@@ -52,9 +52,6 @@ $conf['page_compression'] = 0;
 // Set up environment specific variables for wwwng.
 // If wwwng env isset or php executed through cli (drush).
 if (isset($_SERVER["WWWNG_ENV"]) || PHP_SAPI === "cli") {
-
-  // Ensure secure pages is enabled.
-  $conf['securepages_enable'] = TRUE;
 
   // Never allow updating modules through UI.
   $conf['allow_authorize_operations'] = FALSE;
@@ -111,36 +108,30 @@ if (isset($_SERVER["WWWNG_ENV"]) || PHP_SAPI === "cli") {
   // Change colors and text for environment indicator based on ENV var.
   if (isset($_SERVER['WWWNG_ENV'])) {
     global $base_url;
-    if (isset($_SERVER['HTTPS']) && strtolower($_SERVER['HTTPS']) == 'on') {
-      $base_url = 'https://';
-    }
-    else {
-      $base_url = 'http://';
-    }
 
     switch($_SERVER['WWWNG_ENV']) {
       case 'cust_dev':
         $conf['environment_indicator_text'] = 'DEV';
         $conf['environment_indicator_color'] = 'green';
-        $base_url .= 'www-dev.colorado.edu';
+        $base_url .= 'https://www-dev.colorado.edu';
         break;
 
       case 'cust_test':
         $conf['environment_indicator_text'] = 'TEST';
         $conf['environment_indicator_color'] = 'yellow';
-        $base_url .= 'www-test.colorado.edu';
+        $base_url .= 'https://www-test.colorado.edu';
         break;
 
       case 'cust_prod':
         $conf['environment_indicator_text'] = 'PROD';
         $conf['environment_indicator_color'] = 'red';
-        $base_url .= 'www.colorado.edu';
+        $base_url .= 'https://www.colorado.edu';
         break;
 
       case 'express_local':
         $conf['environment_indicator_text'] = 'LOCAL';
         $conf['environment_indicator_color'] = 'grey';
-        $base_url .= 'express.local';
+        $base_url .= 'https://express.local';
         break;
 
     }

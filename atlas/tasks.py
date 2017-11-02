@@ -221,7 +221,6 @@ def code_update(updated_item, original_item):
                 {
                     "fallback": slack_title,
                     "color": slack_color,
-                    "title": slack_title,
                     "fields": [
                         {
                             "title": "Code",
@@ -264,7 +263,6 @@ def code_remove(item):
                 {
                     "fallback": slack_title,
                     "color": slack_color,
-                    "title": slack_title,
                     "fields": [
                         {
                             "title": "Code",
@@ -347,12 +345,11 @@ def site_provision(site):
             {
                 "fallback": slack_text,
                 "color": slack_color,
-                "title": slack_title,
                 "fields": [
                     {
                         "title": "Instance",
                         "value": slack_link,
-                        "short": True
+                        "short": False
                     },
                     {
                         "title": "Time",
@@ -362,6 +359,16 @@ def site_provision(site):
                     {
                         "title": "Environment",
                         "value": ENVIRONMENT,
+                        "short": True
+                    },
+                    {
+                        "title": "Core",
+                        "value": core_string,
+                        "short": True
+                    },
+                    {
+                        "title": "Profile",
+                        "value": profile_string,
                         "short": True
                     },
                 ],
@@ -479,7 +486,7 @@ def site_update(site, updates, original):
             execute(fabric_tasks.update_settings_file, site=site)
 
     slack_title = 'Site Update - Success'
-    slack_text = 'Site Update - Success - {0}/{1}'.format(BASE_URLS[ENVIRONMENT], site['path'])
+    slack_text = 'Site Update - Success - {0}/{1}'.format(API_URLS[ENVIRONMENT], site['_id'])
     slack_color = 'good'
     slack_link = '{0}/{1}'.format(BASE_URLS[ENVIRONMENT], site['path'])
 
@@ -490,19 +497,23 @@ def site_update(site, updates, original):
             {
                 "fallback": slack_text,
                 "color": slack_color,
-                "author_name": updates['modified_by'],
                 "title": slack_title,
                 "fields": [
                     {
                         "title": "Instance",
                         "value": slack_link,
-                        "short": True
+                        "short": False
                     },
                     {
                         "title": "Environment",
                         "value": ENVIRONMENT,
                         "short": True
                     },
+                    {
+                        "title": "Update requested by",
+                        "value": updates['modified_by'],
+                        "short": True
+                    }
                 ],
             }
         ],

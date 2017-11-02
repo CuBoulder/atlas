@@ -48,22 +48,6 @@ def pre_post_sites_callback(request):
         abort(409, 'Error: There is no current profile.')
 
 
-def pre_post_code_callback(request, lookup):
-    """
-    :param request: flask.request object
-    """
-    log.debug('code | POST | Pre post callback | %s', request)
-    # Check to see if we have a current profile and core.
-    code_query = 'where={{"meta.name":"{0}","meta.version":"{1}","meta.code_type":"{2}"}}'.format(request['meta']['name'], request['meta']['version'], request['meta']['code_type'])
-    code = utilities.get_eve('code', code_query)
-
-    log.debug('code | POST | Pre post callback | core query result | %s', code)
-
-    if not code['_meta']['total'] == 0:
-        log.error('code | POST | Pre post callback | Code exists with same name and version')
-        abort(409, 'Error: There is already a code item of that type with that name and version.')
-
-
 def pre_delete_code_callback(request, lookup):
     """
     Make sure no sites are using the code.
@@ -167,6 +151,15 @@ def on_insert_code_callback(items):
     """
     log.debug('code | Insert | items - %s', items)
     for item in items:
+        log.debug('code | POST | On Insert callback | %s', item)
+        # Check to see if we have a current profile and core.
+        code_query = 'where={{"meta.name":"{0}","meta.version":"{1}","meta.code_type":"{2}"}}'.format(item['meta']['name'], item['meta']['version'], item['meta']['code_type'])
+        code = utilities.get_eve('code', code_query)
+        log.debug('code | POST | On Insert callback | Code query result | %s', code)
+        if not code['_meta']['total'] == 0:
+            log.error('code | POST | On Insert callback | Code exists with same name and version')
+            abort(409, 'Error: There is already a code item of that type with that name and version.')
+
         if item.get('meta') and item['meta'].get('is_current') and item['meta']['is_current'] is True:
             query = 'where={{"meta.name":"{0}","meta.code_type":"{1}","meta.is_current": true}}'.format(item['meta']['name'], item['meta']['code_type'])
             code_get = utilities.get_eve('code', query)

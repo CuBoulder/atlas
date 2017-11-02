@@ -48,6 +48,22 @@ def pre_post_sites_callback(request):
         abort(409, 'Error: There is no current profile.')
 
 
+def pre_post_code_callback(request):
+    """
+    :param request: flask.request object
+    """
+    log.debug('code | POST | Pre post callback | %s', request)
+    # Check to see if we have a current profile and core.
+    code_query = 'where={{"meta.name":"{0}","meta.version":"{1}","meta.type":"{2}"}}'.format(request['meta']['name'], request['meta']['version'], request['meta']['type'])
+    code = utilities.get_eve('code', code_query)
+
+    log.debug('code | POST | Pre post callback | core query result | %s', code)
+
+    if not code['_meta']['total'] == 0:
+        log.error('code | POST | Pre post callback | Code exists with same name and version')
+        abort(409, 'Error: There is already a code item of that type with that name and version.')
+
+
 def pre_delete_code_callback(request, lookup):
     """
     Make sure no sites are using the code.

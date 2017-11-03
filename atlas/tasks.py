@@ -149,17 +149,20 @@ def code_deploy(item):
             {
                 "fallback": slack_fallback,
                 "color": slack_color,
-                "author_name": item['created_by'],
-                "title": text,
                 "fields": [
-                    {
-                        "title": "Name",
-                        "value": item['meta']['name'],
-                        "short": True
-                    },
                     {
                         "title": "Environment",
                         "value": ENVIRONMENT,
+                        "short": True
+                    },
+                     {
+                        "title": "User",
+                        "value": item['created_by'],
+                        "short": True
+                    },
+                    {
+                        "title": "Name",
+                        "value": item['meta']['name'],
                         "short": True
                     },
                     {
@@ -212,7 +215,6 @@ def code_update(updated_item, original_item):
     if False not in fab_task.values():
         slack_title = 'Code Update - Success'
         slack_color = 'good'
-        code_string = '{0} - {1}'.format(name, version)
 
         slack_payload = {
             "text": slack_title,
@@ -223,15 +225,25 @@ def code_update(updated_item, original_item):
                     "color": slack_color,
                     "fields": [
                         {
-                            "title": "Code",
-                            "value": code_string,
-                            "short": True
-                        },
-                        {
                             "title": "Environment",
                             "value": ENVIRONMENT,
                             "short": True
                         },
+                        {
+                            "title": "User",
+                            "value": item['created_by'],
+                            "short": True
+                        },
+                        {
+                            "title": "Name",
+                            "value": name,
+                            "short": True
+                        },
+                        {
+                            "title": "Version",
+                            "value": version,
+                            "short": True
+                        }
                     ],
                 }
             ],
@@ -265,15 +277,25 @@ def code_remove(item):
                     "color": slack_color,
                     "fields": [
                         {
-                            "title": "Code",
-                            "value": code_string,
-                            "short": True
-                        },
-                        {
                             "title": "Environment",
                             "value": ENVIRONMENT,
                             "short": True
                         },
+                        {
+                            "title": "User",
+                            "value": item['created_by'],
+                            "short": True
+                        },
+                        {
+                            "title": "Name",
+                            "value": name,
+                            "short": True
+                        },
+                        {
+                            "title": "Version",
+                            "value": version,
+                            "short": True
+                        }
                     ],
                 }
             ],
@@ -352,13 +374,13 @@ def site_provision(site):
                         "short": False
                     },
                     {
-                        "title": "Time",
-                        "value": str(provision_time) + ' sec',
+                        "title": "Environment",
+                        "value": ENVIRONMENT,
                         "short": True
                     },
                     {
-                        "title": "Environment",
-                        "value": ENVIRONMENT,
+                        "title": "Time",
+                        "value": str(provision_time) + ' sec',
                         "short": True
                     },
                     {
@@ -497,7 +519,6 @@ def site_update(site, updates, original):
             {
                 "fallback": slack_text,
                 "color": slack_color,
-                "title": slack_title,
                 "fields": [
                     {
                         "title": "Instance",
@@ -517,7 +538,6 @@ def site_update(site, updates, original):
                 ],
             }
         ],
-        "user": updates['modified_by']
     }
     utilities.post_to_slack_payload(slack_payload)
 
@@ -567,7 +587,6 @@ def site_remove(site):
                 "fallback": slack_text,
                 "color": slack_color,
                 "author_name": site['modified_by'],
-                "title": slack_title,
                 "fields": [
                     {
                         "title": "Instance",

@@ -151,6 +151,15 @@ def on_insert_code_callback(items):
     """
     log.debug('code | Insert | items - %s', items)
     for item in items:
+        log.debug('code | POST | On Insert callback | %s', item)
+        # Check to see if we have a current profile and core.
+        code_query = 'where={{"meta.name":"{0}","meta.version":"{1}","meta.code_type":"{2}"}}'.format(item['meta']['name'], item['meta']['version'], item['meta']['code_type'])
+        code = utilities.get_eve('code', code_query)
+        log.debug('code | POST | On Insert callback | Code query result | %s', code)
+        if not code['_meta']['total'] == 0:
+            log.error('code | POST | On Insert callback | %s named %s-%s already exists', item['meta']['code_type'], item['meta']['name'], item['meta']['version'])
+            abort(409, 'Error: A {0} named {1}-{2} already exists.'.format(item['meta']['code_type'], item['meta']['name'], item['meta']['version']))
+
         if item.get('meta') and item['meta'].get('is_current') and item['meta']['is_current'] is True:
             query = 'where={{"meta.name":"{0}","meta.code_type":"{1}","meta.is_current": true}}'.format(item['meta']['name'], item['meta']['code_type'])
             code_get = utilities.get_eve('code', query)

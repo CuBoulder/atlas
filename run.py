@@ -33,7 +33,7 @@ app = Eve(import_name='atlas', auth=utilities.AtlasBasicAuth, settings=SETTINGS_
 # Enable logging to 'atlas.log' file.
 LOG_HANDLER = WatchedFileHandler(LOG_LOCATION)
 # The default log level is set to WARNING, so we have to explicitly set the logging level to Debug.
-app.logger.setLevel(logging.DEBUG)
+app.logger.setLevel(logging.WARNING)
 # Append the handler to the default application logger
 app.logger.addHandler(LOG_HANDLER)
 

@@ -586,22 +586,25 @@ def site_remove(site):
             {
                 "fallback": slack_text,
                 "color": slack_color,
-                "author_name": site['modified_by'],
                 "fields": [
                     {
                         "title": "Instance",
                         "value": slack_link,
-                        "short": True
+                        "short": False
                     },
                     {
                         "title": "Environment",
                         "value": ENVIRONMENT,
                         "short": True
                     },
+                    {
+                        "title": "Delete requested by",
+                        "value": site['modified_by'],
+                        "short": True
+                    }
                 ],
             }
         ],
-        "user": site['modified_by']
     }
     utilities.post_to_slack_payload(slack_payload)
 
@@ -707,26 +710,25 @@ def command_run(site, command, single_server, user=None):
                 "fallback": slack_text,
                 "color": slack_color,
                 "author_name": site['modified_by'],
-                "title": slack_title,
                 "fields": [
+                    {
+                        "title": "Instance",
+                        "value": slack_link,
+                        "short": False
+                    },
                     {
                         "title": "Command",
                         "value": altered_command,
                         "short": True
                     },
                     {
-                        "title": "Command Time",
-                        "value": command_time,
-                        "short": True
-                    },
-                    {
-                        "title": "Instance",
-                        "value": slack_link,
-                        "short": True
-                    },
-                    {
                         "title": "Environment",
                         "value": ENVIRONMENT,
+                        "short": True
+                    },
+                    {
+                        "title": "Command Time",
+                        "value": command_time,
                         "short": True
                     },
                 ],

@@ -77,7 +77,7 @@ def pre_delete_code_callback(request, lookup):
             else:
                 site_list.append(site['_id'])
         site_list_full = ', '.join(site_list)
-        log.error('code | Delete | code - %s | ode item is in use by one or more sites - %s',
+        log.error('code | Delete | code - %s | Code item is in use by one or more sites - %s',
                   code['_id'], site_list_full)
         abort(409, 'A conflict happened while processing the request. Code item is in use by one or more sites.')
 

@@ -211,6 +211,7 @@ def code_update(updated_item, original_item):
 
     name = updated_item['meta']['name'] if updated_item['meta']['name'] else original_item['meta']['name']
     version = updated_item['meta']['version'] if updated_item['meta']['version'] else original_item['meta']['version']
+    created_by = updated_item['created_by'] if updated_item['created_by'] else original_item['created_by']
 
     if False not in fab_task.values():
         slack_title = 'Code Update - Success'
@@ -231,7 +232,7 @@ def code_update(updated_item, original_item):
                         },
                         {
                             "title": "User",
-                            "value": item['created_by'],
+                            "value": created_by,
                             "short": True
                         },
                         {

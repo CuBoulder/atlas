@@ -34,8 +34,8 @@ app.debug = True
 
 # Enable logging to 'atlas.log' file.
 LOG_HANDLER = WatchedFileHandler(LOG_LOCATION)
-# The default log level is set to WARNING, so we have to explicitly set the logging level to Debug.
-app.logger.setLevel(logging.DEBUG)
+# The default log level is set to WARNING, so we have to explicitly set the logging level to Info.
+app.logger.setLevel(logging.INFO)
 # Append the handler to the default application logger
 app.logger.addHandler(LOG_HANDLER)
 

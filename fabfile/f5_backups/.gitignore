@@ -1,4 +1,0 @@
-# Ignore everything in this directory
-*
-# Except this file. We use this to hold the place for f5 backups to be dropped in.
-!.gitignore

@@ -6,7 +6,7 @@
 import os
 import sys
 import logging
-from logging.handlers import TimedRotatingFileHandler
+from logging.handlers import WatchedFileHandler
 import ssl
 
 from eve import Eve

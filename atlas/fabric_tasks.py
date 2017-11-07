@@ -606,12 +606,7 @@ def create_settings_files(site):
         'sid': sid,
         'pw': database_password,
         'page_cache_maximum_age': page_cache_maximum_age,
-<<<<<<< HEAD
         'database_servers':  env.roledefs['database_servers'],
-=======
-        'database_servers': env.roledefs['database_servers'],
-        'memcache_servers':  env.roledefs['memcache_servers'],
->>>>>>> dev
         'environment':  ENVIRONMENT
     }
 

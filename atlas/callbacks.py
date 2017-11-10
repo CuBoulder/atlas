@@ -259,7 +259,7 @@ def on_update_sites_callback(updates, original):
             site['settings'] = settings
 
         if updates.get('status'):
-            if updates['status'] in ['installing', 'launching', 'take_down', 'restore']:
+            if updates['status'] in ['installing', 'launching', 'take_down']:
                 if updates['status'] == 'installing':
                     date_json = '{{"assigned":"{0} GMT"}}'.format(updates['_updated'])
                 elif updates['status'] == 'launching':
@@ -269,8 +269,7 @@ def on_update_sites_callback(updates, original):
                 elif updates['status'] == 'take_down':
                     date_json = '{{"taken_down":"{0} GMT"}}'.format(updates['_updated'])
                 
-                if date_json:
-                    updates['dates'] = json.loads(date_json)
+                updates['dates'] = json.loads(date_json)
 
         log.debug('sites | Update | Ready for Celery | Site - %s | Updates - %s', site, updates)
         tasks.site_update.delay(site=site, updates=updates, original=original)

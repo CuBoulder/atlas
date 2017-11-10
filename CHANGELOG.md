@@ -1,5 +1,9 @@
 # Change log
 
+## v2.0.1
+
+    Fix issue that prevented instances from restoring.
+
 ## v2.0.0
 
 This release restructures Atlas and allows the Eve portion to be run from the command line.

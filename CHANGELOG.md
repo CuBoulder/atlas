@@ -2,7 +2,7 @@
 
 ## v2.0.1
 
-    Fix issue that prevented instances from restoring.
+    Fixed issue that took down instance on Prod and prevented instances from restoring.
 
 ## v2.0.0
 

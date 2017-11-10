@@ -268,10 +268,9 @@ def on_update_sites_callback(updates, original):
                     date_json = '{{"locked":""}}'
                 elif updates['status'] == 'take_down':
                     date_json = '{{"taken_down":"{0} GMT"}}'.format(updates['_updated'])
-                elif updates['status'] == 'restore':
-                    date_json = '{{"taken_down": null}}'
-
-                updates['dates'] = json.loads(date_json)
+                
+                if date_json:
+                    updates['dates'] = json.loads(date_json)
 
         log.debug('sites | Update | Ready for Celery | Site - %s | Updates - %s', site, updates)
         tasks.site_update.delay(site=site, updates=updates, original=original)

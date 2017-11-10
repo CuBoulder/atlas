@@ -886,7 +886,7 @@ def take_down_installed_old_sites():
     """
     In non-prod environments, take down instances that are older than 35 days.
     """
-    if ENVIRONMENT != 'production':
+    if ENVIRONMENT in ['dev', 'test']:
         site_query = 'where={"status":"installed"}'
         sites = utilities.get_eve('sites', site_query)
         # Loop through and remove sites that are more than 35 days old.

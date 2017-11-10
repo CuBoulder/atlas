@@ -276,6 +276,7 @@ SITES_SCHEMA = {
             },
             'taken_down': {
                 'type': 'datetime',
+                'nullable': True,
             },
         },
     },

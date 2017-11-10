@@ -269,7 +269,7 @@ def on_update_sites_callback(updates, original):
                 elif updates['status'] == 'take_down':
                     date_json = '{{"taken_down":"{0} GMT"}}'.format(updates['_updated'])
                 elif updates['status'] == 'restore':
-                    date_json = '{{"taken_down":""}}'
+                    date_json = '{{"taken_down": null}}'
 
                 updates['dates'] = json.loads(date_json)
 

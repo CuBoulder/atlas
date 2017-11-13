@@ -5,6 +5,7 @@
 Resolves:
 
 - &#35;404 Fixed homepage cron command.
+- &#35;403 Bug with code labels in email messages.
 
 ## v2.0.1
 

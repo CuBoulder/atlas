@@ -367,7 +367,7 @@ def get_code_label(code_id):
     :return: string 'label or 'name-version'
     """
     code = get_single_eve('code', code_id)
-    if code['meta'].get('meta':)
+    if code['meta'].get('meta'):
         return code['meta']['label']
     else:
         return get_code_name_version(code_id)

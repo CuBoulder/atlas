@@ -787,7 +787,7 @@ def cron_run(site):
     log.info('Run Cron | %s ', site['sid'])
     start_time = time.time()
    
-    if site['type'] is not 'homepage':
+    if site['pool'] is not 'poolb-homepage':
         uri = BASE_URLS[ENVIRONMENT] + '/' + site['path']
     else:
         uri = BASE_URLS[ENVIRONMENT]

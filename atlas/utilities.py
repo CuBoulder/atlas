@@ -361,12 +361,16 @@ def get_code_name_version(code_id):
 
 def get_code_label(code_id):
     """
-    Get the label for a code item.
+    Get the label for a code item if it has one, otherwise use the machine name and version.
+
     :param code_id: string '_id' for a code item
-    :return: string 'label'-'version'
+    :return: string 'label or 'name-version'
     """
     code = get_single_eve('code', code_id)
-    return code['meta']['label']
+    if code['meta'].get('meta'):
+        return code['meta']['label']
+    else:
+        return get_code_name_version(code_id)
 
 
 def import_code(query):

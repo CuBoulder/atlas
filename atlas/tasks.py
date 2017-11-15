@@ -761,13 +761,13 @@ def cron(status=None):
         site_query_string.append('"status":{"$in":["installed","launched","locked"]},')
 
     site_query = ''.join(site_query_string)
-    log.debug('Prepare Cron |Query after join -| %s', site_query)
+    log.debug('Prepare Cron | Query after join -| %s', site_query)
     # Remove trailing comma.
     site_query = site_query.rstrip('\,')
-    log.debug('Prepare Cron |Query after rstrip | %s', site_query)
+    log.debug('Prepare Cron | Query after rstrip | %s', site_query)
     # Add closing brace.
     site_query += '}'
-    log.debug('Prepare Cron |Query final | %s', site_query)
+    log.debug('Prepare Cron | Query final | %s', site_query)
 
     sites = utilities.get_eve('sites', site_query)
     if not sites['_meta']['total'] == 0:
@@ -781,16 +781,16 @@ def cron_run(site):
     Run cron
 
     :param site: A complete site item.
-    :param command: Cron command to run.
     :return:
     """
-    log.info('Run Cron | %s ', site['sid'])
+    log.info('Run Cron | %s  | %s', site['sid'], site)
     start_time = time.time()
    
-    if site['pool'] is not 'poolb-homepage':
+    if site['pool'] != 'poolb-homepage':
         uri = BASE_URLS[ENVIRONMENT] + '/' + site['path']
     else:
         uri = BASE_URLS[ENVIRONMENT]
+    log.debug('Run Cron | %s  | uri - %s', site['sid'], uri)
     command = 'sudo -u {0} drush elysia-cron run --uri={1}'.format(WEBSERVER_USER, uri)
     try:
         execute(fabric_tasks.command_run_single, site=site, command=command)
@@ -863,21 +863,22 @@ def remove_orphan_statistics():
     """
     Get a list of statistics and key them against a list of active instances.
     """
-    site_query = 'where={"type":"express","f5only":false}'
+    site_query = 'where={"type":"express","f5only":false}&max_results=2000'
     sites = utilities.get_eve('sites', site_query)
-    statistics = utilities.get_eve('statistics')
-    log.debug('Statistics | %s', statistics)
-    log.debug('Sites | %s', sites)
+    statistics_query = '&max_results=2000'
+    statistics = utilities.get_eve('statistics', statistics_query)
+    log.debug('Orphan Statistics Cleanup | Statistics | %s', statistics)
+    log.debug('Orphan Statistics Cleanup | Sites | %s', sites)
     site_id_list = []
     # Make as list of ids for easy checking.
     if not statistics['_meta']['total'] == 0:
         if not sites['_meta']['total'] == 0:
             for site in sites['_items']:
                 site_id_list.append(site['_id'])
-                log.debug('Sites list | %s', site_id_list)
+                log.debug('Orphan Statistics Cleanup | Sites list | %s', site_id_list)
         for statistic in statistics['_items']:
             if statistic['site'] not in site_id_list:
-                log.debug('Statistic not in list | %s', statistic['_id'])
+                log.info('Orphan Statistics Cleanup | Statistic not in list | %s', statistic['_id'])
                 utilities.delete_eve('statistics', statistic['_id'])
 
 
@@ -913,7 +914,7 @@ def verify_statistics():
     Get a list of statistics items that have not been updated in 36 hours and notify users.
     """
     time_ago = datetime.utcnow() - timedelta(hours=36)
-    statistics_query = 'where={{"_updated":{{"$lte":"{0}"}}}}'.format(
+    statistics_query = 'where={{"_updated":{{"$lte":"{0}"}}}}&max_results=2000'.format(
         time_ago.strftime("%Y-%m-%d %H:%M:%S GMT"))
     outdated_statistics = utilities.get_eve('statistics', statistics_query)
     log.debug('Old statistics time | %s', time_ago.strftime("%Y-%m-%d %H:%M:%S GMT"))
@@ -925,7 +926,7 @@ def verify_statistics():
 
         log.debug('statistic_id_list | %s', statistic_id_list)
 
-        site_query = 'where={{"_id":{{"$in":{0}}}}}'.format(json.dumps(statistic_id_list))
+        site_query = 'where={{"_id":{{"$in":{0}}}}}&max_results=2000'.format(json.dumps(statistic_id_list))
         log.debug('Site query | %s', site_query)
         sites = utilities.get_eve('sites', site_query)
         sites_id_list = []

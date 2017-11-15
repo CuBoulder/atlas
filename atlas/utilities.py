@@ -407,7 +407,7 @@ def rebalance_update_groups(item):
     :param item: command item
     :return:
     """
-    site_query = 'where={0}'.format(item['query'])
+    site_query = 'where={0}&max_results=2000'.format(item['query'])
     sites = get_eve('sites', site_query)
     installed_update_group = 0
     launched_update_group = 0

@@ -1,15 +1,20 @@
 # Change log
 
-## v2.0.2
+## v2.0.3
 
 Resolves:
 
 - &#35;404 Fixed homepage cron command.
+
+## v2.0.2
+
+Resolves:
+
 - &#35;403 Bug with code labels in email messages.
 
 ## v2.0.1
 
-    Fixed issue that took down instance on Prod and prevented instances from restoring.
+  Fixed issue that took down instance on Prod and prevented instances from restoring.
 
 ## v2.0.0
 

@@ -761,13 +761,13 @@ def cron(status=None):
         site_query_string.append('"status":{"$in":["installed","launched","locked"]},')
 
     site_query = ''.join(site_query_string)
-    log.debug('Prepare Cron |Query after join -| %s', site_query)
+    log.debug('Prepare Cron | Query after join -| %s', site_query)
     # Remove trailing comma.
     site_query = site_query.rstrip('\,')
-    log.debug('Prepare Cron |Query after rstrip | %s', site_query)
+    log.debug('Prepare Cron | Query after rstrip | %s', site_query)
     # Add closing brace.
     site_query += '}'
-    log.debug('Prepare Cron |Query final | %s', site_query)
+    log.debug('Prepare Cron | Query final | %s', site_query)
 
     sites = utilities.get_eve('sites', site_query)
     if not sites['_meta']['total'] == 0:
@@ -781,16 +781,16 @@ def cron_run(site):
     Run cron
 
     :param site: A complete site item.
-    :param command: Cron command to run.
     :return:
     """
-    log.info('Run Cron | %s ', site['sid'])
+    log.info('Run Cron | %s  | %s', site['sid'], site)
     start_time = time.time()
    
-    if site['pool'] is not 'poolb-homepage':
+    if site['pool'] != 'poolb-homepage':
         uri = BASE_URLS[ENVIRONMENT] + '/' + site['path']
     else:
         uri = BASE_URLS[ENVIRONMENT]
+    log.debug('Run Cron | %s  | uri - %s', site['sid'], uri)
     command = 'sudo -u {0} drush elysia-cron run --uri={1}'.format(WEBSERVER_USER, uri)
     try:
         execute(fabric_tasks.command_run_single, site=site, command=command)

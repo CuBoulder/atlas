@@ -10,3 +10,5 @@
 # multiple time (only on the command line, not in the configuration file where
 # it should appear only once).
 disable=C1801
+
+max-line-length=100

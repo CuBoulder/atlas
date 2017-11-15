@@ -4,6 +4,7 @@
 
 Resolves:
 
+- &#35;406 Stats are getting deleted for available instances.
 - &#35;404 Fixed homepage cron command.
 
 ## v2.0.2

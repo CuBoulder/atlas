@@ -43,3 +43,23 @@ $databases['default']['default'] = array(
   'prefix' => '',
 );
 {% endif %}
+
+{% if environment == 'local' %}
+// Allow self signed certs for python.local.
+$conf['drupal_ssl_context_options'] = array(
+  'default' => array(
+    'ssl' => array(
+      'verify_peer' => TRUE,
+      'verify_peer_name' => TRUE,
+      'allow_self_signed' => FALSE,
+    ),
+  ),
+  'python.local' => array(
+    'ssl' => array(
+      'verify_peer' => FALSE,
+      'verify_peer_name' => FALSE,
+      'allow_self_signed' => TRUE,
+    ),
+  ),
+);
+{% endif %}

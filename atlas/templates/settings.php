@@ -71,7 +71,9 @@ if (isset($_SERVER["WWWNG_ENV"]) || PHP_SAPI === "cli") {
 
   // Memcache and Varnish Backends.
   $conf['cache_backends'] = array(
+{% if environment != 'local' %}
     'profiles/{{profile}}/modules/contrib/varnish/varnish.cache.inc',
+{% endif %}
     'profiles/{{profile}}/modules/contrib/memcache/memcache.inc',
   );
 
@@ -81,8 +83,10 @@ if (isset($_SERVER["WWWNG_ENV"]) || PHP_SAPI === "cli") {
   // Setup cache_form bin.
   $conf['cache_class_cache_form'] = 'DrupalDatabaseCache';
 
+{% if environment != 'local' %}
   // Set varnish as the page cache.
   $conf['cache_class_cache_page'] = 'VarnishCache';
+{% endif %}
 
   // Set memcache as default.
   $conf['cache_default_class'] = 'MemCacheDrupal';

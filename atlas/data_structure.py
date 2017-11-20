@@ -187,9 +187,9 @@ SITES_SCHEMA = {
         'type': 'string',
         'allowed': [
             'local',
-            'development',
+            'dev',
             'test',
-            'production'
+            'prod'
         ],
     },
     'pool': {
@@ -281,6 +281,7 @@ SITES_SCHEMA = {
             },
             'taken_down': {
                 'type': 'datetime',
+                'nullable': True,
             },
         },
     },

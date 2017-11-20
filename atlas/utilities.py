@@ -361,12 +361,16 @@ def get_code_name_version(code_id):
 
 def get_code_label(code_id):
     """
-    Get the label for a code item.
+    Get the label for a code item if it has one, otherwise use the machine name and version.
+
     :param code_id: string '_id' for a code item
-    :return: string 'label'-'version'
+    :return: string 'label or 'name-version'
     """
     code = get_single_eve('code', code_id)
-    return code['meta']['label']
+    if code['meta'].get('meta'):
+        return code['meta']['label']
+    else:
+        return get_code_name_version(code_id)
 
 
 def import_code(query):
@@ -403,7 +407,7 @@ def rebalance_update_groups(item):
     :param item: command item
     :return:
     """
-    site_query = 'where={0}'.format(item['query'])
+    site_query = 'where={0}&max_results=2000'.format(item['query'])
     sites = get_eve('sites', site_query)
     installed_update_group = 0
     launched_update_group = 0

@@ -1,21 +1,39 @@
 # Change log
 
+## v2.0.3
+
+Resolves:
+
+- &#35;406 Stats are getting deleted for available instances.
+- &#35;404 Fixed homepage cron command.
+
+## v2.0.2
+
+Resolves:
+
+- &#35;403 Bug with code labels in email messages.
+
+## v2.0.1
+
+  Fixed issue that took down instance on Prod and prevented instances from restoring.
+
 ## v2.0.0
 
 This release restructures Atlas and allows the Eve portion to be run from the command line.
 
 Resolves:
 
-&#35;371 Refactor code to run as a proper python application
-&#35;329 Remove code dependencies Code
-&#35;378 Switch from APC to OPCache clearing
-&#35;331 Standardize logging structure
-&#35;397 Homepage sitemap.xml includes P1
-&#35;383 Pull stats from logs, not HTTP input
-&#35;368 Bug in slack post Bug
-&#35;391 Add `node_revision_total`
-&#35;386 Update DB settings
-&#35;200 Delete GSA code Instance
+- &#35;371 Refactor code to run as a proper python application
+- &#35;329 Remove code dependencies Code
+- &#35;378 Switch from APC to OPCache clearing
+- &#35;331 Standardize logging structure
+- &#35;397 Homepage sitemap.xml includes P1
+- &#35;383 Pull stats from logs, not HTTP input
+- &#35;368 Bug in slack post Bug
+- &#35;391 Add `node_revision_total`
+- &#35;386 Update DB settings
+- &#35;200 Delete GSA code Instance
+- &#35;106 Check for meta uniqueness in code items
 
 ## v1.0.26
 

@@ -71,7 +71,9 @@ if (isset($_SERVER["WWWNG_ENV"]) || PHP_SAPI === "cli") {
 
   // Memcache and Varnish Backends.
   $conf['cache_backends'] = array(
+{% if environment != 'local' %}
     'profiles/{{profile}}/modules/contrib/varnish/varnish.cache.inc',
+{% endif %}
     'profiles/{{profile}}/modules/contrib/memcache/memcache.inc',
   );
 
@@ -81,8 +83,10 @@ if (isset($_SERVER["WWWNG_ENV"]) || PHP_SAPI === "cli") {
   // Setup cache_form bin.
   $conf['cache_class_cache_form'] = 'DrupalDatabaseCache';
 
+{% if environment != 'local' %}
   // Set varnish as the page cache.
   $conf['cache_class_cache_page'] = 'VarnishCache';
+{% endif %}
 
   // Set memcache as default.
   $conf['cache_default_class'] = 'MemCacheDrupal';
@@ -153,6 +157,7 @@ $conf['memcache_servers'] = array(
 
 
 // Varnish
+{% if environment != 'local' %}
 $conf['reverse_proxy'] = TRUE;
 $conf['reverse_proxy_addresses'] = array({% for ip in reverse_proxies -%}'{{ip}}',{% endfor %});
 // Drupal will look for IP in $_SERVER['X-Forwarded-For']
@@ -160,21 +165,14 @@ $conf['reverse_proxy_header'] = 'X-Forwarded-For';
 // Define Varnish Server Pool and version.
 $conf['varnish_control_terminal'] = '{{varnish_control}}';
 $conf['varnish_version'] = 3;
-{% if environment == 'local' %}
-  $conf['varnish_control_key'] = substr(file_get_contents('/etc/varnish/secret'),0,-1);
 {% endif %}
 
 {% if environment == 'dev' %}
-  $conf['drupal_http_request_fails'] = FALSE;
+$conf['drupal_http_request_fails'] = FALSE;
 {% endif %}
 
 // Google Analytics
 $conf['googleanalytics_account'] = 'UA-25752450-1';
-
-// cu_classes_bundle API variables.
-$conf['cu_class_import_api_username'] = "CU_WS_CLASSSRCH_UCB_CUOL";
-$conf['cu_class_import_api_password'] = "YEF9BYQSfFr8UXNmDvM5";
-$conf['cu_class_import_institutions'] = array('B-CUBLD' => 'B-CUBLD');
 
 {% if environment == 'local' %}
 $conf['error_level'] = 2;

@@ -267,7 +267,6 @@ def code_remove(item):
         # Slack notification
         slack_title = 'Code Remove - Success'
         slack_color = 'good'
-        code_string = '{0} - {1}'.format(item['meta']['name'], item['meta']['version'])
 
         slack_payload = {
             "text": slack_title,
@@ -289,12 +288,12 @@ def code_remove(item):
                         },
                         {
                             "title": "Name",
-                            "value": name,
+                            "value": item['meta']['name'],
                             "short": True
                         },
                         {
                             "title": "Version",
-                            "value": version,
+                            "value": item['meta']['version'],
                             "short": True
                         }
                     ],

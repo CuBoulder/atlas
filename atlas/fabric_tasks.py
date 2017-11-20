@@ -702,22 +702,15 @@ def launch_site(site):
                 if "/" in site['path']:
                     lead_path = "/".join(site['path'].split("/")[:-1])
                     create_directory_structure(lead_path)
-
                 # Create a new symlink using site's updated path
                 if not exists(web_directory_path):
                     update_symlink(code_directory_current, site['path'])
-                with cd(web_directory_path):
-                    clear_php_cache()
-                    drush_cache_clear(site['sid'])
             # Assign it to an update group.
             update_group = randint(0, 10)
         if site['pool'] == 'poolb-homepage':
             web_directory = '{0}/{1}'.format(SITES_WEB_ROOT, 'homepage')
             with cd(SITES_WEB_ROOT):
                 update_symlink(code_directory_current, web_directory)
-            with cd(web_directory):
-                clear_php_cache()
-                drush_cache_clear(site['sid'])
             # Assign site to update group 12.
             update_group = 12
         payload = {'status': 'launched', 'update_group': update_group}

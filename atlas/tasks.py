@@ -418,14 +418,15 @@ def site_update(site, updates, original):
         core_change = False
         profile_change = False
         package_change = False
-        code_to_update= []
+        code_to_update = []
         if 'core' in updates['code']:
             log.debug('Site update | ID - %s | Found core change', site['_id'])
             core_change = True
             execute(fabric_tasks.site_core_update, site=site)
             code_to_update.append(str(updates['code']['core']))
         if 'profile' in updates['code']:
-            log.debug('Site update | ID - %s | Found profile change | Profile - %s', site['_id'], str(updates['code']['profile']))
+            log.debug('Site update | ID - %s | Found profile change | Profile - %s', site['_id'],
+                      str(updates['code']['profile']))
             profile_change = True
             execute(fabric_tasks.site_profile_update, site=site, original=original, updates=updates)
             code_to_update.append(str(updates['code']['profile']))
@@ -439,7 +440,8 @@ def site_update(site, updates, original):
             deploy_registry_rebuild = False
             deploy_update_database = False
             deploy_cache_clear = False
-            log.debug('Site update | ID - %s | Deploy | Code to update - %s', site['_id'], code_to_update)
+            log.debug('Site update | ID - %s | Deploy | Code to update - %s', site['_id'],
+                      code_to_update)
             code_query = 'where={{"_id":{{"$in":{0}}}}}'.format(json.dumps(code_to_update))
             log.debug('Site Update | ID - %s | Code query - %s', site['_id'], code_query)
             code_items = utilities.get_eve('code', code_query)

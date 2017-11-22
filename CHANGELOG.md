@@ -1,5 +1,11 @@
 # Change log
 
+## v2.1.0
+
+Resolves:
+
+- &#35;412 Return something like `Command [xx:xx:xx] 2 of 16 - Success` in Slack
+
 ## v2.0.3
 
 Resolves:

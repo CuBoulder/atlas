@@ -540,6 +540,9 @@ def site_update(site, updates, original):
     slack_color = 'good'
     slack_link = '{0}/{1}'.format(BASE_URLS[ENVIRONMENT], site['path'])
 
+    # Strip out fields that we don't care about.
+    slack_updates = {k:updates[k] for k in updates if not k.startswith('_') and not k in ['modified_by', 'db_key', 'statistics']}
+
     slack_payload = {
         "text": slack_text,
         "username": 'Atlas',
@@ -562,6 +565,11 @@ def site_update(site, updates, original):
                         "title": "Update requested by",
                         "value": updates['modified_by'],
                         "short": True
+                    },
+                    {
+                        "title": "Updates",
+                        "value": str(json.dumps(slack_updates)),
+                        "short": False
                     }
                 ],
             }

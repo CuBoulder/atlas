@@ -8,6 +8,7 @@ Resolves:
     - &#35;22 Add field for 'requires updb'
     - &#35;311 Add field for 'requires registry rebuild'
     - &#35;312 Add field for 'requires cache clear'
+- &#35;330 During launch, drupal caches are cleared a lot
 
 ## v2.0.3
 

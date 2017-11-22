@@ -1,5 +1,11 @@
 # Change log
 
+## v2.1.0
+
+Resolves:
+
+- &#35;95 Periodically check for unused code
+
 ## v2.0.3
 
 Resolves:

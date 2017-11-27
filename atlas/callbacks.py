@@ -113,9 +113,8 @@ def on_insert_sites_callback(items):
                     name=DEFAULT_CORE, code_type='core')
                 item['code']['profile'] = utilities.get_current_code(
                     name=DEFAULT_PROFILE, code_type='profile')
-            if not item['import_from_inventory']:
-                date_json = '{{"created":"{0} GMT"}}'.format(item['_created'])
-                item['dates'] = json.loads(date_json)
+            date_json = '{{"created":"{0} GMT"}}'.format(item['_created'])
+            item['dates'] = json.loads(date_json)
 
 
 def on_inserted_sites_callback(items):

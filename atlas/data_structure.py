@@ -73,17 +73,26 @@ CODE_SCHEMA = {
             'tag': {
                 'type': 'list',
             },
-            'dependency': {
-                'type': 'list',
-                'schema': {
-                    'type': 'objectid',
-                    'data_relation': {
-                        'resource': 'code',
-                        'field': '_id',
-                        'embeddable': True,
-                    },
-                }
-            }
+        },
+    },
+    'deploy': {
+        'type': 'dict',
+        'schema': {
+            'registry_rebuild': {
+                'type': 'boolean',
+                'default': False,
+                'required': True,
+            },
+            'cache_clear': {
+                'type': 'boolean',
+                'default': True,
+                'required': True,
+            },
+            'update_database': {
+                'type': 'boolean',
+                'default': True,
+                'required': True,
+            },
         },
     },
     'git_url': {
@@ -195,10 +204,6 @@ SITES_SCHEMA = {
         'type': 'integer',
     },
     'f5only': {
-        'type': 'boolean',
-        'default': False
-    },
-    'import_from_inventory': {
         'type': 'boolean',
         'default': False
     },

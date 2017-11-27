@@ -4,6 +4,11 @@
 
 Resolves:
 
+- &#35;304 As a Service Manager, need to be able to deploy profile updates without updb
+    - &#35;22 Add field for 'requires updb'
+    - &#35;311 Add field for 'requires registry rebuild'
+    - &#35;312 Add field for 'requires cache clear'
+- &#35;330 During launch, drupal caches are cleared a lot
 - &#35;412 Return something like `Command [xx:xx:xx] 2 of 16 - Success` in Slack
 
 ## v2.0.3

@@ -48,4 +48,9 @@ SSL_VERIFICATION = True
 if ENVIRONMENT == 'local':
     SSL_VERIFICATION = False
 
-VERSION_NUMBER = '2.0.3'
+    import urllib3
+    # Disable warnings about not being able to verify local certs.
+    # https://urllib3.readthedocs.io/en/latest/advanced-usage.html#ssl-warnings
+    urllib3.disable_warnings()
+
+VERSION_NUMBER = '2.1.0'

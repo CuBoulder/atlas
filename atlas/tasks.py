@@ -610,7 +610,6 @@ def site_remove(site):
     if ENVIRONMENT != 'local' and site['type'] == 'legacy':
         execute(fabric_tasks.update_f5)
 
-    slack_title = '{0}/{1}'.format(BASE_URLS[ENVIRONMENT], site['path'])
     slack_text = 'Site Remove - Success - {0}/{1}'.format(BASE_URLS[ENVIRONMENT], site['path'])
     slack_color = 'good'
     slack_link = '{0}/{1}'.format(BASE_URLS[ENVIRONMENT], site['path'])
@@ -653,7 +652,7 @@ def command_prepare(item):
     :param item: A complete command item, including new values.
     :return:
     """
-    log.debug('Prepare Command\n{0}'.format(item))
+    log.debug('Prepare Command | item - %s ', item)
     if item['command'] == 'clear_php_cache':
         execute(fabric_tasks.clear_php_cache)
         return
@@ -668,9 +667,11 @@ def command_prepare(item):
         sites = utilities.get_eve('sites', site_query)
         log.debug('Prepare Command | Item - %s | Ran query - %s', item['_id'], sites)
         if not sites['_meta']['total'] == 0:
+            batch_count = 1
             for site in sites['_items']:
+                batch_string = str(batch_count) + ' of ' + str(sites['_meta']['total'])
                 if item['command'] == 'update_settings_file':
-                    log.debug('Prepare Command | Item - %s | Update Settings file | Instance - %s', item['_id'], site['_id'])
+                    log.debug('Prepare Command | Item - %s | Update Settings file | Instance - %s - %s', item['_id'], site['_id'], batch_string)
                     command_wrapper.delay(execute(fabric_tasks.update_settings_file, site=site))
                     continue
                 if item['command'] == 'update_homepage_extra_files':
@@ -680,7 +681,10 @@ def command_prepare(item):
                 command_run.delay(site=site,
                                   command=item['command'],
                                   single_server=item['single_server'],
-                                  user=item['modified_by'])
+                                  user=item['modified_by'],
+                                  batch_id=item['_etag'],
+                                  batch_count=batch_string)
+                batch_count += 1
             # After all the commands run, flush APC.
             if item['command'] == 'update_settings_file':
                 log.debug('Prepare Command | Item - %s | Clear PHP Cache', item['_id'])
@@ -699,7 +703,7 @@ def command_wrapper(fabric_command):
 
 
 @celery.task
-def command_run(site, command, single_server, user=None):
+def command_run(site, command, single_server, user=None, batch_id=None, batch_count=None):
     """
     Run the appropriate command.
 
@@ -709,7 +713,7 @@ def command_run(site, command, single_server, user=None):
     :param user: string Username that called the command.
     :return:
     """
-    log.debug('Run Command - {0} - {1} - {2}'.format(site['sid'], single_server, command))
+    log.debug('Run Command | Site - %s | Single Server - %s | Command - %s | Batch ID - %s | Count - %s', site['sid'], single_server, command, batch_id, batch_count)
 
     # 'match' searches for strings that begin with
     if command.startswith('drush'):
@@ -729,11 +733,10 @@ def command_run(site, command, single_server, user=None):
             fabric_tasks.command_run, site=site, command=altered_command, warn_only=True)
 
     command_time = time.time() - start_time
-    log.debug('Run Command | Site - %s | Command - %s | Time - %s | Result - %s',
-              site['sid'], command, time, fabric_task_result)
+    log.debug('Run Command | Site - %s | Command - %s | Batch ID - %s | Count - %s | Time - %s | Result - %s',
+              site['sid'], command, batch_id, batch_count, command_time, fabric_task_result)
 
-    slack_title = '{0}/{1}'.format(BASE_URLS[ENVIRONMENT], site['path'])
-    slack_text = 'Command - Success - {0}/{1}'.format(BASE_URLS[ENVIRONMENT], site['path'])
+    slack_text = 'Command - Success - {0} - {1}'.format(batch_id, batch_count)
     slack_color = 'good'
     slack_link = '{0}/{1}'.format(BASE_URLS[ENVIRONMENT], site['path'])
     user = user

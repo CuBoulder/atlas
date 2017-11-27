@@ -356,7 +356,7 @@ def site_provision(site):
 
     # Slack notification
     slack_title = 'Site provision - Success'
-    slack_text = 'Site provision - Success - {0}/{1}'.format(BASE_URLS[ENVIRONMENT], site['path'])
+    slack_text = 'Site provision - Success - {0}/sites/{1}'.format(BASE_URLS[ENVIRONMENT], site['path'])
     slack_color = 'good'
     slack_link = '{0}/{1}'.format(BASE_URLS[ENVIRONMENT], site['path'])
 
@@ -413,26 +413,41 @@ def site_update(site, updates, original):
     log.debug('Site update | ID - %s | Site - %s | Updates - %s | Original - %s',
               site['_id'], site, updates, original)
 
+    deploy_registry_rebuild = False
+    deploy_update_database = False
+    deploy_drupal_cache_clear = False
+    deploy_php_cache_clear = False
+
     if updates.get('code'):
         log.debug('Site update | ID - %s | Found code changes', site['_id'])
-        core_change = False
-        profile_change = False
-        package_change = False
+        code_to_update = []
         if 'core' in updates['code']:
             log.debug('Site update | ID - %s | Found core change', site['_id'])
-            core_change = True
             execute(fabric_tasks.site_core_update, site=site)
+            code_to_update.append(str(updates['code']['core']))
         if 'profile' in updates['code']:
-            log.debug('Site update | ID - %s | Found profile change', site['_id'])
-            profile_change = True
+            log.debug('Site update | ID - %s | Found profile change | Profile - %s', site['_id'],
+                      str(updates['code']['profile']))
             execute(fabric_tasks.site_profile_update, site=site, original=original, updates=updates)
+            code_to_update.append(str(updates['code']['profile']))
         if 'package' in updates['code']:
             log.debug('Site update | ID - %s | Found package changes', site['_id'])
-            package_change = True
             execute(fabric_tasks.site_package_update, site=site)
-        if core_change or profile_change or package_change:
-            execute(fabric_tasks.registry_rebuild, site=site)
-            execute(fabric_tasks.update_database, site=site)
+            code_to_update.append(str(updates['code']['package']))
+        if code_to_update:
+            log.debug('Site update | ID - %s | Deploy | Code to update - %s', site['_id'],
+                      code_to_update)
+            code_query = 'where={{"_id":{{"$in":{0}}}}}'.format(json.dumps(code_to_update))
+            log.debug('Site Update | ID - %s | Code query - %s', site['_id'], code_query)
+            code_items = utilities.get_eve('code', code_query)
+            log.debug('Site Update | ID - %s | Code query response - %s', site['_id'], code_items)
+            for code in code_items['_items']:
+                if code['deploy']['registry_rebuild']:
+                    deploy_registry_rebuild = True
+                if code['deploy']['update_database']:
+                    deploy_update_database = True
+                if code['deploy']['cache_clear']:
+                    deploy_drupal_cache_clear = True
         # Email notification if we updated packages.
         if 'package' in updates['code']:
             package_name_string = ""
@@ -459,24 +474,26 @@ def site_update(site, updates, original):
                 # Set new status on site record for update to settings files.
                 site['status'] = 'installed'
                 execute(fabric_tasks.update_settings_file, site=site)
-                execute(fabric_tasks.clear_php_cache)
+                deploy_php_cache_clear = True
                 patch_payload = '{"status": "installed"}'
             elif updates['status'] == 'launching':
                 log.debug('Site update | ID - %s | Status changed to launching', site['_id'])
                 site['status'] = 'launched'
                 execute(fabric_tasks.update_settings_file, site=site)
                 execute(fabric_tasks.site_launch, site=site)
+                deploy_drupal_cache_clear = True
+                deploy_php_cache_clear = True
                 if ENVIRONMENT is not 'local':
                     execute(fabric_tasks.update_f5)
                 # Let fabric send patch since it is changing update group.
             elif updates['status'] == 'locked':
                 log.debug('Site update | ID - %s | Status changed to locked', site['_id'])
                 execute(fabric_tasks.update_settings_file, site=site)
+                deploy_php_cache_clear = True
             elif updates['status'] == 'take_down':
                 log.debug('Site update | ID - %s | Status changed to take_down', site['_id'])
                 site['status'] = 'down'
                 execute(fabric_tasks.update_settings_file, site=site)
-                # execute(fabric_tasks.site_backup, site=site)
                 execute(fabric_tasks.site_take_down, site=site)
                 patch_payload = '{"status": "down"}'
                 # Soft delete stats when we take down an instance.
@@ -492,8 +509,9 @@ def site_update(site, updates, original):
                 site['status'] = 'installed'
                 execute(fabric_tasks.update_settings_file, site=site)
                 execute(fabric_tasks.site_restore, site=site)
-                execute(fabric_tasks.update_database, site=site)
+                deploy_update_database = True
                 patch_payload = '{"status": "installed"}'
+                deploy_drupal_cache_clear = True
 
             if updates['status'] != 'launching':
                 patch = utilities.patch_eve('sites', site['_id'], patch_payload)
@@ -506,11 +524,24 @@ def site_update(site, updates, original):
             if updates['settings'].get('page_cache_maximum_age') != original['settings'].get('page_cache_maximum_age'):
                 log.debug('Found page_cache_maximum_age change.')
             execute(fabric_tasks.update_settings_file, site=site)
+            deploy_php_cache_clear = True
 
-    slack_title = 'Site Update - Success'
+    # We want to run these commands in this specific order.
+    if deploy_php_cache_clear:
+        execute(fabric_tasks.clear_php_cache)
+    if deploy_registry_rebuild:
+        execute(fabric_tasks.registry_rebuild, site=site)
+    if deploy_update_database:
+        execute(fabric_tasks.update_database, site=site)
+    if deploy_drupal_cache_clear:
+        execute(fabric_tasks.cache_clear, sid=site['sid'])
+
     slack_text = 'Site Update - Success - {0}/{1}'.format(API_URLS[ENVIRONMENT], site['_id'])
     slack_color = 'good'
     slack_link = '{0}/{1}'.format(BASE_URLS[ENVIRONMENT], site['path'])
+
+    # Strip out fields that we don't care about.
+    slack_updates = {k:updates[k] for k in updates if not k.startswith('_') and not k in ['modified_by', 'db_key', 'statistics']}
 
     slack_payload = {
         "text": slack_text,
@@ -534,6 +565,11 @@ def site_update(site, updates, original):
                         "title": "Update requested by",
                         "value": updates['modified_by'],
                         "short": True
+                    },
+                    {
+                        "title": "Updates",
+                        "value": str(json.dumps(slack_updates)),
+                        "short": False
                     }
                 ],
             }
@@ -574,7 +610,6 @@ def site_remove(site):
     if ENVIRONMENT != 'local' and site['type'] == 'legacy':
         execute(fabric_tasks.update_f5)
 
-    slack_title = '{0}/{1}'.format(BASE_URLS[ENVIRONMENT], site['path'])
     slack_text = 'Site Remove - Success - {0}/{1}'.format(BASE_URLS[ENVIRONMENT], site['path'])
     slack_color = 'good'
     slack_link = '{0}/{1}'.format(BASE_URLS[ENVIRONMENT], site['path'])
@@ -617,7 +652,7 @@ def command_prepare(item):
     :param item: A complete command item, including new values.
     :return:
     """
-    log.debug('Prepare Command\n{0}'.format(item))
+    log.debug('Prepare Command | item - %s ', item)
     if item['command'] == 'clear_php_cache':
         execute(fabric_tasks.clear_php_cache)
         return
@@ -632,9 +667,11 @@ def command_prepare(item):
         sites = utilities.get_eve('sites', site_query)
         log.debug('Prepare Command | Item - %s | Ran query - %s', item['_id'], sites)
         if not sites['_meta']['total'] == 0:
+            batch_count = 1
             for site in sites['_items']:
+                batch_string = str(batch_count) + ' of ' + str(sites['_meta']['total'])
                 if item['command'] == 'update_settings_file':
-                    log.debug('Prepare Command | Item - %s | Update Settings file | Instance - %s', item['_id'], site['_id'])
+                    log.debug('Prepare Command | Item - %s | Update Settings file | Instance - %s - %s', item['_id'], site['_id'], batch_string)
                     command_wrapper.delay(execute(fabric_tasks.update_settings_file, site=site))
                     continue
                 if item['command'] == 'update_homepage_extra_files':
@@ -644,7 +681,10 @@ def command_prepare(item):
                 command_run.delay(site=site,
                                   command=item['command'],
                                   single_server=item['single_server'],
-                                  user=item['modified_by'])
+                                  user=item['modified_by'],
+                                  batch_id=item['_etag'],
+                                  batch_count=batch_string)
+                batch_count += 1
             # After all the commands run, flush APC.
             if item['command'] == 'update_settings_file':
                 log.debug('Prepare Command | Item - %s | Clear PHP Cache', item['_id'])
@@ -663,7 +703,7 @@ def command_wrapper(fabric_command):
 
 
 @celery.task
-def command_run(site, command, single_server, user=None):
+def command_run(site, command, single_server, user=None, batch_id=None, batch_count=None):
     """
     Run the appropriate command.
 
@@ -673,7 +713,7 @@ def command_run(site, command, single_server, user=None):
     :param user: string Username that called the command.
     :return:
     """
-    log.debug('Run Command - {0} - {1} - {2}'.format(site['sid'], single_server, command))
+    log.debug('Run Command | Site - %s | Single Server - %s | Command - %s | Batch ID - %s | Count - %s', site['sid'], single_server, command, batch_id, batch_count)
 
     # 'match' searches for strings that begin with
     if command.startswith('drush'):
@@ -693,11 +733,10 @@ def command_run(site, command, single_server, user=None):
             fabric_tasks.command_run, site=site, command=altered_command, warn_only=True)
 
     command_time = time.time() - start_time
-    log.debug('Run Command | Site - %s | Command - %s | Time - %s | Result - %s',
-              site['sid'], command, time, fabric_task_result)
+    log.debug('Run Command | Site - %s | Command - %s | Batch ID - %s | Count - %s | Time - %s | Result - %s',
+              site['sid'], command, batch_id, batch_count, command_time, fabric_task_result)
 
-    slack_title = '{0}/{1}'.format(BASE_URLS[ENVIRONMENT], site['path'])
-    slack_text = 'Command - Success - {0}/{1}'.format(BASE_URLS[ENVIRONMENT], site['path'])
+    slack_text = 'Command - Success - {0} - {1}'.format(batch_id, batch_count)
     slack_color = 'good'
     slack_link = '{0}/{1}'.format(BASE_URLS[ENVIRONMENT], site['path'])
     user = user

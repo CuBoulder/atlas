@@ -899,7 +899,7 @@ def delete_all_available_sites():
 @celery.task
 def remove_unused_code():
     """
-    If a code item is more than 60 days old, not current, and unused then remove it.
+    If a code item is more than 90 days old, not current, and unused then remove it.
     """
     time_ago = datetime.utcnow() - timedelta(days=90)
     code_query = 'where={{"meta.is_current":false,"_created":{{"$lte":"{0}"}}}}'.format(time_ago.strftime("%Y-%m-%d %H:%M:%S GMT"))

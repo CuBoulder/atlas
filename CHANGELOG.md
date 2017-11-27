@@ -1,5 +1,14 @@
 # Change log
 
+## v2.1.0
+
+Resolves:
+
+- &#35;304 As a Service Manager, need to be able to deploy profile updates without updb
+    - &#35;22 Add field for 'requires updb'
+    - &#35;311 Add field for 'requires registry rebuild'
+    - &#35;312 Add field for 'requires cache clear'
+
 ## v2.0.3
 
 Resolves:

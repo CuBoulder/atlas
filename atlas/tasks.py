@@ -267,7 +267,6 @@ def code_remove(item):
         # Slack notification
         slack_title = 'Code Remove - Success'
         slack_color = 'good'
-        code_string = '{0} - {1}'.format(item['meta']['name'], item['meta']['version'])
 
         slack_payload = {
             "text": slack_title,
@@ -289,12 +288,12 @@ def code_remove(item):
                         },
                         {
                             "title": "Name",
-                            "value": name,
+                            "value": item['meta']['name'],
                             "short": True
                         },
                         {
                             "title": "Version",
-                            "value": version,
+                            "value": item['meta']['version'],
                             "short": True
                         }
                     ],
@@ -419,21 +418,48 @@ def site_update(site, updates, original):
         core_change = False
         profile_change = False
         package_change = False
+        code_to_update = []
         if 'core' in updates['code']:
             log.debug('Site update | ID - %s | Found core change', site['_id'])
             core_change = True
             execute(fabric_tasks.site_core_update, site=site)
+            code_to_update.append(str(updates['code']['core']))
         if 'profile' in updates['code']:
-            log.debug('Site update | ID - %s | Found profile change', site['_id'])
+            log.debug('Site update | ID - %s | Found profile change | Profile - %s', site['_id'],
+                      str(updates['code']['profile']))
             profile_change = True
             execute(fabric_tasks.site_profile_update, site=site, original=original, updates=updates)
+            code_to_update.append(str(updates['code']['profile']))
         if 'package' in updates['code']:
             log.debug('Site update | ID - %s | Found package changes', site['_id'])
             package_change = True
             execute(fabric_tasks.site_package_update, site=site)
-        if core_change or profile_change or package_change:
-            execute(fabric_tasks.registry_rebuild, site=site)
-            execute(fabric_tasks.update_database, site=site)
+            code_to_update.append(str(updates['code']['package']))
+        if code_to_update:
+            # Figure out what deploy parameters we need to deal with
+            deploy_registry_rebuild = False
+            deploy_update_database = False
+            deploy_cache_clear = False
+            log.debug('Site update | ID - %s | Deploy | Code to update - %s', site['_id'],
+                      code_to_update)
+            code_query = 'where={{"_id":{{"$in":{0}}}}}'.format(json.dumps(code_to_update))
+            log.debug('Site Update | ID - %s | Code query - %s', site['_id'], code_query)
+            code_items = utilities.get_eve('code', code_query)
+            log.debug('Site Update | ID - %s | Code query response - %s', site['_id'], code_items)
+            for code in code_items['_items']:
+                if code['deploy']['registry_rebuild']:
+                    deploy_registry_rebuild = True
+                if code['deploy']['update_database']:
+                    deploy_update_database = True
+                if code['deploy']['cache_clear']:
+                    deploy_cache_clear = True
+            # We want to run these commands in this specific order.
+            if deploy_registry_rebuild:
+                execute(fabric_tasks.registry_rebuild, site=site)
+            if deploy_update_database:
+                execute(fabric_tasks.update_database, site=site)
+            if deploy_cache_clear:
+                execute(fabric_tasks.cache_clear, sid=site['sid'])
         # Email notification if we updated packages.
         if 'package' in updates['code']:
             package_name_string = ""
@@ -508,7 +534,6 @@ def site_update(site, updates, original):
                 log.debug('Found page_cache_maximum_age change.')
             execute(fabric_tasks.update_settings_file, site=site)
 
-    slack_title = 'Site Update - Success'
     slack_text = 'Site Update - Success - {0}/{1}'.format(API_URLS[ENVIRONMENT], site['_id'])
     slack_color = 'good'
     slack_link = '{0}/{1}'.format(BASE_URLS[ENVIRONMENT], site['path'])

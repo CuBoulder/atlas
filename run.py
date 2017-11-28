@@ -53,6 +53,7 @@ app.on_inserted_sites += callbacks.on_inserted_sites_callback
 app.on_update_code += callbacks.on_update_code_callback
 app.on_update_sites += callbacks.on_update_sites_callback
 app.on_update_commands += callbacks.on_update_commands_callback
+app.on_updated_code += callbacks.on_updated_code_callback
 app.on_delete_item_code += callbacks.on_delete_item_code_callback
 app.on_insert += callbacks.pre_insert
 app.on_update += callbacks.pre_update

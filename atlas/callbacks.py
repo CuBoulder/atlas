@@ -308,11 +308,7 @@ def on_updated_code_callback(updates, original):
         for site in sites_get['_items']:
             log.debug('code | on updated | site - %s', site)
             code_id_string = site['code'][code_type]
-            payload = {'code':
-                           {
-                               code_type: code_id_string
-                           }
-                       }
+            payload = {'code': {code_type: code_id_string}}
             log.debug('code | on updated | payload - %s', payload)
             utilities.patch_eve('sites', site['_id'], payload)
 

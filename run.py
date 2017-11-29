@@ -13,7 +13,8 @@ from eve import Eve
 from flask import jsonify, make_response
 from atlas import callbacks
 from atlas import utilities
-from atlas.config import (ATLAS_LOCATION, VERSION_NUMBER, SSL_KEY_FILE, SSL_CRT_FILE, LOG_LOCATION, ENVIRONMENT)
+from atlas.config import (ATLAS_LOCATION, VERSION_NUMBER, SSL_KEY_FILE, SSL_CRT_FILE, LOG_LOCATION,
+                          ENVIRONMENT)
 
 
 if ATLAS_LOCATION not in sys.path:

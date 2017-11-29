@@ -6,6 +6,7 @@
 import logging
 import time
 import json
+from bson import json_util
 
 from datetime import datetime, timedelta
 from celery import Celery
@@ -568,7 +569,7 @@ def site_update(site, updates, original):
                     },
                     {
                         "title": "Updates",
-                        "value": str(json.dumps(slack_updates)),
+                        "value": str(json_util.dumps(slack_updates)),
                         "short": False
                     }
                 ],

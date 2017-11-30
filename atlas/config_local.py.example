@@ -65,3 +65,5 @@ EMAIL_HOST = ''
 EMAIL_PORT = 587
 EMAIL_USERNAME = ''
 EMAIL_PASSWORD = ''
+# List of users to exlude from any notification emails
+EMAIL_USERS_EXCLUDE = ['test@example.com','osr-test-owner@colorado.edu','osr-test-edit-own@colorado.edu','osr-test-content@colorado.edu']

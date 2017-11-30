@@ -167,7 +167,7 @@ $conf['varnish_control_terminal'] = '{{varnish_control}}';
 $conf['varnish_version'] = 3;
 {% endif %}
 
-{% if environment == 'dev' %}
+{% if environment in ['local','dev'] %}
 $conf['drupal_http_request_fails'] = FALSE;
 {% endif %}
 

@@ -106,35 +106,24 @@ if (isset($_SERVER["WWWNG_ENV"]) || PHP_SAPI === "cli") {
   // No IP blocking from the UI, we'll take care of that at a higher level.
   $conf['blocked_ips'] = array();
 
-  // Enable the environment indicator.
-  $conf['environment_indicator_enabled'] = TRUE;
-
   // Change colors and text for environment indicator based on ENV var.
   if (isset($_SERVER['WWWNG_ENV'])) {
     global $base_url;
 
     switch($_SERVER['WWWNG_ENV']) {
       case 'cust_dev':
-        $conf['environment_indicator_text'] = 'DEV';
-        $conf['environment_indicator_color'] = 'green';
         $base_url .= 'https://www-dev.colorado.edu';
         break;
 
       case 'cust_test':
-        $conf['environment_indicator_text'] = 'TEST';
-        $conf['environment_indicator_color'] = 'yellow';
         $base_url .= 'https://www-test.colorado.edu';
         break;
 
       case 'cust_prod':
-        $conf['environment_indicator_text'] = 'PROD';
-        $conf['environment_indicator_color'] = 'red';
         $base_url .= 'https://www.colorado.edu';
         break;
 
       case 'express_local':
-        $conf['environment_indicator_text'] = 'LOCAL';
-        $conf['environment_indicator_color'] = 'grey';
         $base_url .= 'https://express.local';
         break;
 
@@ -147,17 +136,14 @@ if (isset($_SERVER["WWWNG_ENV"]) || PHP_SAPI === "cli") {
 
 // Memcache
 $conf['memcache_key_prefix'] = $conf['cu_sid'];
-{% if environment != 'local' %}
 $conf['memcache_servers'] = array(
   {% for ip in memcache_servers -%}
   '{{ip}}' => 'default',
   {% endfor %}
 );
-{% endif %}
 
-
-// Varnish
 {% if environment != 'local' %}
+// Varnish
 $conf['reverse_proxy'] = TRUE;
 $conf['reverse_proxy_addresses'] = array({% for ip in reverse_proxies -%}'{{ip}}',{% endfor %});
 // Drupal will look for IP in $_SERVER['X-Forwarded-For']
@@ -170,7 +156,6 @@ $conf['varnish_version'] = 3;
 {% if environment in ['local','dev'] %}
 $conf['drupal_http_request_fails'] = FALSE;
 {% endif %}
-
 // Google Analytics
 $conf['googleanalytics_account'] = 'UA-25752450-1';
 

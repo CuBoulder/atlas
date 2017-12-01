@@ -207,8 +207,8 @@ def on_update_code_callback(updates, original):
         name = updates['meta']['name'] if updates['meta'].get('name') else original['meta']['name']
         code_type = updates['meta']['code_type'] if updates['meta'].get('code_type') else original['meta']['code_type']
 
-        query = 'where={{"meta.name":"{0}","meta.code_type":"{1}","meta.is_current": true}}'.format(
-            name, code_type)
+        query = 'where={{"meta.name":"{0}","meta.code_type":"{1}","meta.is_current": true,"_id":{{"$ne":"{2}"}}}}'.format(
+            name, code_type, original['_id'])
         code_get = utilities.get_eve('code', query)
         log.debug('code | on update | Current code - %s', code_get)
 

@@ -2,6 +2,10 @@
 
 ## v2.1.0
 
+Need to 
+
+- Add a list of users to exclude from emails in config_local.py `sudo -u [webserver_user] drush` without a password.
+
 Resolves:
 
 - &#35;304 As a Service Manager, need to be able to deploy profile updates without updb
@@ -11,6 +15,8 @@ Resolves:
 - &#35;330 During launch, drupal caches are cleared a lot
 - &#35;412 Return something like `Command [xx:xx:xx] 2 of 16 - Success` in Slack
 - &#35;338 Exclude the '_id' of the item we are updating as a query parameter
+- &#35;401 Remove test accounts from bundle adding emails
+- &#35;220 Started to review settings.php 
 
 ## v2.0.3
 

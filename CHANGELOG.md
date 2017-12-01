@@ -10,6 +10,7 @@ Resolves:
     - &#35;312 Add field for 'requires cache clear'
 - &#35;330 During launch, drupal caches are cleared a lot
 - &#35;412 Return something like `Command [xx:xx:xx] 2 of 16 - Success` in Slack
+- &#35;338 Exclude the '_id' of the item we are updating as a query parameter
 
 ## v2.0.3
 

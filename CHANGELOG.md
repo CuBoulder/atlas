@@ -8,6 +8,7 @@ Need to
 
 Resolves:
 
+- &#35;95 Periodically check for unused code
 - &#35;304 As a Service Manager, need to be able to deploy profile updates without updb
     - &#35;22 Add field for 'requires updb'
     - &#35;311 Add field for 'requires registry rebuild'

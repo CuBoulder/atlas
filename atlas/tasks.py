@@ -898,6 +898,30 @@ def delete_all_available_sites():
 
 
 @celery.task
+def remove_unused_code():
+    """
+    If a code item is more than 90 days old, not current, and unused then remove it.
+    """
+    time_ago = datetime.utcnow() - timedelta(days=90)
+    code_query = 'where={{"meta.is_current":false,"_created":{{"$lte":"{0}"}}}}'.format(time_ago.strftime("%Y-%m-%d %H:%M:%S GMT"))
+    code_items = utilities.get_eve('code', code_query)
+
+    for code in code_items['_items']:
+        # Check for sites using this piece of code.
+        if code['meta']['code_type'] in ['module', 'theme', 'library']:
+            code_type = 'package'
+        else:
+            code_type = code['meta']['code_type']
+        log.debug('code | Check unused | code - %s | code_type - %s', code['_id'], code_type)
+        site_query = 'where={{"code.{0}":"{1}"}}'.format(code_type, code['_id'])
+        sites = utilities.get_eve('sites', site_query)
+        log.debug('code | Delete | code - %s | sites result - %s', code['_id'], sites)
+        if sites['_meta']['total'] == 0:
+            log.info('code | Removing unused item | code - %s', code['_id'])
+            utilities.delete_eve('code', code['_id'])
+
+
+@celery.task
 def remove_orphan_statistics():
     """
     Get a list of statistics and key them against a list of active instances.

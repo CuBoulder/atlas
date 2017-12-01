@@ -287,6 +287,7 @@ def patch_eve(resource, id, request_payload):
     try:
         r = requests.patch(url, headers=headers, data=json.dumps(request_payload), auth=(
             SERVICE_ACCOUNT_USERNAME, SERVICE_ACCOUNT_PASSWORD), verify=SSL_VERIFICATION)
+        log.debug('PATCH to Atlas | URL - %s | Response - %s', url, r.text)
     except Exception as error:
         log.error('PATCH to Atlas | URL - %s | Error - %s', url, error)
 

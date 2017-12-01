@@ -287,6 +287,32 @@ def on_update_commands_callback(updates, original):
     tasks.command_prepare.delay(item)
 
 
+def on_updated_code_callback(updates, original):
+    """
+    Find instances that use this code asset and re-add them.
+
+    :param updates:
+    :param original:
+    """
+    log.debug('code | on updated | updates - %s | original - %s', updates, original)
+    # First get the code_type from either the update or original, then convert package types for
+    # querying instance objects.
+    code_type = updates['meta']['code_type'] if updates['meta'].get('code_type') else original['meta']['code_type']
+    if code_type in ['module', 'theme', 'library']:
+        code_type = 'package'
+
+    query = 'where={{"code.{0}":"{1}"}}'.format(code_type, original['_id'])
+    sites_get = utilities.get_eve('sites', query)
+
+    if sites_get['_meta']['total'] is not 0:
+        for site in sites_get['_items']:
+            log.debug('code | on updated | site - %s', site)
+            code_id_string = site['code'][code_type]
+            payload = {'code': {code_type: code_id_string}}
+            log.debug('code | on updated | payload - %s', payload)
+            utilities.patch_eve('sites', site['_id'], payload)
+
+
 # Update user fields on all events. If the update is coming from Drupal, it
 # will use the client_username for authentication and include the field for
 # us. If someone is querying the API directly, they will user their own

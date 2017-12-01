@@ -716,9 +716,9 @@ STATISTICS_SCHEMA = {
         'type': 'dict',
         'nullable': True,
         'schema': {
-            'total_submissions': {'type': 'integer', 'nullable': True,},
-            'active_forms': {'type': 'integer', 'nullable': True,},
-            'inactive_forms': {'type': 'integer', 'nullable': True,},
+            'total_submissions': {'type': 'integer', 'nullable': True},
+            'active_forms': {'type': 'integer', 'nullable': True},
+            'inactive_forms': {'type': 'integer', 'nullable': True},
         },
     },
     'created_by': {

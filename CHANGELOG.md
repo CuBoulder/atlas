@@ -15,6 +15,7 @@ Resolves:
 - &#35;330 During launch, drupal caches are cleared a lot
 - &#35;412 Return something like `Command [xx:xx:xx] 2 of 16 - Success` in Slack
 - &#35;401 Remove test accounts from bundle adding emails
+- &#35;220 Started to review settings.php 
 
 ## v2.0.3
 

@@ -334,7 +334,8 @@ def site_provision(site):
         raise
 
     try:
-        execute(fabric_tasks.site_install, site=site)
+        host = utilities.single_host()
+        execute(fabric_tasks.site_install, site=site, hosts=host)
     except Exception as error:
         log.error('Site install failed | Error Message | %s', error)
         raise
@@ -531,15 +532,17 @@ def site_update(site, updates, original):
     if ENVIRONMENT != 'local' and site['type'] == 'legacy':
         execute(fabric_tasks.update_f5)
 
+    # Get a host to run single server commands on.
+    host = utilities.single_host()
     # We want to run these commands in this specific order.
     if deploy_php_cache_clear:
         execute(fabric_tasks.clear_php_cache)
     if deploy_registry_rebuild:
-        execute(fabric_tasks.registry_rebuild, site=site)
+        execute(fabric_tasks.registry_rebuild, site=site, hosts=host)
     if deploy_update_database:
-        execute(fabric_tasks.update_database, site=site)
+        execute(fabric_tasks.update_database, site=site, hosts=host)
     if deploy_drupal_cache_clear:
-        execute(fabric_tasks.cache_clear, sid=site['sid'])
+        execute(fabric_tasks.drush_cache_clear, sid=site['sid'], hosts=host)
 
     slack_text = 'Site Update - Success - {0}/sites/{1}'.format(API_URLS[ENVIRONMENT], site['_id'])
     slack_color = 'good'
@@ -731,8 +734,10 @@ def command_run(site, command, single_server, user=None, batch_id=None, batch_co
 
     start_time = time.time()
     if single_server:
+        # Get a host to run this command on.
+        host = utilities.single_host()
         fabric_task_result = execute(
-            fabric_tasks.command_run_single, site=site, command=altered_command, warn_only=True)
+            fabric_tasks.command_run_single, site=site, command=altered_command, warn_only=True, hosts=host)
     else:
         fabric_task_result = execute(
             fabric_tasks.command_run, site=site, command=altered_command, warn_only=True)
@@ -836,7 +841,9 @@ def cron_run(site):
     log.debug('Run Cron | %s  | uri - %s', site['sid'], uri)
     command = 'sudo -u {0} drush elysia-cron run --uri={1}'.format(WEBSERVER_USER, uri)
     try:
-        execute(fabric_tasks.command_run_single, site=site, command=command)
+         # Get a host to run this command on.
+        host = utilities.single_host()
+        execute(fabric_tasks.command_run_single, site=site, command=command, hosts=host)
     except CronException as error:
         log.error('Run Cron | %s | Cron failed | %s', site['sid'], error)
         raise

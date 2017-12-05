@@ -7,7 +7,6 @@ import logging
 import os
 import re
 
-import requests
 from random import randint
 from datetime import datetime
 
@@ -202,20 +201,6 @@ def site_provision(site):
         execute(update_symlink, source=code_directory_current, destination=web_directory_sid)
     except FabricException as error:
         log.error('Site | Provision | Update symlink failed | Error - %s', error)
-        return error
-
-
-def site_install(site):
-    code_directory = '{0}/{1}'.format(SITES_CODE_ROOT, site['sid'])
-    code_directory_current = '{0}/current'.format(code_directory)
-    profile = utilities.get_single_eve('code', site['code']['profile'])
-    profile_name = profile['meta']['name']
-
-    try:
-        execute(install_site, profile_name=profile_name,
-                code_directory_current=code_directory_current)
-    except FabricException as error:
-        log.error('Site | Install | Instance install failed | Error - %s', error)
         return error
 
 
@@ -431,7 +416,7 @@ def command_run(site, command):
         run('{0}'.format(command))
 
 
-@roles('webserver_single')
+# We use a dynamic host list to round-robin, so you need to pass a host list when calling it.
 def command_run_single(site, command, warn_only=False):
     """
     Run a command on a single server
@@ -454,7 +439,7 @@ def command_run_single(site, command, warn_only=False):
                 return command_result
 
 
-@roles('webserver_single')
+# We use a dynamic host list to round-robin, so you need to pass a host list when calling it.
 def update_database(site):
     """
     Run a updb
@@ -468,7 +453,7 @@ def update_database(site):
         run('sudo -u {0} drush updb -y'.format(WEBSERVER_USER))
 
 
-@roles('webserver_single')
+# We use a dynamic host list to round-robin, so you need to pass a host list when calling it.
 def registry_rebuild(site):
     """
     Run a drush rr and drush cc drush.
@@ -483,24 +468,28 @@ def registry_rebuild(site):
         run('sudo -u {0} drush rr; sudo -u {0} drush cc drush;'.format(WEBSERVER_USER))
 
 
-@roles('webserver_single')
-def cache_clear(sid):
-    code_directory_current = '{0}/{1}/current'.format(SITES_CODE_ROOT, sid)
-    with cd(code_directory_current):
-        run('sudo -u {0} drush cc all'.format(WEBSERVER_USER))
-
-
-@roles('webserver_single')
-def install_site(profile_name, code_directory_current):
-    with cd(code_directory_current):
-        run('sudo -u {0} drush site-install -y {1}'.format(WEBSERVER_USER, profile_name))
-        run('sudo -u {0} drush rr; sudo -u {0} drush cc drush'.format(WEBSERVER_USER))
-
-
+# We use a dynamic host list to round-robin, so you need to pass a host list when calling it or call
+# it from a parent fabric task that has a role.
 def drush_cache_clear(sid):
     code_directory_current = '{0}/{1}/current'.format(SITES_CODE_ROOT, sid)
     with cd(code_directory_current):
         run('sudo -u {0} drush cc all'.format(WEBSERVER_USER))
+
+
+# We use a dynamic host list to round-robin, so you need to pass a host list when calling it.
+def site_install(site):
+    code_directory = '{0}/{1}'.format(SITES_CODE_ROOT, site['sid'])
+    code_directory_current = '{0}/current'.format(code_directory)
+    profile = utilities.get_single_eve('code', site['code']['profile'])
+    profile_name = profile['meta']['name']
+
+    try:
+        with cd(code_directory_current):
+            run('sudo -u {0} drush site-install -y {1}'.format(WEBSERVER_USER, profile_name))
+            run('sudo -u {0} drush rr; sudo -u {0} drush cc drush'.format(WEBSERVER_USER))
+    except FabricException as error:
+        log.error('Site | Install | Instance install failed | Error - %s', error)
+        return error
 
 
 def create_nfs_files_dir(nfs_dir, site_sid):
@@ -512,7 +501,7 @@ def create_nfs_files_dir(nfs_dir, site_sid):
     run('chown {0}:{1} {2}'.format(SSH_USER, WEBSERVER_USER_GROUP, nfs_tmp_dir))
     run('chmod 775 {0}'.format(nfs_files_dir))
     run('chmod 775 {0}'.format(nfs_tmp_dir))
-    
+
 
 def create_directory_structure(folder):
     log.info('fabric_tasks | Create directory | Directory - %s', folder)
@@ -702,20 +691,12 @@ def launch_site(site):
                 # Create a new symlink using site's updated path
                 if not exists(web_directory_path):
                     update_symlink(code_directory_current, site['path'])
-                with cd(web_directory_path):
-                    clear_php_cache()
-                    # Clear caches at the end of the launch process to show correct pathologic
-                    # rendered URLS.
-                    drush_cache_clear(site['sid'])
             # Assign it to an update group.
             update_group = randint(0, 10)
         if site['pool'] == 'poolb-homepage':
             web_directory = '{0}/{1}'.format(SITES_WEB_ROOT, 'homepage')
             with cd(SITES_WEB_ROOT):
                 update_symlink(code_directory_current, SITES_CODE_ROOT)
-            with cd(SITES_CODE_ROOT):
-                clear_php_cache()
-                drush_cache_clear(site['sid'])
             # Assign site to update group 12.
             update_group = 12
         payload = {'status': 'launched', 'update_group': update_group}
@@ -732,7 +713,7 @@ def update_f5():
     file_name = "{0}/{1}".format(load_balancer_config_dir, LOAD_BALANCER_CONFIG_FILES[ENVIRONMENT])
     if not os.path.isfile(file_name):
         file(file_name, 'w').close()
-    with open( file_name, "w") as ofile:
+    with open(file_name, "w") as ofile:
         for site in sites['_items']:
             if 'path' in site:
                 # In case a path was saved with a leading slash

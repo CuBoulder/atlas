@@ -35,7 +35,6 @@ log = logging.getLogger('atlas.utilities')
 if ATLAS_LOCATION not in sys.path:
     sys.path.append(ATLAS_LOCATION)
 
-
 class AtlasBasicAuth(BasicAuth):
     """
     Basic Authentication
@@ -483,3 +482,26 @@ def send_email(email_message, email_subject, email_to):
         s.login(EMAIL_USERNAME, EMAIL_PASSWORD)
         s.sendmail(SEND_NOTIFICATION_FROM_EMAIL, final_email_to, msg.as_string())
         s.quit()
+
+
+# When we start the app, set the round-robin counter to 0.
+HOST_ROUND_ROBIN_COUNTER = 0
+
+def single_host():
+    """
+    Round-robin the webserver host list for tasks that are only run on a single host.
+    """
+    log.debug('Single host | Start | Counter - %s', HOST_ROUND_ROBIN_COUNTER)
+    # Need to declare that this is a global variable since we are going to modify it later.
+    global HOST_ROUND_ROBIN_COUNTER
+
+    host = SERVERDEFS[ENVIRONMENT]['webservers'][HOST_ROUND_ROBIN_COUNTER]
+
+    # Increment the counter if it is less than the total number of webservers, otherwise reset it.
+    if HOST_ROUND_ROBIN_COUNTER < len(SERVERDEFS[ENVIRONMENT]['webservers']):
+        HOST_ROUND_ROBIN_COUNTER += 1
+    else:
+        HOST_ROUND_ROBIN_COUNTER = 0
+
+    log.debug('Single host | End | Counter - %s | Host - %s', HOST_ROUND_ROBIN_COUNTER, host)
+    return host

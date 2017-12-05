@@ -65,30 +65,16 @@ $conf['preprocess_js'] = TRUE;
 // Drupal doesn't cache if we invoke hooks during bootstrap.
 $conf['page_cache_invoke_hooks'] = FALSE;
 
-// Drupal doesn't cache if we invoke hooks during bootstrap.
-$conf['page_cache_invoke_hooks'] = FALSE;
-
 {% if environment != 'local' %}
 // Varnish Backends.
 $conf['cache_backends'] = array(
   'profiles/{{profile}}/modules/contrib/varnish/varnish.cache.inc',
 )
-
-// Set varnish as the page cache.
 $conf['cache_class_cache_page'] = 'VarnishCache';
 {% endif %}
 
-// Memcache lock file location.
-$conf['lock_inc'] = 'profiles/{{profile}}/modules/contrib/memcache/memcache-lock.inc';
-
 // Setup cache_form bin.
 $conf['cache_class_cache_form'] = 'DrupalDatabaseCache';
-
-// Set varnish as the page cache.
-$conf['cache_class_cache_page'] = 'VarnishCache';
-
-// Set memcache as default.
-$conf['cache_default_class'] = 'MemCacheDrupal';
 
 // Disable poorman cron.
 $conf['cron_safe_threshold'] = 0;

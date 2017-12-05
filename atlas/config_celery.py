@@ -116,4 +116,8 @@ CELERYBEAT_SCHEDULE = {
         'task': 'atlas.tasks.verify_statistics',
         'schedule': timedelta(hours=24),
     },
+    'remove_unused_code': {
+        'task': 'atlas.tasks.remove_unused_code',
+        'schedule': timedelta(hours=24),
+    },
 }

@@ -13,7 +13,8 @@ from eve import Eve
 from flask import jsonify, make_response
 from atlas import callbacks
 from atlas import utilities
-from atlas.config import (ATLAS_LOCATION, VERSION_NUMBER, SSL_KEY_FILE, SSL_CRT_FILE, LOG_LOCATION)
+from atlas.config import (ATLAS_LOCATION, VERSION_NUMBER, SSL_KEY_FILE, SSL_CRT_FILE, LOG_LOCATION,
+                          ENVIRONMENT)
 
 
 if ATLAS_LOCATION not in sys.path:
@@ -36,6 +37,8 @@ app.debug = True
 LOG_HANDLER = WatchedFileHandler(LOG_LOCATION)
 # The default log level is set to WARNING, so we have to explicitly set the logging level to Info.
 app.logger.setLevel(logging.INFO)
+if ENVIRONMENT == 'local':
+    app.logger.setLevel(logging.DEBUG)
 # Append the handler to the default application logger
 app.logger.addHandler(LOG_HANDLER)
 
@@ -55,6 +58,7 @@ app.on_inserted_sites += callbacks.on_inserted_sites_callback
 app.on_update_code += callbacks.on_update_code_callback
 app.on_update_sites += callbacks.on_update_sites_callback
 app.on_update_commands += callbacks.on_update_commands_callback
+app.on_updated_code += callbacks.on_updated_code_callback
 app.on_delete_item_code += callbacks.on_delete_item_code_callback
 app.on_insert += callbacks.pre_insert
 app.on_update += callbacks.pre_update

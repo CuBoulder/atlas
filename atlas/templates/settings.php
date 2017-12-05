@@ -65,11 +65,18 @@ $conf['preprocess_js'] = TRUE;
 // Drupal doesn't cache if we invoke hooks during bootstrap.
 $conf['page_cache_invoke_hooks'] = FALSE;
 
-// Memcache and Varnish Backends.
+// Drupal doesn't cache if we invoke hooks during bootstrap.
+$conf['page_cache_invoke_hooks'] = FALSE;
+
+{% if environment != 'local' %}
+// Varnish Backends.
 $conf['cache_backends'] = array(
   'profiles/{{profile}}/modules/contrib/varnish/varnish.cache.inc',
-  'profiles/{{profile}}/modules/contrib/memcache/memcache.inc',
-);
+)
+
+// Set varnish as the page cache.
+$conf['cache_class_cache_page'] = 'VarnishCache';
+{% endif %}
 
 // Memcache lock file location.
 $conf['lock_inc'] = 'profiles/{{profile}}/modules/contrib/memcache/memcache-lock.inc';
@@ -83,23 +90,11 @@ $conf['cache_class_cache_page'] = 'VarnishCache';
 // Set memcache as default.
 $conf['cache_default_class'] = 'MemCacheDrupal';
 
-// Memcache bins and stampede protection.
-$conf['memcache_bins'] = array('cache' => 'default');
-
-// Set to FALSE on Jan 5, 2012 - drastically improved performance.
-$conf['memcache_stampede_protection'] = FALSE;
-$conf['memcache_stampede_semaphore'] = 15;
-$conf['memcache_stampede_wait_time'] = 5;
-$conf['memcache_stampede_wait_limit'] = 3;
-
 // Disable poorman cron.
 $conf['cron_safe_threshold'] = 0;
 
 // No IP blocking from the UI, we'll take care of that at a higher level.
 $conf['blocked_ips'] = array();
-
-// Enable the environment indicator.
-$conf['environment_indicator_enabled'] = TRUE;
 
 if (isset($_SERVER['OSR_ENV'])) {
   global $base_url;
@@ -124,6 +119,7 @@ if (isset($_SERVER['OSR_ENV'])) {
   }
 }
 
+{% if environment != 'local' %}
 // Varnish
 $conf['reverse_proxy'] = TRUE;
 $conf['reverse_proxy_addresses'] = array({% for ip in reverse_proxies -%}'{{ip}}',{% endfor %});
@@ -133,11 +129,11 @@ $conf['reverse_proxy_header'] = 'X-Forwarded-For';
 $conf['varnish_control_terminal'] = '{{ varnish_control }}';
 $conf['varnish_version'] = 4;
 $conf['varnish_control_key'] = '{{ varnish_control_key }}';
-
-{% if environment == 'development' %}
-  $conf['drupal_http_request_fails'] = FALSE;
 {% endif %}
 
+{% if environment in ['local','dev'] %}
+$conf['drupal_http_request_fails'] = FALSE;
+{% endif %}
 // Google Analytics
 $conf['googleanalytics_account'] = 'UA-25752450-1';
 

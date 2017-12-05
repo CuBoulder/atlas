@@ -19,7 +19,8 @@ from atlas.config_local import (ENVIRONMENT, SSL_KEY_FILE, SSL_CRT_FILE, ALLOWED
                                 SERVICE_ACCOUNT_USERNAME, SERVICE_ACCOUNT_PASSWORD,
                                 SLACK_NOTIFICATIONS, SLACK_URL, SLACK_USERNAME, VARNISH_CONTROL_KEY,
                                 SEND_NOTIFICATION_EMAILS, SEND_NOTIFICATION_FROM_EMAIL, EMAIL_HOST,
-                                EMAIL_PORT, EMAIL_USERNAME, EMAIL_PASSWORD, LOG_LOCATION)
+                                EMAIL_PORT, EMAIL_USERNAME, EMAIL_PASSWORD, LOG_LOCATION,
+                                EMAIL_USERS_EXCLUDE)
 
 # Set Atlas location
 ATLAS_LOCATION = os.path.dirname(os.path.realpath(__file__))
@@ -48,4 +49,9 @@ SSL_VERIFICATION = True
 if ENVIRONMENT == 'local':
     SSL_VERIFICATION = False
 
-VERSION_NUMBER = '2.0.0'
+    import urllib3
+    # Disable warnings about not being able to verify local certs.
+    # https://urllib3.readthedocs.io/en/latest/advanced-usage.html#ssl-warnings
+    urllib3.disable_warnings()
+
+VERSION_NUMBER = '2.1.0'

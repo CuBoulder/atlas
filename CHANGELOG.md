@@ -2,6 +2,16 @@
 
 ## v2.1.0
 
+This release adds granular deployment options for code assets. The following required fields (with the noted defaults) have been added to code items:
+```json
+"deploy": {
+  "registry_rebuild": False,
+  "cache_clear": True,
+  "update_database": True
+}
+```
+When a code item is added to an instance, the above drush commands will be run as indicated by the code asset. If multiple items are added, the commands will be run after all code is changed.
+
 Need to 
 
 - Add a list of users to exclude from emails in config_local.py `sudo -u [webserver_user] drush` without a password.

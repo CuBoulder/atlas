@@ -367,90 +367,10 @@ def site_remove(site):
     remove_directory(code_directory)
 
 
-@roles('webserver_single')
-def command_run_single(site, command, warn_only=False):
-    """
-    Run a command on a single server
-
-    :param site: Site to run command on
-    :param command: Command to run
-    :return:
-    """
-    log.info('Command | Single Server | Site - %s | Command - %s', site['sid'], command)
-    web_directory = '{0}/{1}'.format(SITES_WEB_ROOT, site['sid'])
-    with settings(warn_only=warn_only):
-        with cd(web_directory):
-            # If we are running a drush command, we run it as the webserver user.
-            if re.search('^drush', command):
-                command_result = run("sudo -u {0} {1}".format(WEBSERVER_USER, command), pty=False)
-            else:
-                command_result = run("{0}".format(command), pty=False)
-                # Return the failure if there is one.
-            if command_result.failed:
-                return command_result
-
-
-@roles('webservers')
-def command_run(site, command):
-    """
-    Run a command on a all webservers.
-
-    :param site: Site to run command on
-    :param command: Command to run
-    :return:
-    """
-    log.info('Command | Multiple Servers | Site - %s | Command - %s', site['sid'], command)
-    web_directory = '{0}/{1}'.format(SITES_WEB_ROOT, site['sid'])
-    with cd(web_directory):
-        run('{0}'.format(command))
-
-
-@roles('webserver_single')
-def update_database(site):
-    """
-    Run a updb
-
-    :param site: Site to run command on
-    :return:
-    """
-    log.info('fabric_tasks | updb | Site - %s', site['sid'])
-    code_directory_sid = '{0}/{1}/{1}'.format(SITES_CODE_ROOT, site['sid'])
-    with cd(code_directory_sid):
-        run('sudo -u {0} drush updb -y'.format(WEBSERVER_USER))
-
-
-@roles('webserver_single')
-def registry_rebuild(site):
-    """
-    Run a drush rr and drush cc drush.
-    Drush command cache clear is a workaround, see #306.
-
-    :param site: Site to run command on
-    :return:
-    """
-    log.info('fabric_tasks | Drush registry rebuild and cache clear | Site - %s', site['sid'])
-    code_directory_sid = '{0}/{1}/{1}'.format(SITES_CODE_ROOT, site['sid'])
-    with cd(code_directory_sid):
-        run('sudo -u {0} drush rr; sudo -u {0} drush cc drush;'.format(WEBSERVER_USER))
-
-
 @roles('webservers')
 def clear_php_cache():
     run('wget -q -O - http://localhost/sysadmintools/opcache/reset.php;')
     return True
-
-
-@roles('webserver_single')
-def cache_clear(sid):
-    code_directory_current = '{0}/{1}/current'.format(SITES_CODE_ROOT, sid)
-    with cd(code_directory_current):
-        run('sudo -u {0} drush cc all'.format(WEBSERVER_USER))
-
-
-def drush_cache_clear(sid):
-    code_directory_current = '{0}/{1}/current'.format(SITES_CODE_ROOT, sid)
-    with cd(code_directory_current):
-        run('sudo -u {0} drush cc all'.format(WEBSERVER_USER))
 
 
 @roles('webservers')
@@ -494,6 +414,93 @@ def update_homepage_extra_files():
     run("rm -f {0}/.htaccess".format(send_to))
     put(send_from_htaccess, "{0}/.htaccess".format(send_to))
     run("chmod -R u+w {}".format(send_to))
+
+
+@roles('webservers')
+def command_run(site, command):
+    """
+    Run a command on a all webservers.
+
+    :param site: Site to run command on
+    :param command: Command to run
+    :return:
+    """
+    log.info('Command | Multiple Servers | Site - %s | Command - %s', site['sid'], command)
+    web_directory = '{0}/{1}'.format(SITES_WEB_ROOT, site['sid'])
+    with cd(web_directory):
+        run('{0}'.format(command))
+
+
+@roles('webserver_single')
+def command_run_single(site, command, warn_only=False):
+    """
+    Run a command on a single server
+
+    :param site: Site to run command on
+    :param command: Command to run
+    :return:
+    """
+    log.info('Command | Single Server | Site - %s | Command - %s', site['sid'], command)
+    web_directory = '{0}/{1}'.format(SITES_WEB_ROOT, site['sid'])
+    with settings(warn_only=warn_only):
+        with cd(web_directory):
+            # If we are running a drush command, we run it as the webserver user.
+            if re.search('^drush', command):
+                command_result = run("sudo -u {0} {1}".format(WEBSERVER_USER, command), pty=False)
+            else:
+                command_result = run("{0}".format(command), pty=False)
+                # Return the failure if there is one.
+            if command_result.failed:
+                return command_result
+
+
+@roles('webserver_single')
+def update_database(site):
+    """
+    Run a updb
+
+    :param site: Site to run command on
+    :return:
+    """
+    log.info('fabric_tasks | updb | Site - %s', site['sid'])
+    code_directory_sid = '{0}/{1}/{1}'.format(SITES_CODE_ROOT, site['sid'])
+    with cd(code_directory_sid):
+        run('sudo -u {0} drush updb -y'.format(WEBSERVER_USER))
+
+
+@roles('webserver_single')
+def registry_rebuild(site):
+    """
+    Run a drush rr and drush cc drush.
+    Drush command cache clear is a workaround, see #306.
+
+    :param site: Site to run command on
+    :return:
+    """
+    log.info('fabric_tasks | Drush registry rebuild and cache clear | Site - %s', site['sid'])
+    code_directory_sid = '{0}/{1}/{1}'.format(SITES_CODE_ROOT, site['sid'])
+    with cd(code_directory_sid):
+        run('sudo -u {0} drush rr; sudo -u {0} drush cc drush;'.format(WEBSERVER_USER))
+
+
+@roles('webserver_single')
+def cache_clear(sid):
+    code_directory_current = '{0}/{1}/current'.format(SITES_CODE_ROOT, sid)
+    with cd(code_directory_current):
+        run('sudo -u {0} drush cc all'.format(WEBSERVER_USER))
+
+
+@roles('webserver_single')
+def install_site(profile_name, code_directory_current):
+    with cd(code_directory_current):
+        run('sudo -u {0} drush site-install -y {1}'.format(WEBSERVER_USER, profile_name))
+        run('sudo -u {0} drush rr; sudo -u {0} drush cc drush'.format(WEBSERVER_USER))
+
+
+def drush_cache_clear(sid):
+    code_directory_current = '{0}/{1}/current'.format(SITES_CODE_ROOT, sid)
+    with cd(code_directory_current):
+        run('sudo -u {0} drush cc all'.format(WEBSERVER_USER))
 
 
 def create_nfs_files_dir(nfs_dir, site_sid):
@@ -627,13 +634,6 @@ def create_settings_files(site):
                     template_dir=template_dir,
                     backup=False,
                     mode='0644')
-
-
-@roles('webserver_single')
-def install_site(profile_name, code_directory_current):
-    with cd(code_directory_current):
-        run('sudo -u {0} drush site-install -y {1}'.format(WEBSERVER_USER, profile_name))
-        run('sudo -u {0} drush rr; sudo -u {0} drush cc drush'.format(WEBSERVER_USER))
 
 
 def clone_repo(git_url, checkout_item, destination):

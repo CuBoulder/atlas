@@ -152,6 +152,8 @@ SITES_SCHEMA = {
     'path': {
         'type': 'string',
         'unique': True,
+        'noneof':
+            [{'allowed': ['opcache', 'static']}]
     },
     'db_key': {
         'type': 'string',

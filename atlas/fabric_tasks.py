@@ -354,7 +354,7 @@ def site_remove(site):
 
 @roles('webservers')
 def clear_php_cache():
-    run('wget -q -O - {0}/opcache/reset.php;'.format(BASE_URLS[ENVIRONMENT]))
+    run('wget -q -O - https://{0}/opcache/reset.php;'.format(env.host_string))
     return True
 
 

@@ -487,8 +487,9 @@ def single_host():
 
     host = SERVERDEFS[ENVIRONMENT]['webservers'][HOST_ROUND_ROBIN_COUNTER]
 
-    # Increment the counter if it is less than the total number of webservers, otherwise reset it.
-    if HOST_ROUND_ROBIN_COUNTER < len(SERVERDEFS[ENVIRONMENT]['webservers']):
+    # Increment the counter if it is less than the total number of webservers (need to account for
+    # arrays starting at 0), otherwise reset it.
+    if HOST_ROUND_ROBIN_COUNTER < (len(SERVERDEFS[ENVIRONMENT]['webservers']) - 1 ):
         HOST_ROUND_ROBIN_COUNTER += 1
     else:
         HOST_ROUND_ROBIN_COUNTER = 0

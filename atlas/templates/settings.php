@@ -69,7 +69,8 @@ $conf['page_cache_invoke_hooks'] = FALSE;
 // Varnish Backends.
 $conf['cache_backends'] = array(
   'profiles/{{profile}}/modules/contrib/varnish/varnish.cache.inc',
-)
+);
+
 $conf['cache_class_cache_page'] = 'VarnishCache';
 {% endif %}
 

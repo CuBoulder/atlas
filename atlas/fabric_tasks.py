@@ -21,7 +21,7 @@ from atlas.config import (ATLAS_LOCATION, ENVIRONMENT, SSH_USER, CODE_ROOT, SITE
                           SITE_DOWN_PATH, LOAD_BALANCER, VARNISH_CONTROL_KEY)
 from atlas.config_servers import (SERVERDEFS, NFS_MOUNT_LOCATION, API_URLS,
                                   VARNISH_CONTROL_TERMINALS, LOAD_BALANCER_CONFIG_FILES,
-                                  LOAD_BALANCER_CONFIG_GROUP)
+                                  LOAD_BALANCER_CONFIG_GROUP, BASE_URLS)
 
 # Setup a sub-logger. See tasks.py for longer comment.
 log = logging.getLogger('atlas.fabric_tasks')
@@ -354,7 +354,7 @@ def site_remove(site):
 
 @roles('webservers')
 def clear_php_cache():
-    run('wget -q -O - http://localhost/sysadmintools/opcache/reset.php;')
+    run('wget -q -O - https://{0}/opcache/reset.php;'.format(BASE_URLS[ENVIRONMENT]))
     return True
 
 

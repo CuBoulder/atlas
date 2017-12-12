@@ -297,7 +297,10 @@ def on_updated_code_callback(updates, original):
     log.debug('code | on updated | updates - %s | original - %s', updates, original)
     # First get the code_type from either the update or original, then convert package types for
     # querying instance objects.
-    code_type = updates['meta']['code_type'] if updates['meta'].get('code_type') else original['meta']['code_type']
+    if updates.get('meta') and updates['meta'].get('code_type'):
+        code_type = updates['meta']['code_type']
+    else:
+        code_type = original['meta']['code_type']
     if code_type in ['module', 'theme', 'library']:
         code_type = 'package'
 

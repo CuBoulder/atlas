@@ -354,8 +354,11 @@ def site_remove(site):
 
 @roles('webservers')
 def clear_php_cache():
-    run('curl -k https://127.0.0.1/opcache/reset.php;')
-    return True
+    try:
+        run('curl -ks https://127.0.0.1/opcache/reset.php;')
+    except FabricException as error:
+        log.error('Clear PHP Cache | Error - %s', error)
+        return error
 
 
 @roles('webservers')

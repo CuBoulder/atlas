@@ -47,6 +47,8 @@ app.logger.addHandler(LOG_HANDLER)
 # Request event hooks.
 app.on_pre_POST += callbacks.pre_post_callback
 app.on_pre_POST_sites += callbacks.pre_post_sites_callback
+app.on_pre_PATCH_sites += callbacks.pre_patch_sites_callback
+app.on_pre_PUT_sites += callbacks.pre_patch_sites_callback
 app.on_pre_DELETE_code += callbacks.pre_delete_code_callback
 app.on_pre_DELETE_sites += callbacks.pre_delete_sites_callback
 # Database event hooks.

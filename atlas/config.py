@@ -43,6 +43,8 @@ if TRAILING_SLASH.search(SITES_WEB_ROOT):
 if TRAILING_SLASH.search(SITES_WEB_ROOT):
     raise Exception("'sites_web_root' should not have a trailing slash.")
 
+# These are paths that we cannot route to instances. 
+PROTECTED_PATHS = ['opcache', 'static', 'includes', 'misc','modules','profiles', 'scripts', 'sites', 'themes']
 
 # This allows us to use a self signed cert for local dev.
 SSL_VERIFICATION = True

@@ -11,7 +11,8 @@ from bson import ObjectId
 
 from atlas import tasks
 from atlas import utilities
-from atlas.config import (ATLAS_LOCATION, DEFAULT_CORE, DEFAULT_PROFILE, SERVICE_ACCOUNT_USERNAME)
+from atlas.config import (ATLAS_LOCATION, DEFAULT_CORE, DEFAULT_PROFILE, SERVICE_ACCOUNT_USERNAME,
+                          PROTECTED_PATHS)
 
 # Setup a sub-logger. See tasks.py for longer comment.
 log = logging.getLogger('atlas.callbacks')
@@ -23,7 +24,7 @@ def pre_post_callback(resource, request):
     :param resource: resource accessed
     :param request: flask.request object
     """
-    log.debug('POST | Resource - %s | %s', resource, request)
+    log.debug('POST | Resource - %s | Request - %s, | request.data - %s', resource, str(request), request.data)
 
 
 def pre_post_sites_callback(request):
@@ -46,6 +47,34 @@ def pre_post_sites_callback(request):
     elif not profile:
         log.error('sites | POST | Pre post callback | No current profile')
         abort(409, 'Error: There is no current profile.')
+
+    # Check for a protected path.
+    if json.loads(request.data).get('path') and json.loads(request.data)['path'] in PROTECTED_PATHS:
+        log.error('sites | POST | Pre post callback | Protected path')
+        abort(409, 'Error: Cannot use this path, it is on the protected list.')
+
+
+def pre_patch_sites_callback(request, payload):
+    """
+    :param request: flask.request object
+    """
+    log.debug('sites | PATCH | Pre patch callback | Payload - %s', payload)
+
+    # Check for a protected path.
+    if json.loads(request.data).get('path') and json.loads(request.data)['path'] in PROTECTED_PATHS:
+        log.error('sites | PATCH | Pre patch callback | Protected path')
+        abort(409, 'Error: Cannot use this path, it is on the protected list.')
+
+def pre_put_sites_callback(request, payload):
+    """
+    :param request: flask.request object
+    """
+    log.debug('sites | PUT | Pre put callback | Payload - %s', payload)
+
+    # Check for a protected path.
+    if json.loads(request.data).get('path') and json.loads(request.data)['path'] in PROTECTED_PATHS:
+        log.error('sites | PUT | Pre put callback | Protected path')
+        abort(409, 'Error: Cannot use this path, it is on the protected list.')
 
 
 def pre_delete_code_callback(request, lookup):

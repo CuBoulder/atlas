@@ -113,9 +113,8 @@ def on_insert_sites_callback(items):
                     name=DEFAULT_CORE, code_type='core')
                 item['code']['profile'] = utilities.get_current_code(
                     name=DEFAULT_PROFILE, code_type='profile')
-            if not item['import_from_inventory']:
-                date_json = '{{"created":"{0} GMT"}}'.format(item['_created'])
-                item['dates'] = json.loads(date_json)
+            date_json = '{{"created":"{0} GMT"}}'.format(item['_created'])
+            item['dates'] = json.loads(date_json)
 
 
 def on_inserted_sites_callback(items):
@@ -208,8 +207,8 @@ def on_update_code_callback(updates, original):
         name = updates['meta']['name'] if updates['meta'].get('name') else original['meta']['name']
         code_type = updates['meta']['code_type'] if updates['meta'].get('code_type') else original['meta']['code_type']
 
-        query = 'where={{"meta.name":"{0}","meta.code_type":"{1}","meta.is_current": true}}'.format(
-            name, code_type)
+        query = 'where={{"meta.name":"{0}","meta.code_type":"{1}","meta.is_current": true,"_id":{{"$ne":"{2}"}}}}'.format(
+            name, code_type, original['_id'])
         code_get = utilities.get_eve('code', query)
         log.debug('code | on update | Current code - %s', code_get)
 
@@ -286,6 +285,35 @@ def on_update_commands_callback(updates, original):
     item.update(updates)
     log.debug('command | Update | Item - %s | Update - %s | Original - %s', item, updates, original)
     tasks.command_prepare.delay(item)
+
+
+def on_updated_code_callback(updates, original):
+    """
+    Find instances that use this code asset and re-add them.
+
+    :param updates:
+    :param original:
+    """
+    log.debug('code | on updated | updates - %s | original - %s', updates, original)
+    # First get the code_type from either the update or original, then convert package types for
+    # querying instance objects.
+    if updates.get('meta') and updates['meta'].get('code_type'):
+        code_type = updates['meta']['code_type']
+    else:
+        code_type = original['meta']['code_type']
+    if code_type in ['module', 'theme', 'library']:
+        code_type = 'package'
+
+    query = 'where={{"code.{0}":"{1}"}}'.format(code_type, original['_id'])
+    sites_get = utilities.get_eve('sites', query)
+
+    if sites_get['_meta']['total'] is not 0:
+        for site in sites_get['_items']:
+            log.debug('code | on updated | site - %s', site)
+            code_id_string = site['code'][code_type]
+            payload = {'code': {code_type: code_id_string}}
+            log.debug('code | on updated | payload - %s', payload)
+            utilities.patch_eve('sites', site['_id'], payload)
 
 
 # Update user fields on all events. If the update is coming from Drupal, it

@@ -25,7 +25,7 @@ from atlas.config import (ATLAS_LOCATION, ALLOWED_USERS, LDAP_SERVER, LDAP_ORG_U
                           SERVICE_ACCOUNT_USERNAME, SERVICE_ACCOUNT_PASSWORD, SSL_VERIFICATION,
                           SLACK_USERNAME, SLACK_URL, SEND_NOTIFICATION_EMAILS,
                           SEND_NOTIFICATION_FROM_EMAIL, EMAIL_HOST, EMAIL_PORT, EMAIL_USERNAME,
-                          EMAIL_PASSWORD)
+                          EMAIL_PASSWORD, EMAIL_USERS_EXCLUDE)
 from atlas.config_servers import (SERVERDEFS, API_URLS)
 
 # Setup a sub-logger. See tasks.py for longer comment.
@@ -287,6 +287,7 @@ def patch_eve(resource, id, request_payload):
     try:
         r = requests.patch(url, headers=headers, data=json.dumps(request_payload), auth=(
             SERVICE_ACCOUNT_USERNAME, SERVICE_ACCOUNT_PASSWORD), verify=SSL_VERIFICATION)
+        log.debug('PATCH to Atlas | URL - %s | Response - %s', url, r.text)
     except Exception as error:
         log.error('PATCH to Atlas | URL - %s | Error - %s', url, error)
 
@@ -464,10 +465,11 @@ def send_email(email_message, email_subject, email_to):
         msg = MIMEText(email_message, 'plain')
         msg['Subject'] = email_subject
         msg['From'] = SEND_NOTIFICATION_FROM_EMAIL
-        msg['To'] = ", ".join(email_to)
+        final_email_to = [x for x in email_to if x not in EMAIL_USERS_EXCLUDE]
+        msg['To'] = ", ".join(final_email_to)
 
         s = smtplib.SMTP(EMAIL_HOST, EMAIL_PORT)
         s.starttls()
         s.login(EMAIL_USERNAME, EMAIL_PASSWORD)
-        s.sendmail(SEND_NOTIFICATION_FROM_EMAIL, email_to, msg.as_string())
+        s.sendmail(SEND_NOTIFICATION_FROM_EMAIL, final_email_to, msg.as_string())
         s.quit()

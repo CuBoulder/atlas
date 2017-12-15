@@ -227,8 +227,17 @@ def on_update_code_callback(updates, original):
     if updates.get('meta'):
         updated_item['meta'] = meta
 
-    log.debug('code | on update | Ready to hand to Celery')
-    tasks.code_update.delay(updated_item, original)
+    if updates.has_key('meta') and (updates['meta'].has_key('name') or updates['meta'].has_key('version') or updates['meta'].has_key('code_type')):
+        update_code = True
+    elif updates.has_key('commit_hash') or updates.has_key('git_url'):
+        update_code = True
+    else:
+        update_code = False
+
+    if update_code:
+
+        log.debug('code | on update | Ready to hand to Celery')
+        tasks.code_update.delay(updated_item, original)
 
 
 def on_update_sites_callback(updates, original):
@@ -304,16 +313,25 @@ def on_updated_code_callback(updates, original):
     if code_type in ['module', 'theme', 'library']:
         code_type = 'package'
 
-    query = 'where={{"code.{0}":"{1}"}}'.format(code_type, original['_id'])
-    sites_get = utilities.get_eve('sites', query)
+    if updates.has_key('meta') and (updates['meta'].has_key('name') or updates['meta'].has_key('version') or updates['meta'].has_key('code_type')):
+        update_sites = True
+    elif updates.has_key('commit_hash') or updates.has_key('git_url'):
+        update_sites = True
+    else:
+        update_sites = False
+        
+    if update_sites:
 
-    if sites_get['_meta']['total'] is not 0:
-        for site in sites_get['_items']:
-            log.debug('code | on updated | site - %s', site)
-            code_id_string = site['code'][code_type]
-            payload = {'code': {code_type: code_id_string}}
-            log.debug('code | on updated | payload - %s', payload)
-            utilities.patch_eve('sites', site['_id'], payload)
+        query = 'where={{"code.{0}":"{1}"}}'.format(code_type, original['_id'])
+        sites_get = utilities.get_eve('sites', query)
+
+        if sites_get['_meta']['total'] is not 0:
+            for site in sites_get['_items']:
+                log.debug('code | on updated | site - %s', site)
+                code_id_string = site['code'][code_type]
+                payload = {'code': {code_type: code_id_string}}
+                log.debug('code | on updated | payload - %s', payload)
+                utilities.patch_eve('sites', site['_id'], payload)
 
 
 # Update user fields on all events. If the update is coming from Drupal, it

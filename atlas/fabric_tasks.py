@@ -70,7 +70,7 @@ def code_deploy(item):
                     item['meta']['name'])
                 update_symlink(code_folder, code_folder_current)
             if item['meta']['code_type'] == 'static':
-                static_target = '{0}/{1}/{2}'.format(STATIC_WEB_PATH,
+                static_target = '{0}/{1}-{2}'.format(STATIC_WEB_PATH,
                                                       item['meta']['name'], item['meta']['version'])
                 log.debug('Code | Deploy | Static | Target - %s', static_target)
                 update_symlink(code_folder, static_target)
@@ -138,7 +138,7 @@ def code_remove(item):
             item['meta']['name'])
         remove_symlink(code_folder_current)
     if item['meta']['code_type'] == 'static':
-        static_target = '{0}/{1}/{2}'.format(STATIC_WEB_PATH,
+        static_target = '{0}/{1}-{2}'.format(STATIC_WEB_PATH,
                                               item['meta']['name'], item['meta']['version'])
         remove_symlink(static_target)
 

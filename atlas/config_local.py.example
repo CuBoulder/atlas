@@ -28,6 +28,7 @@ CODE_ROOT = '/data/atlas/code'
 SITES_WEB_ROOT = '/htdocs'
 SITES_CODE_ROOT = '/data/atlas/sites'
 SITE_DOWN_PATH = '/data/code/down'
+STATIC_WEB_PATH = '/data/web/htdocs/express/static'
 BACKUPS_PATH = '/data/atlas/backups'
 
 # Default core and profile names for site creation.

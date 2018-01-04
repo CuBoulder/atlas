@@ -1,11 +1,11 @@
 """
-Server configuration file for Atlas
-
-All server definitions go here.
+    atlas.config_servers.py
+    ~~~~~~
+    Server configuration file for Atlas
 """
 # Servers manipulate using Fabric.
-serverdefs = {
-    'production': {
+SERVERDEFS = {
+    'prod': {
         'webservers': [
             'webserver1.example.com',
             'webserver2.example.com',
@@ -16,9 +16,9 @@ serverdefs = {
         ],
         'database_servers': {
             'master': 'db-master.example.com',
-            'slaves': [
-                'db-slave1.example.com',
-            ],
+            'slaves': ['db-slave1.example.com', 'db-slave2.example.com', ],
+            'port': 3306,
+            'user_host_pattern': '127.0.0.0/255.255.255.0'
         },
         'varnish_servers': [
             'varnish1.example.com',
@@ -28,10 +28,7 @@ serverdefs = {
             'memcache1.example.com:port',
             'memcache2.example.com:port',
         ],
-        'load_balancers': [
-            'lb1.example.com',
-            'lb2.example.com',
-        ],
+        'load_balancer': 'lb-prod1.example.com',
     },
     'test': {
         'webservers': [
@@ -44,9 +41,9 @@ serverdefs = {
         ],
         'database_servers': {
             'master': 'db-test-master.example.com',
-            'slaves': [
-                'db-test-slave1.example.com',
-            ],
+            'slaves': ['db-test-slave1.example.com', 'db-test-slave2.example.com', ],
+            'port': 3306,
+            'user_host_pattern': '127.0.0.0/255.255.255.0'
         },
         'varnish_servers': [
             'varnish-test1.example.com',
@@ -56,12 +53,9 @@ serverdefs = {
             'memcache-test1.example.com:port',
             'memcache-test2.example.com:port',
         ],
-        'load_balancers': [
-            'lb-test1.example.com',
-            'lb-test2.example.com',
-        ],
+        'load_balancer': 'lb-test1.example.com',
     },
-    'development': {
+    'dev': {
         'webservers': [
             'webserver-dev1.example.com',
 
@@ -71,9 +65,9 @@ serverdefs = {
         ],
         'database_servers': {
             'master': 'db-dev-master.example.com',
-            'slaves': [
-                'db-dev-slave1.example.com',
-            ],
+            'slaves': ['db-dev-slave1.example.com', 'db-dev-slave2.example.com', ],
+            'port': 3306,
+            'user_host_pattern': '127.0.0.0/255.255.255.0'
         },
         'varnish_servers': [
             'varnish-dev1.example.com',
@@ -82,68 +76,58 @@ serverdefs = {
         'memcache_servers': [
             'memcache-dev1.example.com:port',
         ],
-        'load_balancers': [
-            'lb-dev1.example.com',
-            'lb-dev2.example.com',
-        ],
+        'load_balancer': 'lb-dev1.example.com',
     },
     'local': {
         'webservers': ['express.local'],
         'webserver_single': ['express.local'],
         'database_servers': {
             'master': 'localhost',
+            'port': 3306,
         },
         'varnish_servers': ['localhost'],
         'memcache_servers': ['localhost:11211'],
-        'load_balancers': [],
     },
 }
 
-varnish_control_terminals = {
-    'production': 'varnish1.example.com:6082 varnish2.example.com:6082',
+VARNISH_CONTROL_TERMINALS = {
+    'prod': 'varnish1.example.com:6082 varnish2.example.com:6082',
     'test': 'varnish-test1.example.com:6082 varnish-test2.example.com:6082',
-    'development': 'varnish-dev1.example.com:6082',
+    'dev': 'varnish-dev1.example.com:6082',
     'local': 'localhost:6082',
 }
 
 # See config_local.py for switch.
-nfs_mount_location = {
-    'production': '/path/to/mount',
+NFS_MOUNT_LOCATION = {
+    'prod': '/path/to/mount',
     'test': '/path/to/mount',
-    'development': '/path/to/mount',
-    'local': '/wwwng',
+    'dev': '/path/to/mount',
+    'local': '/path/to/mount',
 }
 
-base_urls = {
-    'production': 'http://www.example.com',
+BASE_URLS = {
+    'prod': 'http://www.example.com',
     'test': 'http://www-test.example.com',
-    'development': 'http://www-development.example.com',
+    'dev': 'http://www-dev.example.com',
     'local': 'http://express.local',
 }
 
-api_urls = {
-    'production': 'https://atlas.example.com',
-    'test': 'https://atlas-test.example.com',
-    'development': 'https://atlas-development.example.com',
-    'local': 'https://inventory.local',
+API_URLS = {
+    'prod': 'https://atlas.example.com/atlas',
+    'test': 'https://atlas-test.example.com/atlas',
+    'dev': 'https://atlas-dev.example.com/atlas',
+    'local': 'https://inventory.local/atlas',
 }
 
-load_balancer_config_files = {
-    'production': 'WWWNGProdDataGroup.dat',
-    'test': 'WWWNGTestDataGroup.dat',
-    'development': 'WWWNGDevDataGroup.dat',
+LOAD_BALANCER_CONFIG_FILES = {
+    'prod': 'ProdDataGroup.dat',
+    'test': 'TestDataGroup.dat',
+    'dev': 'DevDataGroup.dat',
 }
-# Entries in the f5 that are not sites.
-load_balancer_exceptions = [
-    '/engineering/videos',
-    '/law/media',
-    '/catalog',
-    '/p1',
-]
 
 # Needed for reload configuration commands.
-load_balancer_config_group = {
-    'production': 'lb-prod1-2',
+LOAD_BALANCER_CONFIG_GROUP = {
+    'prod': 'lb-prod1-2',
     'test': 'lb-test1-2',
-    'development': 'lb-dev1-2',
+    'dev': 'lb-dev1-2',
 }

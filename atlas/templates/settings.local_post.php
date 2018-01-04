@@ -3,10 +3,7 @@ global $conf;
 
 // Min cache lifetime 0, max defaults to 300 seconds.
 $conf['cache_lifetime'] = 0;
-$conf['page_cache_maximum_age'] = {{page_cache_maximum_age}};
-
-// Define tmp directory
-$conf['file_temporary_path'] = '/wwwng/sitefiles/{{sid}}/tmp';
+$conf['page_cache_maximum_age'] = {{ page_cache_maximum_age }};
 
 {% if environment != 'local' %}
 $databases['default']['default'] = array(
@@ -15,7 +12,7 @@ $databases['default']['default'] = array(
   'username' => '{{ sid }}',
   'password' => '{{ pw }}',
   'host' => '{{ database_servers.master }}',
-  'port' => '3307',
+  'port' => '{{ database_servers.port }}',
   'prefix' => '',
 );
 {% if database_servers.slaves %}
@@ -27,7 +24,7 @@ $databases['default']['slave'][] = array(
   'username' => '{{ sid }}',
   'password' => '{{ pw }}',
   'host' => '{{ slave }}',
-  'port' => '3307',
+  'port' => '{{ database_servers.port }}',
   'prefix' => '',
 );
 {% endfor %}
@@ -36,11 +33,30 @@ $databases['default']['slave'][] = array(
 $databases['default']['default'] = array(
   'driver' => 'mysql',
   'database' => '{{ sid }}',
-  'username' => 'root',
-  'password' => 'root',
-  'host' => '{{ database_servers.master }}',
-  'port' => '3307',
+  'username' => '{{ sid }}',
+  'password' => '{{ pw }}',
+  'host' => 'localhost',
+  'port' => '{{ port }}',
   'prefix' => '',
 );
+{% endif %}
 
+{% if environment == 'local' %}
+// Allow self signed certs for python.local.
+$conf['drupal_ssl_context_options'] = array(
+  'default' => array(
+    'ssl' => array(
+      'verify_peer' => TRUE,
+      'verify_peer_name' => TRUE,
+      'allow_self_signed' => FALSE,
+    ),
+  ),
+  'python.local' => array(
+    'ssl' => array(
+      'verify_peer' => FALSE,
+      'verify_peer_name' => FALSE,
+      'allow_self_signed' => TRUE,
+    ),
+  ),
+);
 {% endif %}

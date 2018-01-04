@@ -679,6 +679,8 @@ def replace_files_directory(source, destination):
 
 
 def update_symlink(source, destination):
+    log.info('fabric_tasks | Update Symlink | Source - %s | Destination - %s',
+             source, destination)
     if exists(destination):
         run('rm {0}'.format(destination))
     run('ln -s {0} {1}'.format(source, destination))

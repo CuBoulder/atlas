@@ -30,7 +30,8 @@ SITES_CODE_ROOT = '/data/atlas/sites'
 SITE_DOWN_PATH = '/data/code/down'
 STATIC_WEB_PATH = '/data/web/htdocs/express/static'
 BACKUPS_PATH = '/data/atlas/backups'
-
+ATLAS_BACKUP_PATH = '/data/backups'
+ATLAS_BACKUP_TMP_PATH = '/data/backups/tmp'
 # Default core and profile names for site creation.
 DEFAULT_CORE = 'drupal'
 DEFAULT_PROFILE = 'express'

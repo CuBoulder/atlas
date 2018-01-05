@@ -7,6 +7,7 @@ import logging
 import os
 import re
 
+import requests
 from random import randint
 from datetime import datetime
 
@@ -18,7 +19,8 @@ from atlas import utilities
 from atlas.config import (ATLAS_LOCATION, ENVIRONMENT, SSH_USER, CODE_ROOT, SITES_CODE_ROOT,
                           SITES_WEB_ROOT, WEBSERVER_USER, WEBSERVER_USER_GROUP, NFS_MOUNT_FILES_DIR,
                           BACKUPS_PATH, SERVICE_ACCOUNT_USERNAME, SERVICE_ACCOUNT_PASSWORD,
-                          SITE_DOWN_PATH, LOAD_BALANCER, VARNISH_CONTROL_KEY, STATIC_WEB_PATH)
+                          SITE_DOWN_PATH, LOAD_BALANCER, VARNISH_CONTROL_KEY, STATIC_WEB_PATH, 
+                          ATLAS_BACKUP_PATH, ATLAS_BACKUP_TMP_PATH, SSL_VERIFICATION)
 from atlas.config_servers import (SERVERDEFS, NFS_MOUNT_LOCATION, API_URLS,
                                   VARNISH_CONTROL_TERMINALS, LOAD_BALANCER_CONFIG_FILES,
                                   LOAD_BALANCER_CONFIG_GROUP, BASE_URLS)
@@ -750,3 +752,215 @@ def exportf5(load_balancer_config_dir):
         run("tmsh save sys config")
         run("tmsh run cm config-sync to-group {0}".format(LOAD_BALANCER_CONFIG_GROUP[ENVIRONMENT]))
         disconnect_all()
+
+@roles('webserver_single')
+def backup_create(instance):
+    """
+    Backup the database and files for an instance.
+    """
+    log.info('Instance | Backup | %s', instance)
+    # Setup all the variables we will need.
+    web_directory = '{0}/{1}'.format(SITES_WEB_ROOT, instance['sid'])
+    date = datetime.now()
+    date_string = date.strftime("%Y-%m-%d")
+    date_time_string = date.strftime("%Y-%m-%d-%H-%M-%S")
+    datetime_string = date.strftime("%Y-%m-%d %H:%M:%S GMT")
+    backup_path = '{0}/{1}/{2}'.format(BACKUPS_PATH, instance['sid'], date_string)
+    database_result_file = '{0}_{1}.sql'.format(instance['sid'], date_time_string)
+    database_result_file_path = '{0}/{1}'.format(backup_path, database_result_file)
+    files_result_file = '{0}_{1}.tar.gz'.format(instance['sid'], date_time_string)
+    files_result_file_path = '{0}/{1}'.format(backup_path, files_result_file)
+    atlas_database_path = '{0}/{1}'.format(ATLAS_BACKUP_TMP_PATH, files_result_file)
+    atlas_file_path = '{0}/{1}'.format(ATLAS_BACKUP_TMP_PATH, database_result_file)
+    nfs_dir = NFS_MOUNT_LOCATION[ENVIRONMENT]
+    nfs_files_dir = '{0}/sitefiles/{1}/files'.format(nfs_dir, instance['sid'])
+    # Start the actual process.
+    create_directory_structure(backup_path)
+    with cd(web_directory):
+        run('drush sql-dump --result-file={0}'.format(database_result_file_path))
+        run('tar -czf {0} {1}'.format(files_result_file_path, nfs_files_dir))
+    get(database_result_file_path, local_path=atlas_database_path)
+    get(files_result_file_path, local_path=atlas_file_path)
+
+    payload = {
+        'instance': instance['_id'],
+        'instance_version': instance['_version'],
+        'date': datetime_string
+    }
+    payload_database = open(atlas_database_path, 'rb')
+    payload_files = open(atlas_file_path, 'rb')
+    request_url = '{0}/backup'.format(API_URLS[ENVIRONMENT])
+
+    r = requests.post(
+        request_url,
+        data=payload,
+        files={'database': payload_database, 'files': payload_files},
+        auth=(SERVICE_ACCOUNT_USERNAME, SERVICE_ACCOUNT_PASSWORD),
+        verify=SSL_VERIFICATION,
+    )
+    if r.ok:
+        print r.json()
+        text = 'Success'
+        slack_color = 'good'
+
+    else:
+        print r.text
+        text = 'Error'
+        slack_color = 'danger'
+
+    instance_url = '{0}/{1}'.format(BASE_URLS[ENVIRONMENT], instance['path'])
+    title = 'Instance Backup'
+    instance_link = '<' + instance_url + '|' + instance_url + '>'
+    command = 'backup'
+
+    slack_channel = 'general'
+
+    slack_fallback = instance_url + ' - ' + ENVIRONMENT + ' - ' + command
+
+    slack_payload = {
+        # Channel will be overridden on local environments.
+        "channel": slack_channel,
+        "text": text,
+        "username": 'Atlas',
+        "attachments": [
+            {
+                "fallback": slack_fallback,
+                "color": slack_color,
+                "title": title,
+                "fields": [
+                    {
+                        "title": "Instance",
+                        "value": instance_link,
+                        "short": True
+                    },
+                    {
+                        "title": "Environment",
+                        "value": ENVIRONMENT,
+                        "short": True
+                    },
+                    {
+                        "title": "Command",
+                        "value": command,
+                        "short": True
+                    }
+                ],
+            }
+        ],
+    }
+    if not r.ok:
+        slack_payload['attachments'].append(
+            {
+                "fallback": 'Error message',
+                # A lighter red.
+                "color": '#ee9999',
+                "fields": [
+                    {
+                        "title": "Error message",
+                        "value": r.text,
+                        "short": False
+                    }
+                ]
+            }
+        )
+    utilities.post_to_slack_payload(slack_payload)
+
+
+@roles('webserver_single')
+def backup_restore(backup, original_instance):
+    """
+    Restore database and files to a new instance.
+    """
+    print 'Instance | Restore | {0} | {1}'.format(backup, original_instance)
+    # TODO: Time command
+    # Get the backups files.
+    database_url = '{0}/{1}'.format(API_URLS[ENVIRONMENT], backup['database'])
+    files_url = '{0}/{1}'.format(API_URLS[ENVIRONMENT], backup['files'])
+    database_download = download_file(database_url)
+    database_download_path = '{0}/{1}'.format(ATLAS_BACKUP_TMP_PATH, database_download)
+    
+    file_date = datetime.strptime(backup['date'], "%Y-%m-%d %H:%M:%S %Z")
+    pretty_filename = '{0}_{1}'.format(original_instance['sid'], file_date.strftime("%Y-%m-%d-%H-%M-%S"))
+    
+    pretty_database_filename = '{0}.sql'.format(pretty_filename)
+    database_download_path_clean = '{0}/{1}'.format(ATLAS_BACKUP_TMP_PATH, pretty_database_filename)
+    print 'database_download | {0}'.format(database_download)
+    print 'database_download_path | {0}'.format(database_download_path)
+    local('mv {0} {1}'.format(database_download_path, database_download_path_clean))
+    files_download = download_file(files_url)
+    files_download_path = '{0}/{1}'.format(ATLAS_BACKUP_TMP_PATH, files_download)
+    pretty_files_filename = '{0}.tar.gz'.format(pretty_filename)
+    files_download_path_clean = '{0}/{1}'.format(ATLAS_BACKUP_TMP_PATH, pretty_files_filename)
+    print 'files_download | {0}'.format(files_download)
+    print 'files_download_path | {0}'.format(files_download_path)
+    local('mv {0} {1}'.format(files_download_path, files_download_path_clean))
+    if not os.path.isfile(files_download_path_clean) and os.path.isfile(database_download_path_clean):
+        exit()
+    # TODO: Check to see if code items exist, if they are deleted, restore them.
+    core = utilities.get_single_eve('code', original_instance['code']['core'])
+    print core
+    profile = utilities.get_single_eve('code', original_instance['code']['profile'])
+    print profile
+    # Grab available instance and switch code
+    available_instances = utilities.get_eve('instance', 'where={"status":"available"}')
+    print available_instances
+    new_instance = next(iter(available_instances['_items']), None)
+    print new_instance
+    # TODO: Don't switch if the code is the same
+    if new_instance is not None:
+        original_code_payload = {
+            'code': {
+                'core': original_instance['code']['core'],
+                'profile': original_instance['code']['profile']
+                },
+            'status': 'installing'
+        }
+        utilities.patch_eve('instance', new_instance['_id'], original_code_payload)
+    else:
+        exit('No available instances.')
+    # Wait for code and status to update.
+    attempts = 18 # Tries every 10 seconds to a max of 18 (or 3 minutes).
+    while attempts:
+        try:
+            new_instance_refresh = utilities.get_single_eve('instance', new_instance['_id'])
+            if new_instance_refresh['status'] != 'installed':
+                raise ValueError('Status has not yet updated.')
+            break
+        except ValueError, e:
+            # If the status is not updated and we have attempts left,
+            # remove an attempt and wait 10 seconds.
+            attempts -= 1
+            if attempts is not 0:
+                sleep(10)
+            else:
+                exit(str(e))
+    print 'Instance is ready for DB and files.'
+    web_directory = '{0}/{1}'.format(SITES_WEB_ROOT, new_instance['sid'])
+    nfs_dir = NFS_MOUNT_LOCATION[ENVIRONMENT]
+    nfs_files_dir = '{0}/sitefiles/{1}/files'.format(nfs_dir, new_instance['sid'])
+    # Move DB and files onto server
+    put(database_download_path_clean, ATLAS_BACKUP_TMP_PATH)
+    put(files_download_path_clean, ATLAS_BACKUP_TMP_PATH)
+    webserver_database_path = '{0}/{1}'.format(ATLAS_BACKUP_TMP_PATH, pretty_database_filename)
+    webserver_files_path = '{0}/{1}'.format(ATLAS_BACKUP_TMP_PATH, pretty_files_filename)
+    with cd(web_directory):
+        run('drush sql-drop -y && drush sqli < {0}'.format(webserver_database_path))
+        print 'DB imported.'
+        run('tar -xzf {0} {1}'.format(webserver_files_path, nfs_files_dir))
+        print 'Files replaced.'
+        run('drush cc all')
+        run('drush cron')
+    # Post to slack
+
+
+def download_file(url):
+    local_filename = url.split('/')[-1]
+    local('mkdir -p {0}'.format(ATLAS_BACKUP_TMP_PATH))
+    backup_location_tmp_file = '{0}/{1}'.format(ATLAS_BACKUP_TMP_PATH, local_filename)
+    r = requests.get(url, stream=True, verify=SSL_VERIFICATION)
+    if r.status_code == 200:
+        with open(backup_location_tmp_file, 'wb') as f:
+            for chunk in r.iter_content(chunk_size=512):
+                if chunk: # filter out keep-alive new chunks
+                    f.write(chunk)
+        print 'Download finished'
+        return local_filename

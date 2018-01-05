@@ -705,10 +705,11 @@ def launch_site(site):
                 # Create a new symlink using site's updated path
                 if not exists(web_directory_path):
                     update_symlink(code_directory_current, site['path'])
-            # Assign it to an update group.
-            update_group = randint(0, 10)
             if site['path'] == 'homepage':
                 update_group = 12
+            else:
+                 # Assign it to an update group.
+                update_group = randint(0, 10)
 
         payload = {'status': 'launched', 'update_group': update_group}
         utilities.patch_eve('sites', site['_id'], payload)

@@ -696,9 +696,8 @@ def launch_site(site):
 
     if site['pool'] in ['poolb-express', 'poolb-homepage']:
         if site['pool'] == 'poolb-express':
-            web_directory = '{0}/{1}'.format(SITES_WEB_ROOT, site['type'])
-            web_directory_path = '{0}/{1}'.format(web_directory, site['path'])
-            with cd(web_directory):
+            web_directory_path = '{0}/{1}'.format(SITES_WEB_ROOT, site['path'])
+            with cd(SITES_WEB_ROOT):
                 # If the path is nested like 'lab/atlas', make the 'lab' directory
                 if "/" in site['path']:
                     lead_path = "/".join(site['path'].split("/")[:-1])
@@ -706,14 +705,12 @@ def launch_site(site):
                 # Create a new symlink using site's updated path
                 if not exists(web_directory_path):
                     update_symlink(code_directory_current, site['path'])
-            # Assign it to an update group.
-            update_group = randint(0, 10)
-        if site['pool'] == 'poolb-homepage':
-            web_directory = '{0}/{1}'.format(SITES_WEB_ROOT, 'homepage')
-            with cd(SITES_WEB_ROOT):
-                update_symlink(code_directory_current, SITES_CODE_ROOT)
-            # Assign site to update group 12.
-            update_group = 12
+            if site['path'] == 'homepage':
+                update_group = 12
+            else:
+                 # Assign it to an update group.
+                update_group = randint(0, 10)
+
         payload = {'status': 'launched', 'update_group': update_group}
         utilities.patch_eve('sites', site['_id'], payload)
 

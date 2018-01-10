@@ -20,9 +20,9 @@ from fabric.network import disconnect_all
 from atlas import utilities
 from atlas.config import (ATLAS_LOCATION, ENVIRONMENT, SSH_USER, CODE_ROOT, SITES_CODE_ROOT,
                           SITES_WEB_ROOT, WEBSERVER_USER, WEBSERVER_USER_GROUP, NFS_MOUNT_FILES_DIR,
-                          BACKUPS_PATH, SERVICE_ACCOUNT_USERNAME, SERVICE_ACCOUNT_PASSWORD,
+                          BACKUP_PATH, SERVICE_ACCOUNT_USERNAME, SERVICE_ACCOUNT_PASSWORD,
                           SITE_DOWN_PATH, LOAD_BALANCER, VARNISH_CONTROL_KEY, STATIC_WEB_PATH, 
-                          ATLAS_BACKUP_PATH, ATLAS_BACKUP_TMP_PATH, SSL_VERIFICATION)
+                          SSL_VERIFICATION)
 from atlas.config_servers import (SERVERDEFS, NFS_MOUNT_LOCATION, API_URLS,
                                   VARNISH_CONTROL_TERMINALS, LOAD_BALANCER_CONFIG_FILES,
                                   LOAD_BALANCER_CONFIG_GROUP, BASE_URLS)
@@ -763,21 +763,22 @@ def backup_create(site):
     log.info('Site | Create Backup | %s', site)
     # Setup all the variables we will need.
     web_directory = '{0}/{1}'.format(SITES_WEB_ROOT, site['sid'])
+    backups_path_tmp = '{0}/tmp'.format(BACKUP_PATH)
     date = datetime.now()
     date_string = date.strftime("%Y-%m-%d")
     date_time_string = date.strftime("%Y-%m-%d-%H-%M-%S")
     datetime_string = date.strftime("%Y-%m-%d %H:%M:%S GMT")
-    backup_path = '{0}/{1}/{2}'.format(BACKUPS_PATH, site['sid'], date_string)
+    backup_target_dir = '{0}/{1}/{2}'.format(BACKUP_PATH, site['sid'], date_string)
     database_result_file = '{0}_{1}.sql'.format(site['sid'], date_time_string)
-    database_result_file_path = '{0}/{1}'.format(backup_path, database_result_file)
+    database_result_file_path = '{0}/{1}'.format(backup_target_dir, database_result_file)
     files_result_file = '{0}_{1}.tar.gz'.format(site['sid'], date_time_string)
-    files_result_file_path = '{0}/{1}'.format(backup_path, files_result_file)
-    atlas_database_path = '{0}/{1}'.format(ATLAS_BACKUP_TMP_PATH, files_result_file)
-    atlas_file_path = '{0}/{1}'.format(ATLAS_BACKUP_TMP_PATH, database_result_file)
+    files_result_file_path = '{0}/{1}'.format(backup_target_dir, files_result_file)
+    atlas_database_path = '{0}/{1}'.format(backups_path_tmp, files_result_file)
+    atlas_file_path = '{0}/{1}'.format(backups_path_tmp, database_result_file)
     nfs_dir = NFS_MOUNT_LOCATION[ENVIRONMENT]
     nfs_files_dir = '{0}/{1}/files'.format(nfs_dir, site['sid'])
     # Start the actual process.
-    create_directory_structure(backup_path)
+    create_directory_structure(backup_target_dir)
     with cd(web_directory):
         run('drush sql-dump --result-file={0}'.format(database_result_file_path))
         run('tar -czf {0} {1}'.format(files_result_file_path, nfs_files_dir))
@@ -877,17 +878,18 @@ def backup_restore(backup, original_instance):
     log.info('Instance | Restore Backup | %s | %s', backup, original_instance)
     # TODO: Time command
     # Get the backups files.
+    backups_path_tmp = '{0}/tmp'.format(BACKUP_PATH)
     database_url = '{0}/{1}'.format(API_URLS[ENVIRONMENT], backup['database'])
     files_url = '{0}/{1}'.format(API_URLS[ENVIRONMENT], backup['files'])
     # Download DB
     database_download = download_file(database_url, 'sql')
-    database_download_path = '{0}/{1}'.format(ATLAS_BACKUP_TMP_PATH, database_download)
+    database_download_path = '{0}/{1}'.format(backups_path_tmp, database_download)
     file_date = datetime.strptime(backup['date'], "%Y-%m-%d %H:%M:%S %Z")
     pretty_filename = '{0}_{1}'.format(
         original_instance['sid'], file_date.strftime("%Y-%m-%d-%H-%M-%S"))
 
     pretty_database_filename = '{0}.sql'.format(pretty_filename)
-    database_download_path_clean = '{0}/{1}'.format(ATLAS_BACKUP_TMP_PATH, pretty_database_filename)
+    database_download_path_clean = '{0}/{1}'.format(backups_path_tmp, pretty_database_filename)
     log.debug('Instance | Restore Backup | database_download | %s', database_download)
     log.debug('Instance | Restore Backup | database_download_path | %s', database_download_path)
     # Move it to clean location
@@ -895,16 +897,16 @@ def backup_restore(backup, original_instance):
 
     # Download Files
     files_download = download_file(files_url, 'tar.gz')
-    files_download_path = '{0}/{1}'.format(ATLAS_BACKUP_TMP_PATH, files_download)
+    files_download_path = '{0}/{1}'.format(backups_path_tmp, files_download)
     pretty_files_filename = '{0}.tar.gz'.format(pretty_filename)
-    files_download_path_clean = '{0}/{1}'.format(ATLAS_BACKUP_TMP_PATH, pretty_files_filename)
+    files_download_path_clean = '{0}/{1}'.format(backups_path_tmp, pretty_files_filename)
     log.debug('Instance | Restore Backup | files_download | %s', files_download)
     log.debug('Instance | Restore Backup | files_download_path | %s', files_download_path)
     local('mv {0} {1}'.format(files_download_path, files_download_path_clean))
     if not os.path.isfile(files_download_path_clean) and os.path.isfile(database_download_path_clean):
         log.error('Instance | Restore Backup | Files were not moved to restore location')
         exit()
-    # TODO: Check to see if code items exist, if they are deleted, restore them.
+    # TODO: Rework this. If packages are still active, add them; if not, find a current version and add it; if none, error
     core = utilities.get_single_eve('code', original_instance['code']['core'])
     log.debug('Instance | Restore Backup | Core - %s', core)
     profile = utilities.get_single_eve('code', original_instance['code']['profile'])
@@ -947,11 +949,11 @@ def backup_restore(backup, original_instance):
     nfs_files_dir = '{0}/{1}/files'.format(nfs_dir, new_instance['sid'])
     # Move DB and files onto server
     log.debug('Fabric env | late | %s', env)
-    put(database_download_path_clean, ATLAS_BACKUP_TMP_PATH)
-    put(files_download_path_clean, ATLAS_BACKUP_TMP_PATH)
+    put(database_download_path_clean, backups_path_tmp)
+    put(files_download_path_clean, backups_path_tmp)
     log.debug('Instance | Restore Backup | Files moved to server')
-    webserver_database_path = '{0}/{1}'.format(ATLAS_BACKUP_TMP_PATH, pretty_database_filename)
-    webserver_files_path = '{0}/{1}'.format(ATLAS_BACKUP_TMP_PATH, pretty_files_filename)
+    webserver_database_path = '{0}/{1}'.format(backups_path_tmp, pretty_database_filename)
+    webserver_files_path = '{0}/{1}'.format(backups_path_tmp, pretty_files_filename)
     with cd(web_directory):
         run('drush sql-drop -y && drush sqli < {0}'.format(webserver_database_path))
         log.debug('Instance | Restore Backup | DB imported')
@@ -971,8 +973,9 @@ def download_file(url, file_extension):
     """
     log.debug('Download file | Download started')
     local_filename = url.split('/')[-1]
-    local('mkdir -p {0}'.format(ATLAS_BACKUP_TMP_PATH))
-    backup_location_tmp_file = '{0}/{1}'.format(ATLAS_BACKUP_TMP_PATH, local_filename)
+    backups_path_tmp = '{0}/tmp'.format(BACKUP_PATH)
+    local('mkdir -p {0}'.format(backups_path_tmp))
+    backup_location_tmp_file = '{0}/{1}'.format(backups_path_tmp, local_filename)
     r = requests.get(url, stream=True, verify=SSL_VERIFICATION)
     if r.status_code == 200:
         with open(backup_location_tmp_file, 'wb') as f:

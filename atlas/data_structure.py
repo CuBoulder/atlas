@@ -315,7 +315,7 @@ STATISTICS_SCHEMA = {
     'site': {
         'type': 'objectid',
         'data_relation': {
-            'resource': 'instance',
+            'resource': 'sites',
             'field': '_id',
         },
         'required': True,
@@ -741,16 +741,15 @@ STATISTICS_SCHEMA = {
 }
 
 BACKUP_SCHEMA = {
-    'instance': {
-        'type': 'dict',
+    'site': {
         'type': 'objectid',
         'data_relation': {
-            'resource': 'instance',
+            'resource': 'sites',
             'field': '_id',
         },
         'required': True,
     },
-    'instance_version': {
+    'site_version': {
         'type': 'integer',
         'required': True,
     },

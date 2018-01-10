@@ -10,8 +10,11 @@ from logging.handlers import WatchedFileHandler
 import ssl
 
 from eve import Eve
+from eve.auth import requires_auth
 from flask import jsonify, make_response
+
 from atlas import callbacks
+from atlas import tasks
 from atlas import utilities
 from atlas.config import (ATLAS_LOCATION, VERSION_NUMBER, SSL_KEY_FILE, SSL_CRT_FILE, LOG_LOCATION,
                           ENVIRONMENT)
@@ -41,6 +44,20 @@ if ENVIRONMENT == 'local':
     app.logger.setLevel(logging.DEBUG)
 # Append the handler to the default application logger
 app.logger.addHandler(LOG_HANDLER)
+
+# Hook into the request flow early
+@app.route('/backup/<string:backup_id>/restore', methods=['POST'])
+@requires_auth('backup')
+def restore_backup(backup_id):
+    """
+    Restore a backup to a new instance.
+    :param machine_name: id of backup to restore
+    """
+    app.logger.debug('Backup | Restore | %s', backup_id)
+    tasks.backup_restore(backup_id)
+    response = make_response('Restoring')
+    return response
+
 
 # Specific callbacks.
 # Use pre event hooks if there is a chance you want to abort.

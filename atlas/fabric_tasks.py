@@ -10,8 +10,10 @@ import re
 import requests
 from random import randint
 from datetime import datetime
+from time import time, sleep, strftime
 
 from fabric.contrib.files import exists, upload_template
+from fabric.operations import put
 from fabric.api import *
 from fabric.network import disconnect_all
 
@@ -754,26 +756,26 @@ def exportf5(load_balancer_config_dir):
         disconnect_all()
 
 @roles('webserver_single')
-def backup_create(instance):
+def backup_create(site):
     """
-    Backup the database and files for an instance.
+    Backup the database and files for an site.
     """
-    log.info('Instance | Backup | %s', instance)
+    log.info('Site | Create Backup | %s', site)
     # Setup all the variables we will need.
-    web_directory = '{0}/{1}'.format(SITES_WEB_ROOT, instance['sid'])
+    web_directory = '{0}/{1}'.format(SITES_WEB_ROOT, site['sid'])
     date = datetime.now()
     date_string = date.strftime("%Y-%m-%d")
     date_time_string = date.strftime("%Y-%m-%d-%H-%M-%S")
     datetime_string = date.strftime("%Y-%m-%d %H:%M:%S GMT")
-    backup_path = '{0}/{1}/{2}'.format(BACKUPS_PATH, instance['sid'], date_string)
-    database_result_file = '{0}_{1}.sql'.format(instance['sid'], date_time_string)
+    backup_path = '{0}/{1}/{2}'.format(BACKUPS_PATH, site['sid'], date_string)
+    database_result_file = '{0}_{1}.sql'.format(site['sid'], date_time_string)
     database_result_file_path = '{0}/{1}'.format(backup_path, database_result_file)
-    files_result_file = '{0}_{1}.tar.gz'.format(instance['sid'], date_time_string)
+    files_result_file = '{0}_{1}.tar.gz'.format(site['sid'], date_time_string)
     files_result_file_path = '{0}/{1}'.format(backup_path, files_result_file)
     atlas_database_path = '{0}/{1}'.format(ATLAS_BACKUP_TMP_PATH, files_result_file)
     atlas_file_path = '{0}/{1}'.format(ATLAS_BACKUP_TMP_PATH, database_result_file)
     nfs_dir = NFS_MOUNT_LOCATION[ENVIRONMENT]
-    nfs_files_dir = '{0}/sitefiles/{1}/files'.format(nfs_dir, instance['sid'])
+    nfs_files_dir = '{0}/{1}/files'.format(nfs_dir, site['sid'])
     # Start the actual process.
     create_directory_structure(backup_path)
     with cd(web_directory):
@@ -783,14 +785,15 @@ def backup_create(instance):
     get(files_result_file_path, local_path=atlas_file_path)
 
     payload = {
-        'instance': instance['_id'],
-        'instance_version': instance['_version'],
+        'site': site['_id'],
+        'site_version': site['_version'],
         'date': datetime_string
     }
     payload_database = open(atlas_database_path, 'rb')
     payload_files = open(atlas_file_path, 'rb')
     request_url = '{0}/backup'.format(API_URLS[ENVIRONMENT])
 
+    log.debug('Site | Backup Create | Ready to upload to Atlas')
     r = requests.post(
         request_url,
         data=payload,
@@ -799,23 +802,23 @@ def backup_create(instance):
         verify=SSL_VERIFICATION,
     )
     if r.ok:
-        print r.json()
+        log.debug('Site | Create Backup | POST - OK | %s', r.json())
         text = 'Success'
         slack_color = 'good'
 
     else:
-        print r.text
+        log.error('Site | Create Backup | POST - Error | %s', r.text())
         text = 'Error'
         slack_color = 'danger'
 
-    instance_url = '{0}/{1}'.format(BASE_URLS[ENVIRONMENT], instance['path'])
-    title = 'Instance Backup'
-    instance_link = '<' + instance_url + '|' + instance_url + '>'
+    site_url = '{0}/{1}'.format(BASE_URLS[ENVIRONMENT], site['path'])
+    title = 'Site Backup'
+    site_link = '<' + site_url + '|' + site_url + '>'
     command = 'backup'
 
     slack_channel = 'general'
 
-    slack_fallback = instance_url + ' - ' + ENVIRONMENT + ' - ' + command
+    slack_fallback = site_url + ' - ' + ENVIRONMENT + ' - ' + command
 
     slack_payload = {
         # Channel will be overridden on local environments.
@@ -830,7 +833,7 @@ def backup_create(instance):
                 "fields": [
                     {
                         "title": "Instance",
-                        "value": instance_link,
+                        "value": site_link,
                         "short": True
                     },
                     {
@@ -867,44 +870,49 @@ def backup_create(instance):
 
 @roles('webserver_single')
 def backup_restore(backup, original_instance):
+    log.debug('Fabric env | early | %s', env)
     """
     Restore database and files to a new instance.
     """
-    print 'Instance | Restore | {0} | {1}'.format(backup, original_instance)
+    log.info('Instance | Restore Backup | %s | %s', backup, original_instance)
     # TODO: Time command
     # Get the backups files.
     database_url = '{0}/{1}'.format(API_URLS[ENVIRONMENT], backup['database'])
     files_url = '{0}/{1}'.format(API_URLS[ENVIRONMENT], backup['files'])
-    database_download = download_file(database_url)
+    # Download DB
+    database_download = download_file(database_url, 'sql')
     database_download_path = '{0}/{1}'.format(ATLAS_BACKUP_TMP_PATH, database_download)
-    
     file_date = datetime.strptime(backup['date'], "%Y-%m-%d %H:%M:%S %Z")
-    pretty_filename = '{0}_{1}'.format(original_instance['sid'], file_date.strftime("%Y-%m-%d-%H-%M-%S"))
-    
+    pretty_filename = '{0}_{1}'.format(
+        original_instance['sid'], file_date.strftime("%Y-%m-%d-%H-%M-%S"))
+
     pretty_database_filename = '{0}.sql'.format(pretty_filename)
     database_download_path_clean = '{0}/{1}'.format(ATLAS_BACKUP_TMP_PATH, pretty_database_filename)
-    print 'database_download | {0}'.format(database_download)
-    print 'database_download_path | {0}'.format(database_download_path)
+    log.debug('Instance | Restore Backup | database_download | %s', database_download)
+    log.debug('Instance | Restore Backup | database_download_path | %s', database_download_path)
+    # Move it to clean location
     local('mv {0} {1}'.format(database_download_path, database_download_path_clean))
-    files_download = download_file(files_url)
+
+    # Download Files
+    files_download = download_file(files_url, 'tar.gz')
     files_download_path = '{0}/{1}'.format(ATLAS_BACKUP_TMP_PATH, files_download)
     pretty_files_filename = '{0}.tar.gz'.format(pretty_filename)
     files_download_path_clean = '{0}/{1}'.format(ATLAS_BACKUP_TMP_PATH, pretty_files_filename)
-    print 'files_download | {0}'.format(files_download)
-    print 'files_download_path | {0}'.format(files_download_path)
+    log.debug('Instance | Restore Backup | files_download | %s', files_download)
+    log.debug('Instance | Restore Backup | files_download_path | %s', files_download_path)
     local('mv {0} {1}'.format(files_download_path, files_download_path_clean))
     if not os.path.isfile(files_download_path_clean) and os.path.isfile(database_download_path_clean):
+        log.error('Instance | Restore Backup | Files were not moved to restore location')
         exit()
     # TODO: Check to see if code items exist, if they are deleted, restore them.
     core = utilities.get_single_eve('code', original_instance['code']['core'])
-    print core
+    log.debug('Instance | Restore Backup | Core - %s', core)
     profile = utilities.get_single_eve('code', original_instance['code']['profile'])
-    print profile
+    log.debug('Instance | Restore Backup | Profile - %s', profile)
     # Grab available instance and switch code
-    available_instances = utilities.get_eve('instance', 'where={"status":"available"}')
-    print available_instances
+    available_instances = utilities.get_eve('sites', 'where={"status":"available"}')
+    log.debug('Instance | Restore Backup | Avaiable Instances - %s', available_instances)
     new_instance = next(iter(available_instances['_items']), None)
-    print new_instance
     # TODO: Don't switch if the code is the same
     if new_instance is not None:
         original_code_payload = {
@@ -914,14 +922,14 @@ def backup_restore(backup, original_instance):
                 },
             'status': 'installing'
         }
-        utilities.patch_eve('instance', new_instance['_id'], original_code_payload)
+        utilities.patch_eve('sites', new_instance['_id'], original_code_payload)
     else:
         exit('No available instances.')
     # Wait for code and status to update.
     attempts = 18 # Tries every 10 seconds to a max of 18 (or 3 minutes).
     while attempts:
         try:
-            new_instance_refresh = utilities.get_single_eve('instance', new_instance['_id'])
+            new_instance_refresh = utilities.get_single_eve('sites', new_instance['_id'])
             if new_instance_refresh['status'] != 'installed':
                 raise ValueError('Status has not yet updated.')
             break
@@ -933,26 +941,35 @@ def backup_restore(backup, original_instance):
                 sleep(10)
             else:
                 exit(str(e))
-    print 'Instance is ready for DB and files.'
+    log.debug('Instance | Restore Backup | Instance is ready for DB and files')
     web_directory = '{0}/{1}'.format(SITES_WEB_ROOT, new_instance['sid'])
     nfs_dir = NFS_MOUNT_LOCATION[ENVIRONMENT]
-    nfs_files_dir = '{0}/sitefiles/{1}/files'.format(nfs_dir, new_instance['sid'])
+    nfs_files_dir = '{0}/{1}/files'.format(nfs_dir, new_instance['sid'])
     # Move DB and files onto server
+    log.debug('Fabric env | late | %s', env)
     put(database_download_path_clean, ATLAS_BACKUP_TMP_PATH)
     put(files_download_path_clean, ATLAS_BACKUP_TMP_PATH)
+    log.debug('Instance | Restore Backup | Files moved to server')
     webserver_database_path = '{0}/{1}'.format(ATLAS_BACKUP_TMP_PATH, pretty_database_filename)
     webserver_files_path = '{0}/{1}'.format(ATLAS_BACKUP_TMP_PATH, pretty_files_filename)
     with cd(web_directory):
         run('drush sql-drop -y && drush sqli < {0}'.format(webserver_database_path))
-        print 'DB imported.'
+        log.debug('Instance | Restore Backup | DB imported')
         run('tar -xzf {0} {1}'.format(webserver_files_path, nfs_files_dir))
-        print 'Files replaced.'
+        log.debug('Instance | Restore Backup | Files replaced')
         run('drush cc all')
         run('drush cron')
     # Post to slack
 
 
-def download_file(url):
+def download_file(url, file_extension):
+    """
+    Download a file from a remote URL.
+
+    :param url: string - URL to download
+    :param file_extension: string - Extension for file being downloaded
+    """
+    log.debug('Download file | Download started')
     local_filename = url.split('/')[-1]
     local('mkdir -p {0}'.format(ATLAS_BACKUP_TMP_PATH))
     backup_location_tmp_file = '{0}/{1}'.format(ATLAS_BACKUP_TMP_PATH, local_filename)
@@ -962,5 +979,7 @@ def download_file(url):
             for chunk in r.iter_content(chunk_size=512):
                 if chunk: # filter out keep-alive new chunks
                     f.write(chunk)
-        print 'Download finished'
+        log.debug('Download file | Download finished')
         return local_filename
+    else:
+        log.error('Download file | Download failed, %s', r.text)

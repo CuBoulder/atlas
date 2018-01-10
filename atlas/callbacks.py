@@ -61,7 +61,7 @@ def pre_patch_sites_callback(request, payload):
     log.debug('sites | PATCH | Pre patch callback | Payload - %s', payload)
 
     # Check for a protected path.
-    if json.loads(request.data).get('path') and json.loads(request.data)['path'] in PROTECTED_PATHS:
+    if 'path' in json.loads(request.data) and json.loads(request.data)['path'] in PROTECTED_PATHS:
         log.error('sites | PATCH | Pre patch callback | Protected path')
         abort(409, 'Error: Cannot use this path, it is on the protected list.')
 
@@ -72,7 +72,7 @@ def pre_put_sites_callback(request, payload):
     log.debug('sites | PUT | Pre put callback | Payload - %s', payload)
 
     # Check for a protected path.
-    if json.loads(request.data).get('path') and json.loads(request.data)['path'] in PROTECTED_PATHS:
+    if 'path' in json.loads(request.data) and json.loads(request.data)['path'] in PROTECTED_PATHS:
         log.error('sites | PUT | Pre put callback | Protected path')
         abort(409, 'Error: Cannot use this path, it is on the protected list.')
 

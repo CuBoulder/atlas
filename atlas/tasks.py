@@ -670,6 +670,7 @@ def command_prepare(item):
     if item['command'] == 'rebalance_update_groups':
         utilities.rebalance_update_groups(item)
         return
+
     if item['query']:
         site_query = 'where={0}'.format(item['query'])
         sites = utilities.get_eve('sites', site_query)
@@ -685,6 +686,9 @@ def command_prepare(item):
                 if item['command'] == 'update_homepage_extra_files':
                     log.debug('Prepare Command | Item - %s | Update Homepage Extra files | Instance - %s', item['_id'], site['_id'])
                     command_wrapper.delay(execute(fabric_tasks.update_homepage_extra_files))
+                    continue
+                if item['command'] == 'backup_create':
+                    command_wrapper.delay(execute(fabric_tasks.backup_create, site=site))
                     continue
                 command_run.delay(site=site,
                                   command=item['command'],
@@ -1055,3 +1059,12 @@ def verify_statistics():
 def update_f5():
     if ENVIRONMENT != 'local':
         execute(fabric_tasks.update_f5)
+
+
+@celery.task
+def backup_restore(backup_id):
+    log.debug('Backup | Restore | Backup ID - %s', backup_id)
+    backup = utilities.get_single_eve('backup', backup_id)
+    original_instance = utilities.get_single_eve('sites', backup['site'])
+    log.debug('Backup | Restore | Backup - %s | Orignal Instance - %s', backup, original_instance)
+    execute(fabric_tasks.backup_restore, backup=backup, original_instance=original_instance) 

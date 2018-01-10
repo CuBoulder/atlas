@@ -14,7 +14,8 @@ When a code item is added to an instance, the above drush commands will be run a
 
 Need to 
 
-- Add a list of users to exclude from emails in config_local.py `sudo -u [webserver_user] drush` without a password.
+- Add a list of users to exclude from emails in config_local.py
+- Be able to run `sudo -u [webserver_user] drush` without a password.
 
 Resolves:
 

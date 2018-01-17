@@ -68,6 +68,9 @@ CELERY_ROUTES = {
     'atlas.tasks.verify_statistics': {
         'queue': 'atlas_queue'
     },
+    'atlas.tasks.remove_old_backups': {
+        'queue': 'atlas_queue'
+    },
 }
 
 CELERYBEAT_SCHEDULE = {
@@ -118,6 +121,10 @@ CELERYBEAT_SCHEDULE = {
     },
     'remove_unused_code': {
         'task': 'atlas.tasks.remove_unused_code',
+        'schedule': timedelta(hours=24),
+    },
+    'remove_old_backups': {
+        'task': 'atlas.tasks.remove_old_backups',
         'schedule': timedelta(hours=24),
     },
 }

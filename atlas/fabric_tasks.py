@@ -755,12 +755,14 @@ def exportf5(load_balancer_config_dir):
         run("tmsh run cm config-sync to-group {0}".format(LOAD_BALANCER_CONFIG_GROUP[ENVIRONMENT]))
         disconnect_all()
 
-@roles('webserver_single')
+
+# TODO: Verify dynamic host list
 def backup_create(site):
     """
     Backup the database and files for an site.
     """
     log.info('Site | Create Backup | %s', site)
+    # TODO: Time command
     # Setup all the variables we will need.
     web_directory = '{0}/{1}'.format(SITES_WEB_ROOT, site['sid'])
     backups_path_tmp = '{0}/tmp'.format(BACKUP_TMP_PATH)
@@ -780,7 +782,9 @@ def backup_create(site):
     # Start the actual process.
     create_directory_structure(backup_target_dir)
     with cd(web_directory):
+        # TODO: Modify what we backup to reduce backup size (don't need cache tables)
         run('drush sql-dump --result-file={0}'.format(database_result_file_path))
+        # TODO: Modify what we backup to reduce backup size (don't need cache css/js or image styles)
         run('tar -czf {0} {1}'.format(files_result_file_path, nfs_files_dir))
     get(database_result_file_path, local_path=atlas_database_path)
     get(files_result_file_path, local_path=atlas_file_path)
@@ -788,13 +792,13 @@ def backup_create(site):
     payload = {
         'site': site['_id'],
         'site_version': site['_version'],
-        'date': datetime_string
+        'backup_date': datetime_string
     }
     payload_database = open(atlas_database_path, 'rb')
     payload_files = open(atlas_file_path, 'rb')
     request_url = '{0}/backup'.format(API_URLS[ENVIRONMENT])
 
-    log.debug('Site | Backup Create | Ready to upload to Atlas')
+    log.debug('Site | Backup Create | Ready to send to Atlas | Payload - %s', payload)
     r = requests.post(
         request_url,
         data=payload,
@@ -802,6 +806,7 @@ def backup_create(site):
         auth=(SERVICE_ACCOUNT_USERNAME, SERVICE_ACCOUNT_PASSWORD),
         verify=SSL_VERIFICATION,
     )
+
     if r.ok:
         log.debug('Site | Create Backup | POST - OK | %s', r.json())
         text = 'Success'
@@ -812,6 +817,10 @@ def backup_create(site):
         text = 'Error'
         slack_color = 'danger'
 
+    # TODO: Remove files from webserver
+
+
+    # Send notification to Slack
     site_url = '{0}/{1}'.format(BASE_URLS[ENVIRONMENT], site['path'])
     title = 'Site Backup'
     site_link = '<' + site_url + '|' + site_url + '>'
@@ -869,21 +878,21 @@ def backup_create(site):
     utilities.post_to_slack_payload(slack_payload)
 
 
-@roles('webserver_single')
-def backup_restore(backup, original_instance):
+# TODO: Verify dynamic host list
+def backup_restore(backup_record, original_instance, package_list):
     """
     Restore database and files to a new instance.
     """
-    log.info('Instance | Restore Backup | %s | %s', backup, original_instance)
+    log.info('Instance | Restore Backup | %s | %s', backup_record, original_instance)
     # TODO: Time command
     # Get the backups files.
     backups_path_tmp = '{0}/tmp'.format(BACKUP_TMP_PATH)
-    database_url = '{0}/{1}'.format(API_URLS[ENVIRONMENT], backup['database'])
-    files_url = '{0}/{1}'.format(API_URLS[ENVIRONMENT], backup['files'])
+    database_url = '{0}/{1}'.format(API_URLS[ENVIRONMENT], backup_record['database'])
+    files_url = '{0}/{1}'.format(API_URLS[ENVIRONMENT], backup_record['files'])
     # Download DB
     database_download = download_file(database_url, 'sql')
     database_download_path = '{0}/{1}'.format(backups_path_tmp, database_download)
-    file_date = datetime.strptime(backup['date'], "%Y-%m-%d %H:%M:%S %Z")
+    file_date = datetime.strptime(backup_record['date'], "%Y-%m-%d %H:%M:%S %Z")
     pretty_filename = '{0}_{1}'.format(
         original_instance['sid'], file_date.strftime("%Y-%m-%d-%H-%M-%S"))
 
@@ -905,27 +914,21 @@ def backup_restore(backup, original_instance):
     if not os.path.isfile(files_download_path_clean) and os.path.isfile(database_download_path_clean):
         log.error('Instance | Restore Backup | Files were not moved to restore location')
         exit()
-    # TODO: Rework this. If packages are still active, add them; if not, find a current version and add it; if none, error
-    core = utilities.get_single_eve('code', original_instance['code']['core'])
-    log.debug('Instance | Restore Backup | Core - %s', core)
-    profile = utilities.get_single_eve('code', original_instance['code']['profile'])
-    log.debug('Instance | Restore Backup | Profile - %s', profile)
-    # Grab available instance and switch code
+    
+    # Grab available instance and add packages if needed
     available_instances = utilities.get_eve('sites', 'where={"status":"available"}')
     log.debug('Instance | Restore Backup | Avaiable Instances - %s', available_instances)
     new_instance = next(iter(available_instances['_items']), None)
     # TODO: Don't switch if the code is the same
     if new_instance is not None:
-        original_code_payload = {
-            'code': {
-                'core': original_instance['code']['core'],
-                'profile': original_instance['code']['profile']
-                },
-            'status': 'installing'
-        }
-        utilities.patch_eve('sites', new_instance['_id'], original_code_payload)
+        payload = {'status': 'installing'}
+        if package_list:
+            packages = {'code':{'package':package_list}}
+            payload.update(packages)
+        utilities.patch_eve('sites', new_instance['_id'], payload)
     else:
         exit('No available instances.')
+
     # Wait for code and status to update.
     attempts = 18 # Tries every 10 seconds to a max of 18 (or 3 minutes).
     while attempts:
@@ -959,8 +962,48 @@ def backup_restore(backup, original_instance):
         run('tar -xzf {0} {1}'.format(webserver_files_path, nfs_files_dir))
         log.debug('Instance | Restore Backup | Files replaced')
         run('drush cc all')
-        run('drush cron')
+    
     # Post to slack
+    site_url = '{0}/{1}'.format(BASE_URLS[ENVIRONMENT], new_instance['path'])
+    title = 'Backup Restore'
+    site_link = '<' + site_url + '|' + site_url + '>'
+    command = 'Backup restore'
+    text = 'Success'
+    slack_color = 'good'
+    slack_channel = 'general'
+    slack_fallback = site_url + ' - ' + ENVIRONMENT + ' - ' + command
+ 
+    slack_payload = {
+        # Channel will be overridden on local environments.
+        "channel": slack_channel,
+        "text": text,
+        "username": 'Atlas',
+        "attachments": [
+            {
+                "fallback": slack_fallback,
+                "color": slack_color,
+                "title": title,
+                "fields": [
+                    {
+                        "title": "Instance",
+                        "value": site_link,
+                        "short": True
+                    },
+                    {
+                        "title": "Environment",
+                        "value": ENVIRONMENT,
+                        "short": True
+                    },
+                    {
+                        "title": "Command",
+                        "value": command,
+                        "short": True
+                    }
+                ],
+            }
+        ],
+    }
+    utilities.post_to_slack_payload(slack_payload)
 
 
 def download_file(url, file_extension):

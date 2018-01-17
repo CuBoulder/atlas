@@ -1062,9 +1062,33 @@ def update_f5():
 
 
 @celery.task
-def backup_restore(backup_id):
-    log.debug('Backup | Restore | Backup ID - %s', backup_id)
-    backup = utilities.get_single_eve('backup', backup_id)
-    original_instance = utilities.get_single_eve('sites', backup['site'])
-    log.debug('Backup | Restore | Backup - %s | Orignal Instance - %s', backup, original_instance)
-    execute(fabric_tasks.backup_restore, backup=backup, original_instance=original_instance) 
+def backup_create(site):
+    log.debug('Backup | Create | Site - %s', site)
+    log.info('Backup | Create | Site - %s', site['_id'])
+    host = utilities.single_host()
+    execute(fabric_tasks.backup_create, site=site, hosts=host)
+ 
+ 
+@celery.task
+def backup_restore(backup_record, original_instance, package_list):
+    log.info('Backup | Restore | Backup ID - %s', backup_record['_id'])
+    log.debug('Backup | Restore | Backup Recorsd - %s | Original instance - %s | Package List - %s',
+              backup_record, original_instance, package_list)
+    host = utilities.single_host()
+    execute(fabric_tasks.backup_restore, backup_record=backup_record,
+            original_instance=original_instance, package_list=package_list, hosts=host)
+
+
+@celery.task
+def remove_old_backups():
+    """
+    Delete old backups.
+    """
+    time_ago = datetime.utcnow() - timedelta(days=90)
+    backup_query = 'where={{"_created":{{"$lte":"{0}"}}}}&max_results=2000'.format(
+        time_ago.strftime("%Y-%m-%d %H:%M:%S GMT"))
+    backups = utilities.get_eve('backup', backup_query)
+    # Loop through and remove sites that are more than 35 days old.
+    for backup in backups['_items']:
+        log.info('Delete old backup | backup - %s', backup)
+        utilities.delete_eve('backup', backup['_id'])

@@ -11,7 +11,7 @@ import ssl
 
 from eve import Eve
 from eve.auth import requires_auth
-from flask import jsonify, make_response
+from flask import jsonify, make_response, abort
 
 from atlas import callbacks
 from atlas import tasks
@@ -56,10 +56,46 @@ def restore_backup(backup_id):
     :param machine_name: id of backup to restore
     """
     app.logger.debug('Backup | Restore | %s', backup_id)
-    tasks.backup_restore(backup_id)
-    response = make_response('Restoring')
+    backup_record = utilities.get_single_eve('backup', backup_id)
+    original_instance = utilities.get_single_eve('sites', backup_record['site'])
+    # If packages are still active, add them; if not, find a current version
+    # and add it; if none, error
+    if 'packages' in original_instance['code']:
+        # Start with an empty list
+        package_list = None
+        for package in original_instance['code']:
+            package_result = utilities.get_single_eve('code', package)
+            app.logger.debug(
+                'Backup | Restore | Checking for packages | Request result - %s', package_result)
+            if package_result['_deleted']:
+                current_package = utilities.get_current_code(
+                    package_result['name'], package_result['code_type'])
+                if current_package:
+                    package_list.append(current_package['_id'])
+                else:
+                    abort(409, 'There is no current version of {0}. This backup cannot be restored.'.format(
+                        package_result['name']))
+            else:
+                package_list.append(package_result['_id'])
+    else:
+        package_list = None
+    tasks.backup_restore.delay(backup_record, original_instance, package_list)
+    response = make_response('Restore started')
     return response
 
+@app.route('/sites/<string:site_id>/backup', methods=['POST'])
+@requires_auth('backup')
+def create_backup(site_id):
+    """
+    Create a backup of an instance.
+    :param machine_name: id of instance to restore
+    """
+    app.logger.debug('Backup | Create | %s', site_id)
+    site = utilities.get_single_eve('sites', site_id)
+    # If packages are still active, add them; if not, find a current version and add it; if none, error
+    tasks.backup_create.delay(site)
+    response = make_response('Backup started')
+    return response
 
 # Specific callbacks.
 # Use pre event hooks if there is a chance you want to abort.

@@ -765,7 +765,7 @@ BACKUP_SCHEMA = {
         'type': 'media',
         'required': True,
     },
-    'date': {
+    'backup_date': {
         'type': 'datetime',
         'required': True,
     },
@@ -859,8 +859,6 @@ BACKUP = {
     'item_title': 'backup',
     'public_methods': ['GET'],
     'public_item_methods': ['GET'],
-    'versioning': True,
-    'soft_delete': True,
     'schema': BACKUP_SCHEMA,
 }
 

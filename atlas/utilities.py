@@ -332,11 +332,11 @@ def get_current_code(name, code_type):
 
 def get_code(name, code_type=''):
     """
-    Get the current code item for a given name and code_type.
+    Get the code item(s) for a given name and code_type.
 
     :param name: string
     :param code_type: string
-    :return: _id of the item.
+    :return: response object
     """
     if code_type:
         query = 'where={{"meta.name":"{0}","meta.code_type":"{1}"}}'.format(name, code_type)

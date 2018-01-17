@@ -1,5 +1,7 @@
 import os
 
+from atlas.config import (MEDIA_STORAGE_PATH)
+
 MONGO_HOST = os.environ.get('MONGO_HOST', 'localhost')
 MONGO_PORT = os.environ.get('MONGO_PORT', 27017)
 MONGO_DBNAME = os.environ.get('MONGO_DBNAME', 'atlas')
@@ -33,12 +35,14 @@ MONGO_QUERY_BLACKLIST = ['$where']
 RETURN_MEDIA_AS_BASE64_STRING = False
 # return media as URL instead
 RETURN_MEDIA_AS_URL = True
+# Set path for media storage
+MEDIA_PATH = MEDIA_STORAGE_PATH
+
 # Require etags
 ENFORCE_IF_MATCH = True
 
 # Definitions of schemas for Items. Schema is based on Cerberus grammar
 # https://github.com/nicolaiarocci/cerberus.
-#
 
 # Mongo creates the following: '_created', '_updated', '_etag', and '_id'.
 # We don't use those fields in our logic because want to be able to move or

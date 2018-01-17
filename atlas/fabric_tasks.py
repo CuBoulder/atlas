@@ -20,7 +20,7 @@ from fabric.network import disconnect_all
 from atlas import utilities
 from atlas.config import (ATLAS_LOCATION, ENVIRONMENT, SSH_USER, CODE_ROOT, SITES_CODE_ROOT,
                           SITES_WEB_ROOT, WEBSERVER_USER, WEBSERVER_USER_GROUP, NFS_MOUNT_FILES_DIR,
-                          BACKUP_PATH, SERVICE_ACCOUNT_USERNAME, SERVICE_ACCOUNT_PASSWORD,
+                          BACKUP_TMP_PATH, SERVICE_ACCOUNT_USERNAME, SERVICE_ACCOUNT_PASSWORD,
                           SITE_DOWN_PATH, LOAD_BALANCER, VARNISH_CONTROL_KEY, STATIC_WEB_PATH, 
                           SSL_VERIFICATION)
 from atlas.config_servers import (SERVERDEFS, NFS_MOUNT_LOCATION, API_URLS,
@@ -763,12 +763,12 @@ def backup_create(site):
     log.info('Site | Create Backup | %s', site)
     # Setup all the variables we will need.
     web_directory = '{0}/{1}'.format(SITES_WEB_ROOT, site['sid'])
-    backups_path_tmp = '{0}/tmp'.format(BACKUP_PATH)
+    backups_path_tmp = '{0}/tmp'.format(BACKUP_TMP_PATH)
     date = datetime.now()
     date_string = date.strftime("%Y-%m-%d")
     date_time_string = date.strftime("%Y-%m-%d-%H-%M-%S")
     datetime_string = date.strftime("%Y-%m-%d %H:%M:%S GMT")
-    backup_target_dir = '{0}/{1}/{2}'.format(BACKUP_PATH, site['sid'], date_string)
+    backup_target_dir = '{0}/{1}/{2}'.format(BACKUP_TMP_PATH, site['sid'], date_string)
     database_result_file = '{0}_{1}.sql'.format(site['sid'], date_time_string)
     database_result_file_path = '{0}/{1}'.format(backup_target_dir, database_result_file)
     files_result_file = '{0}_{1}.tar.gz'.format(site['sid'], date_time_string)
@@ -871,14 +871,13 @@ def backup_create(site):
 
 @roles('webserver_single')
 def backup_restore(backup, original_instance):
-    log.debug('Fabric env | early | %s', env)
     """
     Restore database and files to a new instance.
     """
     log.info('Instance | Restore Backup | %s | %s', backup, original_instance)
     # TODO: Time command
     # Get the backups files.
-    backups_path_tmp = '{0}/tmp'.format(BACKUP_PATH)
+    backups_path_tmp = '{0}/tmp'.format(BACKUP_TMP_PATH)
     database_url = '{0}/{1}'.format(API_URLS[ENVIRONMENT], backup['database'])
     files_url = '{0}/{1}'.format(API_URLS[ENVIRONMENT], backup['files'])
     # Download DB
@@ -973,7 +972,7 @@ def download_file(url, file_extension):
     """
     log.debug('Download file | Download started')
     local_filename = url.split('/')[-1]
-    backups_path_tmp = '{0}/tmp'.format(BACKUP_PATH)
+    backups_path_tmp = '{0}/tmp'.format(BACKUP_TMP_PATH)
     local('mkdir -p {0}'.format(backups_path_tmp))
     backup_location_tmp_file = '{0}/{1}'.format(backups_path_tmp, local_filename)
     r = requests.get(url, stream=True, verify=SSL_VERIFICATION)

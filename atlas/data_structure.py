@@ -38,7 +38,7 @@ RETURN_MEDIA_AS_URL = True
 # Set path for media storage
 MEDIA_PATH = MEDIA_STORAGE_PATH
 # Allows passthrough from the file storage driver of additional meta fields
-EXTENDED_MEDIA_INFO = ['original_filename', 'length']
+EXTENDED_MEDIA_INFO = ['original_filename', 'length', 'content_type']
 
 # Require etags
 ENFORCE_IF_MATCH = True

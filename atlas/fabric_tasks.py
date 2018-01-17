@@ -808,7 +808,10 @@ def backup_create(site, backup_type):
     r = requests.post(
         request_url,
         data=payload,
-        files={'database': payload_database, 'files': payload_files},
+        files={
+            'database': (database_result_file, open(database_result_file_path, 'rb'), 'application/sql'),
+            'files': (files_result_file, open(files_result_file_path, 'rb'), 'application/gzip')
+        },
         auth=(SERVICE_ACCOUNT_USERNAME, SERVICE_ACCOUNT_PASSWORD),
         verify=SSL_VERIFICATION,
     )
@@ -897,26 +900,25 @@ def backup_create(site, backup_type):
     utilities.post_to_slack_payload(slack_payload)
 
 
-# TODO: Verify dynamic host list
 def backup_restore(backup_record, original_instance, package_list):
     """
     Restore database and files to a new instance.
     """
     log.info('Instance | Restore Backup | %s | %s', backup_record, original_instance)
-    # TODO: Time command
+    start_time = time()
     # Get the backups files.
-    backups_path_tmp = '{0}/tmp'.format(BACKUP_TMP_PATH)
-    database_url = '{0}/{1}'.format(API_URLS[ENVIRONMENT], backup_record['database'])
-    files_url = '{0}/{1}'.format(API_URLS[ENVIRONMENT], backup_record['files'])
+    database_url = '{0}/{1}'.format(API_URLS[ENVIRONMENT], backup_record['database']['file'])
+    files_url = '{0}/{1}'.format(API_URLS[ENVIRONMENT], backup_record['files']['file'])
+    
     # Download DB
     database_download = download_file(database_url, 'sql')
-    database_download_path = '{0}/{1}'.format(backups_path_tmp, database_download)
+    database_download_path = '{0}/{1}'.format(BACKUP_TMP_PATH, database_download)
     file_date = datetime.strptime(backup_record['backup_date'], "%Y-%m-%d %H:%M:%S %Z")
     pretty_filename = '{0}_{1}'.format(
         original_instance['sid'], file_date.strftime("%Y-%m-%d-%H-%M-%S"))
 
     pretty_database_filename = '{0}.sql'.format(pretty_filename)
-    database_download_path_clean = '{0}/{1}'.format(backups_path_tmp, pretty_database_filename)
+    database_download_path_clean = '{0}/{1}'.format(BACKUP_TMP_PATH, pretty_database_filename)
     log.debug('Instance | Restore Backup | database_download | %s', database_download)
     log.debug('Instance | Restore Backup | database_download_path | %s', database_download_path)
     # Move it to clean location
@@ -924,12 +926,13 @@ def backup_restore(backup_record, original_instance, package_list):
 
     # Download Files
     files_download = download_file(files_url, 'tar.gz')
-    files_download_path = '{0}/{1}'.format(backups_path_tmp, files_download)
+    files_download_path = '{0}/{1}'.format(BACKUP_TMP_PATH, files_download)
     pretty_files_filename = '{0}.tar.gz'.format(pretty_filename)
-    files_download_path_clean = '{0}/{1}'.format(backups_path_tmp, pretty_files_filename)
+    files_download_path_clean = '{0}/{1}'.format(BACKUP_TMP_PATH, pretty_files_filename)
     log.debug('Instance | Restore Backup | files_download | %s', files_download)
     log.debug('Instance | Restore Backup | files_download_path | %s', files_download_path)
     local('mv {0} {1}'.format(files_download_path, files_download_path_clean))
+
     if not os.path.isfile(files_download_path_clean) and os.path.isfile(database_download_path_clean):
         log.error('Instance | Restore Backup | Files were not moved to restore location')
         exit()
@@ -970,18 +973,26 @@ def backup_restore(backup_record, original_instance, package_list):
     nfs_files_dir = '{0}/{1}/files'.format(nfs_dir, new_instance['sid'])
     # Move DB and files onto server
     log.debug('Fabric env | late | %s', env)
-    put(database_download_path_clean, backups_path_tmp)
-    put(files_download_path_clean, backups_path_tmp)
+    put(database_download_path_clean, BACKUP_TMP_PATH)
+    put(files_download_path_clean, BACKUP_TMP_PATH)
+    local('rm {0}'.format(database_download_path_clean))
+    local('rm {0}'.format(files_download_path_clean))
     log.debug('Instance | Restore Backup | Files moved to server')
-    webserver_database_path = '{0}/{1}'.format(backups_path_tmp, pretty_database_filename)
-    webserver_files_path = '{0}/{1}'.format(backups_path_tmp, pretty_files_filename)
+
+    webserver_database_path = '{0}/{1}'.format(BACKUP_TMP_PATH, pretty_database_filename)
+    webserver_files_path = '{0}/{1}'.format(BACKUP_TMP_PATH, pretty_files_filename)
     with cd(web_directory):
         run('drush sql-drop -y && drush sqli < {0}'.format(webserver_database_path))
         log.debug('Instance | Restore Backup | DB imported')
         run('tar -xzf {0} {1}'.format(webserver_files_path, nfs_files_dir))
         log.debug('Instance | Restore Backup | Files replaced')
         run('drush cc all')
-    
+
+    run('rm {0}'.format(webserver_database_path))
+    run('rm {0}'.format(webserver_files_path))
+
+    restore_time = time() - start_time
+
     # Post to slack
     site_url = '{0}/{1}'.format(BASE_URLS[ENVIRONMENT], new_instance['path'])
     title = 'Backup Restore'

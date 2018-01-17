@@ -1,11 +1,12 @@
-
 # -*- coding: utf-8 -*-
 """
     eve_fsstorage.media.
     ~~~~~~~~~~~~~~~~~~~~
+
     Filesystem media storage for Eve-powered APIs.
+
     :copyright: (c) 2016 by CONABIO (JMB@Ecoinfomatica)
-    :license: See LICENSE_ADDITONAL.md for more details.
+    :license: See LICENSE_ADDITIONAL.md for more details.
 """
 import tempfile
 import os
@@ -26,6 +27,7 @@ BLOCKSIZE = 104857600
 
 def get_md5(file_path):
     """Helper function to calculate MD5 value for a given file.
+
     :param file_path: File path.
     """
     hasher = hashlib.md5()
@@ -41,6 +43,7 @@ def get_md5(file_path):
 class FileSource():
 
     """FileSource is a file object with metadata.
+
     This class is created to work as a file interface for
     :class:`FileSystemMediaStorage`.
     """
@@ -68,11 +71,13 @@ class FileSource():
 class FileSystemMediaStorage(MediaStorage):
 
     """The File System class stores files into disk.
+
     It uses the MEDIA_PATH configuration value.
     """
 
     def __init__(self, app=None):
         """Constructor.
+
         :param app: the flask application (eve itself). This can be used by
         the class to access, amongst other things, the app.config object to
         retrieve class-specific settings.
@@ -135,8 +140,7 @@ class FileSystemMediaStorage(MediaStorage):
             pass
 
         # Add filepath to a _file object
-        _file.update({'fp': os.path.join(self._fs_path,
-                                         _file['filename'])})
+        _file.update({'fp': os.path.join(self._fs_path, _file['filename'])})
         _file = FileSource(**_file)
 
         return _file
@@ -172,10 +176,7 @@ class FileSystemMediaStorage(MediaStorage):
 
         saved_file = '{oid}_{filename}'.format(oid=item_id,
                                                filename=filename)
-        fs_collection.update_one({'_id': item_id},
-                                 {'$set': {'filename': saved_file}
-                                  }
-                                 )
+        fs_collection.update_one({'_id': item_id}, {'$set': {'filename': saved_file}})
 
         full_path = os.path.join(self._fs_path, saved_file)
         copy(fp, full_path)

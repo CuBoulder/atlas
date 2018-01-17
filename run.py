@@ -49,6 +49,7 @@ app.logger.addHandler(LOG_HANDLER)
 
 # Hook into the request flow early
 @app.route('/backup/<string:backup_id>/restore', methods=['POST'])
+# TODO: Test what happens with 404 for backup_id
 @requires_auth('backup')
 def restore_backup(backup_id):
     """
@@ -84,16 +85,17 @@ def restore_backup(backup_id):
     return response
 
 @app.route('/sites/<string:site_id>/backup', methods=['POST'])
+# TODO: Test what happens with 404 for site_id
 @requires_auth('backup')
 def create_backup(site_id):
     """
     Create a backup of an instance.
     :param machine_name: id of instance to restore
     """
-    app.logger.debug('Backup | Create | %s', site_id)
+    app.logger.debug('Backup | Create | Site ID - %s', site_id)
     site = utilities.get_single_eve('sites', site_id)
-    # If packages are still active, add them; if not, find a current version and add it; if none, error
-    tasks.backup_create.delay(site)
+    app.logger.debug('Backup | Create | Site Response - %s', site) 
+    tasks.backup_create.delay(site=site, backup_type='on_demand')
     response = make_response('Backup started')
     return response
 

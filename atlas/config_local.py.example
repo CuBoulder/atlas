@@ -29,6 +29,7 @@ SITES_WEB_ROOT = '/data/web/express'
 SITES_CODE_ROOT = '/data/atlas/sites'
 SITE_DOWN_PATH = '/data/code/down'
 STATIC_WEB_PATH = '/data/web/express/static'
+# TODO: See if we can make this the current users run dir `/run/user/<uid>`
 BACKUP_TMP_PATH = '/data/atlas/backup'
 
 # Location to store media uploaded to the API.api

@@ -1062,13 +1062,13 @@ def update_f5():
 
 
 @celery.task
-def backup_create(site):
+def backup_create(site, backup_type):
     log.debug('Backup | Create | Site - %s', site)
     log.info('Backup | Create | Site - %s', site['_id'])
     host = utilities.single_host()
-    execute(fabric_tasks.backup_create, site=site, hosts=host)
- 
- 
+    execute(fabric_tasks.backup_create, site=site, backup_type=backup_type, hosts=host)
+
+
 @celery.task
 def backup_restore(backup_record, original_instance, package_list):
     log.info('Backup | Restore | Backup ID - %s', backup_record['_id'])
@@ -1080,6 +1080,7 @@ def backup_restore(backup_record, original_instance, package_list):
 
 
 @celery.task
+# TODO: Add support to remove backups from instances with more than 5
 def remove_old_backups():
     """
     Delete old backups.

@@ -756,49 +756,55 @@ def exportf5(load_balancer_config_dir):
         disconnect_all()
 
 
-# TODO: Verify dynamic host list
-def backup_create(site):
+def backup_create(site, backup_type):
     """
     Backup the database and files for an site.
     """
-    log.info('Site | Create Backup | %s', site)
-    # TODO: Time command
+    log.debug('Backup | Create | %s', site)
+    log.info('Backup | Create | %s', site['_id'])
+    start_time = time()
     # Setup all the variables we will need.
-    web_directory = '{0}/{1}'.format(SITES_WEB_ROOT, site['sid'])
-    backups_path_tmp = '{0}/tmp'.format(BACKUP_TMP_PATH)
+    # Date and time strings.   
     date = datetime.now()
     date_string = date.strftime("%Y-%m-%d")
     date_time_string = date.strftime("%Y-%m-%d-%H-%M-%S")
     datetime_string = date.strftime("%Y-%m-%d %H:%M:%S GMT")
-    backup_target_dir = '{0}/{1}/{2}'.format(BACKUP_TMP_PATH, site['sid'], date_string)
+    
+    # Instance paths
+    web_directory = '{0}/{1}'.format(SITES_WEB_ROOT, site['sid'])
     database_result_file = '{0}_{1}.sql'.format(site['sid'], date_time_string)
-    database_result_file_path = '{0}/{1}'.format(backup_target_dir, database_result_file)
+    database_result_file_path = '{0}/{1}'.format(BACKUP_TMP_PATH, database_result_file)
+    nfs_files_dir = '{0}/{1}/files'.format(NFS_MOUNT_LOCATION[ENVIRONMENT], site['sid'])
     files_result_file = '{0}_{1}.tar.gz'.format(site['sid'], date_time_string)
-    files_result_file_path = '{0}/{1}'.format(backup_target_dir, files_result_file)
-    atlas_database_path = '{0}/{1}'.format(backups_path_tmp, files_result_file)
-    atlas_file_path = '{0}/{1}'.format(backups_path_tmp, database_result_file)
-    nfs_dir = NFS_MOUNT_LOCATION[ENVIRONMENT]
-    nfs_files_dir = '{0}/{1}/files'.format(nfs_dir, site['sid'])
+    files_result_file_path = '{0}/{1}'.format(BACKUP_TMP_PATH, files_result_file)
+
     # Start the actual process.
-    create_directory_structure(backup_target_dir)
+    create_directory_structure(BACKUP_TMP_PATH)
     with cd(web_directory):
         # TODO: Modify what we backup to reduce backup size (don't need cache tables)
         run('drush sql-dump --result-file={0}'.format(database_result_file_path))
         # TODO: Modify what we backup to reduce backup size (don't need cache css/js or image styles)
         run('tar -czf {0} {1}'.format(files_result_file_path, nfs_files_dir))
-    get(database_result_file_path, local_path=atlas_database_path)
-    get(files_result_file_path, local_path=atlas_file_path)
+
+    # Take files to Atlas server so that we can use python to POST them.
+    get(database_result_file_path, local_path=database_result_file_path)
+    get(files_result_file_path, local_path=files_result_file_path)
+
+    # Remove files from webserver after the are copied to the Atlas server
+    run('rm {0}'.format(database_result_file_path))
+    run('rm {0}'.format(files_result_file_path))
 
     payload = {
         'site': site['_id'],
         'site_version': site['_version'],
-        'backup_date': datetime_string
+        'backup_date': datetime_string,
+        'backup_type': backup_type
     }
-    payload_database = open(atlas_database_path, 'rb')
-    payload_files = open(atlas_file_path, 'rb')
+    payload_database = open(database_result_file_path, 'rb')
+    payload_files = open(files_result_file_path, 'rb')
     request_url = '{0}/backup'.format(API_URLS[ENVIRONMENT])
 
-    log.debug('Site | Backup Create | Ready to send to Atlas | Payload - %s', payload)
+    log.debug('Backup | Create | Ready to send to Atlas | Payload - %s', payload)
     r = requests.post(
         request_url,
         data=payload,
@@ -808,27 +814,35 @@ def backup_create(site):
     )
 
     if r.ok:
-        log.debug('Site | Create Backup | POST - OK | %s', r.json())
+        log.debug('Backup | Create | POST - OK | %s', r.json())
         text = 'Success'
         slack_color = 'good'
+        
+        slack_url = '{0}/backup/{1}'.format(API_URLS[ENVIRONMENT], r.json()['_id'])
 
     else:
-        log.error('Site | Create Backup | POST - Error | %s', r.text())
+        log.error('Backup | Create | POST - Error | %s', r.text())
         text = 'Error'
         slack_color = 'danger'
+        slack_url = '{0}/{1}'.format(BASE_URLS[ENVIRONMENT], site['path'])
 
-    # TODO: Remove files from webserver
+    
+    # TODO: Remove tmp files from atlas server
+    local('rm {0}'.format(database_result_file_path))
+    local('rm {0}'.format(files_result_file_path))
 
+    backup_time = time() - start_time
+    log.info('Atlas operational statistic | Backup Create | %s', backup_time)
 
     # Send notification to Slack
-    site_url = '{0}/{1}'.format(BASE_URLS[ENVIRONMENT], site['path'])
+    
     title = 'Site Backup'
-    site_link = '<' + site_url + '|' + site_url + '>'
-    command = 'backup'
+    slack_link = '<' + slack_url + '|' + slack_url + '>'
+    command = 'Backup - Create'
 
     slack_channel = 'general'
 
-    slack_fallback = site_url + ' - ' + ENVIRONMENT + ' - ' + command
+    slack_fallback = slack_url + ' - ' + ENVIRONMENT + ' - ' + command
 
     slack_payload = {
         # Channel will be overridden on local environments.
@@ -842,8 +856,8 @@ def backup_create(site):
                 "title": title,
                 "fields": [
                     {
-                        "title": "Instance",
-                        "value": site_link,
+                        "title": "Link",
+                        "value": slack_link,
                         "short": True
                     },
                     {
@@ -854,6 +868,11 @@ def backup_create(site):
                     {
                         "title": "Command",
                         "value": command,
+                        "short": True
+                    },
+                    {
+                        "title": "Time",
+                        "value": backup_time,
                         "short": True
                     }
                 ],
@@ -892,7 +911,7 @@ def backup_restore(backup_record, original_instance, package_list):
     # Download DB
     database_download = download_file(database_url, 'sql')
     database_download_path = '{0}/{1}'.format(backups_path_tmp, database_download)
-    file_date = datetime.strptime(backup_record['date'], "%Y-%m-%d %H:%M:%S %Z")
+    file_date = datetime.strptime(backup_record['backup_date'], "%Y-%m-%d %H:%M:%S %Z")
     pretty_filename = '{0}_{1}'.format(
         original_instance['sid'], file_date.strftime("%Y-%m-%d-%H-%M-%S"))
 

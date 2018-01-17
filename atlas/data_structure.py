@@ -37,6 +37,8 @@ RETURN_MEDIA_AS_BASE64_STRING = False
 RETURN_MEDIA_AS_URL = True
 # Set path for media storage
 MEDIA_PATH = MEDIA_STORAGE_PATH
+# Allows passthrough from the file storage driver of additional meta fields
+EXTENDED_MEDIA_INFO = ['original_filename', 'length']
 
 # Require etags
 ENFORCE_IF_MATCH = True
@@ -767,6 +769,12 @@ BACKUP_SCHEMA = {
     },
     'backup_date': {
         'type': 'datetime',
+        'required': True,
+    },
+    'backup_type': {
+        'type': 'string',
+        'allowed':  ['on_demand', 'update', 'routine'],
+        'default': 'routine',
         'required': True,
     },
     'created_by': {

@@ -118,7 +118,7 @@ class FileSystemMediaStorage(MediaStorage):
 
         return self._fs_collection[px]
 
-    def get(self, _id, resource=None):
+    def get(self, _id, resource='backup'):
         """Return a FileSource object given by unique id. Returns None if no
         file was found.
         """
@@ -136,7 +136,11 @@ class FileSystemMediaStorage(MediaStorage):
 
         try:
             _file = self.fs_collection(resource).find_one({"_id": _id})
+            self.app.logger.debug(
+                'Resource found | resource - {0} | _id - {1} | file - {2}'.format(resource, _id, _file))
         except:
+            self.app.logger.debug(
+                'Resource not found | resource - {0} | _id - {1}'.format(resource, _id))
             pass
 
         # Add filepath to a _file object

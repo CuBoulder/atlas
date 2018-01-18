@@ -11,6 +11,7 @@ import requests
 from random import randint
 from datetime import datetime
 from time import time, sleep, strftime
+from shutil import copyfileobj
 
 from fabric.contrib.files import exists, upload_template
 from fabric.operations import put
@@ -906,13 +907,13 @@ def backup_restore(backup_record, original_instance, package_list):
     """
     log.info('Instance | Restore Backup | %s | %s', backup_record, original_instance)
     start_time = time()
-    # Get the backups files.
-    database_url = '{0}/{1}'.format(API_URLS[ENVIRONMENT], backup_record['database']['file'])
-    files_url = '{0}/{1}'.format(API_URLS[ENVIRONMENT], backup_record['files']['file'])
+    # Get the backups files. Don't include a slash in between items since the
+    # backup location has a root slash.
+    database_url = '{0}{1}'.format(API_URLS[ENVIRONMENT], backup_record['database']['file'])
+    files_url = '{0}{1}'.format(API_URLS[ENVIRONMENT], backup_record['files']['file'])
     
     # Download DB
     database_download = download_file(database_url, 'sql')
-    database_download_path = '{0}/{1}'.format(BACKUP_TMP_PATH, database_download)
     file_date = datetime.strptime(backup_record['backup_date'], "%Y-%m-%d %H:%M:%S %Z")
     pretty_filename = '{0}_{1}'.format(
         original_instance['sid'], file_date.strftime("%Y-%m-%d-%H-%M-%S"))
@@ -920,18 +921,15 @@ def backup_restore(backup_record, original_instance, package_list):
     pretty_database_filename = '{0}.sql'.format(pretty_filename)
     database_download_path_clean = '{0}/{1}'.format(BACKUP_TMP_PATH, pretty_database_filename)
     log.debug('Instance | Restore Backup | database_download | %s', database_download)
-    log.debug('Instance | Restore Backup | database_download_path | %s', database_download_path)
     # Move it to clean location
-    local('mv {0} {1}'.format(database_download_path, database_download_path_clean))
+    local('mv {0} {1}'.format(database_download, database_download_path_clean))
 
     # Download Files
     files_download = download_file(files_url, 'tar.gz')
-    files_download_path = '{0}/{1}'.format(BACKUP_TMP_PATH, files_download)
     pretty_files_filename = '{0}.tar.gz'.format(pretty_filename)
     files_download_path_clean = '{0}/{1}'.format(BACKUP_TMP_PATH, pretty_files_filename)
     log.debug('Instance | Restore Backup | files_download | %s', files_download)
-    log.debug('Instance | Restore Backup | files_download_path | %s', files_download_path)
-    local('mv {0} {1}'.format(files_download_path, files_download_path_clean))
+    local('mv {0} {1}'.format(files_download, files_download_path_clean))
 
     if not os.path.isfile(files_download_path_clean) and os.path.isfile(database_download_path_clean):
         log.error('Instance | Restore Backup | Files were not moved to restore location')
@@ -982,9 +980,9 @@ def backup_restore(backup_record, original_instance, package_list):
     webserver_database_path = '{0}/{1}'.format(BACKUP_TMP_PATH, pretty_database_filename)
     webserver_files_path = '{0}/{1}'.format(BACKUP_TMP_PATH, pretty_files_filename)
     with cd(web_directory):
-        run('drush sql-drop -y && drush sqli < {0}'.format(webserver_database_path))
+        run('drush sql-drop -y && drush sql-cli < {0}'.format(webserver_database_path))
         log.debug('Instance | Restore Backup | DB imported')
-        run('tar -xzf {0} {1}'.format(webserver_files_path, nfs_files_dir))
+        run('tar -xzf {0} -C {1}'.format(webserver_files_path, nfs_files_dir))
         log.debug('Instance | Restore Backup | Files replaced')
         run('drush cc all')
 
@@ -1045,16 +1043,13 @@ def download_file(url, file_extension):
     """
     log.debug('Download file | Download started')
     local_filename = url.split('/')[-1]
-    backups_path_tmp = '{0}/tmp'.format(BACKUP_TMP_PATH)
-    local('mkdir -p {0}'.format(backups_path_tmp))
-    backup_location_tmp_file = '{0}/{1}'.format(backups_path_tmp, local_filename)
+    backup_location_tmp_file = '{0}/{1}'.format(BACKUP_TMP_PATH, local_filename)
     r = requests.get(url, stream=True, verify=SSL_VERIFICATION)
+    log.debug('Download file | r - %s', type(r))
     if r.status_code == 200:
         with open(backup_location_tmp_file, 'wb') as f:
-            for chunk in r.iter_content(chunk_size=512):
-                if chunk: # filter out keep-alive new chunks
-                    f.write(chunk)
+            copyfileobj(r.raw, f)
         log.debug('Download file | Download finished')
-        return local_filename
+        return backup_location_tmp_file
     else:
         log.error('Download file | Download failed, %s', r.text)

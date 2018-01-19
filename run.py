@@ -58,24 +58,25 @@ def restore_backup(backup_id):
     """
     app.logger.debug('Backup | Restore | %s', backup_id)
     backup_record = utilities.get_single_eve('backup', backup_id)
-    original_instance = utilities.get_single_eve('sites', backup_record['site'])
+    original_instance = utilities.get_single_eve('sites', backup_record['site'], backup_record['site_version'])
     # If packages are still active, add them; if not, find a current version
     # and add it; if none, error
-    if 'packages' in original_instance['code']:
+    if 'package' in original_instance['code']:
         # Start with an empty list
-        package_list = None
-        for package in original_instance['code']:
+        package_list = []
+        for package in original_instance['code']['package']:
             package_result = utilities.get_single_eve('code', package)
             app.logger.debug(
                 'Backup | Restore | Checking for packages | Request result - %s', package_result)
             if package_result['_deleted']:
                 current_package = utilities.get_current_code(
-                    package_result['name'], package_result['code_type'])
+                    package_result['meta']['name'], package_result['meta']['code_type'])
+                app.logger.debug('Backup | Restore | Getting current version of package - %s', current_package)
                 if current_package:
-                    package_list.append(current_package['_id'])
+                    package_list.append(current_package)
                 else:
                     abort(409, 'There is no current version of {0}. This backup cannot be restored.'.format(
-                        package_result['name']))
+                        package_result['meta']['name']))
             else:
                 package_list.append(package_result['_id'])
     else:

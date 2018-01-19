@@ -251,7 +251,7 @@ def get_eve(resource, query=None):
     return r.json()
 
 
-def get_single_eve(resource, id):
+def get_single_eve(resource, id, version=None):
     """
     Make calls to the Atlas API.
 
@@ -259,7 +259,10 @@ def get_single_eve(resource, id):
     :param id: _id string
     :return: dict of items that match the query string.
     """
-    url = "{0}/{1}/{2}".format(API_URLS[ENVIRONMENT], resource, id)
+    if version:
+        url = "{0}/{1}/{2}?version={3}".format(API_URLS[ENVIRONMENT], resource, id, version)
+    else:
+        url = "{0}/{1}/{2}".format(API_URLS[ENVIRONMENT], resource, id)
     log.debug('utilities | Get Eve Single | url - %s', url)
 
     try:

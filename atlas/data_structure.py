@@ -1,5 +1,7 @@
 import os
 
+from atlas.config import (MEDIA_STORAGE_PATH)
+
 MONGO_HOST = os.environ.get('MONGO_HOST', 'localhost')
 MONGO_PORT = os.environ.get('MONGO_PORT', 27017)
 MONGO_DBNAME = os.environ.get('MONGO_DBNAME', 'atlas')
@@ -28,18 +30,27 @@ X_HEADERS = ['Access-Control-Allow-Origin', 'If-Match',
 # Allow $regex filtering. Default config blocks where and regex.
 MONGO_QUERY_BLACKLIST = ['$where']
 
+# Media Handling
+# disable default behaviour
+RETURN_MEDIA_AS_BASE64_STRING = False
+# return media as URL instead
+RETURN_MEDIA_AS_URL = True
+# Set path for media storage
+MEDIA_PATH = MEDIA_STORAGE_PATH
+# Allows passthrough from the file storage driver of additional meta fields
+EXTENDED_MEDIA_INFO = ['original_filename', 'length', 'content_type']
+
 # Require etags
 ENFORCE_IF_MATCH = True
 
 # Definitions of schemas for Items. Schema is based on Cerberus grammar
 # https://github.com/nicolaiarocci/cerberus.
-#
 
 # Mongo creates the following: '_created', '_updated', '_etag', and '_id'.
 # We don't use those fields in our logic because want to be able to move or
 # recreate a record without losing any information.
 
-# Code schema. Defines a code asset that can be applied to a site.
+# Code schema. Defines a code asset that can be applied to an instance.
 # We nest in 'meta' to allow us to check for a unique combo
 CODE_SCHEMA = {
     'meta': {
@@ -735,6 +746,45 @@ STATISTICS_SCHEMA = {
     },
 }
 
+BACKUP_SCHEMA = {
+    'site': {
+        'type': 'objectid',
+        'data_relation': {
+            'resource': 'sites',
+            'field': '_id',
+        },
+        'required': True,
+    },
+    'site_version': {
+        'type': 'integer',
+        'required': True,
+    },
+    'files': {
+        'type': 'media',
+        'required': True,
+    },
+    'database': {
+        'type': 'media',
+        'required': True,
+    },
+    'backup_date': {
+        'type': 'datetime',
+        'required': True,
+    },
+    'backup_type': {
+        'type': 'string',
+        'allowed':  ['on_demand', 'update', 'routine'],
+        'default': 'routine',
+        'required': True,
+    },
+    'created_by': {
+        'type': 'string',
+    },
+    'modified_by': {
+        'type': 'string',
+    },
+}
+
 COMMANDS_SCHEMA = {
     'name': {
         'type': 'string',
@@ -812,6 +862,14 @@ STATISTICS = {
     'schema': STATISTICS_SCHEMA,
 }
 
+# Backup resource
+BACKUP = {
+    'item_title': 'backup',
+    'public_methods': ['GET'],
+    'public_item_methods': ['GET'],
+    'schema': BACKUP_SCHEMA,
+}
+
 # Command resource
 # Empty public_item_methods means that you can't call actual commands without authentication.
 # Anonymous users can list the commands, but not call them.
@@ -830,4 +888,5 @@ DOMAIN = {
     'commands': COMMANDS,
     'query': QUERY,
     'statistics': STATISTICS,
+    'backup': BACKUP,
 }

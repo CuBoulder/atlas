@@ -7,6 +7,7 @@ import logging
 import time
 import json
 from bson import json_util
+from collections import Counter
 
 from datetime import datetime, timedelta
 from celery import Celery
@@ -1083,13 +1084,41 @@ def backup_restore(backup_record, original_instance, package_list):
 # TODO: Add support to remove backups from instances with more than 5
 def remove_old_backups():
     """
-    Delete old backups.
+    Delete backups older than 90 days.
     """
     time_ago = datetime.utcnow() - timedelta(days=90)
     backup_query = 'where={{"_created":{{"$lte":"{0}"}}}}&max_results=2000'.format(
         time_ago.strftime("%Y-%m-%d %H:%M:%S GMT"))
     backups = utilities.get_eve('backup', backup_query)
-    # Loop through and remove sites that are more than 35 days old.
+    # Loop through and remove sites that are more than 90 days old.
     for backup in backups['_items']:
         log.info('Delete old backup | backup - %s', backup)
         utilities.delete_eve('backup', backup['_id'])
+
+
+@celery.task
+def remove_extra_backups():
+    # TODO: Finish this.
+    """
+    Delete extra backups, we only want to keep 5 per instance.
+    """
+    # Get all backups
+    backups = utilities.get_eve('backup', 'max_results=2000')
+    instance_ids = []
+    for item in backups['_items']:
+        instance_ids.append(item['site'])
+    log.debug('Delete extra backups | Instance list - %s', instance_ids)
+    counts = Counter(instance_ids)
+    log.info('Delete extra backups | counts - %s', counts)
+    # Sort out the list for values greater than 5
+    high_count = {k:v for (k, v) in counts.items() if v > 5}
+    log.info('Delete extra backups | High Count - %s', high_count)
+    if high_count:
+        for item in high_count:
+            # Get a list of backups for this instance, sorted by age
+            instance_backup_query = 'where={{"site":"{0}"}}&sort=[("_created", -1)]'.format(item)
+            instance_backups = utilities.get_eve('backup', instance_backup_query)
+            log.info('Delete extra backups | List of backups - %s', instance_backups)
+            # Remove the oldest
+            log.info('Delete extra backup | backup - %s', item)
+            utilities.delete_eve('backup', item)

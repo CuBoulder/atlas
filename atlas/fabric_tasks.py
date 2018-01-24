@@ -782,10 +782,8 @@ def backup_create(site, backup_type):
     # Start the actual process.
     create_directory_structure(BACKUP_TMP_PATH)
     with cd(web_directory):
-        # TODO: Modify what we backup to reduce backup size (don't need cache tables)
-        run('drush sql-dump --result-file={0}'.format(database_result_file_path))
-        # TODO: Modify what we backup to reduce backup size (don't need cache css/js or image styles)
-        run('tar -czf {0} {1}'.format(files_result_file_path, nfs_files_dir))
+        run('drush sql-dump --skip-tables-list=cache,cache_* --result-file={0}'.format(database_result_file_path))
+        run('tar --exclude "{0}/imagecache" --exclude "{0}/css" --exclude "{0}/js" --exclude "{0}/backup_migrate" --exclude "{0}/styles" -czf {1} {0}'.format(nfs_files_dir, files_result_file_path))
 
     # Take files to Atlas server so that we can use python to POST them.
     get(database_result_file_path, local_path=database_result_file_path)
@@ -801,8 +799,6 @@ def backup_create(site, backup_type):
         'backup_date': datetime_string,
         'backup_type': backup_type
     }
-    payload_database = open(database_result_file_path, 'rb')
-    payload_files = open(files_result_file_path, 'rb')
     request_url = '{0}/backup'.format(API_URLS[ENVIRONMENT])
 
     log.debug('Backup | Create | Ready to send to Atlas | Payload - %s', payload)
@@ -821,7 +817,6 @@ def backup_create(site, backup_type):
         log.debug('Backup | Create | POST - OK | %s', r.json())
         text = 'Success'
         slack_color = 'good'
-        
         slack_url = '{0}/backup/{1}'.format(API_URLS[ENVIRONMENT], r.json()['_id'])
 
     else:
@@ -830,8 +825,8 @@ def backup_create(site, backup_type):
         slack_color = 'danger'
         slack_url = '{0}/{1}'.format(BASE_URLS[ENVIRONMENT], site['path'])
 
-    
-    # TODO: Remove tmp files from atlas server
+
+    # Remove tmp files from atlas server
     local('rm {0}'.format(database_result_file_path))
     local('rm {0}'.format(files_result_file_path))
 
@@ -839,7 +834,7 @@ def backup_create(site, backup_type):
     log.info('Atlas operational statistic | Backup Create | %s', backup_time)
 
     # Send notification to Slack
-    
+
     title = 'Site Backup'
     slack_link = '<' + slack_url + '|' + slack_url + '>'
     command = 'Backup - Create'

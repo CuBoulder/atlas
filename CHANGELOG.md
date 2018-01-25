@@ -1,5 +1,9 @@
 # Change log
 
+## v2.2.0
+
+This release supports the new infrastructure.
+
 ## v2.1.0
 
 This release adds granular deployment options for code assets. The following required fields (with the noted defaults) have been added to code items:

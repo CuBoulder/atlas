@@ -12,15 +12,15 @@ from atlas.config_servers import (SERVERDEFS, VARNISH_CONTROL_TERMINALS, NFS_MOU
                                   LOAD_BALANCER_CONFIG_GROUP)
 from atlas.config_local import (ENVIRONMENT, SSL_KEY_FILE, SSL_CRT_FILE, ALLOWED_USERS,
                                 NFS_MOUNT_FILES_DIR, LOAD_BALANCER, DESIRED_SITE_COUNT, CODE_ROOT,
-                                SITES_WEB_ROOT, SITES_CODE_ROOT, SITE_DOWN_PATH, BACKUPS_PATH,
+                                SITES_WEB_ROOT, SITES_CODE_ROOT, SITE_DOWN_PATH, BACKUP_TMP_PATH,
                                 DEFAULT_CORE, DEFAULT_PROFILE, ENCRYPTION_KEY, LDAP_SERVER,
                                 LDAP_ORG_UNIT, LDAP_DNS_DOMAIN_NAME, SSH_USER, WEBSERVER_USER,
                                 WEBSERVER_USER_GROUP, DATABASE_USER, DATABASE_PASSWORD,
                                 SERVICE_ACCOUNT_USERNAME, SERVICE_ACCOUNT_PASSWORD,
-                                SLACK_NOTIFICATIONS, SLACK_URL, SLACK_USERNAME,
+                                SLACK_NOTIFICATIONS, SLACK_URL, SLACK_USERNAME, VARNISH_CONTROL_KEY,
                                 SEND_NOTIFICATION_EMAILS, SEND_NOTIFICATION_FROM_EMAIL, EMAIL_HOST,
                                 EMAIL_PORT, EMAIL_USERNAME, EMAIL_PASSWORD, LOG_LOCATION,
-                                EMAIL_USERS_EXCLUDE)
+                                EMAIL_USERS_EXCLUDE, STATIC_WEB_PATH, MEDIA_STORAGE_PATH)
 
 # Set Atlas location
 ATLAS_LOCATION = os.path.dirname(os.path.realpath(__file__))
@@ -43,6 +43,11 @@ if TRAILING_SLASH.search(SITES_WEB_ROOT):
 if TRAILING_SLASH.search(SITES_WEB_ROOT):
     raise Exception("'sites_web_root' should not have a trailing slash.")
 
+# These are paths that we cannot route to instances. 
+PROTECTED_PATHS = ['opcache', 'static', 'includes', 'misc', 'modules', 'profiles', 'scripts', 'sites', 'themes']
+
+# Drupal core paths to symlink. We are not including .htaccess or robots.txt since they are managed seperately.
+DRUPAL_CORE_PATHS = ['authorize.php', 'cron.php', 'includes', 'index.php', 'install.php', 'misc', 'modules', 'profiles', 'scripts', 'sites', 'themes', 'update.php', 'web.config', 'xmlrpc.php']
 
 # This allows us to use a self signed cert for local dev.
 SSL_VERIFICATION = True
@@ -54,4 +59,4 @@ if ENVIRONMENT == 'local':
     # https://urllib3.readthedocs.io/en/latest/advanced-usage.html#ssl-warnings
     urllib3.disable_warnings()
 
-VERSION_NUMBER = '2.1.0'
+VERSION_NUMBER = '2.2.0'

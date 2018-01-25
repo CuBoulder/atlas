@@ -22,7 +22,6 @@ $conf["google_cse_cx"] = "{{google_cse_csx}}";
 $conf["google_cse_cx"] = NULL;
 {% endif %}
 $path = "{{path}}";
-$pool = "{{pool}}";
 
 {% if status in ['launched', 'launching'] %}
 $launched = TRUE;

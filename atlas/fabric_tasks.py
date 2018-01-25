@@ -10,19 +10,23 @@ import re
 import requests
 from random import randint
 from datetime import datetime
+from time import time, sleep, strftime
+from shutil import copyfileobj
 
 from fabric.contrib.files import exists, upload_template
+from fabric.operations import put
 from fabric.api import *
 from fabric.network import disconnect_all
 
 from atlas import utilities
 from atlas.config import (ATLAS_LOCATION, ENVIRONMENT, SSH_USER, CODE_ROOT, SITES_CODE_ROOT,
                           SITES_WEB_ROOT, WEBSERVER_USER, WEBSERVER_USER_GROUP, NFS_MOUNT_FILES_DIR,
-                          BACKUPS_PATH, SERVICE_ACCOUNT_USERNAME, SERVICE_ACCOUNT_PASSWORD,
-                          SITE_DOWN_PATH, LOAD_BALANCER)
+                          BACKUP_TMP_PATH, SERVICE_ACCOUNT_USERNAME, SERVICE_ACCOUNT_PASSWORD,
+                          SITE_DOWN_PATH, LOAD_BALANCER, VARNISH_CONTROL_KEY, STATIC_WEB_PATH, 
+                          SSL_VERIFICATION, DRUPAL_CORE_PATHS) 
 from atlas.config_servers import (SERVERDEFS, NFS_MOUNT_LOCATION, API_URLS,
                                   VARNISH_CONTROL_TERMINALS, LOAD_BALANCER_CONFIG_FILES,
-                                  LOAD_BALANCER_CONFIG_GROUP)
+                                  LOAD_BALANCER_CONFIG_GROUP, BASE_URLS)
 
 # Setup a sub-logger. See tasks.py for longer comment.
 log = logging.getLogger('atlas.fabric_tasks')
@@ -70,6 +74,12 @@ def code_deploy(item):
                     code_type_dir,
                     item['meta']['name'])
                 update_symlink(code_folder, code_folder_current)
+            if item['meta']['code_type'] == 'static':
+                static_target = '{0}/{1}-{2}'.format(STATIC_WEB_PATH,
+                                                      item['meta']['name'], item['meta']['version'])
+                log.debug('Code | Deploy | Static | Target - %s', static_target)
+                update_symlink(code_folder, static_target)
+
         else:
             return clone_task
 
@@ -132,6 +142,10 @@ def code_remove(item):
             code_type_dir,
             item['meta']['name'])
         remove_symlink(code_folder_current)
+    if item['meta']['code_type'] == 'static':
+        static_target = '{0}/{1}-{2}'.format(STATIC_WEB_PATH,
+                                              item['meta']['name'], item['meta']['version'])
+        remove_symlink(static_target)
 
 
 @roles('webservers')
@@ -147,18 +161,11 @@ def site_provision(site):
     code_directory = '{0}/{1}'.format(SITES_CODE_ROOT, site['sid'])
     code_directory_sid = '{0}/{1}'.format(code_directory, site['sid'])
     code_directory_current = '{0}/current'.format(code_directory)
-    web_directory_type = '{0}/{1}'.format(SITES_WEB_ROOT, site['type'])
-    web_directory_sid = '{0}/{1}'.format(web_directory_type, site['sid'])
+    web_directory_sid = '{0}/{1}'.format(SITES_WEB_ROOT, site['sid'])
     profile = utilities.get_single_eve('code', site['code']['profile'])
 
     try:
         execute(create_directory_structure, folder=code_directory)
-    except FabricException as error:
-        log.error('Site | Provision | Create directory structure failed | Error - %s', error)
-        return error
-
-    try:
-        execute(create_directory_structure, folder=web_directory_type)
     except FabricException as error:
         log.error('Site | Provision | Create directory structure failed | Error - %s', error)
         return error
@@ -185,7 +192,7 @@ def site_provision(site):
 
     if NFS_MOUNT_FILES_DIR:
         nfs_dir = NFS_MOUNT_LOCATION[ENVIRONMENT]
-        nfs_files_dir = '{0}/sitefiles/{1}/files'.format(nfs_dir, site['sid'])
+        nfs_files_dir = '{0}/{1}/files'.format(nfs_dir, site['sid'])
         try:
             execute(create_nfs_files_dir, nfs_dir=nfs_dir, site_sid=site['sid'])
         except FabricException as error:
@@ -209,20 +216,6 @@ def site_provision(site):
         execute(update_symlink, source=code_directory_current, destination=web_directory_sid)
     except FabricException as error:
         log.error('Site | Provision | Update symlink failed | Error - %s', error)
-        return error
-
-
-def site_install(site):
-    code_directory = '{0}/{1}'.format(SITES_CODE_ROOT, site['sid'])
-    code_directory_current = '{0}/current'.format(code_directory)
-    profile = utilities.get_single_eve('code', site['code']['profile'])
-    profile_name = profile['meta']['name']
-
-    try:
-        execute(install_site, profile_name=profile_name,
-                code_directory_current=code_directory_current)
-    except FabricException as error:
-        log.error('Site | Install | Instance install failed | Error - %s', error)
         return error
 
 
@@ -306,7 +299,7 @@ def site_backup(site):
     """
     log.info('Site | Backup | Site - %s', site['_id'])
     # Setup all the variables we will need.
-    web_directory = '{0}/{1}/{2}'.format(SITES_WEB_ROOT, site['type'], site['sid'])
+    web_directory = '{0}/{1}'.format(SITES_WEB_ROOT, site['sid'])
     date_string = datetime.now().strftime("%Y-%m-%d")
     date_time_string = datetime.now().strftime("%Y-%m-%d-%H:%M:%S")
     backup_directory = '{0}/{1}/{2}'.format(BACKUPS_PATH, site['sid'], date_string)
@@ -319,7 +312,7 @@ def site_backup(site):
         site['sid'],
         date_time_string)
     nfs_dir = NFS_MOUNT_LOCATION[ENVIRONMENT]
-    nfs_files_dir = '{0}/sitefiles/{1}/files'.format(nfs_dir, site['sid'])
+    nfs_files_dir = '{0}/{1}/files'.format(nfs_dir, site['sid'])
     # Start the actual process.
     create_directory_structure(backup_directory)
     with cd(web_directory):
@@ -358,122 +351,29 @@ def site_remove(site):
     :return:
     """
     log.info('Site | Remove | Site - %s', site['_id'])
+
     code_directory = '{0}/{1}'.format(SITES_CODE_ROOT, site['sid'])
-    web_directory = '{0}/{1}/{2}'.format(
-        SITES_WEB_ROOT,
-        site['type'],
-        site['sid'])
-    web_directory_path = '{0}/{1}/{2}'.format(
-        SITES_WEB_ROOT,
-        site['type'],
-        site['path'])
+    web_directory = '{0}/{1}'.format(SITES_WEB_ROOT, site['sid'])
+    web_directory_path = '{0}/{1}'.format(SITES_WEB_ROOT, site['path'])
 
     remove_symlink(web_directory)
     remove_symlink(web_directory_path)
 
     if NFS_MOUNT_FILES_DIR:
         nfs_dir = NFS_MOUNT_LOCATION[ENVIRONMENT]
-        nfs_files_dir = '{0}/sitefiles/{1}'.format(nfs_dir, site['sid'])
+        nfs_files_dir = '{0}/{1}/files'.format(nfs_dir, site['sid'])
         remove_directory(nfs_files_dir)
 
     remove_directory(code_directory)
 
 
-@roles('webserver_single')
-def command_run_single(site, command, warn_only=False):
-    """
-    Run a command on a single server
-
-    :param site: Site to run command on
-    :param command: Command to run
-    :return:
-    """
-    log.info('Command | Single Server | Site - %s | Command - %s', site['sid'], command)
-    web_directory = '{0}/{1}/{2}'.format(SITES_WEB_ROOT, site['type'], site['sid'])
-    with settings(warn_only=warn_only):
-        with cd(web_directory):
-            command_result = run("{0}".format(command), pty=False)
-            # Return the failure if there is one.
-            if command_result.failed:
-                return command_result
-
-
-@roles('webservers')
-def command_run(site, command):
-    """
-    Run a command on a all webservers.
-
-    :param site: Site to run command on
-    :param command: Command to run
-    :return:
-    """
-    log.info('Command | Multiple Servers | Site - %s | Command - %s', site['sid'], command)
-    web_directory = '{0}/{1}/{2}'.format(SITES_WEB_ROOT, site['type'], site['sid'])
-    with cd(web_directory):
-        run('{0}'.format(command))
-
-
-@roles('webserver_single')
-def update_database(site):
-    """
-    Run a updb
-
-    :param site: Site to run command on
-    :return:
-    """
-    log.info('fabric_tasks | updb | Site - %s', site['sid'])
-    code_directory_sid = '{0}/{1}/{1}'.format(SITES_CODE_ROOT, site['sid'])
-    with cd(code_directory_sid):
-        run('sudo -u {0} drush updb -y'.format(WEBSERVER_USER))
-
-
-@roles('webserver_single')
-def registry_rebuild(site):
-    """
-    Run a drush rr and drush cc drush.
-    Drush command cache clear is a workaround, see #306.
-
-    :param site: Site to run command on
-    :return:
-    """
-    log.info('fabric_tasks | Drush registry rebuild and cache clear | Site - %s', site['sid'])
-    code_directory_sid = '{0}/{1}/{1}'.format(SITES_CODE_ROOT, site['sid'])
-    with cd(code_directory_sid):
-        run('sudo -u {0} drush rr; sudo -u {0} drush cc drush;'.format(WEBSERVER_USER))
-
-
 @roles('webservers')
 def clear_php_cache():
-    run('wget -q -O - http://localhost/sysadmintools/opcache/reset.php;')
-    return True
-
-
-@roles('webserver_single')
-def cache_clear(sid):
-    code_directory_current = '{0}/{1}/current'.format(SITES_CODE_ROOT, sid)
-    with cd(code_directory_current):
-        run('sudo -u {0} drush cc all'.format(WEBSERVER_USER))
-
-
-def drush_cache_clear(sid):
-    code_directory_current = '{0}/{1}/current'.format(SITES_CODE_ROOT, sid)
-    with cd(code_directory_current):
-        run('sudo -u {0} drush cc all'.format(WEBSERVER_USER))
-
-
-@roles('webservers')
-def rewrite_symlinks(site):
-    log.info('fabric_tasks | Rewrite symlinks | Site - %s', site['sid'])
-    code_directory_current = '{0}/{1}/current'.format(SITES_CODE_ROOT, site['sid'])
-    web_directory = '{0}/{1}/{2}'.format(SITES_WEB_ROOT, site['type'], site['sid'])
-    if site['pool'] != 'poolb-homepage':
-        update_symlink(code_directory_current, web_directory)
-    if site['status'] == 'launched' and site['pool'] != 'poolb-homepage':
-        path_symlink = '{0}/{1}/{2}'.format(SITES_WEB_ROOT, site['type'], site['path'])
-        update_symlink(web_directory, path_symlink)
-    if site['status'] == 'launched' and site['pool'] == 'poolb-homepage':
-        web_directory = '{0}/{1}'.format(SITES_WEB_ROOT, 'homepage')
-        update_symlink(code_directory_current, web_directory)
+    try:
+        run('curl -ks https://127.0.0.1/opcache/reset.php;')
+    except FabricException as error:
+        log.error('Clear PHP Cache | Error - %s', error)
+        return error
 
 
 @roles('webservers')
@@ -495,20 +395,114 @@ def update_homepage_extra_files():
     """
     send_from_robots = '{0}/files/homepage_robots'.format(ATLAS_LOCATION)
     send_from_htaccess = '{0}/files/homepage_htaccess'.format(ATLAS_LOCATION)
-    send_to = '{0}/homepage'.format(SITES_WEB_ROOT)
-    run("chmod -R u+w {}".format(send_to))
-    run("rm -f {0}/robots.txt".format(send_to))
-    put(send_from_robots, "{0}/robots.txt".format(send_to))
-    run("rm -f {0}/.htaccess".format(send_to))
-    put(send_from_htaccess, "{0}/.htaccess".format(send_to))
-    run("chmod -R u+w {}".format(send_to))
+    run("rm -f {0}/robots.txt".format(SITES_WEB_ROOT))
+    put(send_from_robots, "{0}/robots.txt".format(SITES_WEB_ROOT))
+    run("chmod -R u+w {0}/robots.txt".format(SITES_WEB_ROOT))
+    run("rm -f {0}/.htaccess".format(SITES_WEB_ROOT))
+    put(send_from_htaccess, "{0}/.htaccess".format(SITES_WEB_ROOT))
+    run("chmod -R u+w {0}/.htaccess".format(SITES_WEB_ROOT))
+
+
+@roles('webservers')
+def command_run(site, command):
+    """
+    Run a command on a all webservers.
+
+    :param site: Site to run command on
+    :param command: Command to run
+    :return:
+    """
+    log.info('Command | Multiple Servers | Site - %s | Command - %s', site['sid'], command)
+    web_directory = '{0}/{1}'.format(SITES_WEB_ROOT, site['sid'])
+    with cd(web_directory):
+        run('{0}'.format(command))
+
+
+# We use a dynamic host list to round-robin, so you need to pass a host list when calling it.
+def command_run_single(site, command, warn_only=False):
+    """
+    Run a command on a single server
+
+    :param site: Site to run command on
+    :param command: Command to run
+    :return:
+    """
+    log.info('Command | Single Server | Site - %s | Command - %s', site['sid'], command)
+    web_directory = '{0}/{1}'.format(SITES_WEB_ROOT, site['sid'])
+    with settings(warn_only=warn_only):
+        with cd(web_directory):
+            # If we are running a drush command, we run it as the webserver user.
+            if re.search('^drush', command):
+                command_result = run("sudo -u {0} {1}".format(WEBSERVER_USER, command), pty=False)
+            else:
+                command_result = run("{0}".format(command), pty=False)
+                # Return the failure if there is one.
+            if command_result.failed:
+                return command_result
+
+
+# We use a dynamic host list to round-robin, so you need to pass a host list when calling it.
+def update_database(site):
+    """
+    Run a updb
+
+    :param site: Site to run command on
+    :return:
+    """
+    log.info('fabric_tasks | updb | Site - %s', site['sid'])
+    code_directory_sid = '{0}/{1}/{1}'.format(SITES_CODE_ROOT, site['sid'])
+    with cd(code_directory_sid):
+        run('sudo -u {0} drush updb -y'.format(WEBSERVER_USER))
+
+
+# We use a dynamic host list to round-robin, so you need to pass a host list when calling it.
+def registry_rebuild(site):
+    """
+    Run a drush rr and drush cc drush.
+    Drush command cache clear is a workaround, see #306.
+
+    :param site: Site to run command on
+    :return:
+    """
+    log.info('fabric_tasks | Drush registry rebuild and cache clear | Site - %s', site['sid'])
+    code_directory_sid = '{0}/{1}/{1}'.format(SITES_CODE_ROOT, site['sid'])
+    with cd(code_directory_sid):
+        run('sudo -u {0} drush rr; sudo -u {0} drush cc drush;'.format(WEBSERVER_USER))
+
+
+# We use a dynamic host list to round-robin, so you need to pass a host list when calling it or call
+# it from a parent fabric task that has a role.
+def drush_cache_clear(sid):
+    code_directory_current = '{0}/{1}/current'.format(SITES_CODE_ROOT, sid)
+    with cd(code_directory_current):
+        run('sudo -u {0} drush cc all'.format(WEBSERVER_USER))
+
+
+# We use a dynamic host list to round-robin, so you need to pass a host list when calling it.
+def site_install(site):
+    code_directory = '{0}/{1}'.format(SITES_CODE_ROOT, site['sid'])
+    code_directory_current = '{0}/current'.format(code_directory)
+    profile = utilities.get_single_eve('code', site['code']['profile'])
+    profile_name = profile['meta']['name']
+
+    try:
+        with cd(code_directory_current):
+            run('sudo -u {0} drush site-install -y {1}'.format(WEBSERVER_USER, profile_name))
+            run('sudo -u {0} drush rr; sudo -u {0} drush cc drush'.format(WEBSERVER_USER))
+    except FabricException as error:
+        log.error('Site | Install | Instance install failed | Error - %s', error)
+        return error
 
 
 def create_nfs_files_dir(nfs_dir, site_sid):
-    nfs_files_dir = '{0}/sitefiles/{1}/files'.format(nfs_dir, site_sid)
-    nfs_tmp_dir = '{0}/sitefiles/{1}/tmp'.format(nfs_dir, site_sid)
+    nfs_files_dir = '{0}/{1}/files'.format(nfs_dir, site_sid)
+    nfs_tmp_dir = '{0}/{1}/tmp'.format(nfs_dir, site_sid)
     create_directory_structure(nfs_files_dir)
     create_directory_structure(nfs_tmp_dir)
+    run('chown {0}:{1} {2}'.format(SSH_USER, WEBSERVER_USER_GROUP, nfs_files_dir))
+    run('chown {0}:{1} {2}'.format(SSH_USER, WEBSERVER_USER_GROUP, nfs_tmp_dir))
+    run('chmod 775 {0}'.format(nfs_files_dir))
+    run('chmod 775 {0}'.format(nfs_tmp_dir))
 
 
 def create_directory_structure(folder):
@@ -593,11 +587,11 @@ def create_settings_files(site):
                     mode='0644')
 
     settings_variables = {
-        'profile': profile_name,
-        'sid': sid,
-        'reverse_proxies': env.roledefs['varnish_servers'],
+        'profile':profile_name,
+        'sid':sid,
+        'reverse_proxies':env.roledefs['varnish_servers'],
         'varnish_control': VARNISH_CONTROL_TERMINALS[ENVIRONMENT],
-        'memcache_servers': env.roledefs['memcache_servers'],
+        'varnish_control_key': VARNISH_CONTROL_KEY,
         'environment': ENVIRONMENT
     }
 
@@ -611,12 +605,13 @@ def create_settings_files(site):
                     backup=False,
                     mode='0644')
 
+    tmp_files_dir = '/tmp/{0}'.format(sid)
+
     local_post_settings_variables = {
         'sid': sid,
         'pw': database_password,
         'page_cache_maximum_age': page_cache_maximum_age,
-        'database_servers': env.roledefs['database_servers'],
-        'memcache_servers':  env.roledefs['memcache_servers'],
+        'database_servers':  env.roledefs['database_servers'],
         'environment':  ENVIRONMENT
     }
 
@@ -630,13 +625,6 @@ def create_settings_files(site):
                     template_dir=template_dir,
                     backup=False,
                     mode='0644')
-
-
-@roles('webserver_single')
-def install_site(profile_name, code_directory_current):
-    with cd(code_directory_current):
-        run('sudo -u {0} drush site-install -y {1}'.format(WEBSERVER_USER, profile_name))
-        run('sudo -u {0} drush rr; sudo -u {0} drush cc drush'.format(WEBSERVER_USER))
 
 
 def clone_repo(git_url, checkout_item, destination):
@@ -672,7 +660,6 @@ def checkout_repo(checkout_item, destination):
         run('git checkout {0}'.format(checkout_item))
         run('git clean -f -f -d')
 
-
 def replace_files_directory(source, destination):
     if exists(destination):
         run('rm -rf {0}'.format(destination))
@@ -680,6 +667,8 @@ def replace_files_directory(source, destination):
 
 
 def update_symlink(source, destination):
+    log.info('fabric_tasks | Update Symlink | Source - %s | Destination - %s',
+             source, destination)
     if exists(destination):
         run('rm {0}'.format(destination))
     run('ln -s {0} {1}'.format(source, destination))
@@ -693,11 +682,10 @@ def launch_site(site):
     code_directory = '{0}/{1}'.format(SITES_CODE_ROOT, site['sid'])
     code_directory_current = '{0}/current'.format(code_directory)
 
-    if site['pool'] in ['poolb-express', 'poolb-homepage'] and site['type'] == 'express':
+    if site['pool'] in ['poolb-express', 'poolb-homepage']:
         if site['pool'] == 'poolb-express':
-            web_directory = '{0}/{1}'.format(SITES_WEB_ROOT, site['type'])
-            web_directory_path = '{0}/{1}'.format(web_directory, site['path'])
-            with cd(web_directory):
+            web_directory_path = '{0}/{1}'.format(SITES_WEB_ROOT, site['path'])
+            with cd(SITES_WEB_ROOT):
                 # If the path is nested like 'lab/atlas', make the 'lab' directory
                 if "/" in site['path']:
                     lead_path = "/".join(site['path'].split("/")[:-1])
@@ -705,14 +693,17 @@ def launch_site(site):
                 # Create a new symlink using site's updated path
                 if not exists(web_directory_path):
                     update_symlink(code_directory_current, site['path'])
-            # Assign it to an update group.
             update_group = randint(0, 10)
-        if site['pool'] == 'poolb-homepage':
-            web_directory = '{0}/{1}'.format(SITES_WEB_ROOT, 'homepage')
+
+        elif site['pool'] == 'poolb-homepage':
             with cd(SITES_WEB_ROOT):
-                update_symlink(code_directory_current, web_directory)
-            # Assign site to update group 12.
+                # Link in homepage
+                for link in DRUPAL_CORE_PATHS:
+                    source_path = "{0}/{1}".format(code_directory_current, link)
+                    target_path = "{0}/{1}".format(SITES_WEB_ROOT, link)
+                    update_symlink(source_path, target_path)
             update_group = 12
+
         payload = {'status': 'launched', 'update_group': update_group}
         utilities.patch_eve('sites', site['_id'], payload)
 
@@ -721,44 +712,327 @@ def update_f5():
     """
     Create a local file that defines the Legacy routing.
     """
-    if LOAD_BALANCER:
-        load_balancer_config_dir = "{0}/files".format(ATLAS_LOCATION)
-        sites = utilities.get_eve('sites', 'max_results=3000')
-        # Write data to file
-        file_name = "{0}/{1}".format(load_balancer_config_dir, LOAD_BALANCER_CONFIG_FILES[ENVIRONMENT])
-        if not os.path.isfile(file_name):
-            log.debug('fabric_tasks | update f5 | file does not exist')
-            file(file_name, 'w').close()
-        with open(file_name, "w") as ofile:
-            for site in sites['_items']:
-                if 'path' in site:
-                    # If a site is down or scheduled for deletion, skip to the next
-                    # site.
-                    if 'status' in site and (site['status'] == 'down' or site['status'] == 'delete'):
-                        continue
-                    # In case a path was saved with a leading slash
-                    instance_path = site["path"] if site["path"][0] == '/' else '/' + site["path"]
-                    # Ignore 'p1' paths but let the /p1 pattern through
-                    if not instance_path.startswith("/p1") or len(instance_path) == 3:
-                        ofile.write('"{0}" := "{1}",\n'.format(instance_path, site['pool']))
+    load_balancer_config_dir = '{0}/files'.format(ATLAS_LOCATION)
+    sites = utilities.get_eve('sites', 'where={"type":"legacy"}&max_results=3000')
+    # Write data to file
+    file_name = "{0}/{1}".format(load_balancer_config_dir, LOAD_BALANCER_CONFIG_FILES[ENVIRONMENT])
+    if not os.path.isfile(file_name):
+        file(file_name, 'w').close()
+    with open(file_name, "w") as ofile:
+        for site in sites['_items']:
+            if 'path' in site:
+                # In case a path was saved with a leading slash
+                path = site["path"] if site["path"][0] == '/' else '/' + site["path"]
+                ofile.write('"{0}" := "legacy",\n'.format(path))
 
-        execute(exportf5,
-                file_name=LOAD_BALANCER_CONFIG_FILES[ENVIRONMENT],
-                load_balancer_config_dir=load_balancer_config_dir)
+    execute(exportf5, load_balancer_config_dir=load_balancer_config_dir)
 
 
-@roles('load_balancers')
-def exportf5(file_name, load_balancer_config_dir):
+@roles('load_balancer')
+def exportf5(load_balancer_config_dir):
     """
-    Backup configuration file on f5 server, replace the active file, and reload
-    the configuration.
-
+    Replace the active file, and reload/sync the configuration.
     """
     if LOAD_BALANCER:
         # Copy the new configuration file to the server.
-        put("{0}/{1}".format(load_balancer_config_dir, file_name), "/tmp")
+        put("{0}/{1}".format(load_balancer_config_dir,
+                             LOAD_BALANCER_CONFIG_FILES[ENVIRONMENT]), "/tmp")
         # Load the new configuration.
-        run("tmsh modify sys file data-group {0} source-path file:/tmp/{0}".format(file_name))
+        run("tmsh modify sys file data-group {0} source-path file:/tmp/{0}".format(
+            LOAD_BALANCER_CONFIG_FILES[ENVIRONMENT]))
         run("tmsh save sys config")
         run("tmsh run cm config-sync to-group {0}".format(LOAD_BALANCER_CONFIG_GROUP[ENVIRONMENT]))
         disconnect_all()
+
+
+def backup_create(site, backup_type):
+    """
+    Backup the database and files for an site.
+    """
+    log.debug('Backup | Create | %s', site)
+    log.info('Backup | Create | %s', site['_id'])
+    start_time = time()
+    # Setup all the variables we will need.
+    # Date and time strings.   
+    date = datetime.now()
+    date_string = date.strftime("%Y-%m-%d")
+    date_time_string = date.strftime("%Y-%m-%d-%H-%M-%S")
+    datetime_string = date.strftime("%Y-%m-%d %H:%M:%S GMT")
+    
+    # Instance paths
+    web_directory = '{0}/{1}'.format(SITES_WEB_ROOT, site['sid'])
+    database_result_file = '{0}_{1}.sql'.format(site['sid'], date_time_string)
+    database_result_file_path = '{0}/{1}'.format(BACKUP_TMP_PATH, database_result_file)
+    nfs_files_dir = '{0}/{1}/files'.format(NFS_MOUNT_LOCATION[ENVIRONMENT], site['sid'])
+    files_result_file = '{0}_{1}.tar.gz'.format(site['sid'], date_time_string)
+    files_result_file_path = '{0}/{1}'.format(BACKUP_TMP_PATH, files_result_file)
+
+    # Start the actual process.
+    create_directory_structure(BACKUP_TMP_PATH)
+    with cd(web_directory):
+        run('drush sql-dump --skip-tables-list=cache,cache_* --result-file={0}'.format(database_result_file_path))
+        run('tar --exclude "{0}/imagecache" --exclude "{0}/css" --exclude "{0}/js" --exclude "{0}/backup_migrate" --exclude "{0}/styles" -czf {1} {0}'.format(nfs_files_dir, files_result_file_path))
+
+    # Take files to Atlas server so that we can use python to POST them.
+    get(database_result_file_path, local_path=database_result_file_path)
+    get(files_result_file_path, local_path=files_result_file_path)
+
+    # Remove files from webserver after the are copied to the Atlas server
+    run('rm {0}'.format(database_result_file_path))
+    run('rm {0}'.format(files_result_file_path))
+
+    payload = {
+        'site': site['_id'],
+        'site_version': site['_version'],
+        'backup_date': datetime_string,
+        'backup_type': backup_type
+    }
+    request_url = '{0}/backup'.format(API_URLS[ENVIRONMENT])
+
+    log.debug('Backup | Create | Ready to send to Atlas | Payload - %s', payload)
+    r = requests.post(
+        request_url,
+        data=payload,
+        files={
+            'database': (database_result_file, open(database_result_file_path, 'rb'), 'application/sql'),
+            'files': (files_result_file, open(files_result_file_path, 'rb'), 'application/gzip')
+        },
+        auth=(SERVICE_ACCOUNT_USERNAME, SERVICE_ACCOUNT_PASSWORD),
+        verify=SSL_VERIFICATION,
+    )
+
+    if r.ok:
+        log.debug('Backup | Create | POST - OK | %s', r.json())
+        text = 'Success'
+        slack_color = 'good'
+        slack_url = '{0}/backup/{1}'.format(API_URLS[ENVIRONMENT], r.json()['_id'])
+
+    else:
+        log.error('Backup | Create | POST - Error | %s', r.text())
+        text = 'Error'
+        slack_color = 'danger'
+        slack_url = '{0}/{1}'.format(BASE_URLS[ENVIRONMENT], site['path'])
+
+
+    # Remove tmp files from atlas server
+    local('rm {0}'.format(database_result_file_path))
+    local('rm {0}'.format(files_result_file_path))
+
+    backup_time = time() - start_time
+    log.info('Atlas operational statistic | Backup Create | %s', backup_time)
+
+    # Send notification to Slack
+
+    title = 'Site Backup'
+    slack_link = '<' + slack_url + '|' + slack_url + '>'
+    command = 'Backup - Create'
+
+    slack_channel = 'general'
+
+    slack_fallback = slack_url + ' - ' + ENVIRONMENT + ' - ' + command
+
+    slack_payload = {
+        # Channel will be overridden on local environments.
+        "channel": slack_channel,
+        "text": text,
+        "username": 'Atlas',
+        "attachments": [
+            {
+                "fallback": slack_fallback,
+                "color": slack_color,
+                "title": title,
+                "fields": [
+                    {
+                        "title": "Link",
+                        "value": slack_link,
+                        "short": True
+                    },
+                    {
+                        "title": "Environment",
+                        "value": ENVIRONMENT,
+                        "short": True
+                    },
+                    {
+                        "title": "Command",
+                        "value": command,
+                        "short": True
+                    },
+                    {
+                        "title": "Time",
+                        "value": backup_time,
+                        "short": True
+                    }
+                ],
+            }
+        ],
+    }
+    if not r.ok:
+        slack_payload['attachments'].append(
+            {
+                "fallback": 'Error message',
+                # A lighter red.
+                "color": '#ee9999',
+                "fields": [
+                    {
+                        "title": "Error message",
+                        "value": r.text,
+                        "short": False
+                    }
+                ]
+            }
+        )
+    utilities.post_to_slack_payload(slack_payload)
+
+
+def backup_restore(backup_record, original_instance, package_list):
+    """
+    Restore database and files to a new instance.
+    """
+    log.info('Instance | Restore Backup | %s | %s', backup_record, original_instance)
+    start_time = time()
+    # Get the backups files. Don't include a slash in between items since the
+    # backup location has a root slash.
+    database_url = '{0}{1}'.format(API_URLS[ENVIRONMENT], backup_record['database']['file'])
+    files_url = '{0}{1}'.format(API_URLS[ENVIRONMENT], backup_record['files']['file'])
+    
+    # Download DB
+    database_download = download_file(database_url, 'sql')
+    file_date = datetime.strptime(backup_record['backup_date'], "%Y-%m-%d %H:%M:%S %Z")
+    pretty_filename = '{0}_{1}'.format(
+        original_instance['sid'], file_date.strftime("%Y-%m-%d-%H-%M-%S"))
+
+    pretty_database_filename = '{0}.sql'.format(pretty_filename)
+    database_download_path_clean = '{0}/{1}'.format(BACKUP_TMP_PATH, pretty_database_filename)
+    log.debug('Instance | Restore Backup | database_download | %s', database_download)
+    # Move it to clean location
+    local('mv {0} {1}'.format(database_download, database_download_path_clean))
+
+    # Download Files
+    files_download = download_file(files_url, 'tar.gz')
+    pretty_files_filename = '{0}.tar.gz'.format(pretty_filename)
+    files_download_path_clean = '{0}/{1}'.format(BACKUP_TMP_PATH, pretty_files_filename)
+    log.debug('Instance | Restore Backup | files_download | %s', files_download)
+    local('mv {0} {1}'.format(files_download, files_download_path_clean))
+
+    if not os.path.isfile(files_download_path_clean) and os.path.isfile(database_download_path_clean):
+        log.error('Instance | Restore Backup | Files were not moved to restore location')
+        exit()
+    
+    # Grab available instance and add packages if needed
+    available_instances = utilities.get_eve('sites', 'where={"status":"available"}')
+    log.debug('Instance | Restore Backup | Avaiable Instances - %s', available_instances)
+    new_instance = next(iter(available_instances['_items']), None)
+    # TODO: Don't switch if the code is the same
+    if new_instance is not None:
+        payload = {'status': 'installing'}
+        if package_list:
+            packages = {'code':{'package':package_list}}
+            payload.update(packages)
+        utilities.patch_eve('sites', new_instance['_id'], payload)
+    else:
+        exit('No available instances.')
+
+    # Wait for code and status to update.
+    attempts = 18 # Tries every 10 seconds to a max of 18 (or 3 minutes).
+    while attempts:
+        try:
+            new_instance_refresh = utilities.get_single_eve('sites', new_instance['_id'])
+            if new_instance_refresh['status'] != 'installed':
+                raise ValueError('Status has not yet updated.')
+            break
+        except ValueError, e:
+            # If the status is not updated and we have attempts left,
+            # remove an attempt and wait 10 seconds.
+            attempts -= 1
+            if attempts is not 0:
+                sleep(10)
+            else:
+                exit(str(e))
+    log.debug('Instance | Restore Backup | Instance is ready for DB and files')
+    web_directory = '{0}/{1}'.format(SITES_WEB_ROOT, new_instance['sid'])
+    nfs_dir = NFS_MOUNT_LOCATION[ENVIRONMENT]
+    nfs_files_dir = '{0}/{1}/files'.format(nfs_dir, new_instance['sid'])
+    # Move DB and files onto server
+    log.debug('Fabric env | late | %s', env)
+    put(database_download_path_clean, BACKUP_TMP_PATH)
+    put(files_download_path_clean, BACKUP_TMP_PATH)
+    local('rm {0}'.format(database_download_path_clean))
+    local('rm {0}'.format(files_download_path_clean))
+    log.debug('Instance | Restore Backup | Files moved to server')
+
+    webserver_database_path = '{0}/{1}'.format(BACKUP_TMP_PATH, pretty_database_filename)
+    webserver_files_path = '{0}/{1}'.format(BACKUP_TMP_PATH, pretty_files_filename)
+    with cd(web_directory):
+        run('drush sql-drop -y && drush sql-cli < {0}'.format(webserver_database_path))
+        log.debug('Instance | Restore Backup | DB imported')
+        run('tar -xzf {0} -C {1}'.format(webserver_files_path, nfs_files_dir))
+        log.debug('Instance | Restore Backup | Files replaced')
+        run('drush cc all')
+
+    run('rm {0}'.format(webserver_database_path))
+    run('rm {0}'.format(webserver_files_path))
+
+    restore_time = time() - start_time
+
+    # Post to slack
+    site_url = '{0}/{1}'.format(BASE_URLS[ENVIRONMENT], new_instance['path'])
+    title = 'Backup Restore'
+    site_link = '<' + site_url + '|' + site_url + '>'
+    command = 'Backup restore'
+    text = 'Success'
+    slack_color = 'good'
+    slack_channel = 'general'
+    slack_fallback = site_url + ' - ' + ENVIRONMENT + ' - ' + command
+ 
+    slack_payload = {
+        # Channel will be overridden on local environments.
+        "channel": slack_channel,
+        "text": text,
+        "username": 'Atlas',
+        "attachments": [
+            {
+                "fallback": slack_fallback,
+                "color": slack_color,
+                "title": title,
+                "fields": [
+                    {
+                        "title": "Instance",
+                        "value": site_link,
+                        "short": True
+                    },
+                    {
+                        "title": "Environment",
+                        "value": ENVIRONMENT,
+                        "short": True
+                    },
+                    {
+                        "title": "Command",
+                        "value": command,
+                        "short": True
+                    }
+                ],
+            }
+        ],
+    }
+    utilities.post_to_slack_payload(slack_payload)
+
+
+def download_file(url, file_extension):
+    """
+    Download a file from a remote URL.
+
+    :param url: string - URL to download
+    :param file_extension: string - Extension for file being downloaded
+    """
+    log.debug('Download file | Download started')
+    local_filename = url.split('/')[-1]
+    backup_location_tmp_file = '{0}/{1}'.format(BACKUP_TMP_PATH, local_filename)
+    r = requests.get(url, stream=True, verify=SSL_VERIFICATION)
+    log.debug('Download file | r - %s', type(r))
+    if r.status_code == 200:
+        with open(backup_location_tmp_file, 'wb') as f:
+            copyfileobj(r.raw, f)
+        log.debug('Download file | Download finished')
+        return backup_location_tmp_file
+    else:
+        log.error('Download file | Download failed, %s', r.text)

@@ -35,7 +35,6 @@ log = logging.getLogger('atlas.utilities')
 if ATLAS_LOCATION not in sys.path:
     sys.path.append(ATLAS_LOCATION)
 
-
 class AtlasBasicAuth(BasicAuth):
     """
     Basic Authentication
@@ -252,7 +251,7 @@ def get_eve(resource, query=None):
     return r.json()
 
 
-def get_single_eve(resource, id):
+def get_single_eve(resource, id, version=None):
     """
     Make calls to the Atlas API.
 
@@ -260,7 +259,10 @@ def get_single_eve(resource, id):
     :param id: _id string
     :return: dict of items that match the query string.
     """
-    url = "{0}/{1}/{2}".format(API_URLS[ENVIRONMENT], resource, id)
+    if version:
+        url = "{0}/{1}/{2}?version={3}".format(API_URLS[ENVIRONMENT], resource, id, version)
+    else:
+        url = "{0}/{1}/{2}".format(API_URLS[ENVIRONMENT], resource, id)
     log.debug('utilities | Get Eve Single | url - %s', url)
 
     try:
@@ -333,11 +335,11 @@ def get_current_code(name, code_type):
 
 def get_code(name, code_type=''):
     """
-    Get the current code item for a given name and code_type.
+    Get the code item(s) for a given name and code_type.
 
     :param name: string
     :param code_type: string
-    :return: _id of the item.
+    :return: response object
     """
     if code_type:
         query = 'where={{"meta.name":"{0}","meta.code_type":"{1}"}}'.format(name, code_type)
@@ -473,3 +475,27 @@ def send_email(email_message, email_subject, email_to):
         s.login(EMAIL_USERNAME, EMAIL_PASSWORD)
         s.sendmail(SEND_NOTIFICATION_FROM_EMAIL, final_email_to, msg.as_string())
         s.quit()
+
+
+# When we start the app, set the round-robin counter to 0.
+HOST_ROUND_ROBIN_COUNTER = 0
+
+def single_host():
+    """
+    Round-robin the webserver host list for tasks that are only run on a single host.
+    """
+    log.debug('Single host | Start | Counter - %s', HOST_ROUND_ROBIN_COUNTER)
+    # Need to declare that this is a global variable since we are going to modify it later.
+    global HOST_ROUND_ROBIN_COUNTER
+
+    host = SERVERDEFS[ENVIRONMENT]['webservers'][HOST_ROUND_ROBIN_COUNTER]
+
+    # Increment the counter if it is less than the total number of webservers (need to account for
+    # arrays starting at 0), otherwise reset it.
+    if HOST_ROUND_ROBIN_COUNTER < (len(SERVERDEFS[ENVIRONMENT]['webservers']) - 1 ):
+        HOST_ROUND_ROBIN_COUNTER += 1
+    else:
+        HOST_ROUND_ROBIN_COUNTER = 0
+
+    log.debug('Single host | End | Counter - %s | Host - %s', HOST_ROUND_ROBIN_COUNTER, host)
+    return host

@@ -484,6 +484,8 @@ def site_update(site, updates, original):
                 site['status'] = 'launched'
                 execute(fabric_tasks.update_settings_file, site=site)
                 execute(fabric_tasks.site_launch, site=site)
+                if site['pool'] == 'poolb-homepage':
+                    execute(fabric_tasks.update_homepage_extra_files)
                 deploy_drupal_cache_clear = True
                 deploy_php_cache_clear = True
                 if ENVIRONMENT is not 'local':
@@ -1081,7 +1083,6 @@ def backup_restore(backup_record, original_instance, package_list):
 
 
 @celery.task
-# TODO: Add support to remove backups from instances with more than 5
 def remove_old_backups():
     """
     Delete backups older than 90 days.

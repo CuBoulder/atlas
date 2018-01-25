@@ -23,7 +23,7 @@ from atlas.config import (ATLAS_LOCATION, ENVIRONMENT, SSH_USER, CODE_ROOT, SITE
                           SITES_WEB_ROOT, WEBSERVER_USER, WEBSERVER_USER_GROUP, NFS_MOUNT_FILES_DIR,
                           BACKUP_TMP_PATH, SERVICE_ACCOUNT_USERNAME, SERVICE_ACCOUNT_PASSWORD,
                           SITE_DOWN_PATH, LOAD_BALANCER, VARNISH_CONTROL_KEY, STATIC_WEB_PATH, 
-                          SSL_VERIFICATION)
+                          SSL_VERIFICATION, DRUPAL_CORE_PATHS) 
 from atlas.config_servers import (SERVERDEFS, NFS_MOUNT_LOCATION, API_URLS,
                                   VARNISH_CONTROL_TERMINALS, LOAD_BALANCER_CONFIG_FILES,
                                   LOAD_BALANCER_CONFIG_GROUP, BASE_URLS)
@@ -377,21 +377,6 @@ def clear_php_cache():
 
 
 @roles('webservers')
-def rewrite_symlinks(site):
-    log.info('fabric_tasks | Rewrite symlinks | Site - %s', site['sid'])
-    code_directory_current = '{0}/{1}/current'.format(SITES_CODE_ROOT, site['sid'])
-    web_directory = '{0}/{1}'.format(SITES_WEB_ROOT, site['sid'])
-    if site['pool'] != 'poolb-homepage':
-        update_symlink(code_directory_current, web_directory)
-    if site['status'] == 'launched' and site['pool'] != 'poolb-homepage':
-        path_symlink = '{0}/{1}'.format(SITES_WEB_ROOT, site['path'])
-        update_symlink(web_directory, path_symlink)
-    if site['status'] == 'launched' and site['pool'] == 'poolb-homepage':
-        web_directory = '{0}/{1}'.format(SITES_WEB_ROOT, 'homepage')
-        update_symlink(code_directory_current, web_directory)
-
-
-@roles('webservers')
 def update_settings_file(site):
     log.info('fabric_tasks | Update Settings File | Site - %s', site['sid'])
     try:
@@ -410,13 +395,12 @@ def update_homepage_extra_files():
     """
     send_from_robots = '{0}/files/homepage_robots'.format(ATLAS_LOCATION)
     send_from_htaccess = '{0}/files/homepage_htaccess'.format(ATLAS_LOCATION)
-    send_to = '{0}/homepage'.format(SITES_WEB_ROOT)
-    run("chmod -R u+w {}".format(send_to))
-    run("rm -f {0}/robots.txt".format(send_to))
-    put(send_from_robots, "{0}/robots.txt".format(send_to))
-    run("rm -f {0}/.htaccess".format(send_to))
-    put(send_from_htaccess, "{0}/.htaccess".format(send_to))
-    run("chmod -R u+w {}".format(send_to))
+    run("rm -f {0}/robots.txt".format(SITES_WEB_ROOT))
+    put(send_from_robots, "{0}/robots.txt".format(SITES_WEB_ROOT))
+    run("chmod -R u+w {0}/robots.txt".format(SITES_WEB_ROOT))
+    run("rm -f {0}/.htaccess".format(SITES_WEB_ROOT))
+    put(send_from_htaccess, "{0}/.htaccess".format(SITES_WEB_ROOT))
+    run("chmod -R u+w {0}/.htaccess".format(SITES_WEB_ROOT))
 
 
 @roles('webservers')
@@ -676,7 +660,6 @@ def checkout_repo(checkout_item, destination):
         run('git checkout {0}'.format(checkout_item))
         run('git clean -f -f -d')
 
-
 def replace_files_directory(source, destination):
     if exists(destination):
         run('rm -rf {0}'.format(destination))
@@ -710,11 +693,16 @@ def launch_site(site):
                 # Create a new symlink using site's updated path
                 if not exists(web_directory_path):
                     update_symlink(code_directory_current, site['path'])
-            if site['path'] == 'homepage':
-                update_group = 12
-            else:
-                 # Assign it to an update group.
-                update_group = randint(0, 10)
+            update_group = randint(0, 10)
+
+        elif site['pool'] == 'poolb-homepage':
+            with cd(SITES_WEB_ROOT):
+                # Link in homepage
+                for link in DRUPAL_CORE_PATHS:
+                    source_path = "{0}/{1}".format(code_directory_current, link)
+                    target_path = "{0}/{1}".format(SITES_WEB_ROOT, link)
+                    update_symlink(source_path, target_path)
+            update_group = 12
 
         payload = {'status': 'launched', 'update_group': update_group}
         utilities.patch_eve('sites', site['_id'], payload)

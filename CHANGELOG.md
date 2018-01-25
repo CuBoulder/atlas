@@ -4,6 +4,17 @@
 
 This release supports the new infrastructure.
 
+Resolves:
+
+- &#35;90 - Create resource for backups
+- &#35;431 - Support static assets.
+- &#35;428 - Add protected paths
+- &#35;303 - Pipe Atlas logs to Logstash
+- &#35;372 - Support new infrastructure
+- &#35;393 - Round robin commands
+- &#35;373 - Support pooling
+- &#35;370 - Switch to new homepage location
+
 ## v2.1.0
 
 This release adds granular deployment options for code assets. The following required fields (with the noted defaults) have been added to code items:

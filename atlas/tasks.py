@@ -488,8 +488,6 @@ def site_update(site, updates, original):
                     execute(fabric_tasks.update_homepage_extra_files)
                 deploy_drupal_cache_clear = True
                 deploy_php_cache_clear = True
-                if ENVIRONMENT is not 'local':
-                    execute(fabric_tasks.update_f5)
                 # Let fabric send patch since it is changing update group.
             elif updates['status'] == 'locked':
                 log.debug('Site update | ID - %s | Status changed to locked', site['_id'])

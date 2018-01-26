@@ -180,6 +180,7 @@ Resolves:
 - &#35;251 - Stuck pending instances not being removed
 - &#35;269 - Capture all bundles as typed or other
 - &#35;282 - Provision often fails, but the instance ends up 'available'. Settings files or DB creation fails. Switched to Fabric templating. Wrapped fabric commands in exception catching.
+- &#35;433 - Only update the f5 when working with legacy records
 
 ## v1.0.16
 

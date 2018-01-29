@@ -528,7 +528,7 @@ def site_update(site, updates, original):
                 log.debug('Found page_cache_maximum_age change.')
             execute(fabric_tasks.update_settings_file, site=site)
             deploy_php_cache_clear = True
-    
+
     # Only need to update the f5 if this is a legacy instance.
     if ENVIRONMENT != 'local' and site['type'] == 'legacy':
         execute(fabric_tasks.update_f5)
@@ -838,7 +838,7 @@ def cron_run(site):
     """
     log.info('Run Cron | %s  | %s', site['sid'], site)
     start_time = time.time()
-   
+
     if site['pool'] != 'poolb-homepage':
         uri = BASE_URLS[ENVIRONMENT] + '/' + site['path']
     else:
@@ -846,7 +846,7 @@ def cron_run(site):
     log.debug('Run Cron | %s  | uri - %s', site['sid'], uri)
     command = 'sudo -u {0} drush elysia-cron run --uri={1}'.format(WEBSERVER_USER, uri)
     try:
-         # Get a host to run this command on.
+        # Get a host to run this command on.
         host = utilities.single_host()
         execute(fabric_tasks.command_run_single, site=site, command=command, hosts=host)
     except CronException as error:

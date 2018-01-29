@@ -35,6 +35,7 @@ log = logging.getLogger('atlas.utilities')
 if ATLAS_LOCATION not in sys.path:
     sys.path.append(ATLAS_LOCATION)
 
+
 class AtlasBasicAuth(BasicAuth):
     """
     Basic Authentication
@@ -492,7 +493,7 @@ def single_host():
 
     # Increment the counter if it is less than the total number of webservers (need to account for
     # arrays starting at 0), otherwise reset it.
-    if HOST_ROUND_ROBIN_COUNTER < (len(SERVERDEFS[ENVIRONMENT]['webservers']) - 1 ):
+    if HOST_ROUND_ROBIN_COUNTER < (len(SERVERDEFS[ENVIRONMENT]['webservers']) - 1):
         HOST_ROUND_ROBIN_COUNTER += 1
     else:
         HOST_ROUND_ROBIN_COUNTER = 0

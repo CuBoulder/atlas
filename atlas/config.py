@@ -43,11 +43,15 @@ if TRAILING_SLASH.search(SITES_WEB_ROOT):
 if TRAILING_SLASH.search(SITES_WEB_ROOT):
     raise Exception("'sites_web_root' should not have a trailing slash.")
 
-# These are paths that we cannot route to instances. 
-PROTECTED_PATHS = ['opcache', 'static', 'includes', 'misc', 'modules', 'profiles', 'scripts', 'sites', 'themes']
+# These are paths that we cannot route to instances.
+PROTECTED_PATHS = ['opcache', 'static', 'includes', 'misc',
+                   'modules', 'profiles', 'scripts', 'sites', 'themes']
 
-# Drupal core paths to symlink. We are not including .htaccess or robots.txt since they are managed seperately.
-DRUPAL_CORE_PATHS = ['authorize.php', 'cron.php', 'includes', 'index.php', 'install.php', 'misc', 'modules', 'profiles', 'scripts', 'sites', 'themes', 'update.php', 'web.config', 'xmlrpc.php']
+# Drupal core paths to symlink. We are not including .htaccess or
+# robots.txt since they are managed seperately.
+DRUPAL_CORE_PATHS = ['authorize.php', 'cron.php', 'includes', 'index.php', 'install.php', 'misc',
+                     'modules', 'profiles', 'scripts', 'sites', 'themes', 'update.php',
+                     'web.config', 'xmlrpc.php']
 
 # This allows us to use a self signed cert for local dev.
 SSL_VERIFICATION = True

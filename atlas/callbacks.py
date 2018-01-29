@@ -24,7 +24,8 @@ def pre_post_callback(resource, request):
     :param resource: resource accessed
     :param request: flask.request object
     """
-    log.debug('POST | Resource - %s | Request - %s, | request.data - %s', resource, str(request), request.data)
+    log.debug('POST | Resource - %s | Request - %s, | request.data - %s',
+              resource, str(request), request.data)
 
 
 def pre_post_sites_callback(request):
@@ -64,6 +65,7 @@ def pre_patch_sites_callback(request, payload):
     if 'path' in json.loads(request.data) and json.loads(request.data)['path'] in PROTECTED_PATHS:
         log.error('sites | PATCH | Pre patch callback | Protected path')
         abort(409, 'Error: Cannot use this path, it is on the protected list.')
+
 
 def pre_put_sites_callback(request, payload):
     """
@@ -307,7 +309,7 @@ def on_update_sites_callback(updates, original):
                     date_json = '{{"locked":""}}'
                 elif updates['status'] == 'take_down':
                     date_json = '{{"taken_down":"{0} GMT"}}'.format(updates['_updated'])
-                
+
                 updates['dates'] = json.loads(date_json)
 
         log.debug('sites | Update | Ready for Celery | Site - %s | Updates - %s', site, updates)
@@ -350,7 +352,7 @@ def on_updated_code_callback(updates, original):
         update_sites = True
     else:
         update_sites = False
-        
+
     if update_sites:
 
         query = 'where={{"code.{0}":"{1}"}}'.format(code_type, original['_id'])

@@ -22,8 +22,8 @@ from atlas import utilities
 from atlas.config import (ATLAS_LOCATION, ENVIRONMENT, SSH_USER, CODE_ROOT, SITES_CODE_ROOT,
                           SITES_WEB_ROOT, WEBSERVER_USER, WEBSERVER_USER_GROUP, NFS_MOUNT_FILES_DIR,
                           BACKUP_TMP_PATH, SERVICE_ACCOUNT_USERNAME, SERVICE_ACCOUNT_PASSWORD,
-                          SITE_DOWN_PATH, LOAD_BALANCER, VARNISH_CONTROL_KEY, STATIC_WEB_PATH, 
-                          SSL_VERIFICATION, DRUPAL_CORE_PATHS) 
+                          SITE_DOWN_PATH, LOAD_BALANCER, VARNISH_CONTROL_KEY, STATIC_WEB_PATH,
+                          SSL_VERIFICATION, DRUPAL_CORE_PATHS)
 from atlas.config_servers import (SERVERDEFS, NFS_MOUNT_LOCATION, API_URLS,
                                   VARNISH_CONTROL_TERMINALS, LOAD_BALANCER_CONFIG_FILES,
                                   LOAD_BALANCER_CONFIG_GROUP, BASE_URLS)
@@ -75,8 +75,8 @@ def code_deploy(item):
                     item['meta']['name'])
                 update_symlink(code_folder, code_folder_current)
             if item['meta']['code_type'] == 'static':
-                static_target = '{0}/{1}-{2}'.format(STATIC_WEB_PATH,
-                                                      item['meta']['name'], item['meta']['version'])
+                static_target = '{0}/{1}-{2}'.format(
+                    STATIC_WEB_PATH, item['meta']['name'], item['meta']['version'])
                 log.debug('Code | Deploy | Static | Target - %s', static_target)
                 update_symlink(code_folder, static_target)
 
@@ -144,7 +144,7 @@ def code_remove(item):
         remove_symlink(code_folder_current)
     if item['meta']['code_type'] == 'static':
         static_target = '{0}/{1}-{2}'.format(STATIC_WEB_PATH,
-                                              item['meta']['name'], item['meta']['version'])
+            item['meta']['name'], item['meta']['version'])
         remove_symlink(static_target)
 
 
@@ -587,9 +587,9 @@ def create_settings_files(site):
                     mode='0644')
 
     settings_variables = {
-        'profile':profile_name,
-        'sid':sid,
-        'reverse_proxies':env.roledefs['varnish_servers'],
+        'profile': profile_name,
+        'sid': sid,
+        'reverse_proxies': env.roledefs['varnish_servers'],
         'varnish_control': VARNISH_CONTROL_TERMINALS[ENVIRONMENT],
         'varnish_control_key': VARNISH_CONTROL_KEY,
         'environment': ENVIRONMENT
@@ -611,8 +611,8 @@ def create_settings_files(site):
         'sid': sid,
         'pw': database_password,
         'page_cache_maximum_age': page_cache_maximum_age,
-        'database_servers':  env.roledefs['database_servers'],
-        'environment':  ENVIRONMENT
+        'database_servers': env.roledefs['database_servers'],
+        'environment': ENVIRONMENT
     }
 
     log.info('fabric_tasks | Create Settings file | Settings Post Variables - %s',
@@ -659,6 +659,7 @@ def checkout_repo(checkout_item, destination):
         run('git fetch --all')
         run('git checkout {0}'.format(checkout_item))
         run('git clean -f -f -d')
+
 
 def replace_files_directory(source, destination):
     if exists(destination):
@@ -753,12 +754,12 @@ def backup_create(site, backup_type):
     log.info('Backup | Create | %s', site['_id'])
     start_time = time()
     # Setup all the variables we will need.
-    # Date and time strings.   
+    # Date and time strings.
     date = datetime.now()
     date_string = date.strftime("%Y-%m-%d")
     date_time_string = date.strftime("%Y-%m-%d-%H-%M-%S")
     datetime_string = date.strftime("%Y-%m-%d %H:%M:%S GMT")
-    
+
     # Instance paths
     web_directory = '{0}/{1}'.format(SITES_WEB_ROOT, site['sid'])
     database_result_file = '{0}_{1}.sql'.format(site['sid'], date_time_string)
@@ -770,8 +771,10 @@ def backup_create(site, backup_type):
     # Start the actual process.
     create_directory_structure(BACKUP_TMP_PATH)
     with cd(web_directory):
-        run('drush sql-dump --skip-tables-list=cache,cache_* --result-file={0}'.format(database_result_file_path))
-        run('tar --exclude "{0}/imagecache" --exclude "{0}/css" --exclude "{0}/js" --exclude "{0}/backup_migrate" --exclude "{0}/styles" -czf {1} {0}'.format(nfs_files_dir, files_result_file_path))
+        run('drush sql-dump --skip-tables-list=cache,cache_* --result-file={0}'.format(
+            database_result_file_path))
+        run('tar --exclude "{0}/imagecache" --exclude "{0}/css" --exclude "{0}/js" --exclude "{0}/backup_migrate" --exclude "{0}/styles" -czf {1} {0}'.format(
+            nfs_files_dir, files_result_file_path))
 
     # Take files to Atlas server so that we can use python to POST them.
     get(database_result_file_path, local_path=database_result_file_path)
@@ -812,7 +815,6 @@ def backup_create(site, backup_type):
         text = 'Error'
         slack_color = 'danger'
         slack_url = '{0}/{1}'.format(BASE_URLS[ENVIRONMENT], site['path'])
-
 
     # Remove tmp files from atlas server
     local('rm {0}'.format(database_result_file_path))
@@ -894,7 +896,7 @@ def backup_restore(backup_record, original_instance, package_list):
     # backup location has a root slash.
     database_url = '{0}{1}'.format(API_URLS[ENVIRONMENT], backup_record['database']['file'])
     files_url = '{0}{1}'.format(API_URLS[ENVIRONMENT], backup_record['files']['file'])
-    
+
     # Download DB
     database_download = download_file(database_url, 'sql')
     file_date = datetime.strptime(backup_record['backup_date'], "%Y-%m-%d %H:%M:%S %Z")
@@ -917,7 +919,7 @@ def backup_restore(backup_record, original_instance, package_list):
     if not os.path.isfile(files_download_path_clean) and os.path.isfile(database_download_path_clean):
         log.error('Instance | Restore Backup | Files were not moved to restore location')
         exit()
-    
+
     # Grab available instance and add packages if needed
     available_instances = utilities.get_eve('sites', 'where={"status":"available"}')
     log.debug('Instance | Restore Backup | Avaiable Instances - %s', available_instances)
@@ -926,14 +928,14 @@ def backup_restore(backup_record, original_instance, package_list):
     if new_instance is not None:
         payload = {'status': 'installing'}
         if package_list:
-            packages = {'code':{'package':package_list}}
+            packages = {'code': {'package': package_list}}
             payload.update(packages)
         utilities.patch_eve('sites', new_instance['_id'], payload)
     else:
         exit('No available instances.')
 
     # Wait for code and status to update.
-    attempts = 18 # Tries every 10 seconds to a max of 18 (or 3 minutes).
+    attempts = 18  # Tries every 10 seconds to a max of 18 (or 3 minutes).
     while attempts:
         try:
             new_instance_refresh = utilities.get_single_eve('sites', new_instance['_id'])
@@ -983,7 +985,7 @@ def backup_restore(backup_record, original_instance, package_list):
     slack_color = 'good'
     slack_channel = 'general'
     slack_fallback = site_url + ' - ' + ENVIRONMENT + ' - ' + command
- 
+
     slack_payload = {
         # Channel will be overridden on local environments.
         "channel": slack_channel,

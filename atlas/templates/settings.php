@@ -101,7 +101,7 @@ if (isset($_SERVER['OSR_ENV'])) {
       break;
   }
 
-  if ($atlas_type = "express") {
+  if (isset($path)) {
     $base_url .= '/' . $path;
   }
 }
@@ -112,7 +112,7 @@ $conf['reverse_proxy'] = TRUE;
 $conf['reverse_proxy_addresses'] = array({% for ip in reverse_proxies -%}'{{ip}}',{% endfor %});
 // Drupal will look for IP in $_SERVER['X-Forwarded-For']
 $conf['reverse_proxy_header'] = 'X-Forwarded-For';
-// Define Varnish Server Pool and version.
+// Define Varnish information.
 $conf['varnish_control_terminal'] = '{{ varnish_control }}';
 $conf['varnish_version'] = 4;
 $conf['varnish_control_key'] = '{{ varnish_control_key }}';

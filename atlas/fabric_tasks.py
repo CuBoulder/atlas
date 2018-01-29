@@ -526,7 +526,7 @@ def create_settings_files(site):
     upload the resulting file to the webservers.
     """
     sid = site['sid']
-    if site['pool'] == 'poolb-homepage':
+    if site['type'] == 'homepage':
         site_path = ''
     elif 'path' in site:
         site_path = site['path']
@@ -568,7 +568,6 @@ def create_settings_files(site):
         'atlas_password': SERVICE_ACCOUNT_PASSWORD,
         'path': site_path,
         'status': status,
-        'pool': site['pool'],
         'atlas_statistics_id': statistics,
         'siteimprove_site': siteimprove_site,
         'siteimprove_group': siteimprove_group,
@@ -682,30 +681,29 @@ def launch_site(site):
     code_directory = '{0}/{1}'.format(SITES_CODE_ROOT, site['sid'])
     code_directory_current = '{0}/current'.format(code_directory)
 
-    if site['pool'] in ['poolb-express', 'poolb-homepage']:
-        if site['pool'] == 'poolb-express':
-            web_directory_path = '{0}/{1}'.format(SITES_WEB_ROOT, site['path'])
-            with cd(SITES_WEB_ROOT):
-                # If the path is nested like 'lab/atlas', make the 'lab' directory
-                if "/" in site['path']:
-                    lead_path = "/".join(site['path'].split("/")[:-1])
-                    create_directory_structure(lead_path)
-                # Create a new symlink using site's updated path
-                if not exists(web_directory_path):
-                    update_symlink(code_directory_current, site['path'])
-            update_group = randint(0, 10)
+    if site['type'] 'express':
+        web_directory_path = '{0}/{1}'.format(SITES_WEB_ROOT, site['path'])
+        with cd(SITES_WEB_ROOT):
+            # If the path is nested like 'lab/atlas', make the 'lab' directory
+            if "/" in site['path']:
+                lead_path = "/".join(site['path'].split("/")[:-1])
+                create_directory_structure(lead_path)
+            # Create a new symlink using site's updated path
+            if not exists(web_directory_path):
+                update_symlink(code_directory_current, site['path'])
+        update_group = randint(0, 10)
 
-        elif site['pool'] == 'poolb-homepage':
-            with cd(SITES_WEB_ROOT):
-                # Link in homepage
-                for link in DRUPAL_CORE_PATHS:
-                    source_path = "{0}/{1}".format(code_directory_current, link)
-                    target_path = "{0}/{1}".format(SITES_WEB_ROOT, link)
-                    update_symlink(source_path, target_path)
-            update_group = 12
+    elif site['type'] == 'homepage':
+        with cd(SITES_WEB_ROOT):
+            # Link in homepage
+            for link in DRUPAL_CORE_PATHS:
+                source_path = "{0}/{1}".format(code_directory_current, link)
+                target_path = "{0}/{1}".format(SITES_WEB_ROOT, link)
+                update_symlink(source_path, target_path)
+        update_group = 12
 
-        payload = {'status': 'launched', 'update_group': update_group}
-        utilities.patch_eve('sites', site['_id'], payload)
+    payload = {'status': 'launched', 'update_group': update_group}
+    utilities.patch_eve('sites', site['_id'], payload)
 
 
 def update_f5():

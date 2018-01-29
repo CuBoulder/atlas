@@ -14,6 +14,7 @@ Resolves:
 - &#35;393 - Round robin commands
 - &#35;373 - Support pooling
 - &#35;370 - Switch to new homepage location
+- &#35;434 - Remove pools and use only type
 
 ## v2.1.0
 

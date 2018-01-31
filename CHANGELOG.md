@@ -1,5 +1,13 @@
 # Change log
 
+## v2.1.1
+
+Resolves:
+
+- &#35;437 Remove commands posting to Slack
+- &#35;408 Get timestamp into atlas.log
+- &#35;438 Updating the current and label meta data for a code asset should not trigger a code-re-add process
+
 ## v2.1.0
 
 This release adds granular deployment options for code assets. The following required fields (with the noted defaults) have been added to code items:
@@ -12,7 +20,7 @@ This release adds granular deployment options for code assets. The following req
 ```
 When a code item is added to an instance, the above drush commands will be run as indicated by the code asset. If multiple items are added, the commands will be run after all code is changed.
 
-Need to 
+Need to
 
 - Add a list of users to exclude from emails in config_local.py
 - Be able to run `sudo -u [webserver_user] drush` without a password.
@@ -29,7 +37,7 @@ Resolves:
 - &#35;10 Re-add packages to sites when changing meta data of a code item.
 - &#35;338 Exclude the '_id' of the item we are updating as a query parameter
 - &#35;401 Remove test accounts from bundle adding emails
-- &#35;220 Started to review settings.php 
+- &#35;220 Started to review settings.php
 
 ## v2.0.3
 
@@ -83,7 +91,7 @@ Resolves:
 
 ## v1.0.24
 
-Need to 
+Need to
 
 - Make sure Atlas user can run `sudo -u [webserver_user] drush` without a password.
 - Update Celery queues to include a `cron_queue`.

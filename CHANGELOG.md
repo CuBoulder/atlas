@@ -6,6 +6,7 @@ Resolves:
 
 - &#35;437 Remove commands posting to Slack
 - &#35;408 Get timestamp into atlas.log
+- &#35;438 Updating the current and label meta data for a code asset should not trigger a code-re-add process
 
 ## v2.1.0
 

@@ -33,6 +33,8 @@ app = Eve(import_name='atlas', auth=utilities.AtlasBasicAuth, settings=SETTINGS_
 
 # Enable logging to 'atlas.log' file.
 LOG_HANDLER = WatchedFileHandler(LOG_LOCATION)
+LOG_HANDLER.setFormatter(logging.Formatter('%(asctime)s | %(name)s | %(levelname)s | %(message)s'))
+
 # The default log level is set to WARNING, so we have to explicitly set the logging level to Info.
 app.logger.setLevel(logging.INFO)
 if ENVIRONMENT == 'local':

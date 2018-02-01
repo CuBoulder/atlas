@@ -68,6 +68,9 @@ if (isset($_SERVER["WWWNG_ENV"]) || PHP_SAPI === "cli") {
 
   // Drupal doesn't cache if we invoke hooks during bootstrap.
   $conf['page_cache_invoke_hooks'] = FALSE;
+  
+  // Expire session cookies to avoid unnecessary varnish bypass
+  ini_set('session.cookie_lifetime', 90000);
 
   // Memcache and Varnish Backends.
   $conf['cache_backends'] = array(

@@ -1,5 +1,11 @@
 # Change log
 
+## v2.1.2
+
+Resolves:
+
+- &#35;440 added session.cookie_lifetime
+
 ## v2.1.1
 
 Resolves:

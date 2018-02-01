@@ -110,21 +110,31 @@ if (isset($_SERVER["WWWNG_ENV"]) || PHP_SAPI === "cli") {
   if (isset($_SERVER['WWWNG_ENV'])) {
     global $base_url;
 
+    /**
+     * Drupal automatically generates a unique session cookie name for each site
+     * based on its full domain name.Since we want different cookies per
+     * environment, we need to specify that here. Make sure to always start the
+     * $cookie_domain with a leading dot, as per RFC 2109.
+     */
     switch($_SERVER['WWWNG_ENV']) {
       case 'cust_dev':
         $base_url .= 'https://www-dev.colorado.edu';
+        $cookie_domain = '.www-dev.colorado.edu';
         break;
 
       case 'cust_test':
         $base_url .= 'https://www-test.colorado.edu';
+        $cookie_domain = '.www-test.colorado.edu';
         break;
 
       case 'cust_prod':
         $base_url .= 'https://www.colorado.edu';
+        $cookie_domain = '.www.colorado.edu';
         break;
 
       case 'express_local':
         $base_url .= 'https://express.local';
+        // We don't need a cookie_domain for locals.
         break;
 
     }

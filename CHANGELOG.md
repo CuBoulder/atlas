@@ -1,5 +1,11 @@
 # Change log
 
+## v2.1.2
+
+Resolves:
+
+- &#35;441 Add a cookie domain and path to settings file
+
 ## v2.1.1
 
 Resolves:
@@ -7,6 +13,7 @@ Resolves:
 - &#35;437 Remove commands posting to Slack
 - &#35;408 Get timestamp into atlas.log
 - &#35;438 Updating the current and label meta data for a code asset should not trigger a code-re-add process
+- &#35;441 Add a cookie domain to settings file
 
 ## v2.1.0
 

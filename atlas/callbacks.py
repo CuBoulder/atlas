@@ -322,7 +322,7 @@ def on_updated_code_callback(updates, original):
             update_sites = False
     elif updates.has_key('commit_hash') or updates.has_key('git_url'):
         update_sites = True
-        log.debug('code | on updated | Found git data changes | %s %s', updates['commit_hash'], updates['git_url'])
+        log.debug('code | on updated | Found git data changes')
     else:
         log.debug('code | on updated | Found no changes')
         update_sites = False

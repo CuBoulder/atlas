@@ -1,5 +1,11 @@
 # Change log
 
+## v2.1.2
+
+Resolves:
+
+- &#35;441 Add a cookie domain and path to settings file
+
 ## v2.1.1
 
 Resolves:

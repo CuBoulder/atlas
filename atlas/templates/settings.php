@@ -112,9 +112,11 @@ if (isset($_SERVER["WWWNG_ENV"]) || PHP_SAPI === "cli") {
 
     /**
      * Drupal automatically generates a unique session cookie name for each site
-     * based on its full domain name.Since we want different cookies per
+     * based on its full domain name. Since we want different cookies per
      * environment, we need to specify that here. Make sure to always start the
-     * $cookie_domain with a leading dot, as per RFC 2109.
+     * $cookie_domain with a leading dot, as per RFC 2109. We also set the
+     * cookie path so that we don't bypass Varnish for instances we are not
+     * logged into.
      */
     switch($_SERVER['WWWNG_ENV']) {
       case 'cust_dev':
@@ -141,6 +143,8 @@ if (isset($_SERVER["WWWNG_ENV"]) || PHP_SAPI === "cli") {
     if ($pool != "poolb-homepage") {
       $base_url .= '/' . $path;
     }
+    ini_set('session.cookie_lifetime', 93600);
+    ini_set('session.cookie_path', '/' . $path);
   }
 }
 

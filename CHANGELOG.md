@@ -4,7 +4,7 @@
 
 Resolves:
 
-- &#35;441 Add a cookie domain and path to settings file
+- &#35;441 Add a cookie domain to settings file
 
 ## v2.1.1
 

@@ -143,7 +143,8 @@ if (isset($_SERVER["WWWNG_ENV"]) || PHP_SAPI === "cli") {
     if ($pool != "poolb-homepage") {
       $base_url .= '/' . $path;
     }
-    ini_set('session.cookie_path', $path);
+    ini_set('session.cookie_lifetime', 93600);
+    ini_set('session.cookie_path', '/' . $path);
   }
 }
 

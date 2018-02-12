@@ -529,10 +529,6 @@ def site_update(site, updates, original):
             execute(fabric_tasks.update_settings_file, site=site)
             deploy_php_cache_clear = True
 
-    # Only need to update the f5 if this is a legacy instance.
-    if ENVIRONMENT != 'local' and site['type'] == 'legacy':
-        execute(fabric_tasks.update_f5)
-
     # Get a host to run single server commands on.
     host = utilities.single_host()
     # We want to run these commands in this specific order.
@@ -615,9 +611,6 @@ def site_remove(site):
             pass
 
         execute(fabric_tasks.site_remove, site=site)
-
-    if ENVIRONMENT != 'local' and site['type'] == 'legacy':
-        execute(fabric_tasks.update_f5)
 
     slack_text = 'Site Remove - Success - {0}/{1}'.format(BASE_URLS[ENVIRONMENT], site['path'])
     slack_color = 'good'
@@ -804,8 +797,8 @@ def cron(status=None):
     # Build query.
     site_query_string = ['max_results=2000']
     log.debug('Prepare Cron | Found argument')
-    # Start by eliminating f5-only and legacy items.
-    site_query_string.append('&where={"f5only":false,"type":"express",')
+    # Start by eliminating legacy items.
+    site_query_string.append('&where={"type":"express",')
     if status:
         log.debug('Prepare Cron | Found status')
         site_query_string.append('"status":"{0}",'.format(status))
@@ -942,7 +935,7 @@ def remove_orphan_statistics():
     """
     Get a list of statistics and key them against a list of active instances.
     """
-    site_query = 'where={"type":"express","f5only":false}&max_results=2000'
+    site_query = 'where={"type":"express"}&max_results=2000'
     sites = utilities.get_eve('sites', site_query)
     statistics_query = '&max_results=2000'
     statistics = utilities.get_eve('statistics', statistics_query)
@@ -1054,12 +1047,6 @@ def verify_statistics():
         }
 
         utilities.post_to_slack_payload(slack_payload)
-
-
-@celery.task
-def update_f5():
-    if ENVIRONMENT != 'local':
-        execute(fabric_tasks.update_f5)
 
 
 @celery.task

@@ -952,52 +952,55 @@ def verify_statistics():
 
         log.debug('statistic_id_list | %s', statistic_id_list)
 
-        site_query = 'where={{"_id":{{"$in":{0}}}}}&max_results=2000'.format(json.dumps(statistic_id_list))
+        site_query = 'where={{"statistics":{{"$in":{0}}}}}&max_results=2000'.format(json.dumps(statistic_id_list))
         log.debug('Site query | %s', site_query)
         sites = utilities.get_eve('sites', site_query)
         sites_id_list = []
         if not sites['_meta']['total'] == 0:
+            log.info('More than 0 sites')
             for site in sites['_items']:
-                sites_id_list.append(site['_id'])
+                sites_id_list.append(site['sid'])
 
-        slack_fallback = '{0} statistics items have not been updated in 36 hours.'.format(
-            len(statistic_id_list))
-        slack_link = '{0}/statistics?{1}'.format(BASE_URLS[ENVIRONMENT], site_query)
-        slack_payload = {
-            "text": 'Outdated Statistics',
-            "username": 'Atlas',
-            "attachments": [
-                {
-                    "fallback": slack_fallback,
-                    "color": 'danger',
-                    "title": 'Some statistics items have not been updated in 36 hours.',
-                    "fields": [
-                        {
-                            "title": "Count",
-                            "value": len(statistic_id_list),
-                            "short": True
-                        },
-                        {
-                            "title": "Environment",
-                            "value": ENVIRONMENT,
-                            "short": True
-                        },
-                    ],
-                },
-                {
-                    "fallback": 'Site list',
-                    # A lighter red.
-                    "color": '#ee9999',
-                    "fields": [
-                        {
-                            "title": "Site list",
-                            "value": json.dumps(sites_id_list),
-                            "short": False,
-                            "title_link": slack_link
-                        }
-                    ]
-                }
-            ],
-        }
+            log.info('sites_id_list | %s', str(sites_id_list))
 
-        utilities.post_to_slack_payload(slack_payload)
+            slack_fallback = '{0} statistics items have not been updated in 36 hours.'.format(
+                len(statistic_id_list))
+            slack_link = '{0}/statistics?{1}'.format(BASE_URLS[ENVIRONMENT], site_query)
+            slack_payload = {
+                "text": 'Outdated Statistics',
+                "username": 'Atlas',
+                "attachments": [
+                    {
+                        "fallback": slack_fallback,
+                        "color": 'danger',
+                        "title": 'Some statistics items have not been updated in 36 hours.',
+                        "fields": [
+                            {
+                                "title": "Count",
+                                "value": len(statistic_id_list),
+                                "short": True
+                            },
+                            {
+                                "title": "Environment",
+                                "value": ENVIRONMENT,
+                                "short": True
+                            },
+                        ],
+                    },
+                    {
+                        "fallback": 'Site list',
+                        # A lighter red.
+                        "color": '#ee9999',
+                        "fields": [
+                            {
+                                "title": "Site list",
+                                "value": json.dumps(sites_id_list),
+                                "short": False,
+                                "title_link": slack_link
+                            }
+                        ]
+                    }
+                ],
+            }
+
+            utilities.post_to_slack_payload(slack_payload)

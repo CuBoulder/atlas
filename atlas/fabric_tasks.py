@@ -526,7 +526,7 @@ def create_settings_files(site):
     upload the resulting file to the webservers.
     """
     sid = site['sid']
-    if site['pool'] == 'poolb-homepage':
+    if site['type'] == 'homepage':
         site_path = ''
     elif 'path' in site:
         site_path = site['path']
@@ -559,7 +559,7 @@ def create_settings_files(site):
     template_dir = '{0}/templates'.format(ATLAS_LOCATION)
     destination = "{0}/{1}/{1}/sites/default".format(SITES_CODE_ROOT, site['sid'])
 
-    local_pre_settings_variables = {
+    settings_variables = {
         'profile': profile_name,
         'sid': sid,
         'atlas_id': atlas_id,
@@ -572,55 +572,21 @@ def create_settings_files(site):
         'atlas_statistics_id': statistics,
         'siteimprove_site': siteimprove_site,
         'siteimprove_group': siteimprove_group,
-        'google_cse_csx': google_cse_csx
-    }
-
-    log.info('fabric_tasks | Create Settings file | Settings Pre Variables - %s',
-             local_pre_settings_variables)
-
-    upload_template('settings.local_pre.php',
-                    destination=destination,
-                    context=local_pre_settings_variables,
-                    use_jinja=True,
-                    template_dir=template_dir,
-                    backup=False,
-                    mode='0644')
-
-    settings_variables = {
-        'profile': profile_name,
-        'sid': sid,
+        'google_cse_csx': google_cse_csx,
         'reverse_proxies': env.roledefs['varnish_servers'],
         'varnish_control': VARNISH_CONTROL_TERMINALS[ENVIRONMENT],
         'varnish_control_key': VARNISH_CONTROL_KEY,
-        'environment': ENVIRONMENT
-    }
-
-    log.info('fabric_tasks | Create Settings file | Settings Variables - %s', settings_variables)
-
-    upload_template('settings.php',
-                    destination=destination,
-                    context=settings_variables,
-                    use_jinja=True,
-                    template_dir=template_dir,
-                    backup=False,
-                    mode='0644')
-
-    tmp_files_dir = '/tmp/{0}'.format(sid)
-
-    local_post_settings_variables = {
-        'sid': sid,
         'pw': database_password,
         'page_cache_maximum_age': page_cache_maximum_age,
         'database_servers': env.roledefs['database_servers'],
         'environment': ENVIRONMENT
     }
 
-    log.info('fabric_tasks | Create Settings file | Settings Post Variables - %s',
-             local_post_settings_variables)
+    log.info('fabric_tasks | Create Settings file', )
 
-    upload_template('settings.local_post.php',
+    upload_template('settings.php',
                     destination=destination,
-                    context=local_post_settings_variables,
+                    context=settings_variables,
                     use_jinja=True,
                     template_dir=template_dir,
                     backup=False,

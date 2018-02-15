@@ -10,10 +10,29 @@
 /**
  * Include a pre local settings file if it exists.
  */
-$local_pre_settings = dirname(__FILE__) . '/settings.local_pre.php';
-if (file_exists($local_pre_settings)) {
-  include $local_pre_settings;
-}
+global $conf;
+$conf["install_profile"] = "{{profile}}";
+$conf["cu_sid"] = "{{sid}}";
+
+$conf["atlas_id"] = "{{atlas_id}}";
+$conf["atlas_url"] = "{{atlas_url}}";
+$conf["atlas_username"] = "{{atlas_username}}";
+$conf["atlas_password"] = "{{atlas_password}}";
+$conf["atlas_status"] = "{{status}}";
+$conf["atlas_statistics_id"] = "{{atlas_statistics_id}}";
+{% if google_cse_csx %}
+$conf["google_cse_cx"] = "{{google_cse_csx}}";
+{% else %}
+$conf["google_cse_cx"] = NULL;
+{% endif %}
+$path = "{{path}}";
+
+{% if status in ['launched', 'launching'] %}
+$launched = TRUE;
+$conf["cu_path"] = "{{path}}";
+{% else %}
+$launched = FALSE;
+{% endif %}
 
 if (isset($launched) && $launched && isset($conf["cu_path"])) {
   if (isset($_SERVER['OSR_ENV'])) {
@@ -101,9 +120,7 @@ if (isset($_SERVER['OSR_ENV'])) {
       break;
   }
 
-  if ($atlas_type = "express") {
-    $base_url .= '/' . $path;
-  }
+  $base_url .= '/' . $path;
 }
 
 {% if environment != 'local' %}
@@ -130,10 +147,62 @@ $conf['error_level'] = 2;
 
 $conf['file_temporary_path'] = '/tmp';
 
-/**
- * Include a post local settings file if it exists.
- */
-$local_post_settings = dirname(__FILE__) . '/settings.local_post.php';
-if (file_exists($local_post_settings)) {
-  include $local_post_settings;
-}
+// Min cache lifetime 0, max defaults to 300 seconds.
+$conf['cache_lifetime'] = 0;
+$conf['page_cache_maximum_age'] = {{ page_cache_maximum_age }};
+
+{% if environment != 'local' %}
+$databases['default']['default'] = array(
+  'driver' => 'mysql',
+  'database' => '{{ sid }}',
+  'username' => '{{ sid }}',
+  'password' => '{{ pw }}',
+  'host' => '{{ database_servers.master }}',
+  'port' => '{{ database_servers.port }}',
+  'prefix' => '',
+);
+{% if database_servers.slaves %}
+{% for slave in database_servers.slaves -%}
+// Define our slave database(s)
+$databases['default']['slave'][] = array(
+  'driver' => 'mysql',
+  'database' => '{{ sid }}',
+  'username' => '{{ sid }}',
+  'password' => '{{ pw }}',
+  'host' => '{{ slave }}',
+  'port' => '{{ database_servers.port }}',
+  'prefix' => '',
+);
+{% endfor %}
+{% endif %}
+{% else %}
+$databases['default']['default'] = array(
+  'driver' => 'mysql',
+  'database' => '{{ sid }}',
+  'username' => '{{ sid }}',
+  'password' => '{{ pw }}',
+  'host' => 'localhost',
+  'port' => '{{ port }}',
+  'prefix' => '',
+);
+{% endif %}
+
+{% if environment == 'local' %}
+// Allow self signed certs for python.local.
+$conf['drupal_ssl_context_options'] = array(
+  'default' => array(
+    'ssl' => array(
+      'verify_peer' => TRUE,
+      'verify_peer_name' => TRUE,
+      'allow_self_signed' => FALSE,
+    ),
+  ),
+  'python.local' => array(
+    'ssl' => array(
+      'verify_peer' => FALSE,
+      'verify_peer_name' => FALSE,
+      'allow_self_signed' => TRUE,
+    ),
+  ),
+);
+{% endif %}

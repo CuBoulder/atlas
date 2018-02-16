@@ -23,7 +23,7 @@ from atlas.config import (ATLAS_LOCATION, ENVIRONMENT, SSH_USER, CODE_ROOT, SITE
                           SITES_WEB_ROOT, WEBSERVER_USER, WEBSERVER_USER_GROUP, NFS_MOUNT_FILES_DIR,
                           BACKUP_TMP_PATH, SERVICE_ACCOUNT_USERNAME, SERVICE_ACCOUNT_PASSWORD,
                           SITE_DOWN_PATH, LOAD_BALANCER, VARNISH_CONTROL_KEY, STATIC_WEB_PATH,
-                          SSL_VERIFICATION, DRUPAL_CORE_PATHS, BACKUPS_PATH)
+                          SSL_VERIFICATION, DRUPAL_CORE_PATHS)
 from atlas.config_servers import (SERVERDEFS, NFS_MOUNT_LOCATION, API_URLS,
                                   VARNISH_CONTROL_TERMINALS, LOAD_BALANCER_CONFIG_FILES,
                                   LOAD_BALANCER_CONFIG_GROUP, BASE_URLS)
@@ -289,35 +289,6 @@ def site_launch(site):
         return result_create_settings_files
 
     launch_site(site=site)
-
-
-@roles('webserver_single')
-def site_backup(site):
-    """
-    Backup the database and files for an instance.
-    """
-    log.info('Site | Backup | Site - %s', site['_id'])
-    # Setup all the variables we will need.
-    web_directory = '{0}/{1}'.format(SITES_WEB_ROOT, site['sid'])
-    date_string = datetime.now().strftime("%Y-%m-%d")
-    date_time_string = datetime.now().strftime("%Y-%m-%d-%H:%M:%S")
-    backup_directory = '{0}/{1}/{2}'.format(BACKUPS_PATH, site['sid'], date_string)
-    database_result_file_path = '{0}/{1}_{2}.sql'.format(
-        backup_directory,
-        site['sid'],
-        date_time_string)
-    files_result_file_path = '{0}/{1}_{2}.tar.gz'.format(
-        backup_directory,
-        site['sid'],
-        date_time_string)
-    nfs_dir = NFS_MOUNT_LOCATION[ENVIRONMENT]
-    nfs_files_dir = '{0}/{1}/files'.format(nfs_dir, site['sid'])
-    # Start the actual process.
-    create_directory_structure(backup_directory)
-    with cd(web_directory):
-        run('sudo -u {0} drush sql-dump --result-file={1}'.format(WEBSERVER_USER,
-                                                                  database_result_file_path))
-        run('tar -czf {0} {1}'.format(files_result_file_path, nfs_files_dir))
 
 
 @roles('webservers')

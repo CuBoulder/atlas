@@ -344,15 +344,22 @@ def on_updated_code_callback(updates, original):
     if code_type in ['module', 'theme', 'library']:
         code_type = 'package'
 
-    if updates.has_key('meta') and (updates['meta'].has_key('name') or updates['meta'].has_key('version') or updates['meta'].has_key('code_type')):
-        update_sites = True
+    if updates.has_key('meta'):
+        if updates['meta']['name'] != original['meta']['name'] or updates['meta']['version'] != original['meta']['version'] or updates['meta']['code_type'] != original['meta']['code_type']:
+            update_sites = True
+            log.debug('code | on updated | Found meta data changes | %s', updates['meta'])
+        else:
+            log.debug('code | on updated | Found no meta changes that require an update')
+            update_sites = False
     elif updates.has_key('commit_hash') or updates.has_key('git_url'):
         update_sites = True
+        log.debug('code | on updated | Found git data changes')
     else:
+        log.debug('code | on updated | Found no changes')
         update_sites = False
 
     if update_sites:
-
+        log.debug('code | on updated | Preparing to update instances')
         query = 'where={{"code.{0}":"{1}"}}'.format(code_type, original['_id'])
         sites_get = utilities.get_eve('sites', query)
 

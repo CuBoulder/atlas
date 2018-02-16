@@ -89,8 +89,6 @@ $conf['page_cache_invoke_hooks'] = FALSE;
 $conf['cache_backends'] = array(
   'profiles/{{profile}}/modules/contrib/varnish/varnish.cache.inc',
 );
-
-$conf['cache_class_cache_page'] = 'VarnishCache';
 {% endif %}
 
 // Setup cache_form bin.
@@ -105,21 +103,35 @@ $conf['blocked_ips'] = array();
 if (isset($_SERVER['OSR_ENV'])) {
   global $base_url;
 
+  /**
+   * Drupal automatically generates a unique session cookie name for each site
+   * based on its full domain name. Since we want different cookies per
+   * environment, we need to specify that here. Make sure to always start the
+   * $cookie_domain with a leading dot, as per RFC 2109. We also set the
+   * cookie path so that we don't bypass Varnish for instances we are not
+   * logged into.
+   */
   switch($_SERVER['OSR_ENV']) {
     case 'prod':
       $base_url .= 'https://www-https.colorado.edu';
+      $cookie_domain = '.www-v-https.colorado.edu';
       break;
     case 'test':
       $base_url .= 'https://www-test-https.colorado.edu';
+      $cookie_domain = '.www-test-https.colorado.edu';
       break;
     case 'dev':
       $base_url .= 'https://www-dev-https.colorado.edu';
+      $cookie_domain = '.www-dev-https.colorado.edu';
       break;
     case 'express_local':
       $base_url .= 'https://express.local';
+      // We don't need a cookie_domain for locals.
       break;
-  }
 
+  ini_set('session.cookie_lifetime', 93600);
+  ini_set('session.cookie_path', '/' . $path);
+  }
   $base_url .= '/' . $path;
 }
 

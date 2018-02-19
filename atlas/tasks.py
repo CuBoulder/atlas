@@ -485,7 +485,7 @@ def site_update(site, updates, original):
                 site['status'] = 'launched'
                 execute(fabric_tasks.update_settings_file, site=site)
                 execute(fabric_tasks.site_launch, site=site)
-                if site['pool'] == 'poolb-homepage':
+                if site['type'] == 'homepage':
                     execute(fabric_tasks.update_homepage_extra_files)
                 deploy_drupal_cache_clear = True
                 deploy_php_cache_clear = True
@@ -795,9 +795,10 @@ def cron_run(site):
     log.info('Site - %s | %s', site['sid'], site)
     start_time = time.time()
 
-    if site['pool'] != 'poolb-homepage':
+    if site['type'] == 'express':
         uri = BASE_URLS[ENVIRONMENT] + '/' + site['path']
     else:
+        # Homepage
         uri = BASE_URLS[ENVIRONMENT]
     log.debug('Site - %s | uri - %s', site['sid'], uri)
     command = 'sudo -u {0} drush elysia-cron run --uri={1}'.format(WEBSERVER_USER, uri)

@@ -538,7 +538,6 @@ def create_settings_files(site):
         'atlas_password': SERVICE_ACCOUNT_PASSWORD,
         'path': site_path,
         'status': status,
-        'pool': site['pool'],
         'atlas_statistics_id': statistics,
         'siteimprove_site': siteimprove_site,
         'siteimprove_group': siteimprove_group,
@@ -619,8 +618,8 @@ def launch_site(site):
     code_directory = '{0}/{1}'.format(SITES_CODE_ROOT, site['sid'])
     code_directory_current = '{0}/current'.format(code_directory)
 
-    if site['pool'] in ['poolb-express', 'poolb-homepage']:
-        if site['pool'] == 'poolb-express':
+    if site['type'] in ['express', 'homepage']:
+        if site['type'] == 'express':
             web_directory_path = '{0}/{1}'.format(SITES_WEB_ROOT, site['path'])
             with cd(SITES_WEB_ROOT):
                 # If the path is nested like 'lab/atlas', make the 'lab' directory
@@ -632,7 +631,7 @@ def launch_site(site):
                     update_symlink(code_directory_current, site['path'])
             update_group = randint(0, 10)
 
-        elif site['pool'] == 'poolb-homepage':
+        elif site['type'] == 'homepage':
             with cd(SITES_WEB_ROOT):
                 # Link in homepage
                 for link in DRUPAL_CORE_PATHS:

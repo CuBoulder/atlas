@@ -506,6 +506,7 @@ def create_settings_files(site):
     status = site['status']
     atlas_id = site['_id']
     statistics = site['statistics']
+    site_type = site['type']
     if site['settings'].get('siteimprove_site'):
         siteimprove_site = site['settings']['siteimprove_site']
     else:
@@ -538,6 +539,7 @@ def create_settings_files(site):
         'atlas_password': SERVICE_ACCOUNT_PASSWORD,
         'path': site_path,
         'status': status,
+        'site_type': site_type,
         'atlas_statistics_id': statistics,
         'siteimprove_site': siteimprove_site,
         'siteimprove_group': siteimprove_group,

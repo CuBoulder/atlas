@@ -114,7 +114,7 @@ if (isset($_SERVER['OSR_ENV'])) {
   switch($_SERVER['OSR_ENV']) {
     case 'prod':
       $base_url .= 'https://www-https.colorado.edu';
-      $cookie_domain = '.www-v-https.colorado.edu';
+      $cookie_domain = '.www-https.colorado.edu';
       break;
     case 'test':
       $base_url .= 'https://www-test-https.colorado.edu';
@@ -132,7 +132,7 @@ if (isset($_SERVER['OSR_ENV'])) {
   ini_set('session.cookie_lifetime', 93600);
   ini_set('session.cookie_path', '/' . $path);
   }
-  $base_url .= '/' . $path;
+{% if site_type == 'express' %}  $base_url .= '/' . $path;{% endif %}
 }
 
 {% if environment != 'local' %}
@@ -147,15 +147,11 @@ $conf['varnish_version'] = 4;
 $conf['varnish_control_key'] = '{{ varnish_control_key }}';
 {% endif %}
 
-{% if environment in ['local','dev'] %}
-$conf['drupal_http_request_fails'] = FALSE;
-{% endif %}
+{% if environment in ['local','dev'] %}$conf['drupal_http_request_fails'] = FALSE;{% endif %}
 // Google Analytics
 $conf['googleanalytics_account'] = 'UA-25752450-1';
 
-{% if environment == 'local' %}
-$conf['error_level'] = 2;
-{% endif %}
+{% if environment == 'local' %}$conf['error_level'] = 2;{% endif %}
 
 $conf['file_temporary_path'] = '/tmp';
 

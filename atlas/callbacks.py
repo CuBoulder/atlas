@@ -280,7 +280,7 @@ def on_update_sites_callback(updates, original):
     """
     log.debug('sites | Update | Updates - %s | Original - %s', updates, original)
     site_type = updates['type'] if updates.get('type') else original['type']
-    if site['type'] in ['express', 'homepage']::
+    if site['type'] in ['express', 'homepage']:
         site = original.copy()
         site.update(updates)
         # Only need to rewrite the nested dicts if they got updated.

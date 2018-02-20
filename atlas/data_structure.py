@@ -206,6 +206,10 @@ SITES_SCHEMA = {
     'update_group': {
         'type': 'integer',
     },
+    'f5only': {
+        'type': 'boolean',
+        'default': False
+    },
     'settings': {
         'type': 'dict',
         'schema': {

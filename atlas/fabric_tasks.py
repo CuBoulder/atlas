@@ -646,6 +646,43 @@ def launch_site(site):
         utilities.patch_eve('sites', site['_id'], payload)
 
 
+def update_f5():
+    """
+    Create a local file that defines the Legacy routing.
+    """
+    load_balancer_config_dir = '{0}/files'.format(ATLAS_LOCATION)
+    sites = utilities.get_eve('sites', 'where={"type":"legacy"}&max_results=3000')
+    # Write data to file
+    file_name = "{0}/{1}".format(load_balancer_config_dir, LOAD_BALANCER_CONFIG_FILES[ENVIRONMENT])
+    if not os.path.isfile(file_name):
+        file(file_name, 'w').close()
+    with open(file_name, "w") as ofile:
+        for site in sites['_items']:
+            if 'path' in site:
+                # In case a path was saved with a leading slash
+                path = site["path"] if site["path"][0] == '/' else '/' + site["path"]
+                ofile.write('"{0}" := "legacy",\n'.format(path))
+
+    execute(exportf5, load_balancer_config_dir=load_balancer_config_dir)
+
+
+@roles('load_balancer')
+def exportf5(load_balancer_config_dir):
+    """
+    Replace the active file, and reload/sync the configuration.
+    """
+    if LOAD_BALANCER:
+        # Copy the new configuration file to the server.
+        put("{0}/{1}".format(load_balancer_config_dir,
+                             LOAD_BALANCER_CONFIG_FILES[ENVIRONMENT]), "/tmp")
+        # Load the new configuration.
+        run("tmsh modify sys file data-group {0} source-path file:/tmp/{0}".format(
+            LOAD_BALANCER_CONFIG_FILES[ENVIRONMENT]))
+        run("tmsh save sys config")
+        run("tmsh run cm config-sync to-group {0}".format(LOAD_BALANCER_CONFIG_GROUP[ENVIRONMENT]))
+        disconnect_all()
+
+
 def backup_create(site, backup_type):
     """
     Backup the database and files for an site.

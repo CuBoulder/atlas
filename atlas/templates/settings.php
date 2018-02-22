@@ -160,28 +160,43 @@ $conf['cache_lifetime'] = 0;
 $conf['page_cache_maximum_age'] = {{ page_cache_maximum_age }};
 
 {% if environment != 'local' %}
-$databases['default']['default'] = array(
+{% if environment != 'local' %}
+$databases['default']['default'] = array (
+  'driver' => 'autoslave',
+  'master' => array('master', 'autoslave'), // Fallback to slaves if master fails (read-only mode)
+  'slave' => array('autoslave', 'master'), // Fallback to master if slaves fail
+  // Always use "master" for tables "semaphore" and "sessions"
+  'tables' => array('sessions', 'semaphore', 'watchdog'),
+  // Also configurated in HAProxy
+  'replication lag' => 60,
+);
+
+$databases['default']['master'] = array (
   'driver' => 'mysql',
   'database' => '{{ sid }}',
   'username' => '{{ sid }}',
   'password' => '{{ pw }}',
-  'host' => '{{ database_servers.master }}',
-  'port' => '{{ database_servers.port }}',
+  'host' => '127.0.0.1',
+  'port' => '3306',
   'prefix' => '',
 );
-{% if database_servers.slaves %}
-{% for slave in database_servers.slaves -%}
-// Define our slave database(s)
-$databases['default']['slave'][] = array(
+
+$databases['default']['autoslave'] = array (
   'driver' => 'mysql',
   'database' => '{{ sid }}',
   'username' => '{{ sid }}',
   'password' => '{{ pw }}',
-  'host' => '{{ slave }}',
-  'port' => '{{ database_servers.port }}',
+  'host' => '127.0.0.1',
+  'port' => '3307',
   'prefix' => '',
+  'readonly' => TRUE,
 );
-{% endfor %}
+
+// Workaround for Drush (Drush doesn't support non-pdo database drivers).
+// Workaround for update.php (similar problem as Drush).
+if (drupal_is_cli() || basename($_SERVER['PHP_SELF']) == 'update.php') {
+  $databases['default']['default'] = $databases['default']['master'];
+}
 {% endif %}
 {% else %}
 $databases['default']['default'] = array(
@@ -193,9 +208,7 @@ $databases['default']['default'] = array(
   'port' => '{{ port }}',
   'prefix' => '',
 );
-{% endif %}
 
-{% if environment == 'local' %}
 // Allow self signed certs for python.local.
 $conf['drupal_ssl_context_options'] = array(
   'default' => array(

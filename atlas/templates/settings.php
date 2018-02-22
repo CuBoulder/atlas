@@ -165,23 +165,20 @@ $databases['default']['default'] = array(
   'database' => '{{ sid }}',
   'username' => '{{ sid }}',
   'password' => '{{ pw }}',
-  'host' => '{{ database_servers.master }}',
-  'port' => '{{ database_servers.port }}',
+  'host' => '127.0.0.1',
+  'port' => '3306',
   'prefix' => '',
 );
-{% if database_servers.slaves %}
-{% for slave in database_servers.slaves -%}
 // Define our slave database(s)
 $databases['default']['slave'][] = array(
   'driver' => 'mysql',
   'database' => '{{ sid }}',
   'username' => '{{ sid }}',
   'password' => '{{ pw }}',
-  'host' => '{{ slave }}',
-  'port' => '{{ database_servers.port }}',
+  'host' => '127.0.0.1',
+  'port' => '3307',
   'prefix' => '',
 );
-{% endfor %}
 {% endif %}
 {% else %}
 $databases['default']['default'] = array(
@@ -193,9 +190,7 @@ $databases['default']['default'] = array(
   'port' => '{{ port }}',
   'prefix' => '',
 );
-{% endif %}
 
-{% if environment == 'local' %}
 // Allow self signed certs for python.local.
 $conf['drupal_ssl_context_options'] = array(
   'default' => array(

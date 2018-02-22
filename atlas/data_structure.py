@@ -838,9 +838,6 @@ SITES = {
     'versioning': True,
     'soft_delete': True,
     'schema': SITES_SCHEMA,
-    'datasource': {
-        'projection': {'db_key': 0}
-    }
 }
 
 # Statistics resource

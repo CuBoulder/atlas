@@ -179,7 +179,6 @@ $databases['default']['slave'][] = array(
   'port' => '3307',
   'prefix' => '',
 );
-{% endif %}
 {% else %}
 $databases['default']['default'] = array(
   'driver' => 'mysql',

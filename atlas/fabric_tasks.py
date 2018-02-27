@@ -19,7 +19,7 @@ from atlas import utilities
 from atlas.config import (ATLAS_LOCATION, ENVIRONMENT, SSH_USER, CODE_ROOT, SITES_CODE_ROOT,
                           SITES_WEB_ROOT, WEBSERVER_USER, WEBSERVER_USER_GROUP, NFS_MOUNT_FILES_DIR,
                           BACKUPS_PATH, SERVICE_ACCOUNT_USERNAME, SERVICE_ACCOUNT_PASSWORD,
-                          SITE_DOWN_PATH, LOAD_BALANCER)
+                          SITE_DOWN_PATH, LOAD_BALANCER, SAML_AUTH)
 from atlas.config_servers import (SERVERDEFS, NFS_MOUNT_LOCATION, API_URLS,
                                   VARNISH_CONTROL_TERMINALS, LOAD_BALANCER_CONFIG_FILES,
                                   LOAD_BALANCER_CONFIG_GROUP)
@@ -611,13 +611,16 @@ def create_settings_files(site):
                     backup=False,
                     mode='0644')
 
+    saml_auth = utilities.decrypt_string(SAML_AUTH)
+
     local_post_settings_variables = {
         'sid': sid,
         'pw': database_password,
         'page_cache_maximum_age': page_cache_maximum_age,
         'database_servers': env.roledefs['database_servers'],
-        'memcache_servers':  env.roledefs['memcache_servers'],
-        'environment':  ENVIRONMENT
+        'memcache_servers': env.roledefs['memcache_servers'],
+        'environment': ENVIRONMENT,
+        'saml_pw': saml_auth
     }
 
     log.info('fabric_tasks | Create Settings file | Settings Post Variables - %s',

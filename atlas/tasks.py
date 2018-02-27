@@ -1004,3 +1004,22 @@ def verify_statistics():
             }
 
             utilities.post_to_slack_payload(slack_payload)
+
+@celery.task
+def saml_create():
+    try:
+        log.debug('Create SAML database')
+        utilities.create_saml_database()
+    except Exception as error:
+        log.error('SAML Database creation failed | %s', error)
+        raise
+
+
+@celery.task
+def saml_delete():
+    try:
+        log.debug('Delete SAML database')
+        utilities.delete_saml_database()
+    except Exception as error:
+        log.error('SAML Database deletion failed | %s', error)
+        raise

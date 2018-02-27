@@ -25,7 +25,7 @@ from atlas.config import (ATLAS_LOCATION, ALLOWED_USERS, LDAP_SERVER, LDAP_ORG_U
                           SERVICE_ACCOUNT_USERNAME, SERVICE_ACCOUNT_PASSWORD, SSL_VERIFICATION,
                           SLACK_USERNAME, SLACK_URL, SEND_NOTIFICATION_EMAILS,
                           SEND_NOTIFICATION_FROM_EMAIL, EMAIL_HOST, EMAIL_PORT, EMAIL_USERNAME,
-                          EMAIL_PASSWORD, EMAIL_USERS_EXCLUDE)
+                          EMAIL_PASSWORD, EMAIL_USERS_EXCLUDE, SAML_AUTH)
 from atlas.config_servers import (SERVERDEFS, API_URLS)
 
 # Setup a sub-logger. See tasks.py for longer comment.
@@ -473,3 +473,90 @@ def send_email(email_message, email_subject, email_to):
         s.login(EMAIL_USERNAME, EMAIL_PASSWORD)
         s.sendmail(SEND_NOTIFICATION_FROM_EMAIL, final_email_to, msg.as_string())
         s.quit()
+
+
+def create_saml_database():
+    """
+    Create a database and user for SAML auth
+    """
+    log.info('Create SAML Database')
+    # Start connection
+    mariadb_connection = mariadb.connect(
+        user=DATABASE_USER,
+        password=DATABASE_PASSWORD,
+        host=SERVERDEFS[ENVIRONMENT]['database_servers']['master'],
+        port=SERVERDEFS[ENVIRONMENT]['database_servers']['port']
+    )
+
+    cursor = mariadb_connection.cursor()
+
+    # Create database
+    try:
+        cursor.execute("CREATE DATABASE `saml`;")
+    except mariadb.Error as error:
+        log.error('Create Database | saml | %s', error)
+        raise
+
+    instance_database_password = decrypt_string(SAML_AUTH)
+    # Add user
+    try:
+        if ENVIRONMENT != 'local':
+            cursor.execute("CREATE USER 'saml'@'{1}' IDENTIFIED BY '{2}';".format(
+                SERVERDEFS[ENVIRONMENT]['database_servers']['user_host_pattern'],
+                instance_database_password))
+        else:
+            cursor.execute("CREATE USER 'saml'@'localhost' IDENTIFIED BY '{1}';".format(
+                instance_database_password))
+    except mariadb.Error as error:
+        log.error('Create User | saml | %s', error)
+        raise
+
+    # Grant privileges
+    try:
+        if ENVIRONMENT != 'local':
+            cursor.execute("GRANT ALL PRIVILEGES ON saml.* TO 'saml'@'{1}';".format(
+                SERVERDEFS[ENVIRONMENT]['database_servers']['user_host_pattern']))
+        else:
+            cursor.execute("GRANT ALL PRIVILEGES ON saml.* TO 'saml'@'localhost';")
+    except mariadb.Error as error:
+        log.error('Grant Privileges | saml | %s', error)
+        raise
+
+    mariadb_connection.commit()
+    mariadb_connection.close()
+
+    log.info('Create Database | saml | Success')
+
+
+def delete_saml_database(site_sid):
+    """
+    Delete database and user
+
+    :param site_id: SID for instance to remove.
+    """
+    log.info('Delete Database | saml')
+    # Start connection
+    mariadb_connection = mariadb.connect(
+        user=DATABASE_USER,
+        password=DATABASE_PASSWORD,
+        host=SERVERDEFS[ENVIRONMENT]['database_servers']['master'],
+        port=SERVERDEFS[ENVIRONMENT]['database_servers']['port']
+    )
+    cursor = mariadb_connection.cursor()
+
+    # Drop database
+    try:
+        cursor.execute("DROP DATABASE IF EXISTS `saml`;")
+    except mariadb.Error as error:
+        log.error('Drop Database | saml | %s', error)
+
+    # Drop user
+    try:
+        cursor.execute("DROP USER 'saml'@'{1}';".format(
+            SERVERDEFS[ENVIRONMENT]['database_servers']['user_host_pattern']))
+    except mariadb.Error as error:
+        log.error('Drop User | saml | %s', error)
+
+    mariadb_connection.commit()
+    mariadb_connection.close()
+    log.info('Delete Database | saml | Success')

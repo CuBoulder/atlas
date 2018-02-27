@@ -13,6 +13,7 @@ from eve import Eve
 from flask import jsonify, make_response
 from atlas import callbacks
 from atlas import utilities
+from atlas.tasks import saml_create, saml_delete
 from atlas.config import (ATLAS_LOCATION, VERSION_NUMBER, SSL_KEY_FILE, SSL_CRT_FILE, LOG_LOCATION,
                           ENVIRONMENT)
 
@@ -75,6 +76,27 @@ def custom409(error):
 @app.route('/version')
 def version():
     response = make_response(VERSION_NUMBER)
+    return response
+
+@app.route('/saml/create', methods=['GET', 'POST'])
+@requires_auth('sites')
+def saml_create():
+    if flask.request.method == 'POST':
+        response = make_response("Started SAML database creation")
+        saml_create.delay()
+    else:
+        response = make_response("Did you mean to POST?")
+    return response
+
+
+@app.route('/saml/delete', methods=['GET', 'POST'])
+@requires_auth('sites')
+def saml_delete():
+    if flask.request.method == 'POST':
+        response = make_response("Started SAML database delete")
+        saml_delete.delay()
+    else:
+        response = make_response("Did you mean to POST?")
     return response
 
 

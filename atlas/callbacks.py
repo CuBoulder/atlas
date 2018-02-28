@@ -24,7 +24,8 @@ def pre_post_callback(resource, request):
     :param resource: resource accessed
     :param request: flask.request object
     """
-    log.debug('POST | Resource - %s | Request - %s, | request.data - %s', resource, str(request), request.data)
+    log.debug('POST | Resource - %s | Request - %s, | request.data - %s',
+              resource, str(request), request.data)
 
 
 def pre_post_sites_callback(request):
@@ -64,6 +65,7 @@ def pre_patch_sites_callback(request, payload):
     if 'path' in json.loads(request.data) and json.loads(request.data)['path'] in PROTECTED_PATHS:
         log.error('sites | PATCH | Pre patch callback | Protected path')
         abort(409, 'Error: Cannot use this path, it is on the protected list.')
+
 
 def pre_put_sites_callback(request, payload):
     """
@@ -120,7 +122,7 @@ def on_insert_sites_callback(items):
     log.debug(items)
     for item in items:
         log.debug(item)
-        if item['type'] == 'express' and not item['f5only']:
+        if item['type'] == 'express':
             if not item.get('sid'):
                 item['sid'] = 'p1' + sha1(utilities.randomstring()).hexdigest()[0:10]
             if not item.get('path'):
@@ -156,7 +158,7 @@ def on_inserted_sites_callback(items):
     for item in items:
         log.debug(item)
         log.debug('site | Site object created | site - %s', item)
-        if item['type'] == 'express' and not item['f5only']:
+        if item['type'] == 'express':
             # Create statistics item
             statistics_payload = {}
             # Need to get the string out of the ObjectID.
@@ -166,8 +168,6 @@ def on_inserted_sites_callback(items):
             item['statistics'] = str(statistics['_id'])
 
             tasks.site_provision.delay(item)
-        if item['type'] == 'legacy' or item['f5only']:
-            tasks.update_f5.delay()
 
 
 def on_insert_code_callback(items):
@@ -280,7 +280,7 @@ def on_update_sites_callback(updates, original):
     """
     log.debug('sites | Update | Updates - %s | Original - %s', updates, original)
     site_type = updates['type'] if updates.get('type') else original['type']
-    if site_type == 'express':
+    if site_type in ['express', 'homepage']:
         site = original.copy()
         site.update(updates)
         # Only need to rewrite the nested dicts if they got updated.
@@ -307,7 +307,7 @@ def on_update_sites_callback(updates, original):
                     date_json = '{{"locked":""}}'
                 elif updates['status'] == 'take_down':
                     date_json = '{{"taken_down":"{0} GMT"}}'.format(updates['_updated'])
-                
+
                 updates['dates'] = json.loads(date_json)
 
         log.debug('sites | Update | Ready for Celery | Site - %s | Updates - %s', site, updates)
@@ -344,15 +344,22 @@ def on_updated_code_callback(updates, original):
     if code_type in ['module', 'theme', 'library']:
         code_type = 'package'
 
-    if updates.has_key('meta') and (updates['meta'].has_key('name') or updates['meta'].has_key('version') or updates['meta'].has_key('code_type')):
-        update_sites = True
+    if updates.has_key('meta'):
+        if updates['meta']['name'] != original['meta']['name'] or updates['meta']['version'] != original['meta']['version'] or updates['meta']['code_type'] != original['meta']['code_type']:
+            update_sites = True
+            log.debug('code | on updated | Found meta data changes | %s', updates['meta'])
+        else:
+            log.debug('code | on updated | Found no meta changes that require an update')
+            update_sites = False
     elif updates.has_key('commit_hash') or updates.has_key('git_url'):
         update_sites = True
+        log.debug('code | on updated | Found git data changes')
     else:
+        log.debug('code | on updated | Found no changes')
         update_sites = False
-        
-    if update_sites:
 
+    if update_sites:
+        log.debug('code | on updated | Preparing to update instances')
         query = 'where={{"code.{0}":"{1}"}}'.format(code_type, original['_id'])
         sites_get = utilities.get_eve('sites', query)
 

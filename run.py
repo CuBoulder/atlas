@@ -40,12 +40,15 @@ app.debug = True
 
 # Enable logging to 'atlas.log' file.
 LOG_HANDLER = WatchedFileHandler(LOG_LOCATION)
+LOG_HANDLER.setFormatter(logging.Formatter('%(asctime)s | %(name)s | %(levelname)s | %(message)s'))
+
 # The default log level is set to WARNING, so we have to explicitly set the logging level to Info.
 app.logger.setLevel(logging.INFO)
 if ENVIRONMENT == 'local':
     app.logger.setLevel(logging.DEBUG)
 # Append the handler to the default application logger
 app.logger.addHandler(LOG_HANDLER)
+
 
 # Hook into the request flow early
 @app.route('/backup/<string:backup_id>/restore', methods=['POST'])
@@ -58,7 +61,8 @@ def restore_backup(backup_id):
     """
     app.logger.debug('Backup | Restore | %s', backup_id)
     backup_record = utilities.get_single_eve('backup', backup_id)
-    original_instance = utilities.get_single_eve('sites', backup_record['site'], backup_record['site_version'])
+    original_instance = utilities.get_single_eve(
+        'sites', backup_record['site'], backup_record['site_version'])
     # If packages are still active, add them; if not, find a current version
     # and add it; if none, error
     if 'package' in original_instance['code']:
@@ -71,7 +75,8 @@ def restore_backup(backup_id):
             if package_result['_deleted']:
                 current_package = utilities.get_current_code(
                     package_result['meta']['name'], package_result['meta']['code_type'])
-                app.logger.debug('Backup | Restore | Getting current version of package - %s', current_package)
+                app.logger.debug(
+                    'Backup | Restore | Getting current version of package - %s', current_package)
                 if current_package:
                     package_list.append(current_package)
                 else:
@@ -85,6 +90,7 @@ def restore_backup(backup_id):
     response = make_response('Restore started')
     return response
 
+
 @app.route('/sites/<string:site_id>/backup', methods=['POST'])
 # TODO: Test what happens with 404 for site_id
 @requires_auth('backup')
@@ -95,10 +101,31 @@ def create_backup(site_id):
     """
     app.logger.debug('Backup | Create | Site ID - %s', site_id)
     site = utilities.get_single_eve('sites', site_id)
-    app.logger.debug('Backup | Create | Site Response - %s', site) 
+    app.logger.debug('Backup | Create | Site Response - %s', site)
     tasks.backup_create.delay(site=site, backup_type='on_demand')
     response = make_response('Backup started')
     return response
+
+
+@app.route('/f5')
+@requires_auth('sites')
+def f5():
+    """
+    Generate output for f5 config.
+    """
+    app.logger.debug('f5 data requested')
+    query = 'where={"type":"legacy"}&max_results=2000'
+    legacy_sites = utilities.get_eve('sites', query)
+    app.logger.debug('f5 | Site Response - %s', legacy_sites)
+    f5_list = []
+    for site in legacy_sites['_items']:
+        if 'path' in site:
+            # In case a path was saved with a leading slash
+            path = site["path"] if site["path"][0] == '/' else '/' + site["path"]
+            f5_list.append('"{0}" := "legacy"'.format(path))
+    response = make_response(','.join(f5_list))
+    return response
+
 
 # Specific callbacks.
 # Use pre event hooks if there is a chance you want to abort.

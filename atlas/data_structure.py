@@ -203,24 +203,8 @@ SITES_SCHEMA = {
             'prod'
         ],
     },
-    'pool': {
-        'type': 'string',
-        'allowed': [
-            'poolb-express',
-            'poolb-homepage',
-            'WWWLegacy',
-            'www-dev-https',
-            'www-test-https',
-            'www-prod-https'
-            ],
-        'default': 'poolb-express',
-    },
     'update_group': {
         'type': 'integer',
-    },
-    'f5only': {
-        'type': 'boolean',
-        'default': False
     },
     'settings': {
         'type': 'dict',

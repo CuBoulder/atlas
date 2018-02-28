@@ -15,6 +15,20 @@ Resolves:
 - &#35;373 - Support pooling
 - &#35;370 - Switch to new homepage location
 
+## v2.1.2
+
+Resolves:
+
+- &#35;441 Add a cookie domain to settings file
+
+## v2.1.1
+
+Resolves:
+
+- &#35;437 Remove commands posting to Slack
+- &#35;408 Get timestamp into atlas.log
+- &#35;438 Updating the current and label meta data for a code asset should not trigger a code-re-add process
+
 ## v2.1.0
 
 This release adds granular deployment options for code assets. The following required fields (with the noted defaults) have been added to code items:
@@ -29,25 +43,24 @@ This release adds granular deployment options for code assets. The following req
 
 When a code item is added to an instance, the above drush commands will be run as indicated by the code asset. If multiple items are added, the commands will be run after all code is changed.
 
-As part of deployment:
+Need to
 
 - Add a list of users to exclude from emails in `config_local.py`
 - Ensure `sudo -u [webserver_user] drush` can run without a password.
 
 Resolves:
 
-- &#35;90 - Create resource for backups
-- &#35;95 - Periodically check for unused code
-- &#35;304 - As a Service Manager, need to be able to deploy profile updates without updb
-  - &#35;22 - Add field for 'requires updb'
-  - &#35;311 - Add field for 'requires registry rebuild'
-  - &#35;312 - Add field for 'requires cache clear'
-- &#35;330 - During launch, drupal caches are cleared a lot
-- &#35;412 - Return something like `Command [xx:xx:xx] 2 of 16 - Success` in Slack
-- &#35;10 - Re-add packages to sites when changing meta data of a code item.
-- &#35;338 - Exclude the '_id' of the item we are updating as a query parameter
-- &#35;401 - Remove test accounts from bundle adding emails
-- &#35;220 - Started to review settings.php 
+- &#35;95 Periodically check for unused code
+- &#35;304 As a Service Manager, need to be able to deploy profile updates without updb
+  - &#35;22 Add field for 'requires updb'
+  - &#35;311 Add field for 'requires registry rebuild'
+  - &#35;312 Add field for 'requires cache clear'
+- &#35;330 During launch, drupal caches are cleared a lot
+- &#35;412 Return something like `Command [xx:xx:xx] 2 of 16 - Success` in Slack
+- &#35;10 Re-add packages to sites when changing meta data of a code item.
+- &#35;338 Exclude the '_id' of the item we are updating as a query parameter
+- &#35;401 Remove test accounts from bundle adding emails
+- &#35;220 Started to review settings.php
 
 ## v2.0.3
 
@@ -101,7 +114,7 @@ Resolves:
 
 ## v1.0.24
 
-Need to 
+Need to
 
 - Make sure Atlas user can run `sudo -u [webserver_user] drush` without a password.
 - Update Celery queues to include a `cron_queue`.
@@ -180,6 +193,7 @@ Resolves:
 - &#35;251 - Stuck pending instances not being removed
 - &#35;269 - Capture all bundles as typed or other
 - &#35;282 - Provision often fails, but the instance ends up 'available'. Settings files or DB creation fails. Switched to Fabric templating. Wrapped fabric commands in exception catching.
+- &#35;433 - Only update the f5 when working with legacy records
 
 ## v1.0.16
 

@@ -11,6 +11,7 @@ from collections import Counter
 
 from datetime import datetime, timedelta
 from celery import Celery
+from celery.utils.log import get_task_logger
 from fabric.api import execute
 
 from atlas import fabric_tasks
@@ -23,7 +24,7 @@ from atlas.config_servers import (BASE_URLS, API_URLS)
 # Best practice is to setup sub-loggers rather than passing the main logger between different parts of the application.
 # https://docs.python.org/3/library/logging.html#logging.getLogger and
 # https://stackoverflow.com/questions/39863718/how-can-i-log-outside-of-main-flask-module
-log = logging.getLogger('atlas.tasks')
+log = get_task_logger(__name__)
 
 # Create the Celery app object
 celery = Celery('tasks')
@@ -484,12 +485,10 @@ def site_update(site, updates, original):
                 site['status'] = 'launched'
                 execute(fabric_tasks.update_settings_file, site=site)
                 execute(fabric_tasks.site_launch, site=site)
-                if site['pool'] == 'poolb-homepage':
+                if site['type'] == 'homepage':
                     execute(fabric_tasks.update_homepage_extra_files)
                 deploy_drupal_cache_clear = True
                 deploy_php_cache_clear = True
-                if ENVIRONMENT is not 'local':
-                    execute(fabric_tasks.update_f5)
                 # Let fabric send patch since it is changing update group.
             elif updates['status'] == 'locked':
                 log.debug('Site update | ID - %s | Status changed to locked', site['_id'])
@@ -530,10 +529,6 @@ def site_update(site, updates, original):
                 log.debug('Found page_cache_maximum_age change.')
             execute(fabric_tasks.update_settings_file, site=site)
             deploy_php_cache_clear = True
-    
-    # Only need to update the f5 if this is a legacy instance.
-    if ENVIRONMENT != 'local' and site['type'] == 'legacy':
-        execute(fabric_tasks.update_f5)
 
     # Get a host to run single server commands on.
     host = utilities.single_host()
@@ -617,9 +612,6 @@ def site_remove(site):
             pass
 
         execute(fabric_tasks.site_remove, site=site)
-
-    if ENVIRONMENT != 'local' and site['type'] == 'legacy':
-        execute(fabric_tasks.update_f5)
 
     slack_text = 'Site Remove - Success - {0}/{1}'.format(BASE_URLS[ENVIRONMENT], site['path'])
     slack_color = 'good'
@@ -728,7 +720,10 @@ def command_run(site, command, single_server, user=None, batch_id=None, batch_co
     :param user: string Username that called the command.
     :return:
     """
-    log.debug('Run Command | Site - %s | Single Server - %s | Command - %s | Batch ID - %s | Count - %s', site['sid'], single_server, command, batch_id, batch_count)
+    log.info('Batch ID - %s | Count - %s | Command - %s',
+             batch_id, batch_count, command)
+    log.debug('Batch ID - %s | Count - %s | Site - %s | Single Server - %s | Command - %s',
+             batch_id, batch_count, site['sid'], single_server, command)
 
     # 'match' searches for strings that begin with
     if command.startswith('drush'):
@@ -750,51 +745,10 @@ def command_run(site, command, single_server, user=None, batch_id=None, batch_co
             fabric_tasks.command_run, site=site, command=altered_command, warn_only=True)
 
     command_time = time.time() - start_time
-    log.debug('Run Command | Site - %s | Command - %s | Batch ID - %s | Count - %s | Time - %s | Result - %s',
-              site['sid'], command, batch_id, batch_count, command_time, fabric_task_result)
-
-    slack_text = 'Command - Success - {0} - {1}'.format(batch_id, batch_count)
-    slack_color = 'good'
-    slack_link = '{0}/{1}'.format(BASE_URLS[ENVIRONMENT], site['path'])
-    user = user
-
-    slack_payload = {
-        "text": slack_text,
-        "username": 'Atlas',
-        "attachments": [
-            {
-                "fallback": slack_text,
-                "color": slack_color,
-                "author_name": site['modified_by'],
-                "fields": [
-                    {
-                        "title": "Instance",
-                        "value": slack_link,
-                        "short": False
-                    },
-                    {
-                        "title": "Command",
-                        "value": altered_command,
-                        "short": True
-                    },
-                    {
-                        "title": "Environment",
-                        "value": ENVIRONMENT,
-                        "short": True
-                    },
-                    {
-                        "title": "Command Time",
-                        "value": command_time,
-                        "short": True
-                    },
-                ],
-            }
-        ],
-    }
-    if user:
-        slack_payload['user'] = user
-
-    utilities.post_to_slack_payload(slack_payload)
+    log.info('Batch ID - %s | Count - %s | Command - %s | Time - %s | Result - %s',
+             batch_id, batch_count, command, command_time, fabric_task_result)
+    log.debug('Batch ID - %s | Count - %s | Site - %s | Single Server - %s | Command - %s | Time - %s | Result - %s',
+             batch_id, batch_count, site['sid'], single_server, command, command_time, fabric_task_result)
 
 
 @celery.task
@@ -802,27 +756,27 @@ def cron(status=None):
     """
     Prepare cron tasks and send them to subtasks.
     """
-    log.info('Prepare Cron | Status - %s', status)
+    log.info('Status - %s', status)
     # Build query.
     site_query_string = ['max_results=2000']
     log.debug('Prepare Cron | Found argument')
-    # Start by eliminating f5-only and legacy items.
-    site_query_string.append('&where={"f5only":false,"type":"express",')
+    # Start by eliminating legacy items.
+    site_query_string.append('&where={"type":"express",')
     if status:
-        log.debug('Prepare Cron | Found status')
+        log.debug('Found status')
         site_query_string.append('"status":"{0}",'.format(status))
     else:
-        log.debug('Prepare Cron | No status found')
+        log.debug('No status found')
         site_query_string.append('"status":{"$in":["installed","launched","locked"]},')
 
     site_query = ''.join(site_query_string)
-    log.debug('Prepare Cron | Query after join -| %s', site_query)
+    log.debug('Query after join -| %s', site_query)
     # Remove trailing comma.
     site_query = site_query.rstrip('\,')
-    log.debug('Prepare Cron | Query after rstrip | %s', site_query)
+    log.debug('Query after rstrip | %s', site_query)
     # Add closing brace.
     site_query += '}'
-    log.debug('Prepare Cron | Query final | %s', site_query)
+    log.debug('Query final | %s', site_query)
 
     sites = utilities.get_eve('sites', site_query)
     if not sites['_meta']['total'] == 0:
@@ -838,25 +792,26 @@ def cron_run(site):
     :param site: A complete site item.
     :return:
     """
-    log.info('Run Cron | %s  | %s', site['sid'], site)
+    log.info('Site - %s | %s', site['sid'], site)
     start_time = time.time()
-   
-    if site['pool'] != 'poolb-homepage':
+
+    if site['type'] == 'express':
         uri = BASE_URLS[ENVIRONMENT] + '/' + site['path']
     else:
+        # Homepage
         uri = BASE_URLS[ENVIRONMENT]
-    log.debug('Run Cron | %s  | uri - %s', site['sid'], uri)
+    log.debug('Site - %s | uri - %s', site['sid'], uri)
     command = 'sudo -u {0} drush elysia-cron run --uri={1}'.format(WEBSERVER_USER, uri)
     try:
-         # Get a host to run this command on.
+        # Get a host to run this command on.
         host = utilities.single_host()
         execute(fabric_tasks.command_run_single, site=site, command=command, hosts=host)
     except CronException as error:
-        log.error('Run Cron | %s | Cron failed | %s', site['sid'], error)
+        log.error('Site - %s | Cron failed | Error - %s', site['sid'], error)
         raise
 
     command_time = time.time() - start_time
-    log.info('Run Cron | %s | Cron success | %s', site['sid'], command_time)
+    log.info('Site - %s | Cron success | Time - %s', site['sid'], command_time)
 
 
 @celery.task
@@ -884,7 +839,7 @@ def delete_stuck_pending_sites():
     """
     site_query = 'where={"status":"pending"}'
     sites = utilities.get_eve('sites', site_query)
-    log.debug('Pending instances | %s', sites)
+    log.debug('Sites - %s', sites)
     # Loop through and remove sites that are more than 15 minutes old.
     if not sites['_meta']['total'] == 0:
         for site in sites['_items']:
@@ -895,7 +850,7 @@ def delete_stuck_pending_sites():
             # Get datetime now and calculate the age of the site. Since our timestamp is in GMT, we
             # need to use UTC.
             time_since_creation = datetime.utcnow() - date_created
-            log.debug('Pending instances | %s has timedelta of %s. Created: %s Current: %s',
+            log.debug('%s has timedelta of %s. Created: %s Current: %s',
                       site['sid'], time_since_creation, date_created, datetime.utcnow())
             if time_since_creation > timedelta(minutes=20):
                 utilities.delete_eve('sites', site['_id'])
@@ -908,10 +863,10 @@ def delete_all_available_sites():
     """
     site_query = 'where={"status":"available"}'
     sites = utilities.get_eve('sites', site_query)
-    log.debug('Delete all available sites| Sites - %s', sites)
+    log.debug('Sites - %s', sites)
     if not sites['_meta']['total'] == 0:
         for site in sites['_items']:
-            log.debug('Delete all available sites| Site - %s', site)
+            log.debug('Site - %s', site)
             utilities.delete_eve('sites', site['_id'])
 
 
@@ -930,12 +885,12 @@ def remove_unused_code():
             code_type = 'package'
         else:
             code_type = code['meta']['code_type']
-        log.debug('code | Check unused | code - %s | code_type - %s', code['_id'], code_type)
+        log.debug('code - %s | code_type - %s', code['_id'], code_type)
         site_query = 'where={{"code.{0}":"{1}"}}'.format(code_type, code['_id'])
         sites = utilities.get_eve('sites', site_query)
-        log.debug('code | Delete | code - %s | sites result - %s', code['_id'], sites)
+        log.debug('Delete | code - %s | sites result - %s', code['_id'], sites)
         if sites['_meta']['total'] == 0:
-            log.info('code | Removing unused item | code - %s', code['_id'])
+            log.info('Removing unused item | code - %s', code['_id'])
             utilities.delete_eve('code', code['_id'])
 
 
@@ -944,22 +899,22 @@ def remove_orphan_statistics():
     """
     Get a list of statistics and key them against a list of active instances.
     """
-    site_query = 'where={"type":"express","f5only":false}&max_results=2000'
+    site_query = 'where={"type":"express"}&max_results=2000'
     sites = utilities.get_eve('sites', site_query)
     statistics_query = '&max_results=2000'
     statistics = utilities.get_eve('statistics', statistics_query)
-    log.debug('Orphan Statistics Cleanup | Statistics | %s', statistics)
-    log.debug('Orphan Statistics Cleanup | Sites | %s', sites)
+    log.debug('Statistics | %s', statistics)
+    log.debug('Sites | %s', sites)
     site_id_list = []
     # Make as list of ids for easy checking.
     if not statistics['_meta']['total'] == 0:
         if not sites['_meta']['total'] == 0:
             for site in sites['_items']:
                 site_id_list.append(site['_id'])
-                log.debug('Orphan Statistics Cleanup | Sites list | %s', site_id_list)
+                log.debug('Sites list | %s', site_id_list)
         for statistic in statistics['_items']:
             if statistic['site'] not in site_id_list:
-                log.info('Orphan Statistics Cleanup | Statistic not in list | %s', statistic['_id'])
+                log.info('Statistic not in list | %s', statistic['_id'])
                 utilities.delete_eve('statistics', statistic['_id'])
 
 
@@ -998,8 +953,8 @@ def verify_statistics():
     statistics_query = 'where={{"_updated":{{"$lte":"{0}"}}}}&max_results=2000'.format(
         time_ago.strftime("%Y-%m-%d %H:%M:%S GMT"))
     outdated_statistics = utilities.get_eve('statistics', statistics_query)
-    log.debug('Old statistics time | %s', time_ago.strftime("%Y-%m-%d %H:%M:%S GMT"))
-    log.debug('outdated_statistics items | %s', outdated_statistics)
+    log.debug('Old statistics time - %s', time_ago.strftime("%Y-%m-%d %H:%M:%S GMT"))
+    log.debug('outdated_statistics items - %s', outdated_statistics)
     statistic_id_list = []
     if not outdated_statistics['_meta']['total'] == 0:
         for outdated_statistic in outdated_statistics['_items']:
@@ -1007,61 +962,58 @@ def verify_statistics():
 
         log.debug('statistic_id_list | %s', statistic_id_list)
 
-        site_query = 'where={{"_id":{{"$in":{0}}}}}&max_results=2000'.format(json.dumps(statistic_id_list))
+        site_query = 'where={{"statistics":{{"$in":{0}}}}}&max_results=2000'.format(json.dumps(statistic_id_list))
         log.debug('Site query | %s', site_query)
         sites = utilities.get_eve('sites', site_query)
         sites_id_list = []
         if not sites['_meta']['total'] == 0:
+            log.info('More than 0 sites')
             for site in sites['_items']:
-                sites_id_list.append(site['_id'])
+                sites_id_list.append(site['sid'])
 
-        slack_fallback = '{0} statistics items have not been updated in 36 hours.'.format(
-            len(statistic_id_list))
-        slack_link = '{0}/statistics?{1}'.format(BASE_URLS[ENVIRONMENT], site_query)
-        slack_payload = {
-            "text": 'Outdated Statistics',
-            "username": 'Atlas',
-            "attachments": [
-                {
-                    "fallback": slack_fallback,
-                    "color": 'danger',
-                    "title": 'Some statistics items have not been updated in 36 hours.',
-                    "fields": [
-                        {
-                            "title": "Count",
-                            "value": len(statistic_id_list),
-                            "short": True
-                        },
-                        {
-                            "title": "Environment",
-                            "value": ENVIRONMENT,
-                            "short": True
-                        },
-                    ],
-                },
-                {
-                    "fallback": 'Site list',
-                    # A lighter red.
-                    "color": '#ee9999',
-                    "fields": [
-                        {
-                            "title": "Site list",
-                            "value": json.dumps(sites_id_list),
-                            "short": False,
-                            "title_link": slack_link
-                        }
-                    ]
-                }
-            ],
-        }
+            log.info('sites_id_list | %s', str(sites_id_list))
 
-        utilities.post_to_slack_payload(slack_payload)
+            slack_fallback = '{0} statistics items have not been updated in 36 hours.'.format(
+                    len(statistic_id_list))
+            slack_link = '{0}/statistics?{1}'.format(BASE_URLS[ENVIRONMENT], site_query)
+            slack_payload = {
+                "text": 'Outdated Statistics',
+                "username": 'Atlas',
+                "attachments": [
+                    {
+                        "fallback": slack_fallback,
+                        "color": 'danger',
+                        "title": 'Some statistics items have not been updated in 36 hours.',
+                        "fields": [
+                            {
+                                "title": "Count",
+                                "value": len(statistic_id_list),
+                                "short": True
+                            },
+                            {
+                                "title": "Environment",
+                                "value": ENVIRONMENT,
+                                "short": True
+                            },
+                        ],
+                    },
+                    {
+                        "fallback": 'Site list',
+                        # A lighter red.
+                        "color": '#ee9999',
+                        "fields": [
+                            {
+                                "title": "Site list",
+                                "value": json.dumps(sites_id_list),
+                                "short": False,
+                                "title_link": slack_link
+                            }
+                        ]
+                    }
+                ],
+            }
 
-
-@celery.task
-def update_f5():
-    if ENVIRONMENT != 'local':
-        execute(fabric_tasks.update_f5)
+            utilities.post_to_slack_payload(slack_payload)
 
 
 @celery.task

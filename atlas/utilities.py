@@ -501,11 +501,11 @@ def create_saml_database():
     # Add user
     try:
         if ENVIRONMENT != 'local':
-            cursor.execute("CREATE USER 'saml'@'{1}' IDENTIFIED BY '{2}';".format(
+            cursor.execute("CREATE USER 'saml'@'{0}' IDENTIFIED BY '{1}';".format(
                 SERVERDEFS[ENVIRONMENT]['database_servers']['user_host_pattern'],
                 instance_database_password))
         else:
-            cursor.execute("CREATE USER 'saml'@'localhost' IDENTIFIED BY '{1}';".format(
+            cursor.execute("CREATE USER 'saml'@'localhost' IDENTIFIED BY '{0}';".format(
                 instance_database_password))
     except mariadb.Error as error:
         log.error('Create User | saml | %s', error)
@@ -514,7 +514,7 @@ def create_saml_database():
     # Grant privileges
     try:
         if ENVIRONMENT != 'local':
-            cursor.execute("GRANT ALL PRIVILEGES ON saml.* TO 'saml'@'{1}';".format(
+            cursor.execute("GRANT ALL PRIVILEGES ON saml.* TO 'saml'@'{0}';".format(
                 SERVERDEFS[ENVIRONMENT]['database_servers']['user_host_pattern']))
         else:
             cursor.execute("GRANT ALL PRIVILEGES ON saml.* TO 'saml'@'localhost';")
@@ -528,7 +528,7 @@ def create_saml_database():
     log.info('Create Database | saml | Success')
 
 
-def delete_saml_database(site_sid):
+def delete_saml_database():
     """
     Delete database and user
 
@@ -552,8 +552,11 @@ def delete_saml_database(site_sid):
 
     # Drop user
     try:
-        cursor.execute("DROP USER 'saml'@'{1}';".format(
-            SERVERDEFS[ENVIRONMENT]['database_servers']['user_host_pattern']))
+        if ENVIRONMENT != 'local':
+            cursor.execute("DROP USER 'saml'@'{0}';".format(
+                SERVERDEFS[ENVIRONMENT]['database_servers']['user_host_pattern']))
+        else:
+            cursor.execute("DROP USER 'saml'@'localhost';")
     except mariadb.Error as error:
         log.error('Drop User | saml | %s', error)
 

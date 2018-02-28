@@ -122,7 +122,7 @@ def on_insert_sites_callback(items):
     log.debug(items)
     for item in items:
         log.debug(item)
-        if item['type'] == 'express' and not item['f5only']:
+        if item['type'] == 'express':
             if not item.get('sid'):
                 item['sid'] = 'p1' + sha1(utilities.randomstring()).hexdigest()[0:10]
             if not item.get('path'):
@@ -158,7 +158,7 @@ def on_inserted_sites_callback(items):
     for item in items:
         log.debug(item)
         log.debug('site | Site object created | site - %s', item)
-        if item['type'] == 'express' and not item['f5only']:
+        if item['type'] == 'express':
             # Create statistics item
             statistics_payload = {}
             # Need to get the string out of the ObjectID.
@@ -168,8 +168,6 @@ def on_inserted_sites_callback(items):
             item['statistics'] = str(statistics['_id'])
 
             tasks.site_provision.delay(item)
-        if item['type'] == 'legacy' or item['f5only']:
-            tasks.update_f5.delay()
 
 
 def on_insert_code_callback(items):

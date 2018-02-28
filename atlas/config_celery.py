@@ -14,12 +14,63 @@ CELERY_MONGODB_BACKEND_SETTINGS = {
 CELERY_TIMEZONE = 'MST'
 CELERY_ENABLE_UTC = True
 # Time in seconds
-CELERYD_TASK_TIME_LIMIT = 600
+CELERYD_TASK_TIME_LIMIT = 900
 
-# Setup routing to isolate routine cron from other commands..
 CELERY_ROUTES = {
-    'atlas.tasks.command_run': {'queue': 'command_queue'},
-    'atlas.tasks.cron_run': {'queue': 'cron_queue'},
+    'atlas.tasks.code_deploy': {
+        'queue': 'update_queue'
+    },
+    'atlas.tasks.code_update': {
+        'queue': 'update_queue'
+    },
+    'atlas.tasks.code_remove': {
+        'queue': 'update_queue'
+    },
+    'atlas.tasks.site_provision': {
+        'queue': 'atlas_queue'
+    },
+    'atlas.tasks.site_update': {
+        'queue': 'update_queue'
+    },
+    'atlas.tasks.site_remove': {
+        'queue': 'atlas_queue'
+    },
+    'atlas.tasks.command_prepare': {
+        'queue': 'command_queue'
+    },
+    'atlas.tasks.command_wrapper': {
+        'queue': 'command_queue'
+    },
+    'atlas.tasks.command_run': {
+        'queue': 'command_queue'
+    },
+    'atlas.tasks.cron': {
+        'queue': 'cron_queue'
+    },
+    'atlas.tasks.cron_run': {
+        'queue': 'cron_queue'
+    },
+    'atlas.tasks.available_sites_check': {
+        'queue': 'atlas_queue'
+    },
+    'atlas.tasks.delete_stuck_pending_sites': {
+        'queue': 'atlas_queue'
+    },
+    'atlas.tasks.delete_all_available_sites': {
+        'queue': 'atlas_queue'
+    },
+    'atlas.tasks.delete_statistics_without_active_instance': {
+        'queue': 'atlas_queue'
+    },
+    'atlas.tasks.take_down_installed_old_sites': {
+        'queue': 'atlas_queue'
+    },
+    'atlas.tasks.verify_statistics': {
+        'queue': 'atlas_queue'
+    },
+    'atlas.tasks.remove_old_backups': {
+        'queue': 'atlas_queue'
+    },
 }
 
 CELERYBEAT_SCHEDULE = {
@@ -70,6 +121,10 @@ CELERYBEAT_SCHEDULE = {
     },
     'remove_unused_code': {
         'task': 'atlas.tasks.remove_unused_code',
+        'schedule': timedelta(hours=24),
+    },
+    'remove_old_backups': {
+        'task': 'atlas.tasks.remove_old_backups',
         'schedule': timedelta(hours=24),
     },
 }

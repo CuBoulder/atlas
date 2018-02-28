@@ -11,7 +11,8 @@ from bson import ObjectId
 
 from atlas import tasks
 from atlas import utilities
-from atlas.config import (ATLAS_LOCATION, DEFAULT_CORE, DEFAULT_PROFILE, SERVICE_ACCOUNT_USERNAME)
+from atlas.config import (ATLAS_LOCATION, DEFAULT_CORE, DEFAULT_PROFILE, SERVICE_ACCOUNT_USERNAME,
+                          PROTECTED_PATHS)
 
 # Setup a sub-logger. See tasks.py for longer comment.
 log = logging.getLogger('atlas.callbacks')
@@ -23,7 +24,8 @@ def pre_post_callback(resource, request):
     :param resource: resource accessed
     :param request: flask.request object
     """
-    log.debug('POST | Resource - %s | %s', resource, request)
+    log.debug('POST | Resource - %s | Request - %s, | request.data - %s',
+              resource, str(request), request.data)
 
 
 def pre_post_sites_callback(request):
@@ -46,6 +48,35 @@ def pre_post_sites_callback(request):
     elif not profile:
         log.error('sites | POST | Pre post callback | No current profile')
         abort(409, 'Error: There is no current profile.')
+
+    # Check for a protected path.
+    if json.loads(request.data).get('path') and json.loads(request.data)['path'] in PROTECTED_PATHS:
+        log.error('sites | POST | Pre post callback | Protected path')
+        abort(409, 'Error: Cannot use this path, it is on the protected list.')
+
+
+def pre_patch_sites_callback(request, payload):
+    """
+    :param request: flask.request object
+    """
+    log.debug('sites | PATCH | Pre patch callback | Payload - %s', payload)
+
+    # Check for a protected path.
+    if 'path' in json.loads(request.data) and json.loads(request.data)['path'] in PROTECTED_PATHS:
+        log.error('sites | PATCH | Pre patch callback | Protected path')
+        abort(409, 'Error: Cannot use this path, it is on the protected list.')
+
+
+def pre_put_sites_callback(request, payload):
+    """
+    :param request: flask.request object
+    """
+    log.debug('sites | PUT | Pre put callback | Payload - %s', payload)
+
+    # Check for a protected path.
+    if 'path' in json.loads(request.data) and json.loads(request.data)['path'] in PROTECTED_PATHS:
+        log.error('sites | PUT | Pre put callback | Protected path')
+        abort(409, 'Error: Cannot use this path, it is on the protected list.')
 
 
 def pre_delete_code_callback(request, lookup):
@@ -91,7 +122,7 @@ def on_insert_sites_callback(items):
     log.debug(items)
     for item in items:
         log.debug(item)
-        if item['type'] == 'express' and not item['f5only']:
+        if item['type'] == 'express':
             if not item.get('sid'):
                 item['sid'] = 'p1' + sha1(utilities.randomstring()).hexdigest()[0:10]
             if not item.get('path'):
@@ -127,7 +158,7 @@ def on_inserted_sites_callback(items):
     for item in items:
         log.debug(item)
         log.debug('site | Site object created | site - %s', item)
-        if item['type'] == 'express' and not item['f5only']:
+        if item['type'] == 'express':
             # Create statistics item
             statistics_payload = {}
             # Need to get the string out of the ObjectID.
@@ -249,7 +280,7 @@ def on_update_sites_callback(updates, original):
     """
     log.debug('sites | Update | Updates - %s | Original - %s', updates, original)
     site_type = updates['type'] if updates.get('type') else original['type']
-    if site_type == 'express':
+    if site_type in ['express', 'homepage']:
         site = original.copy()
         site.update(updates)
         # Only need to rewrite the nested dicts if they got updated.

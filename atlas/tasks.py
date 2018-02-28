@@ -7,6 +7,7 @@ import logging
 import time
 import json
 from bson import json_util
+from collections import Counter
 
 from datetime import datetime, timedelta
 from celery import Celery
@@ -313,7 +314,7 @@ def site_provision(site):
     :param site: A single site.
     :return:
     """
-    log.debug('Site provision | %s', site)
+    log.info('Site provision | %s', site)
     start_time = time.time()
     # 'db_key' needs to be added here and not in Eve so that the encryption
     # works properly.
@@ -335,7 +336,8 @@ def site_provision(site):
         raise
 
     try:
-        execute(fabric_tasks.site_install, site=site)
+        host = utilities.single_host()
+        execute(fabric_tasks.site_install, site=site, hosts=host)
     except Exception as error:
         log.error('Site install failed | Error Message | %s', error)
         raise
@@ -483,10 +485,10 @@ def site_update(site, updates, original):
                 site['status'] = 'launched'
                 execute(fabric_tasks.update_settings_file, site=site)
                 execute(fabric_tasks.site_launch, site=site)
+                if site['type'] == 'homepage':
+                    execute(fabric_tasks.update_homepage_extra_files)
                 deploy_drupal_cache_clear = True
                 deploy_php_cache_clear = True
-                if ENVIRONMENT is not 'local':
-                    execute(fabric_tasks.update_f5)
                 # Let fabric send patch since it is changing update group.
             elif updates['status'] == 'locked':
                 log.debug('Site update | ID - %s | Status changed to locked', site['_id'])
@@ -528,15 +530,17 @@ def site_update(site, updates, original):
             execute(fabric_tasks.update_settings_file, site=site)
             deploy_php_cache_clear = True
 
+    # Get a host to run single server commands on.
+    host = utilities.single_host()
     # We want to run these commands in this specific order.
     if deploy_php_cache_clear:
         execute(fabric_tasks.clear_php_cache)
     if deploy_registry_rebuild:
-        execute(fabric_tasks.registry_rebuild, site=site)
+        execute(fabric_tasks.registry_rebuild, site=site, hosts=host)
     if deploy_update_database:
-        execute(fabric_tasks.update_database, site=site)
+        execute(fabric_tasks.update_database, site=site, hosts=host)
     if deploy_drupal_cache_clear:
-        execute(fabric_tasks.cache_clear, sid=site['sid'])
+        execute(fabric_tasks.drush_cache_clear, sid=site['sid'], hosts=host)
 
     slack_text = 'Site Update - Success - {0}/sites/{1}'.format(API_URLS[ENVIRONMENT], site['_id'])
     slack_color = 'good'
@@ -609,9 +613,6 @@ def site_remove(site):
 
         execute(fabric_tasks.site_remove, site=site)
 
-    if ENVIRONMENT != 'local' and site['type'] == 'legacy':
-        execute(fabric_tasks.update_f5)
-
     slack_text = 'Site Remove - Success - {0}/{1}'.format(BASE_URLS[ENVIRONMENT], site['path'])
     slack_color = 'good'
     slack_link = '{0}/{1}'.format(BASE_URLS[ENVIRONMENT], site['path'])
@@ -664,6 +665,7 @@ def command_prepare(item):
     if item['command'] == 'rebalance_update_groups':
         utilities.rebalance_update_groups(item)
         return
+
     if item['query']:
         site_query = 'where={0}'.format(item['query'])
         sites = utilities.get_eve('sites', site_query)
@@ -679,6 +681,9 @@ def command_prepare(item):
                 if item['command'] == 'update_homepage_extra_files':
                     log.debug('Prepare Command | Item - %s | Update Homepage Extra files | Instance - %s', item['_id'], site['_id'])
                     command_wrapper.delay(execute(fabric_tasks.update_homepage_extra_files))
+                    continue
+                if item['command'] == 'backup_create':
+                    command_wrapper.delay(execute(fabric_tasks.backup_create, site=site))
                     continue
                 command_run.delay(site=site,
                                   command=item['command'],
@@ -731,8 +736,10 @@ def command_run(site, command, single_server, user=None, batch_id=None, batch_co
 
     start_time = time.time()
     if single_server:
+        # Get a host to run this command on.
+        host = utilities.single_host()
         fabric_task_result = execute(
-            fabric_tasks.command_run_single, site=site, command=altered_command, warn_only=True)
+            fabric_tasks.command_run_single, site=site, command=altered_command, warn_only=True, hosts=host)
     else:
         fabric_task_result = execute(
             fabric_tasks.command_run, site=site, command=altered_command, warn_only=True)
@@ -752,9 +759,9 @@ def cron(status=None):
     log.info('Status - %s', status)
     # Build query.
     site_query_string = ['max_results=2000']
-    log.debug('Found argument')
-    # Start by eliminating f5-only and legacy items.
-    site_query_string.append('&where={"f5only":false,"type":"express",')
+    log.debug('Prepare Cron | Found argument')
+    # Start by eliminating legacy items.
+    site_query_string.append('&where={"type":"express",')
     if status:
         log.debug('Found status')
         site_query_string.append('"status":"{0}",'.format(status))
@@ -788,14 +795,17 @@ def cron_run(site):
     log.info('Site - %s | %s', site['sid'], site)
     start_time = time.time()
 
-    if site['pool'] != 'poolb-homepage':
+    if site['type'] == 'express':
         uri = BASE_URLS[ENVIRONMENT] + '/' + site['path']
     else:
+        # Homepage
         uri = BASE_URLS[ENVIRONMENT]
     log.debug('Site - %s | uri - %s', site['sid'], uri)
     command = 'sudo -u {0} drush elysia-cron run --uri={1}'.format(WEBSERVER_USER, uri)
     try:
-        execute(fabric_tasks.command_run_single, site=site, command=command)
+        # Get a host to run this command on.
+        host = utilities.single_host()
+        execute(fabric_tasks.command_run_single, site=site, command=command, hosts=host)
     except CronException as error:
         log.error('Site - %s | Cron failed | Error - %s', site['sid'], error)
         raise
@@ -889,7 +899,7 @@ def remove_orphan_statistics():
     """
     Get a list of statistics and key them against a list of active instances.
     """
-    site_query = 'where={"type":"express","f5only":false}&max_results=2000'
+    site_query = 'where={"type":"express"}&max_results=2000'
     sites = utilities.get_eve('sites', site_query)
     statistics_query = '&max_results=2000'
     statistics = utilities.get_eve('statistics', statistics_query)
@@ -964,7 +974,7 @@ def verify_statistics():
             log.info('sites_id_list | %s', str(sites_id_list))
 
             slack_fallback = '{0} statistics items have not been updated in 36 hours.'.format(
-                len(statistic_id_list))
+                    len(statistic_id_list))
             slack_link = '{0}/statistics?{1}'.format(BASE_URLS[ENVIRONMENT], site_query)
             slack_payload = {
                 "text": 'Outdated Statistics',
@@ -1004,3 +1014,64 @@ def verify_statistics():
             }
 
             utilities.post_to_slack_payload(slack_payload)
+
+
+@celery.task
+def backup_create(site, backup_type):
+    log.debug('Backup | Create | Site - %s', site)
+    log.info('Backup | Create | Site - %s', site['_id'])
+    host = utilities.single_host()
+    execute(fabric_tasks.backup_create, site=site, backup_type=backup_type, hosts=host)
+
+
+@celery.task
+def backup_restore(backup_record, original_instance, package_list):
+    log.info('Backup | Restore | Backup ID - %s', backup_record['_id'])
+    log.debug('Backup | Restore | Backup Recorsd - %s | Original instance - %s | Package List - %s',
+              backup_record, original_instance, package_list)
+    host = utilities.single_host()
+    execute(fabric_tasks.backup_restore, backup_record=backup_record,
+            original_instance=original_instance, package_list=package_list, hosts=host)
+
+
+@celery.task
+def remove_old_backups():
+    """
+    Delete backups older than 90 days.
+    """
+    time_ago = datetime.utcnow() - timedelta(days=90)
+    backup_query = 'where={{"_created":{{"$lte":"{0}"}}}}&max_results=2000'.format(
+        time_ago.strftime("%Y-%m-%d %H:%M:%S GMT"))
+    backups = utilities.get_eve('backup', backup_query)
+    # Loop through and remove sites that are more than 90 days old.
+    for backup in backups['_items']:
+        log.info('Delete old backup | backup - %s', backup)
+        utilities.delete_eve('backup', backup['_id'])
+
+
+@celery.task
+def remove_extra_backups():
+    # TODO: Finish this.
+    """
+    Delete extra backups, we only want to keep 5 per instance.
+    """
+    # Get all backups
+    backups = utilities.get_eve('backup', 'max_results=2000')
+    instance_ids = []
+    for item in backups['_items']:
+        instance_ids.append(item['site'])
+    log.debug('Delete extra backups | Instance list - %s', instance_ids)
+    counts = Counter(instance_ids)
+    log.info('Delete extra backups | counts - %s', counts)
+    # Sort out the list for values greater than 5
+    high_count = {k:v for (k, v) in counts.items() if v > 5}
+    log.info('Delete extra backups | High Count - %s', high_count)
+    if high_count:
+        for item in high_count:
+            # Get a list of backups for this instance, sorted by age
+            instance_backup_query = 'where={{"site":"{0}"}}&sort=[("_created", -1)]'.format(item)
+            instance_backups = utilities.get_eve('backup', instance_backup_query)
+            log.info('Delete extra backups | List of backups - %s', instance_backups)
+            # Remove the oldest
+            log.info('Delete extra backup | backup - %s', item)
+            utilities.delete_eve('backup', item)

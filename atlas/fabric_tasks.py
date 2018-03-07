@@ -10,19 +10,23 @@ import re
 import requests
 from random import randint
 from datetime import datetime
+from time import time, sleep, strftime
+from shutil import copyfileobj
 
 from fabric.contrib.files import exists, upload_template
+from fabric.operations import put
 from fabric.api import *
 from fabric.network import disconnect_all
 
 from atlas import utilities
 from atlas.config import (ATLAS_LOCATION, ENVIRONMENT, SSH_USER, CODE_ROOT, SITES_CODE_ROOT,
                           SITES_WEB_ROOT, WEBSERVER_USER, WEBSERVER_USER_GROUP, NFS_MOUNT_FILES_DIR,
-                          BACKUPS_PATH, SERVICE_ACCOUNT_USERNAME, SERVICE_ACCOUNT_PASSWORD,
-                          SITE_DOWN_PATH, LOAD_BALANCER)
+                          BACKUP_TMP_PATH, SERVICE_ACCOUNT_USERNAME, SERVICE_ACCOUNT_PASSWORD,
+                          SITE_DOWN_PATH, LOAD_BALANCER, VARNISH_CONTROL_KEY, STATIC_WEB_PATH, 
+                          SSL_VERIFICATION)
 from atlas.config_servers import (SERVERDEFS, NFS_MOUNT_LOCATION, API_URLS,
                                   VARNISH_CONTROL_TERMINALS, LOAD_BALANCER_CONFIG_FILES,
-                                  LOAD_BALANCER_CONFIG_GROUP)
+                                  LOAD_BALANCER_CONFIG_GROUP, BASE_URLS)
 
 # Setup a sub-logger. See tasks.py for longer comment.
 log = logging.getLogger('atlas.fabric_tasks')
@@ -680,6 +684,8 @@ def replace_files_directory(source, destination):
 
 
 def update_symlink(source, destination):
+    log.info('fabric_tasks | Update Symlink | Source - %s | Destination - %s',
+             source, destination)
     if exists(destination):
         run('rm {0}'.format(destination))
     run('ln -s {0} {1}'.format(source, destination))

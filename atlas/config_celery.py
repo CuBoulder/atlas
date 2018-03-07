@@ -72,4 +72,8 @@ CELERYBEAT_SCHEDULE = {
         'task': 'atlas.tasks.remove_unused_code',
         'schedule': timedelta(hours=24),
     },
+    'remove_old_backups': {
+        'task': 'atlas.tasks.remove_old_backups',
+        'schedule': timedelta(hours=24),
+    },
 }

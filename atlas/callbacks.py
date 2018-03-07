@@ -23,7 +23,7 @@ def pre_post_callback(resource, request):
     :param resource: resource accessed
     :param request: flask.request object
     """
-    log.debug('POST | Resource - %s | %s', resource, request)
+    log.debug('POST | Resource - %s | Request - %s, | request.data - %s', resource, str(request), request.data)
 
 
 def pre_post_sites_callback(request):
@@ -137,6 +137,8 @@ def on_inserted_sites_callback(items):
             item['statistics'] = str(statistics['_id'])
 
             tasks.site_provision.delay(item)
+        if item['type'] == 'legacy' or item['f5only']:
+            tasks.update_f5.delay()
 
 
 def on_insert_code_callback(items):

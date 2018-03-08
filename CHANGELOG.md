@@ -2,9 +2,16 @@
 
 ## v2.1.2
 
+This release adds basic backup and restore functionality.@
+
+Need to:
+
+- Add `BACKUP_TMP_PATH` and `MEDIA_STORAGE_PATH` to `config_local.py`
+
 Resolves:
 
 - &#35;441 Add a cookie domain to settings file
+- &#35;90 - Create resource for backups
 
 ## v2.1.1
 

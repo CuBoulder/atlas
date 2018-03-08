@@ -22,7 +22,7 @@ from atlas import utilities
 from atlas.config import (ATLAS_LOCATION, ENVIRONMENT, SSH_USER, CODE_ROOT, SITES_CODE_ROOT,
                           SITES_WEB_ROOT, WEBSERVER_USER, WEBSERVER_USER_GROUP, NFS_MOUNT_FILES_DIR,
                           BACKUP_TMP_PATH, SERVICE_ACCOUNT_USERNAME, SERVICE_ACCOUNT_PASSWORD,
-                          SITE_DOWN_PATH, LOAD_BALANCER, VARNISH_CONTROL_KEY, STATIC_WEB_PATH, 
+                          SITE_DOWN_PATH, LOAD_BALANCER, VARNISH_CONTROL_KEY, STATIC_WEB_PATH,
                           SSL_VERIFICATION)
 from atlas.config_servers import (SERVERDEFS, NFS_MOUNT_LOCATION, API_URLS,
                                   VARNISH_CONTROL_TERMINALS, LOAD_BALANCER_CONFIG_FILES,
@@ -765,12 +765,12 @@ def backup_create(site, backup_type):
     log.info('Backup | Create | %s', site['_id'])
     start_time = time()
     # Setup all the variables we will need.
-    # Date and time strings.   
+    # Date and time strings.
     date = datetime.now()
     date_string = date.strftime("%Y-%m-%d")
     date_time_string = date.strftime("%Y-%m-%d-%H-%M-%S")
     datetime_string = date.strftime("%Y-%m-%d %H:%M:%S GMT")
-    
+
     # Instance paths
     web_directory = '{0}/{1}'.format(SITES_WEB_ROOT, site['sid'])
     database_result_file = '{0}_{1}.sql'.format(site['sid'], date_time_string)
@@ -784,14 +784,6 @@ def backup_create(site, backup_type):
     with cd(web_directory):
         run('drush sql-dump --skip-tables-list=cache,cache_* --result-file={0}'.format(database_result_file_path))
         run('tar --exclude "{0}/imagecache" --exclude "{0}/css" --exclude "{0}/js" --exclude "{0}/backup_migrate" --exclude "{0}/styles" -czf {1} {0}'.format(nfs_files_dir, files_result_file_path))
-
-    # Take files to Atlas server so that we can use python to POST them.
-    get(database_result_file_path, local_path=database_result_file_path)
-    get(files_result_file_path, local_path=files_result_file_path)
-
-    # Remove files from webserver after the are copied to the Atlas server
-    run('rm {0}'.format(database_result_file_path))
-    run('rm {0}'.format(files_result_file_path))
 
     payload = {
         'site': site['_id'],
@@ -826,7 +818,7 @@ def backup_create(site, backup_type):
         slack_url = '{0}/{1}'.format(BASE_URLS[ENVIRONMENT], site['path'])
 
 
-    # Remove tmp files from atlas server
+    # Remove tmp files
     local('rm {0}'.format(database_result_file_path))
     local('rm {0}'.format(files_result_file_path))
 
@@ -834,7 +826,6 @@ def backup_create(site, backup_type):
     log.info('Atlas operational statistic | Backup Create | %s', backup_time)
 
     # Send notification to Slack
-
     title = 'Site Backup'
     slack_link = '<' + slack_url + '|' + slack_url + '>'
     command = 'Backup - Create'
@@ -906,7 +897,7 @@ def backup_restore(backup_record, original_instance, package_list):
     # backup location has a root slash.
     database_url = '{0}{1}'.format(API_URLS[ENVIRONMENT], backup_record['database']['file'])
     files_url = '{0}{1}'.format(API_URLS[ENVIRONMENT], backup_record['files']['file'])
-    
+
     # Download DB
     database_download = download_file(database_url, 'sql')
     file_date = datetime.strptime(backup_record['backup_date'], "%Y-%m-%d %H:%M:%S %Z")
@@ -929,7 +920,7 @@ def backup_restore(backup_record, original_instance, package_list):
     if not os.path.isfile(files_download_path_clean) and os.path.isfile(database_download_path_clean):
         log.error('Instance | Restore Backup | Files were not moved to restore location')
         exit()
-    
+
     # Grab available instance and add packages if needed
     available_instances = utilities.get_eve('sites', 'where={"status":"available"}')
     log.debug('Instance | Restore Backup | Avaiable Instances - %s', available_instances)
@@ -960,20 +951,13 @@ def backup_restore(backup_record, original_instance, package_list):
                 sleep(10)
             else:
                 exit(str(e))
-    log.debug('Instance | Restore Backup | Instance is ready for DB and files')
-    web_directory = '{0}/{1}'.format(SITES_WEB_ROOT, new_instance['sid'])
-    nfs_dir = NFS_MOUNT_LOCATION[ENVIRONMENT]
-    nfs_files_dir = '{0}/{1}/files'.format(nfs_dir, new_instance['sid'])
-    # Move DB and files onto server
-    log.debug('Fabric env | late | %s', env)
-    put(database_download_path_clean, BACKUP_TMP_PATH)
-    put(files_download_path_clean, BACKUP_TMP_PATH)
-    local('rm {0}'.format(database_download_path_clean))
-    local('rm {0}'.format(files_download_path_clean))
-    log.debug('Instance | Restore Backup | Files moved to server')
 
+    log.debug('Instance | Restore Backup | Instance is ready for DB and files')
+    web_directory = '{0}/{1}/{2}'.format(SITES_WEB_ROOT, new_instance['type'], new_instance['sid'])
+    nfs_files_dir = '{0}/sitefiles/{1}/files'.format(NFS_MOUNT_LOCATION[ENVIRONMENT], new_instance['sid'])
     webserver_database_path = '{0}/{1}'.format(BACKUP_TMP_PATH, pretty_database_filename)
     webserver_files_path = '{0}/{1}'.format(BACKUP_TMP_PATH, pretty_files_filename)
+
     with cd(web_directory):
         run('drush sql-drop -y && drush sql-cli < {0}'.format(webserver_database_path))
         log.debug('Instance | Restore Backup | DB imported')
@@ -995,7 +979,7 @@ def backup_restore(backup_record, original_instance, package_list):
     slack_color = 'good'
     slack_channel = 'general'
     slack_fallback = site_url + ' - ' + ENVIRONMENT + ' - ' + command
- 
+
     slack_payload = {
         # Channel will be overridden on local environments.
         "channel": slack_channel,

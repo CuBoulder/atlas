@@ -798,14 +798,6 @@ def backup_create(site, backup_type):
         run('drush sql-dump --skip-tables-list=cache,cache_* --result-file={0}'.format(database_result_file_path))
         run('tar --exclude "{0}/imagecache" --exclude "{0}/css" --exclude "{0}/js" --exclude "{0}/backup_migrate" --exclude "{0}/styles" -czf {1} {0}'.format(nfs_files_dir, files_result_file_path))
 
-    # Take files to Atlas server so that we can use python to POST them.
-    get(database_result_file_path, local_path=database_result_file_path)
-    get(files_result_file_path, local_path=files_result_file_path)
-
-    # Remove files from webserver after the are copied to the Atlas server
-    run('rm {0}'.format(database_result_file_path))
-    run('rm {0}'.format(files_result_file_path))
-
     payload = {
         'site': site['_id'],
         'site_version': site['_version'],
@@ -839,7 +831,7 @@ def backup_create(site, backup_type):
         slack_url = '{0}/{1}'.format(BASE_URLS[ENVIRONMENT], site['path'])
 
 
-    # Remove tmp files from atlas server
+    # Remove tmp files
     local('rm {0}'.format(database_result_file_path))
     local('rm {0}'.format(files_result_file_path))
 
@@ -847,7 +839,6 @@ def backup_create(site, backup_type):
     log.info('Atlas operational statistic | Backup Create | %s', backup_time)
 
     # Send notification to Slack
-
     title = 'Site Backup'
     slack_link = '<' + slack_url + '|' + slack_url + '>'
     command = 'Backup - Create'
@@ -974,19 +965,13 @@ def backup_restore(backup_record, original_instance, package_list):
                 sleep(10)
             else:
                 exit(str(e))
+
     log.debug('Instance | Restore Backup | Instance is ready for DB and files')
     web_directory = '{0}/{1}/{2}'.format(SITES_WEB_ROOT, new_instance['type'], new_instance['sid'])
     nfs_files_dir = '{0}/sitefiles/{1}/files'.format(NFS_MOUNT_LOCATION[ENVIRONMENT], new_instance['sid'])
-    # Move DB and files onto server
-    log.debug('Fabric env | late | %s', env)
-    put(database_download_path_clean, BACKUP_TMP_PATH)
-    put(files_download_path_clean, BACKUP_TMP_PATH)
-    local('rm {0}'.format(database_download_path_clean))
-    local('rm {0}'.format(files_download_path_clean))
-    log.debug('Instance | Restore Backup | Files moved to server')
-
     webserver_database_path = '{0}/{1}'.format(BACKUP_TMP_PATH, pretty_database_filename)
     webserver_files_path = '{0}/{1}'.format(BACKUP_TMP_PATH, pretty_files_filename)
+
     with cd(web_directory):
         run('drush sql-cli < {0}'.format(webserver_database_path))
         log.debug('Instance | Restore Backup | DB imported')

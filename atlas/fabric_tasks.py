@@ -865,11 +865,13 @@ def backup_restore(backup_record, original_instance, package_list):
     web_directory = '{0}/{1}/{2}'.format(SITES_WEB_ROOT, new_instance['type'], new_instance['sid'])
     nfs_files_dir = '{0}/sitefiles/{1}/files'.format(NFS_MOUNT_LOCATION[ENVIRONMENT], new_instance['sid'])
 
+    with cd(nfs_files_dir):
+        run('tar -xzf {0}'.format(files_path))
+        log.debug('Instance | Restore Backup | Files replaced')
+
     with cd(web_directory):
         run('drush sql-cli < {0}'.format(database_path))
         log.debug('Instance | Restore Backup | DB imported')
-        run('tar -xzf {0} -C {1}'.format(files_path, nfs_files_dir))
-        log.debug('Instance | Restore Backup | Files replaced')
         run('drush cc all')
 
     restore_time = time() - start_time

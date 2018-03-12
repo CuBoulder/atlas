@@ -16,7 +16,6 @@ from flask import jsonify, make_response, abort
 from atlas import callbacks
 from atlas import tasks
 from atlas import utilities
-from atlas.media_storage import FileSystemMediaStorage
 from atlas.config import (ATLAS_LOCATION, VERSION_NUMBER, SSL_KEY_FILE, SSL_CRT_FILE, LOG_LOCATION,
                           ENVIRONMENT)
 
@@ -33,8 +32,7 @@ SETTINGS_FILE = os.path.join(THIS_DIRECTORY, 'atlas/data_structure.py')
 # Name our app (using 'import_name') so that we can easily create sub loggers.
 # Use our HTTP Basic Auth class which checks against LDAP.
 # Import the data structures and Eve settings.
-app = Eve(import_name='atlas', auth=utilities.AtlasBasicAuth,
-          settings=SETTINGS_FILE, media=FileSystemMediaStorage)
+app = Eve(import_name='atlas', auth=utilities.AtlasBasicAuth, settings=SETTINGS_FILE)
 # TODO: Remove debug mode.
 app.debug = True
 

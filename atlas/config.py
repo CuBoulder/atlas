@@ -12,7 +12,7 @@ from atlas.config_servers import (SERVERDEFS, VARNISH_CONTROL_TERMINALS, NFS_MOU
                                   LOAD_BALANCER_CONFIG_GROUP)
 from atlas.config_local import (ENVIRONMENT, SSL_KEY_FILE, SSL_CRT_FILE, ALLOWED_USERS,
                                 NFS_MOUNT_FILES_DIR, LOAD_BALANCER, DESIRED_SITE_COUNT, CODE_ROOT,
-                                SITES_WEB_ROOT, SITES_CODE_ROOT, SITE_DOWN_PATH, BACKUP_TMP_PATH,
+                                SITES_WEB_ROOT, SITES_CODE_ROOT, SITE_DOWN_PATH,
                                 DEFAULT_CORE, DEFAULT_PROFILE, ENCRYPTION_KEY, LDAP_SERVER,
                                 LDAP_ORG_UNIT, LDAP_DNS_DOMAIN_NAME, SSH_USER, WEBSERVER_USER,
                                 WEBSERVER_USER_GROUP, DATABASE_USER, DATABASE_PASSWORD,
@@ -20,7 +20,7 @@ from atlas.config_local import (ENVIRONMENT, SSL_KEY_FILE, SSL_CRT_FILE, ALLOWED
                                 SLACK_NOTIFICATIONS, SLACK_URL, SLACK_USERNAME, VARNISH_CONTROL_KEY,
                                 SEND_NOTIFICATION_EMAILS, SEND_NOTIFICATION_FROM_EMAIL, EMAIL_HOST,
                                 EMAIL_PORT, EMAIL_USERNAME, EMAIL_PASSWORD, LOG_LOCATION,
-                                EMAIL_USERS_EXCLUDE, STATIC_WEB_PATH, MEDIA_STORAGE_PATH)
+                                EMAIL_USERS_EXCLUDE, STATIC_WEB_PATH, BACKUP_PATH)
 
 # Set Atlas location
 ATLAS_LOCATION = os.path.dirname(os.path.realpath(__file__))
@@ -43,7 +43,7 @@ if TRAILING_SLASH.search(SITES_WEB_ROOT):
 if TRAILING_SLASH.search(SITES_WEB_ROOT):
     raise Exception("'sites_web_root' should not have a trailing slash.")
 
-# These are paths that we cannot route to instances. 
+# These are paths that we cannot route to instances.
 PROTECTED_PATHS = ['opcache', 'static', 'includes', 'misc','modules','profiles', 'scripts', 'sites', 'themes']
 
 # This allows us to use a self signed cert for local dev.

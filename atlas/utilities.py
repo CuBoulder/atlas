@@ -462,19 +462,22 @@ def send_email(email_message, email_subject, email_to):
     :param email_subject: content of the subject line
     :param email_to: list of email address(es) the email will be sent to
     """
-    if SEND_NOTIFICATION_EMAILS and email_to not in EMAIL_USERS_EXCLUDE:
+    log.debug('Send email | Message - %s | Subject - %s | To - %s', email_message, email_subject, email_to)
+    if SEND_NOTIFICATION_EMAILS:
         # We only send plaintext to prevent abuse.
         msg = MIMEText(email_message, 'plain')
         msg['Subject'] = email_subject
         msg['From'] = SEND_NOTIFICATION_FROM_EMAIL
         final_email_to = [x for x in email_to if x not in EMAIL_USERS_EXCLUDE]
+        log.info('Send email | Final To - %s', final_email_to)
         msg['To'] = ", ".join(final_email_to)
 
-        s = smtplib.SMTP(EMAIL_HOST, EMAIL_PORT)
-        s.starttls()
-        s.login(EMAIL_USERNAME, EMAIL_PASSWORD)
-        s.sendmail(SEND_NOTIFICATION_FROM_EMAIL, final_email_to, msg.as_string())
-        s.quit()
+        if final_email_to:
+            s = smtplib.SMTP(EMAIL_HOST, EMAIL_PORT)
+            s.starttls()
+            s.login(EMAIL_USERNAME, EMAIL_PASSWORD)
+            s.sendmail(SEND_NOTIFICATION_FROM_EMAIL, final_email_to, msg.as_string())
+            s.quit()
 
 
 # When we start the app, set the round-robin counter to 0.

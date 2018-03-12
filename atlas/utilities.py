@@ -462,7 +462,7 @@ def send_email(email_message, email_subject, email_to):
     :param email_subject: content of the subject line
     :param email_to: list of email address(es) the email will be sent to
     """
-    if SEND_NOTIFICATION_EMAILS:
+    if SEND_NOTIFICATION_EMAILS and email_to not in EMAIL_USERS_EXCLUDE:
         # We only send plaintext to prevent abuse.
         msg = MIMEText(email_message, 'plain')
         msg['Subject'] = email_subject

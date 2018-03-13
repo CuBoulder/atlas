@@ -862,7 +862,7 @@ def backup_restore(backup_record, original_instance, package_list):
             else:
                 exit(str(e))
 
-    log.debug('Instance | Restore Backup | Instance is ready for DB and files')
+    log.debug('Instance | Restore Backup | New instance is ready for DB and files | %s', new_instance['_id'])
     web_directory = '{0}/{1}/{2}'.format(SITES_WEB_ROOT, new_instance['type'], new_instance['sid'])
     nfs_files_dir = '{0}/sitefiles/{1}/files'.format(NFS_MOUNT_LOCATION[ENVIRONMENT], new_instance['sid'])
 

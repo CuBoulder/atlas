@@ -797,7 +797,7 @@ def backup_create(site, backup_type):
     with cd(web_directory):
         run('drush sql-dump --skip-tables-list=cache,cache_* --result-file={0}'.format(database_result_file_path))
     with cd(nfs_files_dir):
-        run('tar --exclude "imagecache" --exclude "css" --exclude "js" --exclude "backup_migrate" --exclude "styles" -czf {0} *'.format(files_result_file_path))
+        run('tar --exclude "imagecache" --exclude "css" --exclude "js" --exclude "backup_migrate" --exclude "styles" --exclude "xmlsitemap" --exclude "honeypot" -czf {0} *'.format(files_result_file_path))
 
     payload = {
         'site': site['_id'],
@@ -882,7 +882,7 @@ def backup_restore(backup_record, original_instance, package_list):
     nfs_files_dir = '{0}/sitefiles/{1}/files'.format(NFS_MOUNT_LOCATION[ENVIRONMENT], new_instance['sid'])
 
     with cd(nfs_files_dir):
-        run('tar -xzf {0} .'.format(files_path))
+        run('tar -xzf {0}'.format(files_path))
         log.debug('Instance | Restore Backup | Files replaced')
 
     with cd(web_directory):

@@ -891,4 +891,4 @@ def backup_restore(backup_record, original_instance, package_list):
         run('drush cc all')
 
     restore_time = time() - start_time
-    log.info('Instance | Restore Backup | Complete | %s | %s | %s sec', backup_record, original_instance, restore_time)
+    log.info('Instance | Restore Backup | Complete | Backup - %s | New Instance - %s (%s) | %s sec', backup_record['_id'], new_instance['_id'], new_instance['sid'], restore_time)

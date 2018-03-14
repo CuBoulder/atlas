@@ -251,7 +251,7 @@ def get_eve(resource, query=None):
     return r.json()
 
 
-def get_single_eve(resource, id, version=None):
+def get_single_eve(resource, id, version=None, env=ENVIRONMENT):
     """
     Make calls to the Atlas API.
 
@@ -260,9 +260,9 @@ def get_single_eve(resource, id, version=None):
     :return: dict of items that match the query string.
     """
     if version:
-        url = "{0}/{1}/{2}?version={3}".format(API_URLS[ENVIRONMENT], resource, id, version)
+        url = "{0}/{1}/{2}?version={3}".format(API_URLS[env], resource, id, version)
     else:
-        url = "{0}/{1}/{2}".format(API_URLS[ENVIRONMENT], resource, id)
+        url = "{0}/{1}/{2}".format(API_URLS[env], resource, id)
     log.debug('utilities | Get Eve Single | url - %s', url)
 
     try:
@@ -478,3 +478,30 @@ def send_email(email_message, email_subject, email_to):
             s.login(EMAIL_USERNAME, EMAIL_PASSWORD)
             s.sendmail(SEND_NOTIFICATION_FROM_EMAIL, final_email_to, msg.as_string())
             s.quit()
+
+
+def package_import(site, env=ENVIRONMENT):
+    """
+    Take a site record, lookup the packages, and return a list of packages to add to the instance.
+    """
+    if 'package' in site['code']:
+        # Start with an empty list
+        package_list = []
+        for package in site['code']['package']:
+            package_result = get_single_eve('code', package, env=env)
+            log.debug(
+                'Utilities | Package import | Checking for packages | Request result - %s', package_result)
+            if package_result['_deleted']:
+                current_package = get_current_code(
+                    package_result['meta']['name'], package_result['meta']['code_type'])
+                log.debug('Utilities | Package import | Getting current version of package - %s', current_package)
+                if current_package:
+                    package_list.append(current_package)
+                else:
+                    raise Exception('There is no current version of {0}. This backup cannot be restored.'.format(
+                        package_result['meta']['name']))
+            else:
+                package_list.append(package_result['_id'])
+    else:
+        package_list = None
+    return package_list

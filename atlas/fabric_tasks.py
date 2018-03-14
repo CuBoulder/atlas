@@ -6,6 +6,7 @@
 import logging
 import os
 import re
+import json
 
 import requests
 from random import randint
@@ -760,13 +761,32 @@ def backup_create(site, backup_type):
     """
     Backup the database and files for an site.
     """
-    log.debug('Backup | Create | %s', site)
-    log.info('Backup | Create | %s', site['_id'])
+    log.debug('Backup | Create | site - %s', site)
+
+    # Create the stub for the backup
+    post_payload = {
+        'site': site['_id'],
+        'site_version': site['_version'],
+        'backup_type': backup_type,
+        'state': 'pending'
+    }
+    post_url = '{0}/backup'.format(API_URLS[ENVIRONMENT])
+    post = requests.post(
+        post_url,
+        data=post_payload,
+        auth=(SERVICE_ACCOUNT_USERNAME, SERVICE_ACCOUNT_PASSWORD),
+        verify=SSL_VERIFICATION,
+    )
+    if post.ok:
+        log.info('Backup | Create | POST - OK | %s | %s', post.content, post.headers)
+    else:
+        log.error('Backup | Create | POST - Error | %s', json.dumps(post.text))
+
+    backup_item = post.json()
+    log.info('Backup | Create | POST | Backup item - %s', backup_item)
+    # Setup dates and times.
     start_time = time()
-    # Setup all the variables we will need.
-    # Date and time strings.
     date = datetime.now()
-    date_string = date.strftime("%Y-%m-%d")
     date_time_string = date.strftime("%Y-%m-%d-%H-%M-%S")
     datetime_string = date.strftime("%Y-%m-%d %H:%M:%S GMT")
 
@@ -779,39 +799,23 @@ def backup_create(site, backup_type):
     files_result_file_path = '{0}/{1}'.format(BACKUP_PATH, files_result_file)
 
     # Start the actual process.
-    create_directory_structure(BACKUP_PATH)
     with cd(web_directory):
         run('drush sql-dump --skip-tables-list=cache,cache_* --result-file={0}'.format(database_result_file_path))
     with cd(nfs_files_dir):
         run('tar --exclude "imagecache" --exclude "css" --exclude "js" --exclude "backup_migrate" --exclude "styles" --exclude "xmlsitemap" --exclude "honeypot" -czf {0} *'.format(files_result_file_path))
 
-    payload = {
+    patch_payload = {
         'site': site['_id'],
         'site_version': site['_version'],
         'backup_date': datetime_string,
-        'backup_type': backup_type
+        'backup_type': backup_type,
+        'files' : files_result_file,
+        'database': database_result_file,
+        'state': 'complete'
     }
-    request_url = '{0}/backup'.format(API_URLS[ENVIRONMENT])
 
-    log.debug('Backup | Create | Ready to send to Atlas | Payload - %s', payload)
-    r = requests.post(
-        request_url,
-        data=payload,
-        auth=(SERVICE_ACCOUNT_USERNAME, SERVICE_ACCOUNT_PASSWORD),
-        verify=SSL_VERIFICATION,
-    )
-
-    if r.ok:
-        log.debug('Backup | Create | POST - OK | %s', r.json())
-        text = 'Success'
-        slack_color = 'good'
-        slack_url = '{0}/backup/{1}'.format(API_URLS[ENVIRONMENT], r.json()['_id'])
-
-    else:
-        log.error('Backup | Create | POST - Error | %s', r.text())
-        text = 'Error'
-        slack_color = 'danger'
-        slack_url = '{0}/{1}'.format(BASE_URLS[ENVIRONMENT], site['path'])
+    log.debug('Backup | Create | Ready to update record | Payload - %s', patch_payload)
+    utilities.patch_eve('backup', backup_item['_id'], patch_payload)
 
     backup_time = time() - start_time
     log.info('Atlas operational statistic | Backup Create | %s', backup_time)
@@ -825,7 +829,8 @@ def backup_restore(backup_record, original_instance, package_list):
     start_time = time()
 
     file_date = datetime.strptime(backup_record['backup_date'], "%Y-%m-%d %H:%M:%S %Z")
-    pretty_filename = '{0}_{1}'.format(original_instance['sid'], file_date.strftime("%Y-%m-%d-%H-%M-%S"))
+    pretty_filename = '{0}_{1}'.format(
+        original_instance['sid'], file_date.strftime("%Y-%m-%d-%H-%M-%S"))
     pretty_database_filename = '{0}.sql'.format(pretty_filename)
     database_path = '{0}/{1}'.format(BACKUP_PATH, pretty_database_filename)
     pretty_files_filename = '{0}.tar.gz'.format(pretty_filename)
@@ -862,9 +867,11 @@ def backup_restore(backup_record, original_instance, package_list):
             else:
                 exit(str(e))
 
-    log.debug('Instance | Restore Backup | New instance is ready for DB and files | %s', new_instance['_id'])
+    log.debug('Instance | Restore Backup | New instance is ready for DB and files | %s',
+              new_instance['_id'])
     web_directory = '{0}/{1}/{2}'.format(SITES_WEB_ROOT, new_instance['type'], new_instance['sid'])
-    nfs_files_dir = '{0}/sitefiles/{1}/files'.format(NFS_MOUNT_LOCATION[ENVIRONMENT], new_instance['sid'])
+    nfs_files_dir = '{0}/sitefiles/{1}/files'.format(
+        NFS_MOUNT_LOCATION[ENVIRONMENT], new_instance['sid'])
 
     with cd(nfs_files_dir):
         run('tar -xzf {0}'.format(files_path))
@@ -876,4 +883,5 @@ def backup_restore(backup_record, original_instance, package_list):
         run('drush cc all')
 
     restore_time = time() - start_time
-    log.info('Instance | Restore Backup | Complete | Backup - %s | New Instance - %s (%s) | %s sec', backup_record['_id'], new_instance['_id'], new_instance['sid'], restore_time)
+    log.info('Instance | Restore Backup | Complete | Backup - %s | New Instance - %s (%s) | %s sec',
+             backup_record['_id'], new_instance['_id'], new_instance['sid'], restore_time)

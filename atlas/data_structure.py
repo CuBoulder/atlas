@@ -735,6 +735,12 @@ STATISTICS_SCHEMA = {
 }
 
 BACKUP_SCHEMA = {
+    'state': {
+        'type': 'string',
+        'allowed': ['pending', 'complete'],
+        'default': 'pending',
+        'required': True,
+    },
     'site': {
         'type': 'objectid',
         'data_relation': {
@@ -749,13 +755,18 @@ BACKUP_SCHEMA = {
     },
     'backup_date': {
         'type': 'datetime',
-        'required': True,
     },
     'backup_type': {
         'type': 'string',
-        'allowed':  ['on_demand', 'update', 'routine'],
+        'allowed': ['on_demand', 'update', 'routine'],
         'default': 'routine',
         'required': True,
+    },
+    'files': {
+        'type': 'string',
+    },
+    'database': {
+        'type': 'string',
     },
     'created_by': {
         'type': 'string',

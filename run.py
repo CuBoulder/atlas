@@ -49,38 +49,6 @@ if ENVIRONMENT == 'local':
 app.logger.addHandler(LOG_HANDLER)
 
 # Hook into the request flow early
-@app.route('/backup/import', methods=['POST'])
-@requires_auth('backup')
-def import_backup():
-    """
-    Import a backup to a new instance.
-    """
-    backup_request = request.get_json()
-    app.logger.debug('Backup | Import | %s', backup_request)
-    # Get the backup and then the site records.
-    if not (backup_request['env'] and backup_request['id']):
-        abort(409, 'Error: Missing env (local, dev, test, prod) and id.')
-    elif not backup_request['env']:
-        abort(409, 'Error: Missing env (local, dev, test, prod).')
-    elif not backup_request['id']:
-        abort(409, 'Error: Missing id.')
-    elif backup_request['env'] not in ['local', 'dev', 'test', 'prod']:
-        abort(409, 'Error: Not a valid env choose from [local, dev, test, prod].')
-    backup_record = utilities.get_single_eve(
-        'backup', backup_request['id'], env=backup_request['env'])
-    app.logger.debug('Backup | Import | Backup record - %s', backup_record)
-    # TODO: What if 404s
-    site_record = utilities.get_single_eve(
-        'sites', backup_record['site'], backup_record['site_version'], env=backup_request['env'])
-    app.logger.debug('Backup | Import | Site record - %s', site_record)
-    # TODO: What if 404s
-
-    try:
-        package_list = utilities.package_import(site_record, env=backup_request['env'])
-    except Exception as error:
-        abort(409, error)
-
-
 @app.route('/backup/<string:backup_id>/restore', methods=['POST'])
 # TODO: Test what happens with 404 for backup_id
 @requires_auth('backup')
@@ -142,12 +110,14 @@ def create_backup(site_id):
 # Request event hooks.
 app.on_pre_POST += callbacks.pre_post
 app.on_pre_POST_sites += callbacks.pre_post_sites
+app.on_pre_POST_import += callbacks.pre_post_import
 app.on_pre_DELETE_code += callbacks.pre_delete_code
 app.on_pre_DELETE_sites += callbacks.pre_delete_sites
 # Database event hooks.
 app.on_insert_code += callbacks.on_insert_code
 app.on_insert_sites += callbacks.on_insert_sites
 app.on_inserted_sites += callbacks.on_inserted_sites
+app.on_inserted_import += callbacks.on_inserted_import
 app.on_update_code += callbacks.on_update_code
 app.on_update_sites += callbacks.on_update_sites
 app.on_update_commands += callbacks.on_update_commands

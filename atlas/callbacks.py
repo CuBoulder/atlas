@@ -48,6 +48,26 @@ def pre_post_sites(request):
         abort(409, 'Error: There is no current profile.')
 
 
+def pre_post_import(request):
+    """
+    Import a backup to a new instance.
+    """
+    log.debug('Backup | Import | Backup record - %s', request)
+    backup_record = utilities.get_single_eve('backup', request['backup_id'], env=request['env'])
+    log.debug('Backup | Import | Site record - %s', backup_record)
+    # TODO: What if 404s
+    site_record = utilities.get_single_eve('sites', request['site'], request['site_version'], env=request['env'])
+    log.debug('Backup | Import | Site record - %s', site_record)
+    # TODO: What if 404s
+    try:
+        package_list = utilities.package_import(site_record, env=request['env'])
+    except Exception as error:
+        abort(409, error)
+
+    # TODO: Preserve mongo_ID and p1
+
+
+
 def pre_delete_code(request, lookup):
     """
     Make sure no sites are using the code.
@@ -139,6 +159,37 @@ def on_inserted_sites(items):
             tasks.site_provision.delay(item)
         if item['type'] == 'legacy' or item['f5only']:
             tasks.update_f5.delay()
+
+
+def on_inserted_import(items):
+    """
+    Initiate a provision base on an import object.
+    """
+    for item in items:
+        log.debug('Backup | Import | Backup record - %s', item)
+        backup_record = utilities.get_single_eve('backup', item['backup_id'], env=item['env'])
+        log.debug('Backup | Import | Site record - %s', backup_record)
+        # TODO: What if 404s
+        site_record = utilities.get_single_eve(
+            'sites', item['site'], item['site_version'], env=item['env'])
+        log.debug('Backup | Import | Site record - %s', site_record)
+        # TODO: What if 404s
+        try:
+            package_list = utilities.package_import(site_record, env=item['env'])
+        except Exception as error:
+            abort(409, error)
+
+        post_payload = {
+            "_id": site_record['_id'],
+            "sid": site_record['sid'],
+            "path": site_record['path'],
+            "status": "pending",
+            "code": {"package": package_list}
+        }
+
+        utilities.post_eve('sites', post_payload)
+
+        # TODO: Preserve mongo_ID and p1
 
 
 def on_insert_code(items):

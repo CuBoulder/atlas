@@ -507,6 +507,7 @@ def single_host():
 def package_import(site, env=ENVIRONMENT):
     """
     Take a site record, lookup the packages, and return a list of packages to add to the instance.
+    :return: List of package IDs
     """
     if 'package' in site['code']:
         # Start with an empty list

@@ -95,7 +95,7 @@ def create_backup(site_id):
     """
     app.logger.debug('Backup | Create | Site ID - %s', site_id)
     site = utilities.get_single_eve('sites', site_id)
-    app.logger.debug('Backup | Create | Site Response - %s', site) 
+    app.logger.debug('Backup | Create | Site Response - %s', site)
     tasks.backup_create.delay(site=site, backup_type='on_demand')
     response = make_response('Backup started')
     return response
@@ -105,21 +105,21 @@ def create_backup(site_id):
 # Use DB hooks if you want to modify data on the way in.
 
 # Request event hooks.
-app.on_pre_POST += callbacks.pre_post_callback
-app.on_pre_POST_sites += callbacks.pre_post_sites_callback
-app.on_pre_PATCH_sites += callbacks.pre_patch_sites_callback
-app.on_pre_PUT_sites += callbacks.pre_patch_sites_callback
-app.on_pre_DELETE_code += callbacks.pre_delete_code_callback
-app.on_pre_DELETE_sites += callbacks.pre_delete_sites_callback
+app.on_pre_POST += callbacks.pre_post
+app.on_pre_POST_sites += callbacks.pre_post_sites
+app.on_pre_PATCH_sites += callbacks.pre_patch_sites
+app.on_pre_PUT_sites += callbacks.pre_patch_sites
+app.on_pre_DELETE_code += callbacks.pre_delete_code
+app.on_pre_DELETE_sites += callbacks.pre_delete_sites
 # Database event hooks.
-app.on_insert_code += callbacks.on_insert_code_callback
-app.on_insert_sites += callbacks.on_insert_sites_callback
-app.on_inserted_sites += callbacks.on_inserted_sites_callback
-app.on_update_code += callbacks.on_update_code_callback
-app.on_update_sites += callbacks.on_update_sites_callback
-app.on_update_commands += callbacks.on_update_commands_callback
-app.on_updated_code += callbacks.on_updated_code_callback
-app.on_delete_item_code += callbacks.on_delete_item_code_callback
+app.on_insert_code += callbacks.on_insert_code
+app.on_insert_sites += callbacks.on_insert_sites
+app.on_inserted_sites += callbacks.on_inserted_sites
+app.on_update_code += callbacks.on_update_code
+app.on_update_sites += callbacks.on_update_sites
+app.on_update_commands += callbacks.on_update_commands
+app.on_updated_code += callbacks.on_updated_code
+app.on_delete_item_code += callbacks.on_delete_item_code
 app.on_insert += callbacks.pre_insert
 app.on_update += callbacks.pre_update
 app.on_replace += callbacks.pre_replace

@@ -19,7 +19,7 @@ log = logging.getLogger('atlas.callbacks')
 
 
 # Callbacks
-def pre_post_callback(resource, request):
+def pre_post(resource, request):
     """
     :param resource: resource accessed
     :param request: flask.request object
@@ -27,7 +27,7 @@ def pre_post_callback(resource, request):
     log.debug('POST | Resource - %s | Request - %s, | request.data - %s', resource, str(request), request.data)
 
 
-def pre_post_sites_callback(request):
+def pre_post_sites(request):
     """
     :param request: flask.request object
     """
@@ -54,7 +54,7 @@ def pre_post_sites_callback(request):
         abort(409, 'Error: Cannot use this path, it is on the protected list.')
 
 
-def pre_patch_sites_callback(request, payload):
+def pre_patch_sites(request, payload):
     """
     :param request: flask.request object
     """
@@ -65,7 +65,7 @@ def pre_patch_sites_callback(request, payload):
         log.error('sites | PATCH | Pre patch callback | Protected path')
         abort(409, 'Error: Cannot use this path, it is on the protected list.')
 
-def pre_put_sites_callback(request, payload):
+def pre_put_sites(request, payload):
     """
     :param request: flask.request object
     """
@@ -77,7 +77,7 @@ def pre_put_sites_callback(request, payload):
         abort(409, 'Error: Cannot use this path, it is on the protected list.')
 
 
-def pre_delete_code_callback(request, lookup):
+def pre_delete_code(request, lookup):
     """
     Make sure no sites are using the code.
 
@@ -111,7 +111,7 @@ def pre_delete_code_callback(request, lookup):
         abort(409, 'A conflict happened while processing the request. Code item is in use by one or more sites.')
 
 
-def on_insert_sites_callback(items):
+def on_insert_sites(items):
     """
     Assign a sid, an update group, db_key, any missing code, and date fields.
 
@@ -146,7 +146,7 @@ def on_insert_sites_callback(items):
             item['dates'] = json.loads(date_json)
 
 
-def on_inserted_sites_callback(items):
+def on_inserted_sites(items):
     """
     Provision Express instances.
 
@@ -170,7 +170,7 @@ def on_inserted_sites_callback(items):
             tasks.update_f5.delay()
 
 
-def on_insert_code_callback(items):
+def on_insert_code(items):
     """
     Deploy code onto servers as the items are created.
 
@@ -202,7 +202,7 @@ def on_insert_code_callback(items):
         tasks.code_deploy.delay(item)
 
 
-def pre_delete_sites_callback(request, lookup):
+def pre_delete_sites(request, lookup):
     """
     Remove site from servers right before the item is removed.
 
@@ -214,7 +214,7 @@ def pre_delete_sites_callback(request, lookup):
     tasks.site_remove.delay(site)
 
 
-def on_delete_item_code_callback(item):
+def on_delete_item_code(item):
     """
     Remove code from servers right before the item is removed.
 
@@ -224,7 +224,7 @@ def on_delete_item_code_callback(item):
     tasks.code_remove.delay(item)
 
 
-def on_update_code_callback(updates, original):
+def on_update_code(updates, original):
     """
     Update code on the servers as the item is updated.
 
@@ -271,7 +271,7 @@ def on_update_code_callback(updates, original):
         tasks.code_update.delay(updated_item, original)
 
 
-def on_update_sites_callback(updates, original):
+def on_update_sites(updates, original):
     """
     Update an instance.
 
@@ -307,14 +307,14 @@ def on_update_sites_callback(updates, original):
                     date_json = '{{"locked":""}}'
                 elif updates['status'] == 'take_down':
                     date_json = '{{"taken_down":"{0} GMT"}}'.format(updates['_updated'])
-                
+
                 updates['dates'] = json.loads(date_json)
 
         log.debug('sites | Update | Ready for Celery | Site - %s | Updates - %s', site, updates)
         tasks.site_update.delay(site=site, updates=updates, original=original)
 
 
-def on_update_commands_callback(updates, original):
+def on_update_commands(updates, original):
     """
     Run commands when API endpoints are called.
 
@@ -327,7 +327,7 @@ def on_update_commands_callback(updates, original):
     tasks.command_prepare.delay(item)
 
 
-def on_updated_code_callback(updates, original):
+def on_updated_code(updates, original):
     """
     Find instances that use this code asset and re-add them.
 
@@ -350,7 +350,7 @@ def on_updated_code_callback(updates, original):
         update_sites = True
     else:
         update_sites = False
-        
+
     if update_sites:
 
         query = 'where={{"code.{0}":"{1}"}}'.format(code_type, original['_id'])

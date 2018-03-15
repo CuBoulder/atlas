@@ -772,35 +772,6 @@ BACKUP_SCHEMA = {
     },
 }
 
-IMPORT_SCHEMA = {
-    'state': {
-        'type': 'string',
-        'allowed': ['pending', 'complete'],
-        'default': 'pending',
-        'required': True,
-    },
-    'backup_id': {
-        'type': 'objectid',
-        'required': True,
-    },
-    'env': {
-        'type': 'string',
-        'allowed': ['local', 'dev', 'test', 'prod'],
-        'required': True,
-    },
-    'source_instance': {
-        'type': 'string',
-        'required': True,
-    },
-    'purpose': {
-        'type': 'string',
-        'required': True
-    },
-    'created_by': {
-        'type': 'string',
-    },
-}
-
 COMMANDS_SCHEMA = {
     'name': {
         'type': 'string',
@@ -825,6 +796,9 @@ COMMANDS_SCHEMA = {
     'created_by': {
         'type': 'string',
     },
+    'modified_by': {
+        'type': 'string',
+    },
 }
 
 """
@@ -839,13 +813,6 @@ CODE = {
     'versioning': True,
     'soft_delete': True,
     'schema': CODE_SCHEMA,
-}
-
-IMPORT = {
-    'item_title': 'import',
-    'public_methods': ['GET'],
-    'public_item_methods': ['GET'],
-    'schema': IMPORT_SCHEMA,
 }
 
 # Query resource
@@ -890,14 +857,6 @@ BACKUP = {
     'schema': BACKUP_SCHEMA,
 }
 
-# Import resource
-IMPORT = {
-    'item_title': 'import',
-    'public_methods': ['GET'],
-    'public_item_methods': ['GET'],
-    'schema': IMPORT_SCHEMA,
-}
-
 # Command resource
 # Empty public_item_methods means that you can't call actual commands without authentication.
 # Anonymous users can list the commands, but not call them.
@@ -917,5 +876,4 @@ DOMAIN = {
     'query': QUERY,
     'statistics': STATISTICS,
     'backup': BACKUP,
-    'import': IMPORT,
 }

@@ -858,7 +858,7 @@ DRUSH = {
 DOMAIN = {
     'sites': SITES,
     'code': CODE,
-    'commands': DRUSH,
+    'drush': DRUSH,
     'query': QUERY,
     'statistics': STATISTICS,
     'backup': BACKUP,

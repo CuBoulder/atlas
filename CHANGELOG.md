@@ -15,6 +15,12 @@ Resolves:
 - &#35;373 - Support pooling
 - &#35;370 - Switch to new homepage location
 
+## v2.1.3
+
+Resolves:
+
+- &#35;453 Remove nightly instance churn.
+
 ## v2.1.2
 
 Resolves:

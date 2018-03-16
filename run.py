@@ -57,16 +57,17 @@ def get_commands():
     return jsonify({'commands': commands.COMMANDS})
 
 
-@app.route('/commands/<string:machine_name>', methods=['GET'])
+@app.route('/commands/<string:machine_name>', methods=['GET', 'POST'])
 def get_command(machine_name):
     """
     Get a single command.
     :param machine_name: command to return a definition for.
     """
     command = [command for command in commands.COMMANDS if command['machine_name'] == machine_name]
-    command = command[0]
     if not command:
         abort(404)
+    else:
+        command = command[0]['machine_name']
     if request.method == 'GET':
         return jsonify({'command': command})
     elif request.method == 'POST':
@@ -95,7 +96,7 @@ def get_command(machine_name):
                 tasks.update_settings_file.delay(site, timestamp, count, total)
                 continue
             tasks.clear_php_cache.delay()
-        return make_response('Command task has been initiated.')
+        return make_response('Command "{0}" has been initiated.'.format(command))
 
 
 @app.route('/commands/<string:machine_name>', methods=['GET','POST'])

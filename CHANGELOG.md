@@ -1,5 +1,11 @@
 # Change log
 
+## v2.1.3
+
+Resolves:
+
+- &#35;453 Remove nightly instance churn.
+
 ## v2.1.2
 
 Resolves:

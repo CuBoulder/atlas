@@ -358,7 +358,7 @@ def update_settings_file(site):
 
 
 @roles('webservers')
-def update_homepage_extra_files():
+def update_homepage_files():
     """
     SCP the homepage files to web heads.
     :return:

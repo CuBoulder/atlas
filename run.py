@@ -11,7 +11,8 @@ import ssl
 
 from eve import Eve
 from eve.auth import requires_auth
-from flask import jsonify, make_response, abort
+from datetime import datetime
+from flask import jsonify, make_response, abort, request
 
 from atlas import callbacks
 from atlas import commands
@@ -63,26 +64,48 @@ def get_command(machine_name):
     :param machine_name: command to return a definition for.
     """
     command = [command for command in commands.COMMANDS if command['machine_name'] == machine_name]
+    command = command[0]
     if not command:
         abort(404)
-    return jsonify({'command': command[0]})
+    if request.method == 'GET':
+        return jsonify({'command': command})
+    elif request.method == 'POST':
+        # Loop through the commands list and grab the one we want
+        app.logger.debug('Command | Execute | %s', command)
+        if command == 'clear_php_cache':
+            tasks.clear_php_cache.delay()
+        elif command == 'import_code':
+            # Grab payload
+            payload = request.data
+            if not payload.get('env'):
+                abort(409, 'This command requires a payload containing a target `env`.')
+            tasks.import_code.delay(payload['env'])
+        elif command == 'rebalance_update_groups':
+            tasks.rebalance_update_groups.delay()
+        elif command == 'update_homepage_files':
+            tasks.update_homepage_files.delay()
+        elif command == 'update_settings_file':
+            query = 'where={"type":"express"}&max_results=2000'
+            sites = utilities.get_eve('sites', query)
+            timestamp = datetime.now()
+            count = 0
+            total = sites['_meta']['max_results']
+            for site in sites['_items']:
+                count += 1
+                tasks.update_settings_file.delay(site, timestamp, count, total)
+                continue
+            tasks.clear_php_cache.delay()
+        return make_response('Command task has been initiated.')
 
 
-@app.route('/commands/<string:machine_name>/<string:query_id>', methods=['GET','POST'])
+@app.route('/commands/<string:machine_name>', methods=['GET','POST'])
 @requires_auth('sites')
-# TODO: If GET, return count of instances that are impacted
 def execute_command(machine_name):
     """
     Execute a single command.
     :param machine_name: command to execute.
     """
-    command = [command for command in commands.COMMANDS if command['machine_name'] == machine_name]
-    app.logger.debug('Command | Execute | %s', command)
-    if not command:
-        abort(404)
-    # TODO make this work for all commands.
-    result = commands.check_instance_inactive()
-    return jsonify({'command': command[0], 'result': result})
+
 
 
 @app.route('/backup/<string:backup_id>/restore', methods=['POST'])

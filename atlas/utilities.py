@@ -377,64 +377,6 @@ def get_code_label(code_id):
         return get_code_name_version(code_id)
 
 
-def import_code(query):
-    """
-    Import code definitions from a URL. Should be a JSON file export from Atlas or a live Atlas code
-    endpoint.
-
-    :param query: URL for JSON to import
-    """
-    r = requests.get(query)
-    log.debug('Import Code | JSON Import | %s', r.json())
-    data = r.json()
-    for code in data['_items']:
-        payload = {
-            'git_url': code['git_url'],
-            'commit_hash': code['commit_hash'],
-            'meta': {
-                'name': code['meta']['name'],
-                'version': code['meta']['version'],
-                'code_type': code['meta']['code_type'],
-                'is_current': code['meta']['is_current'],
-            },
-        }
-        if code['meta'].get('tag'):
-            payload['meta']['tag'] = code['meta']['tag']
-        if code['meta'].get('label'):
-            payload['meta']['label'] = code['meta']['label']
-        post_eve('code', payload)
-
-
-def rebalance_update_groups(item):
-    """
-    Redistribute instances into update groups.
-    :param item: command item
-    :return:
-    """
-    site_query = 'where={0}&max_results=2000'.format(item['query'])
-    sites = get_eve('sites', site_query)
-    installed_update_group = 0
-    launched_update_group = 0
-    if not sites['_meta']['total'] == 0:
-        for site in sites['_items']:
-            # Only update if the group is less than 11.
-            if site['update_group'] < 11:
-                if site['status'] == 'launched':
-                    patch_payload = '{{"update_group": {0}}}'.format(launched_update_group)
-                    if launched_update_group < 10:
-                        launched_update_group += 1
-                    else:
-                        launched_update_group = 0
-                if site['status'] == 'installed':
-                    patch_payload = '{{"update_group": {0}}}'.format(installed_update_group)
-                    if installed_update_group < 2:
-                        installed_update_group += 1
-                    else:
-                        installed_update_group = 0
-                if patch_payload:
-                    patch_eve('sites', site['_id'], patch_payload)
-
-
 def post_to_slack_payload(payload):
     """
     Posts a message to a given channel using the Slack Incoming Webhooks API.

@@ -1,7 +1,5 @@
 import os
 
-from atlas.config import (MEDIA_STORAGE_PATH)
-
 MONGO_HOST = os.environ.get('MONGO_HOST', 'localhost')
 MONGO_PORT = os.environ.get('MONGO_PORT', 27017)
 MONGO_DBNAME = os.environ.get('MONGO_DBNAME', 'atlas')
@@ -29,16 +27,6 @@ X_HEADERS = ['Access-Control-Allow-Origin', 'If-Match',
 
 # Allow $regex filtering. Default config blocks where and regex.
 MONGO_QUERY_BLACKLIST = ['$where']
-
-# Media Handling
-# disable default behaviour
-RETURN_MEDIA_AS_BASE64_STRING = False
-# return media as URL instead
-RETURN_MEDIA_AS_URL = True
-# Set path for media storage
-MEDIA_PATH = MEDIA_STORAGE_PATH
-# Allows passthrough from the file storage driver of additional meta fields
-EXTENDED_MEDIA_INFO = ['original_filename', 'length', 'content_type']
 
 # Require etags
 ENFORCE_IF_MATCH = True
@@ -731,6 +719,12 @@ STATISTICS_SCHEMA = {
 }
 
 BACKUP_SCHEMA = {
+    'state': {
+        'type': 'string',
+        'allowed': ['pending', 'complete'],
+        'default': 'pending',
+        'required': True,
+    },
     'site': {
         'type': 'objectid',
         'data_relation': {
@@ -743,23 +737,20 @@ BACKUP_SCHEMA = {
         'type': 'integer',
         'required': True,
     },
-    'files': {
-        'type': 'media',
-        'required': True,
-    },
-    'database': {
-        'type': 'media',
-        'required': True,
-    },
     'backup_date': {
         'type': 'datetime',
-        'required': True,
     },
     'backup_type': {
         'type': 'string',
-        'allowed':  ['on_demand', 'update', 'routine'],
+        'allowed': ['on_demand', 'update', 'routine'],
         'default': 'routine',
         'required': True,
+    },
+    'files': {
+        'type': 'string',
+    },
+    'database': {
+        'type': 'string',
     },
     'created_by': {
         'type': 'string',

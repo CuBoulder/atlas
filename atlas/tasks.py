@@ -682,9 +682,6 @@ def command_prepare(item):
                     log.debug('Prepare Command | Item - %s | Update Homepage Extra files | Instance - %s', item['_id'], site['_id'])
                     command_wrapper.delay(execute(fabric_tasks.update_homepage_extra_files))
                     continue
-                if item['command'] == 'backup_create':
-                    command_wrapper.delay(execute(fabric_tasks.backup_create, site=site))
-                    continue
                 command_run.delay(site=site,
                                   command=item['command'],
                                   single_server=item['single_server'],

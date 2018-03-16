@@ -14,6 +14,7 @@ from eve.auth import requires_auth
 from flask import jsonify, make_response, abort
 
 from atlas import callbacks
+from atlas import commands
 from atlas import tasks
 from atlas import utilities
 from atlas.media_storage import FileSystemMediaStorage
@@ -89,6 +90,43 @@ def restore_backup(backup_id):
     tasks.backup_restore.delay(backup_record, original_instance, package_list)
     response = make_response('Restore started')
     return response
+
+
+# We will use Flask to serve the Commands endpoint.
+@app.route('/commands', methods=['GET'])
+def get_commands():
+    """Get a list of available commands."""
+    return jsonify({'commands': commands.COMMANDS})
+
+
+@app.route('/commands/<string:machine_name>', methods=['GET'])
+def get_command(machine_name):
+    """
+    Get a single command.
+    :param machine_name: command to return a definition for.
+    """
+    command = [command for command in commands.COMMANDS if command['machine_name'] == machine_name]
+    if not command:
+        abort(404)
+    return jsonify({'command': command[0]})
+
+
+@app.route('/commands/<string:machine_name>/<string:query_id>', methods=['GET','POST'])
+@requires_auth('sites')
+# TODO: If GET, return count of instances that are impacted
+def execute_command(machine_name):
+    """
+    Execute a single command.
+    :param machine_name: command to execute.
+    """
+    command = [command for command in commands.COMMANDS if command['machine_name'] == machine_name]
+    app.logger.debug('Command | Execute | %s', command)
+    if not command:
+        abort(404)
+    # TODO make this work for all commands.
+    result = commands.check_instance_inactive()
+    return jsonify({'command': command[0], 'result': result})
+
 
 
 @app.route('/sites/<string:site_id>/backup', methods=['POST'])

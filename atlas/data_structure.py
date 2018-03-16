@@ -769,7 +769,7 @@ BACKUP_SCHEMA = {
     },
 }
 
-COMMANDS_SCHEMA = {
+DRUSH_SCHEMA = {
     'name': {
         'type': 'string',
         'minlength': 3,
@@ -854,22 +854,20 @@ BACKUP = {
     'schema': BACKUP_SCHEMA,
 }
 
-# Command resource
-# Empty public_item_methods means that you can't call actual commands without authentication.
-# Anonymous users can list the commands, but not call them.
-COMMANDS = {
-    'item_title': 'commands',
+# Drush resource
+DRUSH = {
+    'item_title': 'drush',
     'public_methods': ['GET'],
-    'public_item_methods': [],
+    'public_item_methods': ['GET'],
     'versioning': True,
-    'schema': COMMANDS_SCHEMA,
+    'schema': DRUSH_SCHEMA,
 }
 
 # Domain definition. Tells Eve what resources are available on this domain.
 DOMAIN = {
     'sites': SITES,
     'code': CODE,
-    'commands': COMMANDS,
+    'commands': DRUSH,
     'query': QUERY,
     'statistics': STATISTICS,
     'backup': BACKUP,

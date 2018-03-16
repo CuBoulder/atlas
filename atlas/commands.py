@@ -28,5 +28,13 @@ COMMANDS = [
     {
         'machine_name': u'update_homepage_files',
         'description': u'Update `.htaccess` and `robots.txt` files',
+    },
+    {
+        'machine_name': u'heal_code',
+        'description': u'Check that all code is present and on the correct hash. Fix any that are not.',
+    },
+    {
+        'machine_name': u'heal_instances',
+        'description': u'Checl that all intances are present and the directory structure is correct. Fix any instances that are irregular.',
     }
 ]

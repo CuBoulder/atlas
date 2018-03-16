@@ -1149,3 +1149,16 @@ def update_homepage_files():
         raise
 
 
+@celery.task
+def heal_code(code):
+    """
+    Verify code is correctly deployed.
+    """
+    execute(fabric_tasks.code_heal, item=code)
+
+
+@celery.task
+def heal_instances():
+    """
+    Verify code is correctly deployed.
+    """

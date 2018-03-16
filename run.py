@@ -96,6 +96,13 @@ def get_command(machine_name):
                 tasks.update_settings_file.delay(site, timestamp, count, total)
                 continue
             tasks.clear_php_cache.delay()
+        elif command == 'heal_code':
+            code_items = utilities.get_eve('code')
+            for code in code_items['_items']:
+                tasks.heal_code.delay(code)
+                continue
+        elif command == 'heal_instances':
+            tasks.heal_instances.delay()
         return make_response('Command "{0}" has been initiated.'.format(command))
 
 

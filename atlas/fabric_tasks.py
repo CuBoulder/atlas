@@ -149,6 +149,24 @@ def code_remove(item):
 
 
 @roles('webservers')
+def code_heal(item):
+    log.info('Code | Heal | Item - %s', item)
+    if item['meta']['code_type'] == 'library':
+        code_type_dir = 'libraries'
+    else:
+        code_type_dir = item['meta']['code_type'] + 's'
+    code_folder = '{0}/{1}/{2}/{2}-{3}'.format(
+        CODE_ROOT,
+        code_type_dir,
+        item['meta']['name'],
+        item['meta']['version'])
+    if not exists(code_folder):
+        code_deploy(item)
+    else:
+        checkout_repo(item["commit_hash"], code_folder)
+
+
+@roles('webservers')
 def site_provision(site):
     """
     Responds to POSTs to provision a site to the right places on the server.

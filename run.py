@@ -91,9 +91,9 @@ def get_command(machine_name):
             timestamp = datetime.now()
             count = 0
             total = sites['_meta']['max_results']
-            for site in sites['_items']:
+            for instance in sites['_items']:
                 count += 1
-                tasks.update_settings_file.delay(site, timestamp, count, total)
+                tasks.update_settings_file.delay(instance, timestamp, count, total)
                 continue
             tasks.clear_php_cache.delay()
         elif command == 'heal_code':
@@ -102,7 +102,11 @@ def get_command(machine_name):
                 tasks.heal_code.delay(code)
                 continue
         elif command == 'heal_instances':
-            tasks.heal_instances.delay()
+            instance_query = 'where={"type":"express"}'
+            instances = utilities.get_eve('sites', instance_query)
+            for instance in instances['_items']:
+                tasks.heal_instance.delay(instance)
+                continue
         return make_response('Command "{0}" has been initiated.'.format(command))
 
 

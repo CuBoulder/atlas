@@ -139,34 +139,22 @@ def create_database(site_sid, site_db_key):
 
     # Create database
     try:
-        cursor.execute("CREATE DATABASE `{0}`;".format(site_sid))
+        cursor.execute("CREATE DATABASE IF NOT EXISTS `{0}`;".format(site_sid))
     except mariadb.Error as error:
         log.error('Create Database | %s | %s', site_sid, error)
         raise
 
     instance_database_password = decrypt_string(site_db_key)
-    # Add user
+    # Grant privileges/add user
     try:
         if ENVIRONMENT != 'local':
-            cursor.execute("CREATE USER '{0}'@'{1}' IDENTIFIED BY '{2}';".format(
+            cursor.execute("GRANT ALL PRIVILEGES ON {0}.* TO '{0}'@'{1}' IDENTIFIED BY '{2}';".format(
                 site_sid,
                 SERVERDEFS[ENVIRONMENT]['database_servers']['user_host_pattern'],
                 instance_database_password))
         else:
-            cursor.execute("CREATE USER '{0}'@'localhost' IDENTIFIED BY '{1}';".format(
+            cursor.execute("GRANT ALL PRIVILEGES ON {0}.* TO '{0}'@'localhost' IDENTIFIED BY '{1}';".format(
                 site_sid, instance_database_password))
-    except mariadb.Error as error:
-        log.error('Create User | %s | %s', site_sid, error)
-        raise
-
-    # Grant privileges
-    try:
-        if ENVIRONMENT != 'local':
-            cursor.execute("GRANT ALL PRIVILEGES ON {0}.* TO '{0}'@'{1}';".format(
-                site_sid,
-                SERVERDEFS[ENVIRONMENT]['database_servers']['user_host_pattern']))
-        else:
-            cursor.execute("GRANT ALL PRIVILEGES ON {0}.* TO '{0}'@'localhost';".format(site_sid))
     except mariadb.Error as error:
         log.error('Grant Privileges | %s | %s', site_sid, error)
         raise

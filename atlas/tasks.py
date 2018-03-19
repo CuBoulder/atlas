@@ -1150,15 +1150,20 @@ def update_homepage_files():
 
 
 @celery.task
-def heal_code(code):
+def heal_code(item):
     """
     Verify code is correctly deployed.
     """
-    execute(fabric_tasks.code_heal, item=code)
+    log.info('Heal | Code | Item - %s', item)
+    execute(fabric_tasks.code_heal, item=item)
 
 
 @celery.task
-def heal_instances():
+def heal_instance(instance):
     """
     Verify code is correctly deployed.
     """
+    # DB create has 'if not exists' included
+    log.info('Heal | Instance | Instance - %s', instance)
+    utilities.create_database(instance['sid'], instance['db_key'])
+    execute(fabric_tasks.instance_heal, item=instance)

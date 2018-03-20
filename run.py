@@ -114,14 +114,6 @@ def get_command(machine_name):
         return make_response('Command "{0}" has been initiated.'.format(command))
 
 
-@app.route('/commands/<string:machine_name>', methods=['GET','POST'])
-@requires_auth('sites')
-def execute_command(machine_name):
-    """
-    Execute a single command.
-    :param machine_name: command to execute.
-    """
-
 # Hook into the request flow early
 @app.route('/backup/import', methods=['POST'])
 @requires_auth('backup')

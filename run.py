@@ -12,10 +12,7 @@ import ssl
 
 from eve import Eve
 from eve.auth import requires_auth
-<<<<<<< HEAD
 from datetime import datetime
-=======
->>>>>>> 3ae5c16... Start backup import.
 from flask import jsonify, make_response, abort, request
 
 from atlas import callbacks

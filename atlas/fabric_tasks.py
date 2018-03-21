@@ -826,3 +826,44 @@ def backup_restore(backup_record, original_instance, package_list):
     restore_time = time() - start_time
     log.info('Instance | Restore Backup | Complete | Backup - %s | New Instance - %s (%s) | %s sec',
              backup_record['_id'], new_instance['_id'], new_instance['sid'], restore_time)
+
+
+def import_backup(db_url, files_url, target_instance):
+    """
+    Connect to a single webserver, download the database and file backups, restore them into the
+    Drupal instance, and remove the backup files.
+    """
+    log.info('Import Backup | DB URL - %s | Files URL - %s | Target Instance - %s',
+             db_url, files_url, target_instance)
+
+    start_time = time()
+
+    # Download db and files
+    backup_tmp_dir = '{0}/tmp'.format(BACKUP_PATH)
+    with cd(backup_tmp_dir):
+        run('curl -k -O -s {0}'.format(db_url))
+        run('curl -k -O -s {0}'.format(files_url))
+
+    # Get the path for the file
+    # Split the url on the '/' character and take the last item in the list.
+    files_path = '{0}/tmp/{1}'.format(BACKUP_PATH, files_url.rsplit('/', 1)[-1])
+    database_path = '{0}/tmp/{1}'.format(BACKUP_PATH, db_url.rsplit('/', 1)[-1])
+    log.debug('Import backup | File path - %s | DB path - %s', files_path, database_path)
+    web_directory = '{0}/{1}'.format(SITES_WEB_ROOT, target_instance['sid'])
+    nfs_files_dir = '{0}/{1}/files'.format(
+        NFS_MOUNT_LOCATION[ENVIRONMENT], target_instance['sid'])
+
+    with cd(nfs_files_dir):
+        run('tar -xzf {0}'.format(files_path))
+        log.debug('Instance | Restore Backup | Files replaced')
+
+    with cd(web_directory):
+        run('drush sql-cli < {0}'.format(database_path))
+        log.debug('Instance | Restore Backup | DB imported')
+        run('drush cc all')
+
+    run('rm {0}'.format(files_path))
+    run('rm {0}'.format(database_path))
+
+    restore_time = time() - start_time
+    log.info('Import Backup | Complete | Target Instance - %s (%s) | %s sec', target_instance['_id'], target_instance['sid'], restore_time)

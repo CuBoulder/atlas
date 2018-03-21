@@ -18,7 +18,7 @@ from fabric.api import execute
 from atlas import fabric_tasks
 from atlas import utilities
 from atlas import config_celery
-from atlas.config import (ENVIRONMENT, WEBSERVER_USER, DESIRED_SITE_COUNT)
+from atlas.config import (ENVIRONMENT, WEBSERVER_USER, DESIRED_SITE_COUNT, SSL_VERIFICATION)
 from atlas.config_servers import (BASE_URLS, API_URLS)
 
 # Setup a sub-logger
@@ -595,7 +595,6 @@ def site_remove(site):
     """
     log.debug('Site remove | %s', site)
     if site['type'] == 'express':
-        # execute(fabric_tasks.site_backup, site=site)
         # Check if stats object exists for the site first.
         statistics_query = 'where={{"site":"{0}"}}'.format(site['_id'])
         statistics = utilities.get_eve('statistics', statistics_query)
@@ -1167,3 +1166,20 @@ def heal_instance(instance):
     log.info('Heal | Instance | Instance - %s', instance)
     utilities.create_database(instance['sid'], instance['db_key'])
     execute(fabric_tasks.instance_heal, item=instance)
+
+
+@celery.task
+def import_backup(env, backup_id, target_instance):
+    """
+    Download and import a backup
+    """
+    log.info('Import Backup | Source ENV - %s | Source Backup ID - %s | Target Instance - %s',
+             env, backup_id, target_instance)
+    # Get a host to run this on.
+    backup_downloads = requests.get('{0}/backup/{1}/download'.format(API_URLS[env], backup_id), verify=SSL_VERIFICATION)
+    downloads = backup_downloads.json()
+    log.info('Import Backup | Backup download - %s', downloads)
+    target = utilities.get_single_eve('sites', target_instance)
+    host = utilities.single_host()
+    execute(fabric_tasks.import_backup, db_url=downloads['result']['db'],
+            files_url=downloads['result']['files'], target_instance=target, hosts=host)

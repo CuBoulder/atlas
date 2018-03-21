@@ -111,7 +111,6 @@ def get_command(machine_name):
         return make_response('Command "{0}" has been initiated.'.format(command))
 
 
-# Hook into the request flow early
 @app.route('/backup/import', methods=['POST'])
 @requires_auth('backup')
 def import_backup():
@@ -121,27 +120,36 @@ def import_backup():
     backup_request = request.get_json()
     app.logger.debug('Backup | Import | %s', backup_request)
     # Get the backup and then the site records.
-    if not (backup_request['env'] and backup_request['id']):
-        abort(409, 'Error: Missing env (local, dev, test, prod) and id.')
-    elif not backup_request['env']:
-        abort(409, 'Error: Missing env (local, dev, test, prod).')
-    elif not backup_request['id']:
+    if not (backup_request.get('env') and backup_request.get('id')):
+        abort(409, 'Error: Missing env (local, dev, test, prod, o-dev, o-test, o-prod) and id.')
+    elif not backup_request.get('env'):
+        abort(409, 'Error: Missing env (local, dev, test, prod, o-dev, o-test, o-prod).')
+    elif not backup_request.get('id'):
         abort(409, 'Error: Missing id.')
-    elif backup_request['env'] not in ['local', 'dev', 'test', 'prod']:
-        abort(409, 'Error: Not a valid env choose from [local, dev, test, prod].')
-    backup_record = utilities.get_single_eve(
-        'backup', backup_request['id'], env=backup_request['env'])
-    app.logger.debug('Backup | Import | Backup record - %s', backup_record)
-    # TODO: What if 404s
-    site_record = utilities.get_single_eve(
-        'sites', backup_record['site'], backup_record['site_version'], env=backup_request['env'])
-    app.logger.debug('Backup | Import | Site record - %s', site_record)
-    # TODO: What if 404s
+    elif backup_request['env'] not in ['local', 'dev', 'test', 'prod', 'o-dev', 'o-test', 'o-prod']:
+        abort(409, 'Error: Invalid env choose from [local, dev, test, prod, o-dev, o-test, o-prod].')
+    elif not backup_request.get('target_id'):
+        abort(409, 'Error: Missing target_instance.')
+    ####
+    #### Taking this part out for now. This is required for cloning between env, not for the migration.
+    ####
+    # backup_record = utilities.get_single_eve(
+    #     'backup', backup_request['id'], env=backup_request['env'])
+    # app.logger.debug('Backup | Import | Backup record - %s', backup_record)
+    # site_record = utilities.get_single_eve(
+    #     'sites', backup_record['site'], backup_record['site_version'], env=backup_request['env'])
+    # app.logger.debug('Backup | Import | Site record - %s', site_record)
 
-    try:
-        package_list = utilities.package_import(site_record, env=backup_request['env'])
-    except Exception as error:
-        abort(409, error)
+    # try:
+    #     package_list = utilities.package_import(site_record, env=backup_request['env'])
+    # except Exception as error:
+    #     abort(500, error)
+
+    tasks.import_backup.delay(
+        env=backup_request['env'], backup_id=backup_request['id'], target_instance=backup_request['target_id'])
+
+    return make_response('I am trying')
+
 
 
 @app.route('/backup/<string:backup_id>/restore', methods=['POST'])
@@ -178,9 +186,10 @@ def download_backup(backup_id):
     app.logger.info('Backup | Download | ID - %s', backup_id)
     backup_record = utilities.get_single_eve('backup', backup_id)
     app.logger.debug('Backup | Download | Backup record - %s', backup_record)
-    urls = []
-    urls.append('{0}/download/{1}'.format(API_URLS[ENVIRONMENT], backup_record['files']))
-    urls.append('{0}/download/{1}'.format(API_URLS[ENVIRONMENT], backup_record['database']))
+    urls = {
+        'files': '{0}/download/{1}'.format(API_URLS[ENVIRONMENT], backup_record['files']),
+        'db': '{0}/download/{1}'.format(API_URLS[ENVIRONMENT], backup_record['database'])
+    }
     return jsonify(result=urls)
 
 

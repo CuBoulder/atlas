@@ -14,6 +14,13 @@ Resolves:
 - &#35;393 - Round robin commands
 - &#35;373 - Support pooling
 - &#35;370 - Switch to new homepage location
+
+## v2.1.3
+
+Resolves:
+
+- &#35;453 Remove nightly instance churn.
+
 ## v2.1.2
 
 Resolves:
@@ -44,16 +51,16 @@ When a code item is added to an instance, the above drush commands will be run a
 
 Need to
 
-- Add a list of users to exclude from emails in config_local.py
-- Be able to run `sudo -u [webserver_user] drush` without a password.
+- Add a list of users to exclude from emails in `config_local.py`
+- Ensure `sudo -u [webserver_user] drush` can run without a password.
 
 Resolves:
 
 - &#35;95 Periodically check for unused code
 - &#35;304 As a Service Manager, need to be able to deploy profile updates without updb
-    - &#35;22 Add field for 'requires updb'
-    - &#35;311 Add field for 'requires registry rebuild'
-    - &#35;312 Add field for 'requires cache clear'
+  - &#35;22 Add field for 'requires updb'
+  - &#35;311 Add field for 'requires registry rebuild'
+  - &#35;312 Add field for 'requires cache clear'
 - &#35;330 During launch, drupal caches are cleared a lot
 - &#35;412 Return something like `Command [xx:xx:xx] 2 of 16 - Success` in Slack
 - &#35;10 Re-add packages to sites when changing meta data of a code item.

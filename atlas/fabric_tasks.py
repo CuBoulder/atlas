@@ -6,6 +6,7 @@
 import logging
 import os
 import re
+import json
 
 import requests
 from random import randint
@@ -21,9 +22,9 @@ from fabric.network import disconnect_all
 from atlas import utilities
 from atlas.config import (ATLAS_LOCATION, ENVIRONMENT, SSH_USER, CODE_ROOT, SITES_CODE_ROOT,
                           SITES_WEB_ROOT, WEBSERVER_USER, WEBSERVER_USER_GROUP, NFS_MOUNT_FILES_DIR,
-                          BACKUP_TMP_PATH, SERVICE_ACCOUNT_USERNAME, SERVICE_ACCOUNT_PASSWORD,
+                          BACKUP_PATH, SERVICE_ACCOUNT_USERNAME, SERVICE_ACCOUNT_PASSWORD,
                           SITE_DOWN_PATH, LOAD_BALANCER, VARNISH_CONTROL_KEY, STATIC_WEB_PATH,
-                          SSL_VERIFICATION, DRUPAL_CORE_PATHS)
+                          SSL_VERIFICATION)
 from atlas.config_servers import (SERVERDEFS, NFS_MOUNT_LOCATION, API_URLS,
                                   VARNISH_CONTROL_TERMINALS, LOAD_BALANCER_CONFIG_FILES,
                                   LOAD_BALANCER_CONFIG_GROUP, BASE_URLS)
@@ -75,8 +76,7 @@ def code_deploy(item):
                     item['meta']['name'])
                 update_symlink(code_folder, code_folder_current)
             if item['meta']['code_type'] == 'static':
-                static_target = '{0}/{1}-{2}'.format(
-                    STATIC_WEB_PATH, item['meta']['name'], item['meta']['version'])
+                static_target = '{0}/{1}-{2}'.format(STATIC_WEB_PATH, item['meta']['name'], item['meta']['version'])
                 log.debug('Code | Deploy | Static | Target - %s', static_target)
                 update_symlink(code_folder, static_target)
 
@@ -650,140 +650,64 @@ def backup_create(site, backup_type):
     """
     Backup the database and files for an site.
     """
-    log.debug('Backup | Create | %s', site)
-    log.info('Backup | Create | %s', site['_id'])
+    log.debug('Backup | Create | site - %s', site)
+
+    # Create the stub for the backup
+    post_payload = {
+        'site': site['_id'],
+        'site_version': site['_version'],
+        'backup_type': backup_type,
+        'state': 'pending'
+    }
+    post_url = '{0}/backup'.format(API_URLS[ENVIRONMENT])
+    post = requests.post(
+        post_url,
+        data=post_payload,
+        auth=(SERVICE_ACCOUNT_USERNAME, SERVICE_ACCOUNT_PASSWORD),
+        verify=SSL_VERIFICATION,
+    )
+    if post.ok:
+        log.info('Backup | Create | POST - OK | %s | %s', post.content, post.headers)
+    else:
+        log.error('Backup | Create | POST - Error | %s', json.dumps(post.text))
+
+    backup_item = post.json()
+    log.info('Backup | Create | POST | Backup item - %s', backup_item)
+    # Setup dates and times.
     start_time = time()
-    # Setup all the variables we will need.
-    # Date and time strings.
     date = datetime.now()
-    date_string = date.strftime("%Y-%m-%d")
     date_time_string = date.strftime("%Y-%m-%d-%H-%M-%S")
     datetime_string = date.strftime("%Y-%m-%d %H:%M:%S GMT")
 
     # Instance paths
     web_directory = '{0}/{1}'.format(SITES_WEB_ROOT, site['sid'])
     database_result_file = '{0}_{1}.sql'.format(site['sid'], date_time_string)
-    database_result_file_path = '{0}/{1}'.format(BACKUP_TMP_PATH, database_result_file)
+    database_result_file_path = '{0}/{1}'.format(BACKUP_PATH, database_result_file)
     nfs_files_dir = '{0}/{1}/files'.format(NFS_MOUNT_LOCATION[ENVIRONMENT], site['sid'])
     files_result_file = '{0}_{1}.tar.gz'.format(site['sid'], date_time_string)
-    files_result_file_path = '{0}/{1}'.format(BACKUP_TMP_PATH, files_result_file)
+    files_result_file_path = '{0}/{1}'.format(BACKUP_PATH, files_result_file)
 
     # Start the actual process.
-    create_directory_structure(BACKUP_TMP_PATH)
     with cd(web_directory):
-        run('drush sql-dump --skip-tables-list=cache,cache_* --result-file={0}'.format(
-            database_result_file_path))
-        run('tar --exclude "{0}/imagecache" --exclude "{0}/css" --exclude "{0}/js" --exclude "{0}/backup_migrate" --exclude "{0}/styles" -czf {1} {0}'.format(
-            nfs_files_dir, files_result_file_path))
+        run('drush sql-dump --skip-tables-list=cache,cache_* --result-file={0}'.format(database_result_file_path))
+    with cd(nfs_files_dir):
+        run('tar --exclude "imagecache" --exclude "css" --exclude "js" --exclude "backup_migrate" --exclude "styles" --exclude "xmlsitemap" --exclude "honeypot" -czf {0} *'.format(files_result_file_path))
 
-    # Take files to Atlas server so that we can use python to POST them.
-    get(database_result_file_path, local_path=database_result_file_path)
-    get(files_result_file_path, local_path=files_result_file_path)
-
-    # Remove files from webserver after the are copied to the Atlas server
-    run('rm {0}'.format(database_result_file_path))
-    run('rm {0}'.format(files_result_file_path))
-
-    payload = {
+    patch_payload = {
         'site': site['_id'],
         'site_version': site['_version'],
         'backup_date': datetime_string,
-        'backup_type': backup_type
+        'backup_type': backup_type,
+        'files' : files_result_file,
+        'database': database_result_file,
+        'state': 'complete'
     }
-    request_url = '{0}/backup'.format(API_URLS[ENVIRONMENT])
 
-    log.debug('Backup | Create | Ready to send to Atlas | Payload - %s', payload)
-    r = requests.post(
-        request_url,
-        data=payload,
-        files={
-            'database': (database_result_file, open(database_result_file_path, 'rb'), 'application/sql'),
-            'files': (files_result_file, open(files_result_file_path, 'rb'), 'application/gzip')
-        },
-        auth=(SERVICE_ACCOUNT_USERNAME, SERVICE_ACCOUNT_PASSWORD),
-        verify=SSL_VERIFICATION,
-    )
-
-    if r.ok:
-        log.debug('Backup | Create | POST - OK | %s', r.json())
-        text = 'Success'
-        slack_color = 'good'
-        slack_url = '{0}/backup/{1}'.format(API_URLS[ENVIRONMENT], r.json()['_id'])
-
-    else:
-        log.error('Backup | Create | POST - Error | %s', r.text())
-        text = 'Error'
-        slack_color = 'danger'
-        slack_url = '{0}/{1}'.format(BASE_URLS[ENVIRONMENT], site['path'])
-
-    # Remove tmp files from atlas server
-    local('rm {0}'.format(database_result_file_path))
-    local('rm {0}'.format(files_result_file_path))
+    log.debug('Backup | Create | Ready to update record | Payload - %s', patch_payload)
+    utilities.patch_eve('backup', backup_item['_id'], patch_payload)
 
     backup_time = time() - start_time
     log.info('Atlas operational statistic | Backup Create | %s', backup_time)
-
-    # Send notification to Slack
-
-    title = 'Site Backup'
-    slack_link = '<' + slack_url + '|' + slack_url + '>'
-    command = 'Backup - Create'
-
-    slack_channel = 'general'
-
-    slack_fallback = slack_url + ' - ' + ENVIRONMENT + ' - ' + command
-
-    slack_payload = {
-        # Channel will be overridden on local environments.
-        "channel": slack_channel,
-        "text": text,
-        "username": 'Atlas',
-        "attachments": [
-            {
-                "fallback": slack_fallback,
-                "color": slack_color,
-                "title": title,
-                "fields": [
-                    {
-                        "title": "Link",
-                        "value": slack_link,
-                        "short": True
-                    },
-                    {
-                        "title": "Environment",
-                        "value": ENVIRONMENT,
-                        "short": True
-                    },
-                    {
-                        "title": "Command",
-                        "value": command,
-                        "short": True
-                    },
-                    {
-                        "title": "Time",
-                        "value": backup_time,
-                        "short": True
-                    }
-                ],
-            }
-        ],
-    }
-    if not r.ok:
-        slack_payload['attachments'].append(
-            {
-                "fallback": 'Error message',
-                # A lighter red.
-                "color": '#ee9999',
-                "fields": [
-                    {
-                        "title": "Error message",
-                        "value": r.text,
-                        "short": False
-                    }
-                ]
-            }
-        )
-    utilities.post_to_slack_payload(slack_payload)
 
 
 def backup_restore(backup_record, original_instance, package_list):
@@ -792,33 +716,13 @@ def backup_restore(backup_record, original_instance, package_list):
     """
     log.info('Instance | Restore Backup | %s | %s', backup_record, original_instance)
     start_time = time()
-    # Get the backups files. Don't include a slash in between items since the
-    # backup location has a root slash.
-    database_url = '{0}{1}'.format(API_URLS[ENVIRONMENT], backup_record['database']['file'])
-    files_url = '{0}{1}'.format(API_URLS[ENVIRONMENT], backup_record['files']['file'])
-
-    # Download DB
-    database_download = download_file(database_url, 'sql')
     file_date = datetime.strptime(backup_record['backup_date'], "%Y-%m-%d %H:%M:%S %Z")
     pretty_filename = '{0}_{1}'.format(
         original_instance['sid'], file_date.strftime("%Y-%m-%d-%H-%M-%S"))
-
     pretty_database_filename = '{0}.sql'.format(pretty_filename)
-    database_download_path_clean = '{0}/{1}'.format(BACKUP_TMP_PATH, pretty_database_filename)
-    log.debug('Instance | Restore Backup | database_download | %s', database_download)
-    # Move it to clean location
-    local('mv {0} {1}'.format(database_download, database_download_path_clean))
-
-    # Download Files
-    files_download = download_file(files_url, 'tar.gz')
+    database_path = '{0}/{1}'.format(BACKUP_PATH, pretty_database_filename)
     pretty_files_filename = '{0}.tar.gz'.format(pretty_filename)
-    files_download_path_clean = '{0}/{1}'.format(BACKUP_TMP_PATH, pretty_files_filename)
-    log.debug('Instance | Restore Backup | files_download | %s', files_download)
-    local('mv {0} {1}'.format(files_download, files_download_path_clean))
-
-    if not os.path.isfile(files_download_path_clean) and os.path.isfile(database_download_path_clean):
-        log.error('Instance | Restore Backup | Files were not moved to restore location')
-        exit()
+    files_path = '{0}/{1}'.format(BACKUP_PATH, pretty_files_filename)
 
     # Grab available instance and add packages if needed
     available_instances = utilities.get_eve('sites', 'where={"status":"available"}')
@@ -850,96 +754,22 @@ def backup_restore(backup_record, original_instance, package_list):
                 sleep(10)
             else:
                 exit(str(e))
-    log.debug('Instance | Restore Backup | Instance is ready for DB and files')
-    web_directory = '{0}/{1}'.format(SITES_WEB_ROOT, new_instance['sid'])
-    nfs_dir = NFS_MOUNT_LOCATION[ENVIRONMENT]
-    nfs_files_dir = '{0}/{1}/files'.format(nfs_dir, new_instance['sid'])
-    # Move DB and files onto server
-    log.debug('Fabric env | late | %s', env)
-    put(database_download_path_clean, BACKUP_TMP_PATH)
-    put(files_download_path_clean, BACKUP_TMP_PATH)
-    local('rm {0}'.format(database_download_path_clean))
-    local('rm {0}'.format(files_download_path_clean))
-    log.debug('Instance | Restore Backup | Files moved to server')
 
-    webserver_database_path = '{0}/{1}'.format(BACKUP_TMP_PATH, pretty_database_filename)
-    webserver_files_path = '{0}/{1}'.format(BACKUP_TMP_PATH, pretty_files_filename)
-    with cd(web_directory):
-        run('drush sql-drop -y && drush sql-cli < {0}'.format(webserver_database_path))
-        log.debug('Instance | Restore Backup | DB imported')
-        run('tar -xzf {0} -C {1}'.format(webserver_files_path, nfs_files_dir))
+    log.debug('Instance | Restore Backup | New instance is ready for DB and files | %s',
+              new_instance['_id'])
+    web_directory = '{0}/{1}/{2}'.format(SITES_WEB_ROOT, new_instance['type'], new_instance['sid'])
+    nfs_files_dir = '{0}/sitefiles/{1}/files'.format(
+        NFS_MOUNT_LOCATION[ENVIRONMENT], new_instance['sid'])
+
+    with cd(nfs_files_dir):
+        run('tar -xzf {0}'.format(files_path))
         log.debug('Instance | Restore Backup | Files replaced')
+
+    with cd(web_directory):
+        run('drush sql-cli < {0}'.format(database_path))
+        log.debug('Instance | Restore Backup | DB imported')
         run('drush cc all')
 
-    run('rm {0}'.format(webserver_database_path))
-    run('rm {0}'.format(webserver_files_path))
-
     restore_time = time() - start_time
-
-    # Post to slack
-    site_url = '{0}/{1}'.format(BASE_URLS[ENVIRONMENT], new_instance['path'])
-    title = 'Backup Restore'
-    site_link = '<' + site_url + '|' + site_url + '>'
-    command = 'Backup restore'
-    text = 'Success'
-    slack_color = 'good'
-    slack_channel = 'general'
-    slack_fallback = site_url + ' - ' + ENVIRONMENT + ' - ' + command
-
-    slack_payload = {
-        # Channel will be overridden on local environments.
-        "channel": slack_channel,
-        "text": text,
-        "username": 'Atlas',
-        "attachments": [
-            {
-                "fallback": slack_fallback,
-                "color": slack_color,
-                "title": title,
-                "fields": [
-                    {
-                        "title": "Instance",
-                        "value": site_link,
-                        "short": True
-                    },
-                    {
-                        "title": "Environment",
-                        "value": ENVIRONMENT,
-                        "short": True
-                    },
-                    {
-                        "title": "Command",
-                        "value": command,
-                        "short": True
-                    },
-                    {
-                        "title": "Restore Time",
-                        "value": restore_time,
-                        "short": True
-                    }
-                ],
-            }
-        ],
-    }
-    utilities.post_to_slack_payload(slack_payload)
-
-
-def download_file(url, file_extension):
-    """
-    Download a file from a remote URL.
-
-    :param url: string - URL to download
-    :param file_extension: string - Extension for file being downloaded
-    """
-    log.debug('Download file | Download started')
-    local_filename = url.split('/')[-1]
-    backup_location_tmp_file = '{0}/{1}'.format(BACKUP_TMP_PATH, local_filename)
-    r = requests.get(url, stream=True, verify=SSL_VERIFICATION)
-    log.debug('Download file | r - %s', type(r))
-    if r.status_code == 200:
-        with open(backup_location_tmp_file, 'wb') as f:
-            copyfileobj(r.raw, f)
-        log.debug('Download file | Download finished')
-        return backup_location_tmp_file
-    else:
-        log.error('Download file | Download failed, %s', r.text)
+    log.info('Instance | Restore Backup | Complete | Backup - %s | New Instance - %s (%s) | %s sec',
+             backup_record['_id'], new_instance['_id'], new_instance['sid'], restore_time)

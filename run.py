@@ -16,9 +16,8 @@ from flask import jsonify, make_response, abort
 from atlas import callbacks
 from atlas import tasks
 from atlas import utilities
-from atlas.media_storage import FileSystemMediaStorage
 from atlas.config import (ATLAS_LOCATION, VERSION_NUMBER, SSL_KEY_FILE, SSL_CRT_FILE, LOG_LOCATION,
-                          ENVIRONMENT)
+                          ENVIRONMENT, API_URLS)
 
 
 if ATLAS_LOCATION not in sys.path:
@@ -33,8 +32,7 @@ SETTINGS_FILE = os.path.join(THIS_DIRECTORY, 'atlas/data_structure.py')
 # Name our app (using 'import_name') so that we can easily create sub loggers.
 # Use our HTTP Basic Auth class which checks against LDAP.
 # Import the data structures and Eve settings.
-app = Eve(import_name='atlas', auth=utilities.AtlasBasicAuth,
-          settings=SETTINGS_FILE, media=FileSystemMediaStorage)
+app = Eve(import_name='atlas', auth=utilities.AtlasBasicAuth, settings=SETTINGS_FILE)
 # TODO: Remove debug mode.
 app.debug = True
 
@@ -65,30 +63,30 @@ def restore_backup(backup_id):
         'sites', backup_record['site'], backup_record['site_version'])
     # If packages are still active, add them; if not, find a current version
     # and add it; if none, error
-    if 'package' in original_instance['code']:
-        # Start with an empty list
-        package_list = []
-        for package in original_instance['code']['package']:
-            package_result = utilities.get_single_eve('code', package)
-            app.logger.debug(
-                'Backup | Restore | Checking for packages | Request result - %s', package_result)
-            if package_result['_deleted']:
-                current_package = utilities.get_current_code(
-                    package_result['meta']['name'], package_result['meta']['code_type'])
-                app.logger.debug(
-                    'Backup | Restore | Getting current version of package - %s', current_package)
-                if current_package:
-                    package_list.append(current_package)
-                else:
-                    abort(409, 'There is no current version of {0}. This backup cannot be restored.'.format(
-                        package_result['meta']['name']))
-            else:
-                package_list.append(package_result['_id'])
-    else:
-        package_list = None
+    try:
+        package_list = utilities.package_import(original_instance)
+    except Exception as error:
+        abort(409, error)
+
     tasks.backup_restore.delay(backup_record, original_instance, package_list)
     response = make_response('Restore started')
     return response
+
+
+@app.route('/backup/<string:backup_id>/download', methods=['GET'])
+# TODO: Test what happens with 404 for backup_id
+@requires_auth('backup')
+def download_backup(backup_id):
+    """
+    Return URLs to download the database and files
+    """
+    app.logger.info('Backup | Download | ID - %s', backup_id)
+    backup_record = utilities.get_single_eve('backup', backup_id)
+    app.logger.debug('Backup | Download | Backup record - %s', backup_record)
+    urls = []
+    urls.append('{0}/download/{1}'.format(API_URLS[ENVIRONMENT], backup_record['files']))
+    urls.append('{0}/download/{1}'.format(API_URLS[ENVIRONMENT], backup_record['database']))
+    return jsonify(result=urls)
 
 
 @app.route('/sites/<string:site_id>/backup', methods=['POST'])
@@ -132,21 +130,21 @@ def f5():
 # Use DB hooks if you want to modify data on the way in.
 
 # Request event hooks.
-app.on_pre_POST += callbacks.pre_post_callback
-app.on_pre_POST_sites += callbacks.pre_post_sites_callback
-app.on_pre_PATCH_sites += callbacks.pre_patch_sites_callback
-app.on_pre_PUT_sites += callbacks.pre_patch_sites_callback
-app.on_pre_DELETE_code += callbacks.pre_delete_code_callback
-app.on_pre_DELETE_sites += callbacks.pre_delete_sites_callback
+app.on_pre_POST += callbacks.pre_post
+app.on_pre_POST_sites += callbacks.pre_post_sites
+app.on_pre_PATCH_sites += callbacks.pre_patch_sites
+app.on_pre_PUT_sites += callbacks.pre_patch_sites
+app.on_pre_DELETE_code += callbacks.pre_delete_code
+app.on_pre_DELETE_sites += callbacks.pre_delete_sites
 # Database event hooks.
-app.on_insert_code += callbacks.on_insert_code_callback
-app.on_insert_sites += callbacks.on_insert_sites_callback
-app.on_inserted_sites += callbacks.on_inserted_sites_callback
-app.on_update_code += callbacks.on_update_code_callback
-app.on_update_sites += callbacks.on_update_sites_callback
-app.on_update_commands += callbacks.on_update_commands_callback
-app.on_updated_code += callbacks.on_updated_code_callback
-app.on_delete_item_code += callbacks.on_delete_item_code_callback
+app.on_insert_code += callbacks.on_insert_code
+app.on_insert_sites += callbacks.on_insert_sites
+app.on_inserted_sites += callbacks.on_inserted_sites
+app.on_update_code += callbacks.on_update_code
+app.on_update_sites += callbacks.on_update_sites
+app.on_update_commands += callbacks.on_update_commands
+app.on_updated_code += callbacks.on_updated_code
+app.on_delete_item_code += callbacks.on_delete_item_code
 app.on_insert += callbacks.pre_insert
 app.on_update += callbacks.pre_update
 app.on_replace += callbacks.pre_replace

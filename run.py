@@ -120,7 +120,7 @@ def f5():
         if 'path' in site:
             # In case a path was saved with a leading slash
             path = site["path"] if site["path"][0] == '/' else '/' + site["path"]
-            f5_list.append('"{0}" := "legacy"'.format(path))
+            f5_list.append('"/{0}" := "legacy",'.format(path))
     response = make_response(','.join(f5_list))
     return response
 

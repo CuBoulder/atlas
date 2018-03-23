@@ -208,9 +208,8 @@ def site_provision(site):
         return error
 
     if NFS_MOUNT_FILES_DIR:
-        nfs_files_dir = '{0}/{1}/files'.format(NFS_MOUNT_LOCATION[ENVIRONMENT], site['sid'])
         try:
-            execute(create_nfs_files_dir, nfs_dir=nfs_files_dir, site_sid=site['sid'])
+            execute(create_nfs_files_dir, site_sid=site['sid'])
         except FabricException as error:
             log.error('Site | Provision | Create nfs directory failed | Error - %s', error)
             return error
@@ -517,9 +516,9 @@ def site_install(site):
         return error
 
 
-def create_nfs_files_dir(nfs_dir, site_sid):
-    nfs_files_dir = '{0}/{1}/files'.format(nfs_dir, site_sid)
-    nfs_tmp_dir = '{0}/{1}/tmp'.format(nfs_dir, site_sid)
+def create_nfs_files_dir(site_sid):
+    nfs_files_dir = '{0}/{1}/files'.format(NFS_MOUNT_LOCATION[ENVIRONMENT], site_sid)
+    nfs_tmp_dir = '{0}/{1}/tmp'.format(NFS_MOUNT_LOCATION[ENVIRONMENT], site_sid)
     create_directory_structure(nfs_files_dir)
     create_directory_structure(nfs_tmp_dir)
     run('chown {0}:{1} {2}'.format(SSH_USER, WEBSERVER_USER_GROUP, nfs_files_dir))

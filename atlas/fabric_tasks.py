@@ -24,7 +24,7 @@ from atlas.config import (ATLAS_LOCATION, ENVIRONMENT, SSH_USER, CODE_ROOT, SITE
                           SITES_WEB_ROOT, WEBSERVER_USER, WEBSERVER_USER_GROUP, NFS_MOUNT_FILES_DIR,
                           BACKUP_PATH, SERVICE_ACCOUNT_USERNAME, SERVICE_ACCOUNT_PASSWORD,
                           SITE_DOWN_PATH, LOAD_BALANCER, VARNISH_CONTROL_KEY, STATIC_WEB_PATH,
-                          SSL_VERIFICATION)
+                          SSL_VERIFICATION, DRUPAL_CORE_PATHS)
 from atlas.config_servers import (SERVERDEFS, NFS_MOUNT_LOCATION, API_URLS,
                                   VARNISH_CONTROL_TERMINALS, LOAD_BALANCER_CONFIG_FILES,
                                   LOAD_BALANCER_CONFIG_GROUP, BASE_URLS)
@@ -143,8 +143,7 @@ def code_remove(item):
             item['meta']['name'])
         remove_symlink(code_folder_current)
     if item['meta']['code_type'] == 'static':
-        static_target = '{0}/{1}-{2}'.format(STATIC_WEB_PATH,
-            item['meta']['name'], item['meta']['version'])
+        static_target = '{0}/{1}-{2}'.format(STATIC_WEB_PATH, item['meta']['name'], item['meta']['version'])
         remove_symlink(static_target)
 
 

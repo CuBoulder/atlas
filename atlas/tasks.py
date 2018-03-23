@@ -487,7 +487,7 @@ def site_update(site, updates, original):
                 execute(fabric_tasks.update_settings_file, site=site)
                 execute(fabric_tasks.site_launch, site=site)
                 if site['type'] == 'homepage':
-                    execute(fabric_tasks.update_homepage_extra_files)
+                    execute(fabric_tasks.update_homepage_files)
                 deploy_drupal_cache_clear = True
                 deploy_php_cache_clear = True
                 # Let fabric send patch since it is changing update group.

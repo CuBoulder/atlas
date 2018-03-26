@@ -5,16 +5,20 @@
 """
 import os
 import sys
+import json
 import logging
 from logging.handlers import WatchedFileHandler
 import ssl
 
 from eve import Eve
-from flask import jsonify, make_response
+from eve.auth import requires_auth
+from flask import jsonify, make_response, abort, request
+
 from atlas import callbacks
+from atlas import tasks
 from atlas import utilities
 from atlas.config import (ATLAS_LOCATION, VERSION_NUMBER, SSL_KEY_FILE, SSL_CRT_FILE, LOG_LOCATION,
-                          ENVIRONMENT)
+                          ENVIRONMENT, API_URLS)
 
 
 if ATLAS_LOCATION not in sys.path:
@@ -30,6 +34,8 @@ SETTINGS_FILE = os.path.join(THIS_DIRECTORY, 'atlas/data_structure.py')
 # Use our HTTP Basic Auth class which checks against LDAP.
 # Import the data structures and Eve settings.
 app = Eve(import_name='atlas', auth=utilities.AtlasBasicAuth, settings=SETTINGS_FILE)
+# TODO: Remove debug mode.
+app.debug = True
 
 # Enable logging to 'atlas.log' file.
 LOG_HANDLER = WatchedFileHandler(LOG_LOCATION)
@@ -42,24 +48,111 @@ if ENVIRONMENT == 'local':
 # Append the handler to the default application logger
 app.logger.addHandler(LOG_HANDLER)
 
+# Hook into the request flow early
+@app.route('/backup/import', methods=['POST'])
+@requires_auth('backup')
+def import_backup():
+    """
+    Import a backup to a new instance.
+    """
+    backup_request = request.get_json()
+    app.logger.debug('Backup | Import | %s', backup_request)
+    # Get the backup and then the site records.
+    if not (backup_request['env'] and backup_request['id']):
+        abort(409, 'Error: Missing env (local, dev, test, prod) and id.')
+    elif not backup_request['env']:
+        abort(409, 'Error: Missing env (local, dev, test, prod).')
+    elif not backup_request['id']:
+        abort(409, 'Error: Missing id.')
+    elif backup_request['env'] not in ['local', 'dev', 'test', 'prod']:
+        abort(409, 'Error: Not a valid env choose from [local, dev, test, prod].')
+    backup_record = utilities.get_single_eve(
+        'backup', backup_request['id'], env=backup_request['env'])
+    app.logger.debug('Backup | Import | Backup record - %s', backup_record)
+    # TODO: What if 404s
+    site_record = utilities.get_single_eve(
+        'sites', backup_record['site'], backup_record['site_version'], env=backup_request['env'])
+    app.logger.debug('Backup | Import | Site record - %s', site_record)
+    # TODO: What if 404s
+
+    try:
+        package_list = utilities.package_import(site_record, env=backup_request['env'])
+    except Exception as error:
+        abort(409, error)
+
+
+@app.route('/backup/<string:backup_id>/restore', methods=['POST'])
+# TODO: Test what happens with 404 for backup_id
+@requires_auth('backup')
+def restore_backup(backup_id):
+    """
+    Restore a backup to a new instance.
+    :param machine_name: id of backup to restore
+    """
+    app.logger.debug('Backup | Restore | %s', backup_id)
+    backup_record = utilities.get_single_eve('backup', backup_id)
+    original_instance = utilities.get_single_eve('sites', backup_record['site'], backup_record['site_version'])
+    # If packages are still active, add them; if not, find a current version
+    # and add it; if none, error
+    try:
+        package_list = utilities.package_import(original_instance)
+    except Exception as error:
+        abort(409, error)
+
+    tasks.backup_restore.delay(backup_record, original_instance, package_list)
+    response = make_response('Restore started')
+    return response
+
+
+@app.route('/backup/<string:backup_id>/download', methods=['GET'])
+# TODO: Test what happens with 404 for backup_id
+@requires_auth('backup')
+def download_backup(backup_id):
+    """
+    Return URLs to download the database and files
+    """
+    app.logger.info('Backup | Download | ID - %s', backup_id)
+    backup_record = utilities.get_single_eve('backup', backup_id)
+    app.logger.debug('Backup | Download | Backup record - %s', backup_record)
+    urls = []
+    urls.append('{0}/download/{1}'.format(API_URLS[ENVIRONMENT], backup_record['files']))
+    urls.append('{0}/download/{1}'.format(API_URLS[ENVIRONMENT], backup_record['database']))
+    return jsonify(result=urls)
+
+
+@app.route('/sites/<string:site_id>/backup', methods=['POST'])
+# TODO: Test what happens with 404 for site_id
+@requires_auth('backup')
+def create_backup(site_id):
+    """
+    Create a backup of an instance.
+    :param machine_name: id of instance to restore
+    """
+    app.logger.debug('Backup | Create | Site ID - %s', site_id)
+    site = utilities.get_single_eve('sites', site_id)
+    app.logger.debug('Backup | Create | Site Response - %s', site)
+    tasks.backup_create.delay(site=site, backup_type='on_demand')
+    response = make_response('Backup started')
+    return response
+
 # Specific callbacks.
 # Use pre event hooks if there is a chance you want to abort.
 # Use DB hooks if you want to modify data on the way in.
 
 # Request event hooks.
-app.on_pre_POST += callbacks.pre_post_callback
-app.on_pre_POST_sites += callbacks.pre_post_sites_callback
-app.on_pre_DELETE_code += callbacks.pre_delete_code_callback
-app.on_pre_DELETE_sites += callbacks.pre_delete_sites_callback
+app.on_pre_POST += callbacks.pre_post
+app.on_pre_POST_sites += callbacks.pre_post_sites
+app.on_pre_DELETE_code += callbacks.pre_delete_code
+app.on_pre_DELETE_sites += callbacks.pre_delete_sites
 # Database event hooks.
-app.on_insert_code += callbacks.on_insert_code_callback
-app.on_insert_sites += callbacks.on_insert_sites_callback
-app.on_inserted_sites += callbacks.on_inserted_sites_callback
-app.on_update_code += callbacks.on_update_code_callback
-app.on_update_sites += callbacks.on_update_sites_callback
-app.on_update_commands += callbacks.on_update_commands_callback
-app.on_updated_code += callbacks.on_updated_code_callback
-app.on_delete_item_code += callbacks.on_delete_item_code_callback
+app.on_insert_code += callbacks.on_insert_code
+app.on_insert_sites += callbacks.on_insert_sites
+app.on_inserted_sites += callbacks.on_inserted_sites
+app.on_update_code += callbacks.on_update_code
+app.on_update_sites += callbacks.on_update_sites
+app.on_update_commands += callbacks.on_update_commands
+app.on_updated_code += callbacks.on_updated_code
+app.on_delete_item_code += callbacks.on_delete_item_code
 app.on_insert += callbacks.pre_insert
 app.on_update += callbacks.pre_update
 app.on_replace += callbacks.pre_replace

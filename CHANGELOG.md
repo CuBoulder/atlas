@@ -2,13 +2,14 @@
 
 ## v2.1.3
 
+This release adds basic backup and restore functionality.
+
 Resolves:
 
+- &#35;90 Create resource for backups (aka Make backups work)
 - &#35;453 Remove nightly instance churn.
 
 ## v2.1.2
-
-This release adds basic backup and restore functionality.@
 
 Need to:
 

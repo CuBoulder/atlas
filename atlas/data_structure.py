@@ -33,13 +33,12 @@ ENFORCE_IF_MATCH = True
 
 # Definitions of schemas for Items. Schema is based on Cerberus grammar
 # https://github.com/nicolaiarocci/cerberus.
-#
 
 # Mongo creates the following: '_created', '_updated', '_etag', and '_id'.
 # We don't use those fields in our logic because want to be able to move or
 # recreate a record without losing any information.
 
-# Code schema. Defines a code asset that can be applied to a site.
+# Code schema. Defines a code asset that can be applied to an instance.
 # We nest in 'meta' to allow us to check for a unique combo
 CODE_SCHEMA = {
     'meta': {
@@ -731,6 +730,48 @@ STATISTICS_SCHEMA = {
     },
 }
 
+BACKUP_SCHEMA = {
+    'state': {
+        'type': 'string',
+        'allowed': ['pending', 'complete'],
+        'default': 'pending',
+        'required': True,
+    },
+    'site': {
+        'type': 'objectid',
+        'data_relation': {
+            'resource': 'sites',
+            'field': '_id',
+        },
+        'required': True,
+    },
+    'site_version': {
+        'type': 'integer',
+        'required': True,
+    },
+    'backup_date': {
+        'type': 'datetime',
+    },
+    'backup_type': {
+        'type': 'string',
+        'allowed': ['on_demand', 'update', 'routine'],
+        'default': 'routine',
+        'required': True,
+    },
+    'files': {
+        'type': 'string',
+    },
+    'database': {
+        'type': 'string',
+    },
+    'created_by': {
+        'type': 'string',
+    },
+    'modified_by': {
+        'type': 'string',
+    },
+}
+
 COMMANDS_SCHEMA = {
     'name': {
         'type': 'string',
@@ -808,6 +849,14 @@ STATISTICS = {
     'schema': STATISTICS_SCHEMA,
 }
 
+# Backup resource
+BACKUP = {
+    'item_title': 'backup',
+    'public_methods': ['GET'],
+    'public_item_methods': ['GET'],
+    'schema': BACKUP_SCHEMA,
+}
+
 # Command resource
 # Empty public_item_methods means that you can't call actual commands without authentication.
 # Anonymous users can list the commands, but not call them.
@@ -826,4 +875,5 @@ DOMAIN = {
     'commands': COMMANDS,
     'query': QUERY,
     'statistics': STATISTICS,
+    'backup': BACKUP,
 }

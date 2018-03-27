@@ -6,23 +6,27 @@
 import logging
 import os
 import re
+import json
 
 import requests
 from random import randint
 from datetime import datetime
+from time import time, sleep, strftime
+from shutil import copyfileobj
 
 from fabric.contrib.files import exists, upload_template
+from fabric.operations import put
 from fabric.api import *
 from fabric.network import disconnect_all
 
 from atlas import utilities
 from atlas.config import (ATLAS_LOCATION, ENVIRONMENT, SSH_USER, CODE_ROOT, SITES_CODE_ROOT,
                           SITES_WEB_ROOT, WEBSERVER_USER, WEBSERVER_USER_GROUP, NFS_MOUNT_FILES_DIR,
-                          BACKUPS_PATH, SERVICE_ACCOUNT_USERNAME, SERVICE_ACCOUNT_PASSWORD,
-                          SITE_DOWN_PATH, LOAD_BALANCER)
+                          BACKUP_PATH, SERVICE_ACCOUNT_USERNAME, SERVICE_ACCOUNT_PASSWORD,
+                          SITE_DOWN_PATH, LOAD_BALANCER, SSL_VERIFICATION)
 from atlas.config_servers import (SERVERDEFS, NFS_MOUNT_LOCATION, API_URLS,
                                   VARNISH_CONTROL_TERMINALS, LOAD_BALANCER_CONFIG_FILES,
-                                  LOAD_BALANCER_CONFIG_GROUP)
+                                  LOAD_BALANCER_CONFIG_GROUP, BASE_URLS)
 
 # Setup a sub-logger. See tasks.py for longer comment.
 log = logging.getLogger('atlas.fabric_tasks')
@@ -680,6 +684,8 @@ def replace_files_directory(source, destination):
 
 
 def update_symlink(source, destination):
+    log.info('fabric_tasks | Update Symlink | Source - %s | Destination - %s',
+             source, destination)
     if exists(destination):
         run('rm {0}'.format(destination))
     run('ln -s {0} {1}'.format(source, destination))
@@ -762,3 +768,135 @@ def exportf5(file_name, load_balancer_config_dir):
         run("tmsh save sys config")
         run("tmsh run cm config-sync to-group {0}".format(LOAD_BALANCER_CONFIG_GROUP[ENVIRONMENT]))
         disconnect_all()
+
+
+@roles('webserver_single')
+def backup_create(site, backup_type):
+    """
+    Backup the database and files for an site.
+    """
+    log.debug('Backup | Create | site - %s', site)
+
+    # Create the stub for the backup
+    post_payload = {
+        'site': site['_id'],
+        'site_version': site['_version'],
+        'backup_type': backup_type,
+        'state': 'pending'
+    }
+    post_url = '{0}/backup'.format(API_URLS[ENVIRONMENT])
+    post = requests.post(
+        post_url,
+        data=post_payload,
+        auth=(SERVICE_ACCOUNT_USERNAME, SERVICE_ACCOUNT_PASSWORD),
+        verify=SSL_VERIFICATION,
+    )
+    if post.ok:
+        log.info('Backup | Create | POST - OK | %s | %s', post.content, post.headers)
+    else:
+        log.error('Backup | Create | POST - Error | %s', json.dumps(post.text))
+
+    backup_item = post.json()
+    log.info('Backup | Create | POST | Backup item - %s', backup_item)
+    # Setup dates and times.
+    start_time = time()
+    date = datetime.now()
+    date_time_string = date.strftime("%Y-%m-%d-%H-%M-%S")
+    datetime_string = date.strftime("%Y-%m-%d %H:%M:%S GMT")
+
+    # Setup paths
+    web_directory = '{0}/{1}/{2}'.format(SITES_WEB_ROOT, site['type'], site['sid'])
+    database_result_file = '{0}_{1}.sql'.format(site['sid'], date_time_string)
+    database_result_file_path = '{0}/{1}'.format(BACKUP_PATH, database_result_file)
+    nfs_files_dir = '{0}/sitefiles/{1}/files'.format(NFS_MOUNT_LOCATION[ENVIRONMENT], site['sid'])
+    files_result_file = '{0}_{1}.tar.gz'.format(site['sid'], date_time_string)
+    files_result_file_path = '{0}/{1}'.format(BACKUP_PATH, files_result_file)
+
+    # Start the actual process.
+    with cd(web_directory):
+        run('drush sql-dump --skip-tables-list=cache,cache_* --result-file={0}'.format(database_result_file_path))
+    with cd(nfs_files_dir):
+        run('tar --exclude "imagecache" --exclude "css" --exclude "js" --exclude "backup_migrate" --exclude "styles" --exclude "xmlsitemap" --exclude "honeypot" -czf {0} *'.format(files_result_file_path))
+
+    patch_payload = {
+        'site': site['_id'],
+        'site_version': site['_version'],
+        'backup_date': datetime_string,
+        'backup_type': backup_type,
+        'files' : files_result_file,
+        'database': database_result_file,
+        'state': 'complete'
+    }
+
+    log.debug('Backup | Create | Ready to update record | Payload - %s', patch_payload)
+    utilities.patch_eve('backup', backup_item['_id'], patch_payload)
+
+    backup_time = time() - start_time
+    log.info('Atlas operational statistic | Backup Create | %s', backup_time)
+
+
+@roles('webserver_single')
+def backup_restore(backup_record, original_instance, package_list):
+    """
+    Restore database and files to a new instance.
+    """
+    log.info('Instance | Restore Backup | %s | %s', backup_record, original_instance)
+    start_time = time()
+
+    file_date = datetime.strptime(backup_record['backup_date'], "%Y-%m-%d %H:%M:%S %Z")
+    pretty_filename = '{0}_{1}'.format(
+        original_instance['sid'], file_date.strftime("%Y-%m-%d-%H-%M-%S"))
+    pretty_database_filename = '{0}.sql'.format(pretty_filename)
+    database_path = '{0}/{1}'.format(BACKUP_PATH, pretty_database_filename)
+    pretty_files_filename = '{0}.tar.gz'.format(pretty_filename)
+    files_path = '{0}/{1}'.format(BACKUP_PATH, pretty_files_filename)
+
+    # Grab available instance and add packages if needed
+    available_instances = utilities.get_eve('sites', 'where={"status":"available"}')
+    log.debug('Instance | Restore Backup | Avaiable Instances - %s', available_instances)
+    new_instance = next(iter(available_instances['_items']), None)
+    # TODO: Don't switch if the code is the same
+    if new_instance is not None:
+        payload = {'status': 'installing'}
+        if package_list:
+            packages = {'code':{'package':package_list}}
+            payload.update(packages)
+        utilities.patch_eve('sites', new_instance['_id'], payload)
+    else:
+        exit('No available instances.')
+
+    # Wait for code and status to update.
+    attempts = 18 # Tries every 10 seconds to a max of 18 (or 3 minutes).
+    while attempts:
+        try:
+            new_instance_refresh = utilities.get_single_eve('sites', new_instance['_id'])
+            if new_instance_refresh['status'] != 'installed':
+                raise ValueError('Status has not yet updated.')
+            break
+        except ValueError, e:
+            # If the status is not updated and we have attempts left,
+            # remove an attempt and wait 10 seconds.
+            attempts -= 1
+            if attempts is not 0:
+                sleep(10)
+            else:
+                exit(str(e))
+
+    log.debug('Instance | Restore Backup | New instance is ready for DB and files | %s',
+              new_instance['_id'])
+    web_directory = '{0}/{1}/{2}'.format(SITES_WEB_ROOT, new_instance['type'], new_instance['sid'])
+    nfs_files_dir = '{0}/sitefiles/{1}/files'.format(
+        NFS_MOUNT_LOCATION[ENVIRONMENT], new_instance['sid'])
+
+    with cd(nfs_files_dir):
+        run('tar -xzf {0}'.format(files_path))
+        log.debug('Instance | Restore Backup | Files replaced')
+
+    with cd(web_directory):
+        run('drush sql-cli < {0}'.format(database_path))
+        log.debug('Instance | Restore Backup | DB imported')
+        run('drush cc all')
+
+    restore_time = time() - start_time
+    log.info('Instance | Restore Backup | Complete | Backup - %s | New Instance - %s (%s) | %s sec',
+             backup_record['_id'], new_instance['_id'], new_instance['sid'], restore_time)

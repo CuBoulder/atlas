@@ -542,7 +542,7 @@ def site_update(site, updates, original):
     if deploy_update_database:
         execute(fabric_tasks.update_database, site=site)
     if deploy_drupal_cache_clear:
-        execute(fabric_tasks.drush_cache_clear, sid=site['sid'])
+        execute(fabric_tasks.cache_clear, sid=site['sid'])
 
     slack_text = 'Site Update - Success - {0}/sites/{1}'.format(API_URLS[ENVIRONMENT], site['_id'])
     slack_color = 'good'

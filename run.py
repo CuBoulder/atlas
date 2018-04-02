@@ -10,6 +10,7 @@ import logging
 from logging.handlers import WatchedFileHandler
 import ssl
 
+from collections import Counter
 from eve import Eve
 from eve.auth import requires_auth
 from flask import jsonify, make_response, abort, request
@@ -134,6 +135,43 @@ def create_backup(site_id):
     tasks.backup_create.delay(site=site, backup_type='on_demand')
     response = make_response('Backup started')
     return response
+
+
+@app.route('/sites/aggregation', methods=['GET'])
+@app.route('/sites/agg', methods=['GET'])
+@requires_auth('sites')
+def sites_statistics():
+    """
+    Give some basic aggregations about site objects
+    """
+    app.logger.debug('Sites | Aggregations')
+    express_result = utilities.get_eve('sites','where={"type":"express","f5only":false}&max_results=2000')
+    legacy_result = utilities.get_eve('sites','where={"type":"legacy","f5only":false}&max_results=2000')
+    app.logger.debug('Sites | Aggregations | Express Result - %s', express_result)
+    app.logger.debug('Sites | Aggregations | Legacy Result - %s', legacy_result)
+    # Express sites
+    express_sites = express_result['_items']
+    agg = {}
+    count = Counter()
+    bundle = Counter()
+    bundle_total = 0
+    ## Total by state
+    for site in express_sites:
+        count[site['status']] += 1
+        if site['code'].get('pacakge'):
+            bundle_total += 1
+    agg['express'] = {'status': dict(count)}
+    # Total
+    agg['express']['status']['total'] = express_result['_meta']['total']
+    ## Total with bundles
+    agg['express']['bundles'] = {'total': bundle_total}
+    # Legacy
+    ## Total routes
+    agg['legacy'] = {'total': legacy_result['_meta']['total']}
+
+    response = make_response(jsonify(agg))
+    return response
+
 
 # Specific callbacks.
 # Use pre event hooks if there is a chance you want to abort.

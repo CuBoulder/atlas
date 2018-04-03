@@ -1,5 +1,11 @@
 # Change log
 
+## v2.1.4
+
+Resolves:
+
+- &#35;456 Eve returns a different query result when compared to Mongodb
+
 ## v2.1.3
 
 This release adds basic backup and restore functionality.

@@ -102,17 +102,17 @@ def on_insert_sites(items):
             # The 'get' method checks if the key exists.
             if item.get('code'):
                 if not item['code'].get('core'):
-                    item['code']['core'] = utilities.get_current_code(
-                        name=DEFAULT_CORE, code_type='core')
+                    item['code']['core'] = ObjectId(utilities.get_current_code(
+                        name=DEFAULT_CORE, code_type='core'))
                 if not item['code'].get('profile'):
-                    item['code']['profile'] = utilities.get_current_code(
-                        name=DEFAULT_PROFILE, code_type='profile')
+                    item['code']['profile'] = ObjectId(utilities.get_current_code(
+                        name=DEFAULT_PROFILE, code_type='profile'))
             else:
                 item['code'] = {}
-                item['code']['core'] = utilities.get_current_code(
-                    name=DEFAULT_CORE, code_type='core')
-                item['code']['profile'] = utilities.get_current_code(
-                    name=DEFAULT_PROFILE, code_type='profile')
+                item['code']['core'] = ObjectId(utilities.get_current_code(
+                    name=DEFAULT_CORE, code_type='core'))
+                item['code']['profile'] = ObjectId(utilities.get_current_code(
+                    name=DEFAULT_PROFILE, code_type='profile'))
             date_json = '{{"created":"{0} GMT"}}'.format(item['_created'])
             item['dates'] = json.loads(date_json)
 

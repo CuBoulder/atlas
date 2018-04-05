@@ -12,6 +12,7 @@ $conf["cu_sid"] = "{{sid}}";
 
 $conf["atlas_id"] = "{{atlas_id}}";
 $conf["atlas_url"] = "{{atlas_url}}";
+$conf["new_atlas_url"] = "{{new_atlas_url}}";
 $conf["atlas_username"] = "{{atlas_username}}";
 $conf["atlas_password"] = "{{atlas_password}}";
 $conf["atlas_status"] = "{{status}}";

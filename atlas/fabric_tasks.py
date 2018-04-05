@@ -556,6 +556,8 @@ def create_settings_files(site):
         siteimprove_group = None
     page_cache_maximum_age = site['settings']['page_cache_maximum_age']
     atlas_url = '{0}/'.format(API_URLS[ENVIRONMENT])
+    new_atlas_env = 'osr-{0}-https'.format(ENVIRONMENT)
+    new_atlas_url = '{0}/'.format(API_URLS[new_atlas_env])
     database_password = utilities.decrypt_string(site['db_key'])
 
     profile = utilities.get_single_eve('code', site['code']['profile'])
@@ -574,6 +576,7 @@ def create_settings_files(site):
         'sid': sid,
         'atlas_id': atlas_id,
         'atlas_url': atlas_url,
+        'new_atlas_url': new_atlas_url,
         'atlas_username': SERVICE_ACCOUNT_USERNAME,
         'atlas_password': SERVICE_ACCOUNT_PASSWORD,
         'path': site_path,

@@ -196,7 +196,9 @@ SITES_SCHEMA = {
         'allowed': [
             'poolb-express',
             'poolb-homepage',
-            'WWWLegacy'],
+            'WWWLegacy',
+            'osr-prod-https',
+            'osr-test-https'],
         'default': 'poolb-express',
     },
     'update_group': {

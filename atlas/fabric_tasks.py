@@ -24,7 +24,7 @@ from atlas.config import (ATLAS_LOCATION, ENVIRONMENT, SSH_USER, CODE_ROOT, SITE
                           SITES_WEB_ROOT, WEBSERVER_USER, WEBSERVER_USER_GROUP, NFS_MOUNT_FILES_DIR,
                           BACKUP_PATH, SERVICE_ACCOUNT_USERNAME, SERVICE_ACCOUNT_PASSWORD,
                           SITE_DOWN_PATH, LOAD_BALANCER, VARNISH_CONTROL_KEY, STATIC_WEB_PATH,
-                          SSL_VERIFICATION)
+                          SSL_VERIFICATION, DRUPAL_CORE_PATHS)
 from atlas.config_servers import (SERVERDEFS, NFS_MOUNT_LOCATION, API_URLS,
                                   VARNISH_CONTROL_TERMINALS, LOAD_BALANCER_CONFIG_FILES,
                                   LOAD_BALANCER_CONFIG_GROUP, BASE_URLS)
@@ -143,9 +143,26 @@ def code_remove(item):
             item['meta']['name'])
         remove_symlink(code_folder_current)
     if item['meta']['code_type'] == 'static':
-        static_target = '{0}/{1}-{2}'.format(STATIC_WEB_PATH,
-            item['meta']['name'], item['meta']['version'])
+        static_target = '{0}/{1}-{2}'.format(STATIC_WEB_PATH, item['meta']['name'], item['meta']['version'])
         remove_symlink(static_target)
+
+
+@roles('webservers')
+def code_heal(item):
+    log.info('Code | Heal | Item - %s', item)
+    if item['meta']['code_type'] == 'library':
+        code_type_dir = 'libraries'
+    else:
+        code_type_dir = item['meta']['code_type'] + 's'
+    code_folder = '{0}/{1}/{2}/{2}-{3}'.format(
+        CODE_ROOT,
+        code_type_dir,
+        item['meta']['name'],
+        item['meta']['version'])
+    if not exists(code_folder):
+        code_deploy(item)
+    else:
+        checkout_repo(item["commit_hash"], code_folder)
 
 
 @roles('webservers')
@@ -190,17 +207,17 @@ def site_provision(site):
         return error
 
     if NFS_MOUNT_FILES_DIR:
-        nfs_dir = NFS_MOUNT_LOCATION[ENVIRONMENT]
-        nfs_files_dir = '{0}/{1}/files'.format(nfs_dir, site['sid'])
+        nfs_files_dir = '{0}/{1}'.format(NFS_MOUNT_LOCATION[ENVIRONMENT], site['sid'])
         try:
-            execute(create_nfs_files_dir, nfs_dir=nfs_dir, site_sid=site['sid'])
+            execute(create_nfs_files_dir, nfs_dir=nfs_files_dir)
         except FabricException as error:
             log.error('Site | Provision | Create nfs directory failed | Error - %s', error)
             return error
         # Replace default files dir with this one
         site_files_dir = code_directory_current + '/sites/default/files'
+        nfs_src = '{0}/files'.format(nfs_files_dir)
         try:
-            execute(replace_files_directory, source=nfs_files_dir, destination=site_files_dir)
+            execute(replace_files_directory, source=nfs_src, destination=site_files_dir)
         except FabricException as error:
             log.error('Site | Provision | Replace file directory failed | Error - %s', error)
             return error
@@ -338,6 +355,42 @@ def site_remove(site):
 
 
 @roles('webservers')
+def instance_heal(item):
+    log.info('Instance | Heal | Item ID - %s | Item - %s', item['sid'], item)
+    path_list = []
+    # Check for code root
+    path_list.append('{0}/{1}'.format(SITES_CODE_ROOT, item['sid']))
+    path_list.append('{0}/{1}/{2}'.format(SITES_CODE_ROOT, item['sid'], item['sid']))
+    path_list.append('{0}/{1}/current'.format(SITES_CODE_ROOT, item['sid']))
+    # Check for NFS
+    path_list.append('{0}/{1}/files'.format(NFS_MOUNT_LOCATION[ENVIRONMENT], item['sid']))
+    # Check for web root symlinks
+    path_list.append('{0}/{1}'.format(SITES_WEB_ROOT, item['sid']))
+    # Build list of paths to check
+    reprovison = False
+    if item['status'] == 'launched':
+        path_symlink = '{0}/{1}'.format(SITES_WEB_ROOT, item['path'])
+        path_list.append(path_symlink)
+    log.info('Instance | Heal | Item ID - %s | Path list - %s', item['sid'], path_list)
+    for path_to_check in path_list:
+        if not exists(path_to_check):
+            log.info('Instance | Heal | Item ID - %s | Path check failed - %s', item['sid'], path_to_check)
+            reprovison = True
+            break
+    # If we are missing any of the paths, wipe the instance and rebuild it.
+    if reprovison:
+        log.info('Instance | Heal | Item ID - %s | Begin reprovision', item['sid'])
+        site_remove(item)
+        site_provision(item)
+        # Add packages
+        if item['code'].get('package'):
+            site_package_update(item)
+        log.info('Instance | Heal | Item ID - %s | Reprovision finished', item['sid'])
+    else:
+        log.info('Instance | Heal | Item ID - %s | Instance okay', item['sid'])
+
+
+@roles('webservers')
 def clear_php_cache():
     try:
         run('curl -ks https://127.0.0.1/opcache/reset.php;')
@@ -358,7 +411,7 @@ def update_settings_file(site):
 
 
 @roles('webservers')
-def update_homepage_extra_files():
+def update_homepage_files():
     """
     SCP the homepage files to web heads.
     :return:
@@ -464,9 +517,9 @@ def site_install(site):
         return error
 
 
-def create_nfs_files_dir(nfs_dir, site_sid):
-    nfs_files_dir = '{0}/{1}/files'.format(nfs_dir, site_sid)
-    nfs_tmp_dir = '{0}/{1}/tmp'.format(nfs_dir, site_sid)
+def create_nfs_files_dir(nfs_dir):
+    nfs_files_dir = '{0}/files'.format(nfs_dir)
+    nfs_tmp_dir = '{0}/tmp'.format(nfs_dir)
     create_directory_structure(nfs_files_dir)
     create_directory_structure(nfs_tmp_dir)
     run('chown {0}:{1} {2}'.format(SSH_USER, WEBSERVER_USER_GROUP, nfs_files_dir))
@@ -773,3 +826,44 @@ def backup_restore(backup_record, original_instance, package_list):
     restore_time = time() - start_time
     log.info('Instance | Restore Backup | Complete | Backup - %s | New Instance - %s (%s) | %s sec',
              backup_record['_id'], new_instance['_id'], new_instance['sid'], restore_time)
+
+
+def import_backup(db_url, files_url, target_instance):
+    """
+    Connect to a single webserver, download the database and file backups, restore them into the
+    Drupal instance, and remove the backup files.
+    """
+    log.info('Import Backup | DB URL - %s | Files URL - %s | Target Instance - %s',
+             db_url, files_url, target_instance)
+
+    start_time = time()
+
+    # Download db and files
+    backup_tmp_dir = '{0}/tmp'.format(BACKUP_PATH)
+    with cd(backup_tmp_dir):
+        run('curl -k -O -s {0}'.format(db_url))
+        run('curl -k -O -s {0}'.format(files_url))
+
+    # Get the path for the file
+    # Split the url on the '/' character and take the last item in the list.
+    files_path = '{0}/tmp/{1}'.format(BACKUP_PATH, files_url.rsplit('/', 1)[-1])
+    database_path = '{0}/tmp/{1}'.format(BACKUP_PATH, db_url.rsplit('/', 1)[-1])
+    log.debug('Import backup | File path - %s | DB path - %s', files_path, database_path)
+    web_directory = '{0}/{1}'.format(SITES_WEB_ROOT, target_instance['sid'])
+    nfs_files_dir = '{0}/{1}/files'.format(
+        NFS_MOUNT_LOCATION[ENVIRONMENT], target_instance['sid'])
+
+    with cd(nfs_files_dir):
+        run('tar -xzf {0}'.format(files_path))
+        log.debug('Instance | Restore Backup | Files replaced')
+
+    with cd(web_directory):
+        run('drush sql-cli < {0}'.format(database_path))
+        log.debug('Instance | Restore Backup | DB imported')
+        run('drush cc all')
+
+    run('rm {0}'.format(files_path))
+    run('rm {0}'.format(database_path))
+
+    restore_time = time() - start_time
+    log.info('Import Backup | Complete | Target Instance - %s (%s) | %s sec', target_instance['_id'], target_instance['sid'], restore_time)

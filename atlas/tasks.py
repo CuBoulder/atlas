@@ -9,6 +9,7 @@ import json
 from bson import json_util
 from collections import Counter
 
+import requests
 from datetime import datetime, timedelta
 from celery import Celery
 from celery.utils.log import get_task_logger
@@ -17,7 +18,7 @@ from fabric.api import execute
 from atlas import fabric_tasks
 from atlas import utilities
 from atlas import config_celery
-from atlas.config import (ENVIRONMENT, WEBSERVER_USER, DESIRED_SITE_COUNT)
+from atlas.config import (ENVIRONMENT, WEBSERVER_USER, DESIRED_SITE_COUNT, SSL_VERIFICATION)
 from atlas.config_servers import (BASE_URLS, API_URLS)
 
 # Setup a sub-logger
@@ -486,7 +487,7 @@ def site_update(site, updates, original):
                 execute(fabric_tasks.update_settings_file, site=site)
                 execute(fabric_tasks.site_launch, site=site)
                 if site['type'] == 'homepage':
-                    execute(fabric_tasks.update_homepage_extra_files)
+                    execute(fabric_tasks.update_homepage_files)
                 deploy_drupal_cache_clear = True
                 deploy_php_cache_clear = True
                 # Let fabric send patch since it is changing update group.
@@ -594,7 +595,6 @@ def site_remove(site):
     """
     log.debug('Site remove | %s', site)
     if site['type'] == 'express':
-        # execute(fabric_tasks.site_backup, site=site)
         # Check if stats object exists for the site first.
         statistics_query = 'where={{"site":"{0}"}}'.format(site['_id'])
         statistics = utilities.get_eve('statistics', statistics_query)
@@ -656,16 +656,6 @@ def command_prepare(item):
     :return:
     """
     log.debug('Prepare Command | item - %s ', item)
-    if item['command'] == 'clear_php_cache':
-        execute(fabric_tasks.clear_php_cache)
-        return
-    if item['command'] == 'import_code':
-        utilities.import_code(item['query'])
-        return
-    if item['command'] == 'rebalance_update_groups':
-        utilities.rebalance_update_groups(item)
-        return
-
     if item['query']:
         site_query = 'where={0}'.format(item['query'])
         sites = utilities.get_eve('sites', site_query)
@@ -674,17 +664,6 @@ def command_prepare(item):
             batch_count = 1
             for site in sites['_items']:
                 batch_string = str(batch_count) + ' of ' + str(sites['_meta']['total'])
-                if item['command'] == 'update_settings_file':
-                    log.debug('Prepare Command | Item - %s | Update Settings file | Instance - %s - %s', item['_id'], site['_id'], batch_string)
-                    command_wrapper.delay(execute(fabric_tasks.update_settings_file, site=site))
-                    continue
-                if item['command'] == 'update_homepage_extra_files':
-                    log.debug('Prepare Command | Item - %s | Update Homepage Extra files | Instance - %s', item['_id'], site['_id'])
-                    command_wrapper.delay(execute(fabric_tasks.update_homepage_extra_files))
-                    continue
-                if item['command'] == 'backup_create':
-                    command_wrapper.delay(execute(fabric_tasks.backup_create, site=site))
-                    continue
                 command_run.delay(site=site,
                                   command=item['command'],
                                   single_server=item['single_server'],
@@ -692,10 +671,6 @@ def command_prepare(item):
                                   batch_id=item['_etag'],
                                   batch_count=batch_string)
                 batch_count += 1
-            # After all the commands run, flush APC.
-            if item['command'] == 'update_settings_file':
-                log.debug('Prepare Command | Item - %s | Clear PHP Cache', item['_id'])
-                command_wrapper.delay(execute(fabric_tasks.clear_php_cache))
 
 
 @celery.task
@@ -1075,3 +1050,136 @@ def remove_extra_backups():
             # Remove the oldest
             log.info('Delete extra backup | backup - %s', item)
             utilities.delete_eve('backup', item)
+
+
+@celery.task
+def clear_php_cache():
+    """
+    Celery task to clear PHP cache on all webservers.
+    """
+    log.info('Clear PHP cache')
+    execute(fabric_tasks.clear_php_cache)
+
+
+@celery.task
+def import_code(env):
+    """
+    Import code definitions from another Atlas instance.
+
+    :param env: Environment to target get code list from
+    """
+    target_url = '{0}/code'.format(API_URLS[env])
+    r = requests.get(target_url)
+    if r.ok:
+        data = r.json()
+        log.debug('Import Code | Target data | %s', data)
+
+        for code in data['_items']:
+            payload = {
+                'git_url': code['git_url'],
+                'commit_hash': code['commit_hash'],
+                'meta': {
+                    'name': code['meta']['name'],
+                    'version': code['meta']['version'],
+                    'code_type': code['meta']['code_type'],
+                    'is_current': code['meta']['is_current'],
+                },
+            }
+            if code['meta'].get('tag'):
+                payload['meta']['tag'] = code['meta']['tag']
+            if code['meta'].get('label'):
+                payload['meta']['label'] = code['meta']['label']
+            utilities.post_eve('code', payload)
+
+
+@celery.task
+def rebalance_update_groups():
+    """
+    Redistribute instances into update groups.
+    :return:
+    """
+    log.info
+    installed_query = 'where={"status":"installed"}&max_results=2000'
+    installed_sites = utilities.get_eve('sites', installed_query)
+    launched_query = 'where={"status":"launched"}&max_results=2000'
+    launched_sites = utilities.get_eve('sites', launched_query)
+    installed_update_group = 0
+    launched_update_group = 0
+    if not installed_sites['_meta']['total'] == 0:
+        for site in installed_sites['_items']:
+            patch_payload = '{{"update_group": {0}}}'.format(installed_update_group)
+            if installed_update_group < 2:
+                installed_update_group += 1
+            else:
+                installed_update_group = 0
+            utilities.patch_eve('sites', site['_id'], patch_payload)
+
+    if not launched_sites['_meta']['total'] == 0:
+        for site in launched_sites['_items']:
+            # Only update if the group is less than 11.
+            if site['update_group'] < 11:
+                patch_payload = '{{"update_group": {0}}}'.format(launched_update_group)
+                if launched_update_group < 10:
+                    launched_update_group += 1
+                else:
+                    launched_update_group = 0
+                utilities.patch_eve('sites', site['_id'], patch_payload)
+
+
+@celery.task
+def update_settings_file(site, batch_id, count, total):
+    log.info('Command | Update Settings file | Batch - %s | %s of %s | Instance - %s', batch_id, count, total, site)
+    try:
+        execute(fabric_tasks.update_settings_file, site=site)
+        log.info('Command | Update Settings file | Batch - %s | %s of %s | Instance - %s | Complete', batch_id, count, total, site)
+    except Exception as error:
+        log.error('Command | Update Settings file | Batch - %s | %s of %s | Instance - %s | Error - %s', batch_id, count, total, site, error)
+        raise
+
+
+@celery.task
+def update_homepage_files():
+    log.info('Command | Update Homepage files')
+    try:
+        execute(fabric_tasks.update_homepage_files)
+        log.info('Command | Update Homepage files | Complete')
+    except Exception as error:
+        log.error('Command | Update Homepage files | Error - %s', error)
+        raise
+
+
+@celery.task
+def heal_code(item):
+    """
+    Verify code is correctly deployed.
+    """
+    log.info('Heal | Code | Item - %s', item)
+    execute(fabric_tasks.code_heal, item=item)
+
+
+@celery.task
+def heal_instance(instance):
+    """
+    Verify code is correctly deployed.
+    """
+    # DB create has 'if not exists' included
+    log.info('Heal | Instance | Instance - %s', instance)
+    utilities.create_database(instance['sid'], instance['db_key'])
+    execute(fabric_tasks.instance_heal, item=instance)
+
+
+@celery.task
+def import_backup(env, backup_id, target_instance):
+    """
+    Download and import a backup
+    """
+    log.info('Import Backup | Source ENV - %s | Source Backup ID - %s | Target Instance - %s',
+             env, backup_id, target_instance)
+    # Get a host to run this on.
+    backup_downloads = requests.get('{0}/backup/{1}/download'.format(API_URLS[env], backup_id), verify=SSL_VERIFICATION)
+    downloads = backup_downloads.json()
+    log.info('Import Backup | Backup download - %s', downloads)
+    target = utilities.get_single_eve('sites', target_instance)
+    host = utilities.single_host()
+    execute(fabric_tasks.import_backup, db_url=downloads['result']['db'],
+            files_url=downloads['result']['files'], target_instance=target, hosts=host)

@@ -5,15 +5,18 @@
 """
 import os
 import sys
+import json
 import logging
 from logging.handlers import WatchedFileHandler
 import ssl
 
 from eve import Eve
 from eve.auth import requires_auth
-from flask import jsonify, make_response, abort
+from datetime import datetime
+from flask import jsonify, make_response, abort, request
 
 from atlas import callbacks
+from atlas import commands
 from atlas import tasks
 from atlas import utilities
 from atlas.config import (ATLAS_LOCATION, VERSION_NUMBER, SSL_KEY_FILE, SSL_CRT_FILE, LOG_LOCATION,
@@ -48,7 +51,107 @@ if ENVIRONMENT == 'local':
 app.logger.addHandler(LOG_HANDLER)
 
 
-# Hook into the request flow early
+# We will use Flask to serve the Commands endpoint.
+@app.route('/commands', methods=['GET'])
+def get_commands():
+    """Get a list of available commands."""
+    return jsonify({'commands': commands.COMMANDS})
+
+
+@app.route('/commands/<string:machine_name>', methods=['GET', 'POST'])
+def get_command(machine_name):
+    """
+    Get a single command.
+    :param machine_name: command to return a definition for.
+    """
+    command = [command for command in commands.COMMANDS if command['machine_name'] == machine_name]
+    if not command:
+        abort(404)
+    else:
+        command = command[0]['machine_name']
+    if request.method == 'GET':
+        return jsonify({'command': command})
+    elif request.method == 'POST':
+        # Loop through the commands list and grab the one we want
+        app.logger.debug('Command | Execute | %s', command)
+        if command == 'clear_php_cache':
+            tasks.clear_php_cache.delay()
+        elif command == 'import_code':
+            # Grab payload
+            payload = request.data
+            if not payload.get('env'):
+                abort(409, 'This command requires a payload containing a target `env`.')
+            tasks.import_code.delay(payload['env'])
+        elif command == 'rebalance_update_groups':
+            tasks.rebalance_update_groups.delay()
+        elif command == 'update_homepage_files':
+            tasks.update_homepage_files.delay()
+        elif command == 'update_settings_file':
+            query = 'where={"type":"express"}&max_results=2000'
+            sites = utilities.get_eve('sites', query)
+            timestamp = datetime.now()
+            count = 0
+            total = sites['_meta']['max_results']
+            for instance in sites['_items']:
+                count += 1
+                tasks.update_settings_file.delay(instance, timestamp, count, total)
+                continue
+            tasks.clear_php_cache.delay()
+        elif command == 'heal_code':
+            code_items = utilities.get_eve('code')
+            for code in code_items['_items']:
+                tasks.heal_code.delay(code)
+                continue
+        elif command == 'heal_instances':
+            instance_query = 'where={"type":"express"}'
+            instances = utilities.get_eve('sites', instance_query)
+            for instance in instances['_items']:
+                tasks.heal_instance.delay(instance)
+                continue
+        return make_response('Command "{0}" has been initiated.'.format(command))
+
+
+@app.route('/backup/import', methods=['POST'])
+@requires_auth('backup')
+def import_backup():
+    """
+    Import a backup to a new instance.
+    """
+    backup_request = request.get_json()
+    app.logger.debug('Backup | Import | %s', backup_request)
+    # Get the backup and then the site records.
+    if not (backup_request.get('env') and backup_request.get('id')):
+        abort(409, 'Error: Missing env (local, dev, test, prod, o-dev, o-test, o-prod) and id.')
+    elif not backup_request.get('env'):
+        abort(409, 'Error: Missing env (local, dev, test, prod, o-dev, o-test, o-prod).')
+    elif not backup_request.get('id'):
+        abort(409, 'Error: Missing id.')
+    elif backup_request['env'] not in ['local', 'dev', 'test', 'prod', 'o-dev', 'o-test', 'o-prod']:
+        abort(409, 'Error: Invalid env choose from [local, dev, test, prod, o-dev, o-test, o-prod].')
+    elif not backup_request.get('target_id'):
+        abort(409, 'Error: Missing target_instance.')
+    ####
+    #### Taking this part out for now. This is required for cloning between env, not for the migration.
+    ####
+    # backup_record = utilities.get_single_eve(
+    #     'backup', backup_request['id'], env=backup_request['env'])
+    # app.logger.debug('Backup | Import | Backup record - %s', backup_record)
+    # site_record = utilities.get_single_eve(
+    #     'sites', backup_record['site'], backup_record['site_version'], env=backup_request['env'])
+    # app.logger.debug('Backup | Import | Site record - %s', site_record)
+
+    # try:
+    #     package_list = utilities.package_import(site_record, env=backup_request['env'])
+    # except Exception as error:
+    #     abort(500, error)
+
+    tasks.import_backup.delay(
+        env=backup_request['env'], backup_id=backup_request['id'], target_instance=backup_request['target_id'])
+
+    return make_response('I am trying')
+
+
+
 @app.route('/backup/<string:backup_id>/restore', methods=['POST'])
 # TODO: Test what happens with 404 for backup_id
 @requires_auth('backup')
@@ -83,9 +186,10 @@ def download_backup(backup_id):
     app.logger.info('Backup | Download | ID - %s', backup_id)
     backup_record = utilities.get_single_eve('backup', backup_id)
     app.logger.debug('Backup | Download | Backup record - %s', backup_record)
-    urls = []
-    urls.append('{0}/download/{1}'.format(API_URLS[ENVIRONMENT], backup_record['files']))
-    urls.append('{0}/download/{1}'.format(API_URLS[ENVIRONMENT], backup_record['database']))
+    urls = {
+        'files': '{0}/download/{1}'.format(API_URLS[ENVIRONMENT], backup_record['files']),
+        'db': '{0}/download/{1}'.format(API_URLS[ENVIRONMENT], backup_record['database'])
+    }
     return jsonify(result=urls)
 
 

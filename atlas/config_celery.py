@@ -68,6 +68,9 @@ CELERY_ROUTES = {
     'atlas.tasks.remove_old_backups': {
         'queue': 'atlas_queue'
     },
+    'atlas.tasks.migrate_routing': {
+        'queue': 'atlas_queue'
+    },
 }
 
 CELERYBEAT_SCHEDULE = {
@@ -119,5 +122,10 @@ CELERYBEAT_SCHEDULE = {
     'remove_old_backups': {
         'task': 'atlas.tasks.remove_old_backups',
         'schedule': timedelta(hours=24),
+    },
+    'migrate_routing': {
+        'task': 'atlas.tasks.migrate_routing',
+        'schedule': timedelta(minutes=5),
+        #'schedule': crontab(minute=0, hour='9,11,13,15', day_of_week='mon-fri')
     },
 }

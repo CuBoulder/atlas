@@ -1176,10 +1176,44 @@ def import_backup(env, backup_id, target_instance):
     log.info('Import Backup | Source ENV - %s | Source Backup ID - %s | Target Instance - %s',
              env, backup_id, target_instance)
     # Get a host to run this on.
-    backup_downloads = requests.get('{0}/backup/{1}/download'.format(API_URLS[env], backup_id), verify=SSL_VERIFICATION)
+    backup_downloads = requests.get(
+        '{0}/backup/{1}/download'.format(API_URLS[env], backup_id), verify=SSL_VERIFICATION)
     downloads = backup_downloads.json()
     log.info('Import Backup | Backup download - %s', downloads)
     target = utilities.get_single_eve('sites', target_instance)
     host = utilities.single_host()
     execute(fabric_tasks.import_backup, db_url=downloads['result']['db'],
             files_url=downloads['result']['files'], target_instance=target, hosts=host)
+
+
+@celery.task
+def migrate_routing():
+    """
+    Find instances that are verified or outside of the verification window and update the routing.
+    """
+    log.info('Migrate Routing | Start')
+    verified_instances_query = 'where={"verification.verification_status":"approved","dates.migration":{"$exists":false}}'
+    verified_instances = utilities.get_eve('sites', verified_instances_query)
+    log.debug('Migrate routing | verified_instances - %s', verified_instances)
+
+    time_ago = datetime.utcnow() - timedelta(hours=48)
+    timeout_verification_query = 'where={{"verification.verification_status":"ready","dates.verification":{{"$lte":"{0}"}}}}'.format(
+        time_ago.strftime("%Y-%m-%d %H:%M:%S GMT"))
+    timeout_verification_instances = utilities.get_eve('sites', timeout_verification_query)
+    log.debug('Migrate routing | timeout_verification - %s', timeout_verification_instances)
+
+    # Payload vars.
+    pool = 'osr-{0}-https'.format(ENVIRONMENT)
+    old_infra_payload = {'pool': pool}
+    env = 'old-{0}'.format(ENVIRONMENT)
+    new_infra_payload = "{{ 'dates' : {{ 'activation': '{0}'}}}}".format(datetime.utcnow().strftime("%Y-%m-%d %H:%M:%S GMT"))
+
+    if verified_instances['_meta']['total'] is not 0:
+        for instance in verified_instances['_items']:
+            utilities.patch_eve('sites', instance['_id'], old_infra_payload, env=env)
+            utilities.patch_eve('sites', instance['_id'], new_infra_payload)
+
+    if verified_instances['_meta']['total'] is not 0:
+        for instance in verified_instances['_items']:
+            utilities.patch_eve('sites', instance['_id'], old_infra_payload, env=env)
+            utilities.patch_eve('sites', instance['_id'], new_infra_payload)

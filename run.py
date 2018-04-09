@@ -115,9 +115,8 @@ def download_backup(backup_id):
     app.logger.info('Backup | Download | ID - %s', backup_id)
     backup_record = utilities.get_single_eve('backup', backup_id)
     app.logger.debug('Backup | Download | Backup record - %s', backup_record)
-    urls = []
-    urls.append('{0}/download/{1}'.format(API_URLS[ENVIRONMENT], backup_record['files']))
-    urls.append('{0}/download/{1}'.format(API_URLS[ENVIRONMENT], backup_record['database']))
+    urls = {'files' : '{0}/download/{1}'.format(API_URLS[ENVIRONMENT], backup_record['files'])}
+    urls['db'] = '{0}/download/{1}'.format(API_URLS[ENVIRONMENT], backup_record['database'])
     return jsonify(result=urls)
 
 

@@ -313,7 +313,7 @@ def on_update_sites(updates, original):
         tasks.site_update.delay(site=site, updates=updates, original=original)
 
 
-def on_update_commands(updates, original):
+def on_update_drush(updates, original):
     """
     Run commands when API endpoints are called.
 

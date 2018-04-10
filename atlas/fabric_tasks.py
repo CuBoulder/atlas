@@ -9,10 +9,8 @@ import re
 import json
 
 import requests
-from random import randint
 from datetime import datetime
 from time import time, sleep, strftime
-from shutil import copyfileobj
 
 from fabric.contrib.files import exists, upload_template
 from fabric.operations import put
@@ -385,6 +383,8 @@ def instance_heal(item):
         # Add packages
         if item['code'].get('package'):
             site_package_update(item)
+        if item['status'] == 'launched':
+            launch_site(item)
         log.info('Instance | Heal | Item ID - %s | Reprovision finished', item['sid'])
     else:
         log.info('Instance | Heal | Item ID - %s | Instance okay', item['sid'])
@@ -684,8 +684,6 @@ def launch_site(site):
                 # Create a new symlink using site's updated path
                 if not exists(web_directory_path):
                     update_symlink(code_directory_current, site['path'])
-            update_group = randint(0, 10)
-
         elif site['type'] == 'homepage':
             with cd(SITES_WEB_ROOT):
                 # Link in homepage
@@ -693,10 +691,7 @@ def launch_site(site):
                     source_path = "{0}/{1}".format(code_directory_current, link)
                     target_path = "{0}/{1}".format(SITES_WEB_ROOT, link)
                     update_symlink(source_path, target_path)
-            update_group = 12
 
-        payload = {'status': 'launched', 'update_group': update_group}
-        utilities.patch_eve('sites', site['_id'], payload)
 
 
 def backup_create(site, backup_type):
@@ -742,7 +737,7 @@ def backup_create(site, backup_type):
 
     # Start the actual process.
     with cd(web_directory):
-        run('drush sql-dump --skip-tables-list=cache,cache_* --result-file={0}'.format(database_result_file_path))
+        run('drush sql-dump --structure-tables-list=cache,cache_*,sessions,watchdog,history --result-file={0}'.format(database_result_file_path))
     with cd(nfs_files_dir):
         run('tar --exclude "imagecache" --exclude "css" --exclude "js" --exclude "backup_migrate" --exclude "styles" --exclude "xmlsitemap" --exclude "honeypot" -czf {0} *'.format(files_result_file_path))
 

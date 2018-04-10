@@ -847,7 +847,6 @@ def import_backup(backup, target_instance):
     put(backup_files_path, backup_tmp_dir)
 
     # Get the path for the file
-    # Split the url on the '/' character and take the last item in the list.
     files_path = '{0}/{1}'.format(backup_tmp_dir, backup_files)
     database_path = '{0}/{1}'.format(backup_tmp_dir, backup_db)
     log.debug('Import backup | File path - %s | DB path - %s', files_path, database_path)

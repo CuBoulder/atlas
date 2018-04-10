@@ -817,7 +817,7 @@ def backup_create(site, backup_type):
 
     # Start the actual process.
     with cd(web_directory):
-        run('drush sql-dump --skip-tables-list=cache,cache_* --result-file={0}'.format(database_result_file_path))
+        run('drush sql-dump --structure-tables-list=cache,cache_*,sessions,watchdog,history --result-file={0}'.format(database_result_file_path))
     with cd(nfs_files_dir):
         run('tar --exclude "imagecache" --exclude "css" --exclude "js" --exclude "backup_migrate" --exclude "styles" --exclude "xmlsitemap" --exclude "honeypot" -czf {0} *'.format(files_result_file_path))
 

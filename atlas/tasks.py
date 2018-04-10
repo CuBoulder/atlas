@@ -1176,10 +1176,8 @@ def import_backup(env, backup_id, target_instance):
     log.info('Import Backup | Source ENV - %s | Source Backup ID - %s | Target Instance - %s',
              env, backup_id, target_instance)
     # Get a host to run this on.
-    backup_downloads = requests.get('{0}/backup/{1}/download'.format(API_URLS[env], backup_id), verify=SSL_VERIFICATION)
-    downloads = backup_downloads.json()
-    log.info('Import Backup | Backup download - %s', downloads)
+    backup = requests.get('{0}/backup/{1}'.format(API_URLS[env], backup_id), verify=SSL_VERIFICATION)
+    log.info('Import Backup | Backup - %s', backup)
     target = utilities.get_single_eve('sites', target_instance)
     host = utilities.single_host()
-    execute(fabric_tasks.import_backup, db_url=downloads['result']['db'],
-            files_url=downloads['result']['files'], target_instance=target, hosts=host)
+    execute(fabric_tasks.import_backup, backup=backup, target_instance=target, hosts=host)

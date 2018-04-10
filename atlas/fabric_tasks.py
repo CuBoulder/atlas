@@ -840,7 +840,8 @@ def import_backup(backup, target_instance):
 
     # Copy db and files
     backup_tmp_dir = '{0}/tmp'.format(BACKUP_PATH)
-    backup_date = backup['backup_date'].strftime("%Y-%m-%d-%H-%M-%S")
+    file_date = datetime.strptime(backup['backup_date'], "%Y-%m-%d %H:%M:%S %Z")
+    backup_date = file_date.strftime("%Y-%m-%d-%H-%M-%S")
     site = utilities.get_single_eve('sites', backup['site'])
     backup_db = '{0}_{1}.sql'.format(site['sid'], backup_date)
     backup_files = '{0}_{1}.tar.gz'.format(site['sid'], backup_date)

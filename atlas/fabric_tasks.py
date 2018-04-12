@@ -25,7 +25,7 @@ from atlas.config import (ATLAS_LOCATION, ENVIRONMENT, SSH_USER, CODE_ROOT, SITE
                           SSL_VERIFICATION, DRUPAL_CORE_PATHS, BACKUP_IMPORT_PATH)
 from atlas.config_servers import (SERVERDEFS, NFS_MOUNT_LOCATION, API_URLS,
                                   VARNISH_CONTROL_TERMINALS, LOAD_BALANCER_CONFIG_FILES,
-                                  LOAD_BALANCER_CONFIG_GROUP, BASE_URLS)
+                                  LOAD_BALANCER_CONFIG_GROUP, BASE_URLS, ATLAS_LOGGING_URLS)
 
 # Setup a sub-logger. See tasks.py for longer comment.
 log = logging.getLogger('atlas.fabric_tasks')
@@ -570,6 +570,7 @@ def create_settings_files(site):
         siteimprove_group = None
     page_cache_maximum_age = site['settings']['page_cache_maximum_age']
     atlas_url = '{0}/'.format(API_URLS[ENVIRONMENT])
+    atlas_logging_url = ATLAS_LOGGING_URLS[ENVIRONMENT]
     database_password = utilities.decrypt_string(site['db_key'])
 
     profile = utilities.get_single_eve('code', site['code']['profile'])
@@ -588,6 +589,7 @@ def create_settings_files(site):
         'sid': sid,
         'atlas_id': atlas_id,
         'atlas_url': atlas_url,
+        'atlas_logging_url': atlas_logging_url,
         'atlas_username': SERVICE_ACCOUNT_USERNAME,
         'atlas_password': SERVICE_ACCOUNT_PASSWORD,
         'path': site_path,
@@ -856,12 +858,17 @@ def import_backup(backup, target_instance):
 
     with cd(nfs_files_dir):
         run('tar -xzf {0}'.format(files_path))
+        run('find {0} -type f -or -type d -exec chgrp apache {{}} \\;'.format(files_path), warn_only=True)
+        run('find {0} -type f -exec chmod g+rw {{}} \\;'.format(files_path), warn_only=True)
+        run('find {0} -type d -exec chmod g+rws {{}} \\;'.format(files_path), warn_only=True)
         log.debug('Instance | Restore Backup | Files replaced')
 
     with cd(web_directory):
         run('drush sql-cli < {0}'.format(database_path))
         log.debug('Instance | Restore Backup | DB imported')
-        run('drush cc all')
+        run('sudo -u {0} drush rr'.format(WEBSERVER_USER))
+        run('sudo -u {0} drush updb -y'.format(WEBSERVER_USER))
+        run('sudo -u {0} drush cc all'.format(WEBSERVER_USER))
 
     run('rm {0}'.format(files_path))
     run('rm {0}'.format(database_path))

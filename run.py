@@ -209,6 +209,19 @@ def create_backup(site_id):
     return response
 
 
+@app.route('/drush/<string:drush_id>/execute', methods=['POST'])
+# TODO: Test what happens with 404 for site_id
+@requires_auth('drush')
+def execute_drush(drush_id):
+    """
+    Execute a drush command.
+    :param machine_name: id of instance to restore
+    """
+    tasks.drush_prepare.delay(drush_id)
+    response = make_response('Drush command started, check the logs for outcomes.')
+    return response
+
+
 @app.route('/f5')
 @requires_auth('sites')
 def f5():
@@ -246,7 +259,6 @@ app.on_insert_sites += callbacks.on_insert_sites
 app.on_inserted_sites += callbacks.on_inserted_sites
 app.on_update_code += callbacks.on_update_code
 app.on_update_sites += callbacks.on_update_sites
-app.on_update_drush += callbacks.on_update_drush
 app.on_updated_code += callbacks.on_updated_code
 app.on_delete_item_code += callbacks.on_delete_item_code
 app.on_insert += callbacks.pre_insert

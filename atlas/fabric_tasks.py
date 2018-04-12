@@ -9,10 +9,8 @@ import re
 import json
 
 import requests
-from random import randint
 from datetime import datetime
 from time import time, sleep, strftime
-from shutil import copyfileobj
 
 from fabric.contrib.files import exists, upload_template
 from fabric.operations import put
@@ -24,10 +22,10 @@ from atlas.config import (ATLAS_LOCATION, ENVIRONMENT, SSH_USER, CODE_ROOT, SITE
                           SITES_WEB_ROOT, WEBSERVER_USER, WEBSERVER_USER_GROUP, NFS_MOUNT_FILES_DIR,
                           BACKUP_PATH, SERVICE_ACCOUNT_USERNAME, SERVICE_ACCOUNT_PASSWORD,
                           SITE_DOWN_PATH, LOAD_BALANCER, VARNISH_CONTROL_KEY, STATIC_WEB_PATH,
-                          SSL_VERIFICATION, DRUPAL_CORE_PATHS)
+                          SSL_VERIFICATION, DRUPAL_CORE_PATHS, BACKUP_IMPORT_PATH)
 from atlas.config_servers import (SERVERDEFS, NFS_MOUNT_LOCATION, API_URLS,
                                   VARNISH_CONTROL_TERMINALS, LOAD_BALANCER_CONFIG_FILES,
-                                  LOAD_BALANCER_CONFIG_GROUP, BASE_URLS)
+                                  LOAD_BALANCER_CONFIG_GROUP, BASE_URLS, ATLAS_LOGGING_URLS)
 
 # Setup a sub-logger. See tasks.py for longer comment.
 log = logging.getLogger('atlas.fabric_tasks')
@@ -385,6 +383,8 @@ def instance_heal(item):
         # Add packages
         if item['code'].get('package'):
             site_package_update(item)
+        if item['status'] == 'launched':
+            launch_site(item)
         log.info('Instance | Heal | Item ID - %s | Reprovision finished', item['sid'])
     else:
         log.info('Instance | Heal | Item ID - %s | Instance okay', item['sid'])
@@ -570,6 +570,7 @@ def create_settings_files(site):
         siteimprove_group = None
     page_cache_maximum_age = site['settings']['page_cache_maximum_age']
     atlas_url = '{0}/'.format(API_URLS[ENVIRONMENT])
+    atlas_logging_url = ATLAS_LOGGING_URLS[ENVIRONMENT]
     database_password = utilities.decrypt_string(site['db_key'])
 
     profile = utilities.get_single_eve('code', site['code']['profile'])
@@ -588,6 +589,7 @@ def create_settings_files(site):
         'sid': sid,
         'atlas_id': atlas_id,
         'atlas_url': atlas_url,
+        'atlas_logging_url': atlas_logging_url,
         'atlas_username': SERVICE_ACCOUNT_USERNAME,
         'atlas_password': SERVICE_ACCOUNT_PASSWORD,
         'path': site_path,
@@ -684,8 +686,6 @@ def launch_site(site):
                 # Create a new symlink using site's updated path
                 if not exists(web_directory_path):
                     update_symlink(code_directory_current, site['path'])
-            update_group = randint(0, 10)
-
         elif site['type'] == 'homepage':
             with cd(SITES_WEB_ROOT):
                 # Link in homepage
@@ -693,10 +693,7 @@ def launch_site(site):
                     source_path = "{0}/{1}".format(code_directory_current, link)
                     target_path = "{0}/{1}".format(SITES_WEB_ROOT, link)
                     update_symlink(source_path, target_path)
-            update_group = 12
 
-        payload = {'status': 'launched', 'update_group': update_group}
-        utilities.patch_eve('sites', site['_id'], payload)
 
 
 def backup_create(site, backup_type):
@@ -742,7 +739,7 @@ def backup_create(site, backup_type):
 
     # Start the actual process.
     with cd(web_directory):
-        run('drush sql-dump --skip-tables-list=cache,cache_* --result-file={0}'.format(database_result_file_path))
+        run('drush sql-dump --structure-tables-list=cache,cache_*,sessions,watchdog,history --result-file={0}'.format(database_result_file_path))
     with cd(nfs_files_dir):
         run('tar --exclude "imagecache" --exclude "css" --exclude "js" --exclude "backup_migrate" --exclude "styles" --exclude "xmlsitemap" --exclude "honeypot" -czf {0} *'.format(files_result_file_path))
 
@@ -828,26 +825,32 @@ def backup_restore(backup_record, original_instance, package_list):
              backup_record['_id'], new_instance['_id'], new_instance['sid'], restore_time)
 
 
-def import_backup(db_url, files_url, target_instance):
+def import_backup(backup, target_instance):
     """
-    Connect to a single webserver, download the database and file backups, restore them into the
+    Connect to a single webserver, copy over the database and file backups, restore them into the
     Drupal instance, and remove the backup files.
     """
-    log.info('Import Backup | DB URL - %s | Files URL - %s | Target Instance - %s',
-             db_url, files_url, target_instance)
+    log.info('Import Backup | Backup - %s | Target Instance - %s',
+             backup, target_instance)
 
     start_time = time()
 
-    # Download db and files
+    # Copy db and files
     backup_tmp_dir = '{0}/tmp'.format(BACKUP_PATH)
-    with cd(backup_tmp_dir):
-        run('curl -k -O -s {0}'.format(db_url))
-        run('curl -k -O -s {0}'.format(files_url))
+    file_date = datetime.strptime(backup['backup_date'], "%Y-%m-%d %H:%M:%S %Z")
+    backup_date = file_date.strftime("%Y-%m-%d-%H-%M-%S")
+    site = utilities.get_single_eve('sites', backup['site'])
+    backup_db = '{0}_{1}.sql'.format(site['sid'], backup_date)
+    backup_files = '{0}_{1}.tar.gz'.format(site['sid'], backup_date)
+    backup_db_path = '{0}/{1}'.format(BACKUP_IMPORT_PATH, backup_db)
+    backup_files_path = '{0}/{1}'.format(BACKUP_IMPORT_PATH, backup_files)
+
+    put(backup_db_path, backup_tmp_dir)
+    put(backup_files_path, backup_tmp_dir)
 
     # Get the path for the file
-    # Split the url on the '/' character and take the last item in the list.
-    files_path = '{0}/tmp/{1}'.format(BACKUP_PATH, files_url.rsplit('/', 1)[-1])
-    database_path = '{0}/tmp/{1}'.format(BACKUP_PATH, db_url.rsplit('/', 1)[-1])
+    files_path = '{0}/{1}'.format(backup_tmp_dir, backup_files)
+    database_path = '{0}/{1}'.format(backup_tmp_dir, backup_db)
     log.debug('Import backup | File path - %s | DB path - %s', files_path, database_path)
     web_directory = '{0}/{1}'.format(SITES_WEB_ROOT, target_instance['sid'])
     nfs_files_dir = '{0}/{1}/files'.format(
@@ -855,12 +858,17 @@ def import_backup(db_url, files_url, target_instance):
 
     with cd(nfs_files_dir):
         run('tar -xzf {0}'.format(files_path))
+        run('find {0} -type f -or -type d -exec chgrp apache {{}} \\;'.format(files_path), warn_only=True)
+        run('find {0} -type f -exec chmod g+rw {{}} \\;'.format(files_path), warn_only=True)
+        run('find {0} -type d -exec chmod g+rws {{}} \\;'.format(files_path), warn_only=True)
         log.debug('Instance | Restore Backup | Files replaced')
 
     with cd(web_directory):
         run('drush sql-cli < {0}'.format(database_path))
         log.debug('Instance | Restore Backup | DB imported')
-        run('drush cc all')
+        run('sudo -u {0} drush rr'.format(WEBSERVER_USER))
+        run('sudo -u {0} drush updb -y'.format(WEBSERVER_USER))
+        run('sudo -u {0} drush cc all'.format(WEBSERVER_USER))
 
     run('rm {0}'.format(files_path))
     run('rm {0}'.format(database_path))

@@ -3,17 +3,17 @@
     ~~~~~~
     Celery tasks for Atlas.
 """
-import logging
 import time
 import json
-from bson import json_util
 from collections import Counter
+from datetime import datetime, timedelta
+from random import randint
 
 import requests
-from datetime import datetime, timedelta
 from celery import Celery
 from celery.utils.log import get_task_logger
 from fabric.api import execute
+from bson import json_util
 
 from atlas import fabric_tasks
 from atlas import utilities
@@ -490,6 +490,14 @@ def site_update(site, updates, original):
                     execute(fabric_tasks.update_homepage_files)
                 deploy_drupal_cache_clear = True
                 deploy_php_cache_clear = True
+                # Set update group and status
+                if site['type'] in ['express', 'homepage']:
+                    if site['type'] == 'express':
+                        update_group = randint(0, 10)
+                    elif site['type'] == 'homepage':
+                        update_group = 12
+                    patch_payload = {'status': 'launched', 'update_group': update_group}
+
                 # Let fabric send patch since it is changing update group.
             elif updates['status'] == 'locked':
                 log.debug('Site update | ID - %s | Status changed to locked', site['_id'])
@@ -518,9 +526,9 @@ def site_update(site, updates, original):
                 patch_payload = '{"status": "installed"}'
                 deploy_drupal_cache_clear = True
 
-            if updates['status'] != 'launching':
-                patch = utilities.patch_eve('sites', site['_id'], patch_payload)
-                log.debug(patch)
+
+            patch = utilities.patch_eve('sites', site['_id'], patch_payload)
+            log.debug(patch)
 
     # Don't update settings files a second time if status is changing to 'locked'.
     if updates.get('settings'):
@@ -1176,10 +1184,8 @@ def import_backup(env, backup_id, target_instance):
     log.info('Import Backup | Source ENV - %s | Source Backup ID - %s | Target Instance - %s',
              env, backup_id, target_instance)
     # Get a host to run this on.
-    backup_downloads = requests.get('{0}/backup/{1}/download'.format(API_URLS[env], backup_id), verify=SSL_VERIFICATION)
-    downloads = backup_downloads.json()
-    log.info('Import Backup | Backup download - %s', downloads)
+    backup = requests.get('{0}/backup/{1}'.format(API_URLS[env], backup_id), verify=SSL_VERIFICATION)
+    log.info('Import Backup | Backup - %s', backup)
     target = utilities.get_single_eve('sites', target_instance)
     host = utilities.single_host()
-    execute(fabric_tasks.import_backup, db_url=downloads['result']['db'],
-            files_url=downloads['result']['files'], target_instance=target, hosts=host)
+    execute(fabric_tasks.import_backup, backup=backup.json(), target_instance=target, hosts=host)

@@ -103,7 +103,7 @@ def get_command(machine_name):
                 tasks.heal_code.delay(code)
                 continue
         elif command == 'heal_instances':
-            instance_query = 'where={"type":"express"}'
+            instance_query = 'where={"type":"express","f5only":false}'
             instances = utilities.get_eve('sites', instance_query)
             for instance in instances['_items']:
                 tasks.heal_instance.delay(instance)

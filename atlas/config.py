@@ -20,7 +20,7 @@ from atlas.config_local import (ENVIRONMENT, SSL_KEY_FILE, SSL_CRT_FILE, ALLOWED
                                 SLACK_USERNAME, VARNISH_CONTROL_KEY, SEND_NOTIFICATION_EMAILS,
                                 SEND_NOTIFICATION_FROM_EMAIL, EMAIL_HOST, EMAIL_PORT, EMAIL_USERNAME,
                                 EMAIL_PASSWORD, LOG_LOCATION, EMAIL_USERS_EXCLUDE, STATIC_WEB_PATH,
-                                BACKUP_PATH)
+                                BACKUP_PATH, BACKUP_IMPORT_PATH)
 
 # Set Atlas location
 ATLAS_LOCATION = os.path.dirname(os.path.realpath(__file__))

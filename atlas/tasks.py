@@ -1022,7 +1022,7 @@ def update_f5():
         execute(fabric_tasks.update_f5)
 
 
-@celery.task
+@celery.task(time_limit=2000)
 def backup_create(site, backup_type):
     log.debug('Backup | Create | Site - %s', site)
     log.info('Backup | Create | Site - %s', site['_id'])

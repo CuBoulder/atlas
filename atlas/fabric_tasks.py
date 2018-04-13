@@ -858,15 +858,16 @@ def import_backup(backup, target_instance):
 
     with cd(nfs_files_dir):
         run('tar -xzf {0}'.format(files_path))
-        run('find {0} -type f -or -type d -exec chgrp apache {{}} \\;'.format(files_path), warn_only=True)
-        run('find {0} -type f -exec chmod g+rw {{}} \\;'.format(files_path), warn_only=True)
-        run('find {0} -type d -exec chmod g+rws {{}} \\;'.format(files_path), warn_only=True)
+        run('find {0} -type f -or -type d -exec chgrp apache {{}} \\;'.format(nfs_files_dir), warn_only=True)
+        run('find {0} -type f -exec chmod g+rw {{}} \\;'.format(nfs_files_dir), warn_only=True)
+        run('find {0} -type d -exec chmod g+rws {{}} \\;'.format(nfs_files_dir), warn_only=True)
         log.debug('Instance | Restore Backup | Files replaced')
 
     with cd(web_directory):
         run('drush sql-cli < {0}'.format(database_path))
         log.debug('Instance | Restore Backup | DB imported')
         run('sudo -u {0} drush rr'.format(WEBSERVER_USER))
+        run('sudo -u {0} drush spr'.format(WEBSERVER_USER))
         run('sudo -u {0} drush updb -y'.format(WEBSERVER_USER))
         run('sudo -u {0} drush cc all'.format(WEBSERVER_USER))
 

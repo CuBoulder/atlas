@@ -1188,4 +1188,5 @@ def import_backup(env, backup_id, target_instance):
     log.info('Import Backup | Backup - %s', backup)
     target = utilities.get_single_eve('sites', target_instance)
     host = utilities.single_host()
+    execute(fabric_tasks.instance_heal, item=target)
     execute(fabric_tasks.import_backup, backup=backup.json(), target_instance=target, hosts=host)

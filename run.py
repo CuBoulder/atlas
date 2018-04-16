@@ -220,7 +220,7 @@ def heal_instance(site_id):
     app.logger.debug('Site | Heal | Site ID - %s', site_id)
     instance = utilities.get_single_eve('sites', site_id)
     tasks.heal_instance.delay(instance)
-    return make_response('Command "{0}" has been initiated.'.format(command))
+    return make_response('Instance heal has been initiated.')
 
 
 @app.route('/f5')

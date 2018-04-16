@@ -866,10 +866,12 @@ def import_backup(backup, target_instance):
     with cd(web_directory):
         run('drush sql-cli < {0}'.format(database_path))
         log.debug('Instance | Restore Backup | DB imported')
-        run('sudo -u {0} drush rr'.format(WEBSERVER_USER))
+        with settings(warn_only=True):
+            run('sudo -u {0} drush rr'.format(WEBSERVER_USER))
         run('sudo -u {0} drush spr'.format(WEBSERVER_USER))
         run('sudo -u {0} drush updb -y'.format(WEBSERVER_USER))
-        run('sudo -u {0} drush cc all'.format(WEBSERVER_USER))
+        with settings(warn_only=True):
+            run('sudo -u {0} drush cc all'.format(WEBSERVER_USER))
 
     run('rm {0}'.format(files_path))
     run('rm {0}'.format(database_path))

@@ -218,10 +218,8 @@ def heal_instance(site_id):
     :param machine_name: id of instance to restore
     """
     app.logger.debug('Site | Heal | Site ID - %s', site_id)
-    instances = utilities.get_singel_eve('sites', site_id)
-    for instance in instances['_items']:
-        tasks.heal_instance.delay(instance)
-        continue
+    instance = utilities.get_single_eve('sites', site_id)
+    tasks.heal_instance.delay(instance)
     return make_response('Command "{0}" has been initiated.'.format(command))
 
 

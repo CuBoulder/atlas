@@ -205,17 +205,18 @@ def site_provision(site):
         return error
 
     if NFS_MOUNT_FILES_DIR:
-        nfs_files_dir = '{0}/{1}'.format(NFS_MOUNT_LOCATION[ENVIRONMENT], site['sid'])
+        nfs_files_dir = '{0}/{1}/files'.format(NFS_MOUNT_LOCATION[ENVIRONMENT], site['sid'])
+        nfs_files_dir_tmp = '{0}/{1}/tmp'.format(NFS_MOUNT_LOCATION[ENVIRONMENT], site['sid'])
         try:
             execute(create_nfs_files_dir, nfs_dir=nfs_files_dir)
+            execute(create_nfs_files_dir, nfs_dir=nfs_files_dir_tmp)
         except FabricException as error:
             log.error('Site | Provision | Create nfs directory failed | Error - %s', error)
             return error
         # Replace default files dir with this one
         site_files_dir = code_directory_current + '/sites/default/files'
-        nfs_src = '{0}/files'.format(nfs_files_dir)
         try:
-            execute(replace_files_directory, source=nfs_src, destination=site_files_dir)
+            execute(replace_files_directory, source=nfs_files_dir, destination=site_files_dir)
         except FabricException as error:
             log.error('Site | Provision | Replace file directory failed | Error - %s', error)
             return error

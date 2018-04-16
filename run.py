@@ -209,6 +209,22 @@ def create_backup(site_id):
     return response
 
 
+@app.route('/sites/<string:site_id>/heal', methods=['POST'])
+# TODO: Test what happens with 404 for site_id
+@requires_auth('sites')
+def heal_instance(site_id):
+    """
+    Create a backup of an instance.
+    :param machine_name: id of instance to restore
+    """
+    app.logger.debug('Site | Heal | Site ID - %s', site_id)
+    instances = utilities.get_singel_eve('sites', site_id)
+    for instance in instances['_items']:
+        tasks.heal_instance.delay(instance)
+        continue
+    return make_response('Command "{0}" has been initiated.'.format(command))
+
+
 @app.route('/f5')
 @requires_auth('sites')
 def f5():

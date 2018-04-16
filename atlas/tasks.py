@@ -1176,7 +1176,7 @@ def heal_instance(instance):
     execute(fabric_tasks.instance_heal, item=instance)
 
 
-@celery.task
+@celery.task(time_limit=2000)
 def import_backup(env, backup_id, target_instance):
     """
     Download and import a backup

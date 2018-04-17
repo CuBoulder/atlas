@@ -129,10 +129,9 @@ if (isset($_SERVER['OSR_ENV'])) {
       $base_url .= 'https://express.local';
       // We don't need a cookie_domain for locals.
       break;
-
+  }
   ini_set('session.cookie_lifetime', 93600);
   ini_set('session.cookie_path', '/' . $path);
-  }
 {% if site_type == 'express' %}  $base_url .= '/' . $path;{% endif %}
 }
 

@@ -85,7 +85,7 @@ def get_command(machine_name):
             tasks.rebalance_update_groups.delay()
         elif command == 'update_homepage_files':
             tasks.update_homepage_files.delay()
-        elif command == 'update_settings_file':
+        elif command == 'update_settings_files':
             query = 'where={"type":"express"}&max_results=2000'
             sites = utilities.get_eve('sites', query)
             timestamp = datetime.now()

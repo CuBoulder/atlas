@@ -22,7 +22,7 @@ COMMANDS = [
         'description': u'Resort the members of groups 0-10 so that they are evenly distributed.',
     },
     {
-        'machine_name': u'update_settings_file',
+        'machine_name': u'update_settings_files',
         'description': u'Update the Drupal settings file.',
     },
     {

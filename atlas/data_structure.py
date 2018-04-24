@@ -761,24 +761,19 @@ BACKUP_SCHEMA = {
 }
 
 DRUSH_SCHEMA = {
-    'name': {
-        'type': 'string',
-        'minlength': 3,
+    'commands': {
+        'type': 'list',
+        'schema': {
+            'type': 'string',
+            'minlength': 5,
+        },
         'required': True,
-    },
-    'command': {
-        'type': 'string',
-        'minlength': 3,
-        'required': True,
+        'unique': True,
     },
     # String that is stored needs to be posted with Unicode character encodings
     'query': {
         'type': 'string',
         'minlength': 9,
-    },
-    'single_server': {
-        'type': 'boolean',
-        'required': True,
         'default': True,
     },
     'created_by': {

@@ -313,19 +313,6 @@ def on_update_sites(updates, original):
         tasks.site_update.delay(site=site, updates=updates, original=original)
 
 
-def on_update_commands(updates, original):
-    """
-    Run commands when API endpoints are called.
-
-    :param updates:
-    :param original:
-    """
-    item = original.copy()
-    item.update(updates)
-    log.debug('command | Update | Item - %s | Update - %s | Original - %s', item, updates, original)
-    tasks.command_prepare.delay(item)
-
-
 def on_updated_code(updates, original):
     """
     Find instances that use this code asset and re-add them.

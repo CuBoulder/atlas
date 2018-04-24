@@ -656,82 +656,64 @@ def site_remove(site):
 
 
 @celery.task
-def command_prepare(item):
+def drush_prepare(drush_id, run=True):
     """
-    Prepare sites to run the appropriate command.
+    Prepare to run the appropriate drush command and run it if desired
 
-    :param item: A complete command item, including new values.
+    :param drush_id: ID of drush command to run.
     :return:
     """
-    log.debug('Prepare Command | item - %s ', item)
-    if item['query']:
-        site_query = 'where={0}'.format(item['query'])
-        sites = utilities.get_eve('sites', site_query)
-        log.debug('Prepare Command | Item - %s | Ran query - %s', item['_id'], sites)
-        if not sites['_meta']['total'] == 0:
-            batch_count = 1
-            for site in sites['_items']:
-                batch_string = str(batch_count) + ' of ' + str(sites['_meta']['total'])
-                command_run.delay(site=site,
-                                  command=item['command'],
-                                  single_server=item['single_server'],
-                                  user=item['modified_by'],
-                                  batch_id=item['_etag'],
-                                  batch_count=batch_string)
-                batch_count += 1
+    log.debug('Drush | Prepare | Drush command - %s', drush_id)
+    drush_command = utilities.get_single_eve('drush', drush_id)
+
+    site_query = 'where={0}'.format(drush_command['query'])
+    sites = utilities.get_eve('sites', site_query)
+    log.debug('Drush | Prepare | Drush command - %s | Ran query - %s', drush_id, sites)
+    if not sites['_meta']['total'] == 0 and run is True:
+        batch_count = 1
+        for site in sites['_items']:
+            batch_string = str(batch_count) + ' of ' + str(sites['_meta']['total'])
+            drush_command_run.delay(
+                site=site, command_list=drush_command['commands'], user=drush_command['modified_by'], batch_id=datetime.now(), batch_count=batch_string)
+            batch_count += 1
+        return 'Batch started'
+    else:
+        return sites
 
 
 @celery.task
-def command_wrapper(fabric_command):
-    """
-    Wrapper to run specific commands as delegate tasks.
-    :param fabric_command: Fabric command to call
-    :return:
-    """
-    log.debug('Command wrapper | %s', fabric_command)
-    return fabric_command
-
-
-@celery.task
-def command_run(site, command, single_server, user=None, batch_id=None, batch_count=None):
+def drush_command_run(site, command_list, user=None, batch_id=None, batch_count=None):
     """
     Run the appropriate command.
 
     :param site: A complete site item.
-    :param command: Command to run.
-    :param single_server: boolean Run a single server or all servers.
+    :param command_list: List of commands to run.
     :param user: string Username that called the command.
     :return:
     """
-    log.info('Batch ID - %s | Count - %s | Command - %s',
-             batch_id, batch_count, command)
-    log.debug('Batch ID - %s | Count - %s | Site - %s | Single Server - %s | Command - %s',
-             batch_id, batch_count, site['sid'], single_server, command)
+    log.info('Batch ID - %s | Count - %s | Command - %s', batch_id, batch_count, command_list)
+    log.debug('Batch ID - %s | Count - %s | Site - %s | Command - %s', batch_id, batch_count, site['sid'], command_list)
 
     # 'match' searches for strings that begin with
-    if command.startswith('drush'):
-        if site['type'] is not 'homepage':
-            uri = BASE_URLS[ENVIRONMENT] + '/' + site['path']
-        else:
-            uri = BASE_URLS[ENVIRONMENT]
-        # Add user prefix and URI suffix
-        altered_command = 'sudo -u {0} '.format(WEBSERVER_USER) + command + ' --uri={0}'.format(uri)
+    if site['type'] is not 'homepage':
+        uri = BASE_URLS[ENVIRONMENT] + '/' + site['path']
+    else:
+        uri = BASE_URLS[ENVIRONMENT]
+    # Use List comprehension to add user prefix and URI suffix, then join the result.
+    final_command = ' && '.join(['sudo -u {0} '.format(WEBSERVER_USER) + command + ' --uri={0}'.format(uri) for command in command_list])
+    log.debug('Batch ID - %s | Count - %s | Final Command - %s', batch_id, batch_count, final_command)
 
     start_time = time.time()
-    if single_server:
-        # Get a host to run this command on.
-        host = utilities.single_host()
-        fabric_task_result = execute(
-            fabric_tasks.command_run_single, site=site, command=altered_command, warn_only=True, hosts=host)
-    else:
-        fabric_task_result = execute(
-            fabric_tasks.command_run, site=site, command=altered_command, warn_only=True)
+
+    host = utilities.single_host()
+    fabric_task_result = execute(fabric_tasks.command_run_single, site=site,
+                                 command=final_command, warn_only=True, hosts=host)
 
     command_time = time.time() - start_time
     log.info('Batch ID - %s | Count - %s | Command - %s | Time - %s | Result - %s',
-             batch_id, batch_count, command, command_time, fabric_task_result)
-    log.debug('Batch ID - %s | Count - %s | Site - %s | Single Server - %s | Command - %s | Time - %s | Result - %s',
-             batch_id, batch_count, site['sid'], single_server, command, command_time, fabric_task_result)
+             batch_id, batch_count, command_list, command_time, fabric_task_result)
+    log.debug('Batch ID - %s | Count - %s | Site - %s | Command - %s | Time - %s | Result - %s',
+             batch_id, batch_count, site['sid'], command_list, command_time, fabric_task_result)
 
 
 @celery.task

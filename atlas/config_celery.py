@@ -35,13 +35,10 @@ CELERY_ROUTES = {
     'atlas.tasks.site_remove': {
         'queue': 'atlas_queue'
     },
-    'atlas.tasks.command_prepare': {
+    'atlas.tasks.drush_prepare': {
         'queue': 'command_queue'
     },
-    'atlas.tasks.command_wrapper': {
-        'queue': 'command_queue'
-    },
-    'atlas.tasks.command_run': {
+    'atlas.tasks.drush_command_run': {
         'queue': 'command_queue'
     },
     'atlas.tasks.cron': {

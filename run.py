@@ -5,14 +5,13 @@
 """
 import os
 import sys
-import json
 import logging
 from logging.handlers import WatchedFileHandler
 import ssl
 
+from datetime import datetime
 from eve import Eve
 from eve.auth import requires_auth
-from datetime import datetime
 from flask import jsonify, make_response, abort, request
 
 from atlas import callbacks
@@ -223,6 +222,19 @@ def heal_instance(site_id):
     return make_response('Instance heal has been initiated.')
 
 
+@app.route('/drush/<string:drush_id>/execute', methods=['POST'])
+# TODO: Test what happens with 404 for drush_id
+@requires_auth('drush')
+def execute_drush(drush_id):
+    """
+    Execute a drush command.
+    :param machine_name: id of instance to restore
+    """
+    tasks.drush_prepare.delay(drush_id)
+    response = make_response('Drush command started, check the logs for outcomes.')
+    return response
+
+
 @app.route('/f5')
 @requires_auth('sites')
 def f5():
@@ -260,7 +272,6 @@ app.on_insert_sites += callbacks.on_insert_sites
 app.on_inserted_sites += callbacks.on_inserted_sites
 app.on_update_code += callbacks.on_update_code
 app.on_update_sites += callbacks.on_update_sites
-app.on_update_commands += callbacks.on_update_commands
 app.on_updated_code += callbacks.on_updated_code
 app.on_delete_item_code += callbacks.on_delete_item_code
 app.on_insert += callbacks.pre_insert

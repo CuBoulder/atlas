@@ -668,8 +668,8 @@ def launch_site(site):
     code_directory = '{0}/{1}'.format(SITES_CODE_ROOT, site['sid'])
     code_directory_current = '{0}/current'.format(code_directory)
 
-    if site['type'] in ['express', 'homepage']:
-        if site['type'] == 'express':
+    if site['type'] == 'express':
+        if site['path'] != 'homepage':
             web_directory_path = '{0}/{1}'.format(SITES_WEB_ROOT, site['path'])
             with cd(SITES_WEB_ROOT):
                 # If the path is nested like 'lab/atlas', make the 'lab' directory
@@ -679,9 +679,8 @@ def launch_site(site):
                 # Create a new symlink using site's updated path
                 if not exists(web_directory_path):
                     update_symlink(code_directory_current, site['path'])
-        elif site['type'] == 'homepage':
+        elif site['path'] == 'homepage':
             with cd(SITES_WEB_ROOT):
-                # Link in homepage
                 for link in DRUPAL_CORE_PATHS:
                     source_path = "{0}/{1}".format(code_directory_current, link)
                     target_path = "{0}/{1}".format(SITES_WEB_ROOT, link)

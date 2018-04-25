@@ -486,17 +486,16 @@ def site_update(site, updates, original):
                 site['status'] = 'launched'
                 execute(fabric_tasks.update_settings_file, site=site)
                 execute(fabric_tasks.site_launch, site=site)
-                if site['type'] == 'homepage':
+                if site['path'] == 'homepage':
                     execute(fabric_tasks.update_homepage_files)
                 deploy_drupal_cache_clear = True
                 deploy_php_cache_clear = True
                 # Set update group and status
-                if site['type'] in ['express', 'homepage']:
-                    if site['type'] == 'express':
-                        update_group = randint(0, 10)
-                    elif site['type'] == 'homepage':
-                        update_group = 12
-                    patch_payload = {'status': 'launched', 'update_group': update_group}
+                if site['path'] != 'homepage':
+                    update_group = randint(0, 10)
+                elif site['path'] == 'homepage':
+                    update_group = 12
+                patch_payload = {'status': 'launched', 'update_group': update_group}
 
                 # Let fabric send patch since it is changing update group.
             elif updates['status'] == 'locked':
@@ -695,9 +694,9 @@ def drush_command_run(site, command_list, user=None, batch_id=None, batch_count=
     log.debug('Batch ID - %s | Count - %s | Site - %s | Command - %s', batch_id, batch_count, site['sid'], command_list)
 
     # 'match' searches for strings that begin with
-    if site['type'] is not 'homepage':
+    if site['path'] != 'homepage':
         uri = BASE_URLS[ENVIRONMENT] + '/' + site['path']
-    else:
+    elif site['path'] == 'homepage':
         uri = BASE_URLS[ENVIRONMENT]
     # Use List comprehension to add user prefix and URI suffix, then join the result.
     final_command = ' && '.join(['sudo -u {0} '.format(WEBSERVER_USER) + command + ' --uri={0}'.format(uri) for command in command_list])

@@ -28,8 +28,16 @@ $conf["google_cse_cx"] = NULL;
 {% endif %}
 $path = "{{path}}";
 
-{% if status in ['launched', 'launching'] %}$launched = TRUE;{% else %}$launched = FALSE;{% endif %}
-{% if site_path == 'homepage' %}$conf["cu_path"] = "";{% else %}$conf["cu_path"] = "{{path}}";{% endif %}
+{% if status in ['launched', 'launching'] %}
+$launched = TRUE;
+{% else %}
+$launched = FALSE;
+{% endif %}
+{% if path == 'homepage' %}
+$conf["cu_path"] = "";
+{% else %}
+$conf["cu_path"] = "{{path}}";
+{% endif %}
 
 if (isset($launched) && $launched && isset($conf["cu_path"])) {
   if (isset($_SERVER['OSR_ENV'])) {

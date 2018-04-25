@@ -28,12 +28,8 @@ $conf["google_cse_cx"] = NULL;
 {% endif %}
 $path = "{{path}}";
 
-{% if status in ['launched', 'launching'] %}
-$launched = TRUE;
-$conf["cu_path"] = "{{path}}";
-{% else %}
-$launched = FALSE;
-{% endif %}
+{% if status in ['launched', 'launching'] %}$launched = TRUE;{% else %}$launched = FALSE;{% endif %}
+{% if site_path == 'homepage' %}$conf["cu_path"] = "";{% else %}$conf["cu_path"] = "{{path}}";{% endif %}
 
 if (isset($launched) && $launched && isset($conf["cu_path"])) {
   if (isset($_SERVER['OSR_ENV'])) {
@@ -132,7 +128,7 @@ if (isset($_SERVER['OSR_ENV'])) {
   }
   ini_set('session.cookie_lifetime', 93600);
   ini_set('session.cookie_path', '/' . $path);
-{% if site_type == 'express' %}  $base_url .= '/' . $path;{% endif %}
+  $base_url .= '/' . $path;
 }
 
 {% if environment != 'local' %}

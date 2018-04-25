@@ -549,17 +549,11 @@ def create_settings_files(site):
     upload the resulting file to the webservers.
     """
     sid = site['sid']
-    if site['type'] == 'homepage':
-        site_path = ''
-    elif 'path' in site:
-        site_path = site['path']
-    else:
-        site_path = site['sid']
+    site_path = site['path']
     # If the site is launching or launched, we add 'cu_path' and redirect the p1 URL.
     status = site['status']
     atlas_id = site['_id']
     statistics = site['statistics']
-    site_type = site['type']
     if site['settings'].get('siteimprove_site'):
         siteimprove_site = site['settings']['siteimprove_site']
     else:
@@ -594,7 +588,6 @@ def create_settings_files(site):
         'atlas_password': SERVICE_ACCOUNT_PASSWORD,
         'path': site_path,
         'status': status,
-        'site_type': site_type,
         'atlas_statistics_id': statistics,
         'siteimprove_site': siteimprove_site,
         'siteimprove_group': siteimprove_group,

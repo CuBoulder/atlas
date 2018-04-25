@@ -135,8 +135,12 @@ if (isset($_SERVER['OSR_ENV'])) {
       break;
   }
   ini_set('session.cookie_lifetime', 93600);
+{% if path != 'homepage' %}
   ini_set('session.cookie_path', '/' . $conf["cu_path"]);
   $base_url .= '/' . $conf["cu_path"];
+{% else %}
+  ini_set('session.cookie_path', '/');
+{% endif %}
 }
 
 {% if environment != 'local' %}

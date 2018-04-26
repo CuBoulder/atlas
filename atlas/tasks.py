@@ -6,11 +6,11 @@
 import logging
 import time
 import json
-from bson import json_util
-from collections import Counter
 
-import requests
 from datetime import datetime, timedelta
+from collections import Counter
+from bson import json_util
+import requests
 from celery import Celery
 from celery.utils.log import get_task_logger
 from fabric.api import execute
@@ -695,14 +695,13 @@ def command_run(site, command, single_server, user=None, batch_id=None, batch_co
     :param user: string Username that called the command.
     :return:
     """
-    log.info('Batch ID - %s | Count - %s | Command - %s',
-             batch_id, batch_count, command)
+    log.info('Batch ID - %s | Count - %s | Command - %s', batch_id, batch_count, command)
     log.debug('Batch ID - %s | Count - %s | Site - %s | Single Server - %s | Command - %s',
-             batch_id, batch_count, site['sid'], single_server, command)
+              batch_id, batch_count, site['sid'], single_server, command)
 
     # 'match' searches for strings that begin with
     if command.startswith('drush'):
-        if site['type'] is not 'homepage':
+        if site['type'] != 'homepage':
             uri = BASE_URLS[ENVIRONMENT] + '/' + site['path']
         else:
             uri = BASE_URLS[ENVIRONMENT]
@@ -723,7 +722,7 @@ def command_run(site, command, single_server, user=None, batch_id=None, batch_co
     log.info('Batch ID - %s | Count - %s | Command - %s | Time - %s | Result - %s',
              batch_id, batch_count, command, command_time, fabric_task_result)
     log.debug('Batch ID - %s | Count - %s | Site - %s | Single Server - %s | Command - %s | Time - %s | Result - %s',
-             batch_id, batch_count, site['sid'], single_server, command, command_time, fabric_task_result)
+              batch_id, batch_count, site['sid'], single_server, command, command_time, fabric_task_result)
 
 
 @celery.task
@@ -1206,7 +1205,8 @@ def migrate_routing():
     pool = 'osr-{0}-https'.format(ENVIRONMENT)
     old_infra_payload = {'pool': pool}
     env = 'old-{0}'.format(ENVIRONMENT)
-    new_infra_payload = "{{ 'dates' : {{ 'activation': '{0}'}}}}".format(datetime.utcnow().strftime("%Y-%m-%d %H:%M:%S GMT"))
+    new_infra_payload = "{{'dates':{{'activation':'{0}'}}}}".format(
+        datetime.utcnow().strftime("%Y-%m-%d %H:%M:%S GMT"))
 
     if verified_instances['_meta']['total'] is not 0:
         for instance in verified_instances['_items']:

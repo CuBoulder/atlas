@@ -352,6 +352,7 @@ STATISTICS_SCHEMA = {
             'person': {'type': 'integer', 'nullable': True},
             'person_list_page': {'type': 'integer', 'nullable': True},
             'photo_gallery': {'type': 'integer', 'nullable': True},
+            'full_html': {'type': 'integer', 'nullable': True},
         },
     },
     'nodes_other': {
@@ -395,6 +396,7 @@ STATISTICS_SCHEMA = {
             'facebook_activity': {'type': 'integer', 'nullable': True},
             'facebook_like_button': {'type': 'integer', 'nullable': True},
             'twitter_block': {'type': 'integer', 'nullable': True},
+            'full_html': {'type': 'integer', 'nullable': True},
         },
     },
     'beans_other': {

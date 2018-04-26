@@ -262,7 +262,7 @@ def get_single_eve(resource, id, version=None, env=ENVIRONMENT):
 
     return r.json()
 
-def patch_eve(resource, id, request_payload):
+def patch_eve(resource, id, request_payload, env=ENVIRONMENT):
     """
     Patch items in the Atlas API.
 
@@ -271,7 +271,7 @@ def patch_eve(resource, id, request_payload):
     :param request_payload:
     :return:
     """
-    url = "{0}/{1}/{2}".format(API_URLS[ENVIRONMENT], resource, id)
+    url = "{0}/{1}/{2}".format(API_URLS[env], resource, id)
     get_etag = get_single_eve(resource, id)
     headers = {'Content-Type': 'application/json', 'If-Match': get_etag['_etag']}
 

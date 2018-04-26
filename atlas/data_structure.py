@@ -269,7 +269,7 @@ SITES_SCHEMA = {
             'taken_down': {
                 'type': 'datetime',
                 'nullable': True,
-            }
+            },
         },
     },
     'statistics': {
@@ -286,29 +286,6 @@ SITES_SCHEMA = {
     },
     'modified_by': {
         'type': 'string',
-    },
-    'verification': {
-        'type': 'dict',
-        'schema': {
-            'verification_status': {
-                'type': 'string',
-                'allowed': [
-                    'not_ready',
-                    'ready',
-                    'done'
-                ],
-                'default': 'not_ready',
-            },
-            'verification_user': {
-                'type': 'string',
-            },
-            'verification_date': {
-                'type': 'datetime',
-            },
-            'migration_date': {
-                'type': 'datetime',
-            },
-        },
     },
 }
 

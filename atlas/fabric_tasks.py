@@ -471,7 +471,7 @@ def update_database(site):
     log.info('fabric_tasks | updb | Site - %s', site['sid'])
     code_directory_sid = '{0}/{1}/{1}'.format(SITES_CODE_ROOT, site['sid'])
     with cd(code_directory_sid):
-        run('drush updb -y'.format(WEBSERVER_USER))
+        run('drush updb -y')
 
 
 # We use a dynamic host list to round-robin, so you need to pass a host list when calling it.
@@ -486,7 +486,7 @@ def registry_rebuild(site):
     log.info('fabric_tasks | Drush registry rebuild and cache clear | Site - %s', site['sid'])
     code_directory_sid = '{0}/{1}/{1}'.format(SITES_CODE_ROOT, site['sid'])
     with cd(code_directory_sid):
-        run('drush rr; drush cc drush;'.format(WEBSERVER_USER))
+        run('drush rr; drush cc drush;')
 
 
 # We use a dynamic host list to round-robin, so you need to pass a host list when calling it or call
@@ -494,7 +494,7 @@ def registry_rebuild(site):
 def drush_cache_clear(sid):
     code_directory_current = '{0}/{1}/current'.format(SITES_CODE_ROOT, sid)
     with cd(code_directory_current):
-        run('drush cc all'.format(WEBSERVER_USER))
+        run('drush cc all')
 
 
 # We use a dynamic host list to round-robin, so you need to pass a host list when calling it.
@@ -506,8 +506,9 @@ def site_install(site):
 
     try:
         with cd(code_directory_current):
-            run('drush site-install -y {1}'.format(WEBSERVER_USER, profile_name))
-            run('drush rr; drush cc drush'.format(WEBSERVER_USER))
+            run('drush site-install -y {0}'.format(profile_name))
+            run('chgrp -R {0} sites/default/files/*'.format(WEBSERVER_USER_GROUP))
+            run('drush rr; drush cc drush')
     except FabricException as error:
         log.error('Site | Install | Instance install failed | Error - %s', error)
         return error
@@ -855,11 +856,11 @@ def import_backup(backup, target_instance):
         run('drush sql-cli < {0}'.format(database_path))
         log.debug('Instance | Restore Backup | DB imported')
         with settings(warn_only=True):
-            run('drush rr'.format(WEBSERVER_USER))
-        run('drush spr'.format(WEBSERVER_USER))
-        run('drush updb -y'.format(WEBSERVER_USER))
+            run('drush rr')
+        run('drush spr')
+        run('drush updb -y')
         with settings(warn_only=True):
-            run('drush cc all'.format(WEBSERVER_USER))
+            run('drush cc all')
 
     run('rm {0}'.format(files_path))
     run('rm {0}'.format(database_path))

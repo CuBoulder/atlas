@@ -403,7 +403,11 @@ def clear_php_cache():
 def update_settings_file(site):
     log.info('fabric_tasks | Update Settings File | Site - %s', site['sid'])
     try:
+        # Change permissions to allow us to update the template
+        run("chmod u+w {0}/{1}/{1}/sites/default/settings.php".format(SITES_CODE_ROOT, site['sid']))
         execute(create_settings_files, site=site)
+        # And change the back
+        run("chmod u-w {0}/{1}/{1}/sites/default/settings.php".format(SITES_CODE_ROOT, site['sid']))
     except FabricException as error:
         log.error('fabric_tasks | Update Settings File | Site - %s | Error - %s',
                   site['sid'], error)
@@ -599,7 +603,6 @@ def create_settings_files(site):
     }
 
     log.info('fabric_tasks | Create Settings file', )
-
     upload_template('settings.php',
                     destination=destination,
                     context=settings_variables,

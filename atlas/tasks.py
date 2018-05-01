@@ -765,7 +765,7 @@ def cron_run(site):
         # Homepage
         uri = BASE_URLS[ENVIRONMENT]
     log.debug('Site - %s | uri - %s', site['sid'], uri)
-    command = 'sudo -u {0} drush elysia-cron run --uri={1}'.format(WEBSERVER_USER, uri)
+    command = 'drush elysia-cron run --uri={1}'.format(WEBSERVER_USER, uri)
     try:
         # Get a host to run this command on.
         host = utilities.single_host()

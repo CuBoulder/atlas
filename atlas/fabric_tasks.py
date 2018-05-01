@@ -454,12 +454,8 @@ def command_run_single(site, command, warn_only=False):
     web_directory = '{0}/{1}'.format(SITES_WEB_ROOT, site['sid'])
     with settings(warn_only=warn_only):
         with cd(web_directory):
-            # If we are running a drush command, we run it as the webserver user.
-            if re.search('^drush', command):
-                command_result = run("sudo -u {0} {1}".format(WEBSERVER_USER, command), pty=False)
-            else:
-                command_result = run("{0}".format(command), pty=False)
-                # Return the failure if there is one.
+            command_result = run("{0}".format(command), pty=False)
+            # Return the failure if there is one.
             if command_result.failed:
                 return command_result
 
@@ -475,7 +471,7 @@ def update_database(site):
     log.info('fabric_tasks | updb | Site - %s', site['sid'])
     code_directory_sid = '{0}/{1}/{1}'.format(SITES_CODE_ROOT, site['sid'])
     with cd(code_directory_sid):
-        run('sudo -u {0} drush updb -y'.format(WEBSERVER_USER))
+        run('drush updb -y'.format(WEBSERVER_USER))
 
 
 # We use a dynamic host list to round-robin, so you need to pass a host list when calling it.
@@ -490,7 +486,7 @@ def registry_rebuild(site):
     log.info('fabric_tasks | Drush registry rebuild and cache clear | Site - %s', site['sid'])
     code_directory_sid = '{0}/{1}/{1}'.format(SITES_CODE_ROOT, site['sid'])
     with cd(code_directory_sid):
-        run('sudo -u {0} drush rr; sudo -u {0} drush cc drush;'.format(WEBSERVER_USER))
+        run('drush rr; drush cc drush;'.format(WEBSERVER_USER))
 
 
 # We use a dynamic host list to round-robin, so you need to pass a host list when calling it or call
@@ -498,7 +494,7 @@ def registry_rebuild(site):
 def drush_cache_clear(sid):
     code_directory_current = '{0}/{1}/current'.format(SITES_CODE_ROOT, sid)
     with cd(code_directory_current):
-        run('sudo -u {0} drush cc all'.format(WEBSERVER_USER))
+        run('drush cc all'.format(WEBSERVER_USER))
 
 
 # We use a dynamic host list to round-robin, so you need to pass a host list when calling it.
@@ -510,8 +506,8 @@ def site_install(site):
 
     try:
         with cd(code_directory_current):
-            run('sudo -u {0} drush site-install -y {1}'.format(WEBSERVER_USER, profile_name))
-            run('sudo -u {0} drush rr; sudo -u {0} drush cc drush'.format(WEBSERVER_USER))
+            run('drush site-install -y {1}'.format(WEBSERVER_USER, profile_name))
+            run('drush rr; drush cc drush'.format(WEBSERVER_USER))
     except FabricException as error:
         log.error('Site | Install | Instance install failed | Error - %s', error)
         return error
@@ -859,11 +855,11 @@ def import_backup(backup, target_instance):
         run('drush sql-cli < {0}'.format(database_path))
         log.debug('Instance | Restore Backup | DB imported')
         with settings(warn_only=True):
-            run('sudo -u {0} drush rr'.format(WEBSERVER_USER))
-        run('sudo -u {0} drush spr'.format(WEBSERVER_USER))
-        run('sudo -u {0} drush updb -y'.format(WEBSERVER_USER))
+            run('drush rr'.format(WEBSERVER_USER))
+        run('drush spr'.format(WEBSERVER_USER))
+        run('drush updb -y'.format(WEBSERVER_USER))
         with settings(warn_only=True):
-            run('sudo -u {0} drush cc all'.format(WEBSERVER_USER))
+            run('drush cc all'.format(WEBSERVER_USER))
 
     run('rm {0}'.format(files_path))
     run('rm {0}'.format(database_path))

@@ -55,7 +55,7 @@ class CronException(Exception):
         instance_url = '{0}/{1}'.format(BASE_URLS[ENVIRONMENT], site_path)
         title = 'Run Command'
         instance_link = '<' + instance_url + '|' + instance_url + '>'
-        command = 'sudo -u {0} drush elysia-cron run'.format(WEBSERVER_USER)
+        command = 'drush elysia-cron run'.format(WEBSERVER_USER)
         user = 'Celerybeat'
 
         # Only post if an error
@@ -699,7 +699,7 @@ def drush_command_run(site, command_list, user=None, batch_id=None, batch_count=
     elif site['path'] == 'homepage':
         uri = BASE_URLS[ENVIRONMENT]
     # Use List comprehension to add user prefix and URI suffix, then join the result.
-    final_command = ' && '.join(['sudo -u {0} '.format(WEBSERVER_USER) + command + ' --uri={0}'.format(uri) for command in command_list])
+    final_command = ' && '.join([command + ' --uri={0}'.format(uri) for command in command_list])
     log.debug('Batch ID - %s | Count - %s | Final Command - %s', batch_id, batch_count, final_command)
 
     start_time = time.time()

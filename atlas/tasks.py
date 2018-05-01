@@ -731,7 +731,7 @@ def cron(status=None):
         site_query_string.append('"status":"{0}",'.format(status))
     else:
         log.debug('No status found')
-        site_query_string.append('"status":{"$in":["installed","launched","locked"]},')
+        site_query_string.append('"status":{"$nin":["take_down","down","restore"]},')
 
     site_query = ''.join(site_query_string)
     log.debug('Query after join -| %s', site_query)

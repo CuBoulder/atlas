@@ -39,10 +39,6 @@ $conf["cu_path"] = "";
 $conf["cu_path"] = "{{path}}";
 {% endif %}
 
-// SMTP configuration, see also relevant hosting module install hook.
-$conf["smtp_client_hostname"] = "{{smtp_client_hostname}}";
-$conf["smtp_password"] = "{{smtp_password}}";
-
 if (isset($launched) && $launched && isset($conf["cu_path"])) {
   if (isset($_SERVER['OSR_ENV'])) {
     if ($_SERVER['OSR_ENV'] == 'prod' &&

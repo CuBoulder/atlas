@@ -297,13 +297,30 @@ def site_profile_swap(site):
 
 @roles('webservers')
 def site_launch(site):
-    try:
-        result_create_settings_files = execute(create_settings_files, site=site)
-    except FabricException as error:
-        log.error('Site | Launch | Settings files creation failed | Error - %s', error)
-        return result_create_settings_files
+    """
+    Create symlinks with new site name.
+    """
+    log.info('fabric_tasks | Launch subtask | Site - %s', site['_id'])
+    code_directory = '{0}/{1}'.format(SITES_CODE_ROOT, site['sid'])
+    code_directory_current = '{0}/current'.format(code_directory)
 
-    launch_site(site=site)
+    if site['type'] == 'express':
+        if site['path'] != 'homepage':
+            web_directory_path = '{0}/{1}'.format(SITES_WEB_ROOT, site['path'])
+            with cd(SITES_WEB_ROOT):
+                # If the path is nested like 'lab/atlas', make the 'lab' directory
+                if "/" in site['path']:
+                    lead_path = "/".join(site['path'].split("/")[:-1])
+                    create_directory_structure(lead_path)
+                # Create a new symlink using site's updated path
+                if not exists(web_directory_path):
+                    update_symlink(code_directory_current, site['path'])
+        elif site['path'] == 'homepage':
+            with cd(SITES_WEB_ROOT):
+                for link in DRUPAL_CORE_PATHS:
+                    source_path = "{0}/{1}".format(code_directory_current, link)
+                    target_path = "{0}/{1}".format(SITES_WEB_ROOT, link)
+                    update_symlink(source_path, target_path)
 
 
 @roles('webservers')
@@ -384,7 +401,7 @@ def instance_heal(item):
         if item['code'].get('package'):
             site_package_update(item)
         if item['status'] == 'launched':
-            launch_site(item)
+            site_launch(item)
         log.info('Instance | Heal | Item ID - %s | Reprovision finished', item['sid'])
     else:
         log.info('Instance | Heal | Item ID - %s | Instance okay', item['sid'])
@@ -658,34 +675,6 @@ def update_symlink(source, destination):
     if exists(destination):
         run('rm {0}'.format(destination))
     run('ln -s {0} {1}'.format(source, destination))
-
-
-def launch_site(site):
-    """
-    Create symlinks with new site name.
-    """
-    log.info('fabric_tasks | Launch subtask | Site - %s', site['_id'])
-    code_directory = '{0}/{1}'.format(SITES_CODE_ROOT, site['sid'])
-    code_directory_current = '{0}/current'.format(code_directory)
-
-    if site['type'] == 'express':
-        if site['path'] != 'homepage':
-            web_directory_path = '{0}/{1}'.format(SITES_WEB_ROOT, site['path'])
-            with cd(SITES_WEB_ROOT):
-                # If the path is nested like 'lab/atlas', make the 'lab' directory
-                if "/" in site['path']:
-                    lead_path = "/".join(site['path'].split("/")[:-1])
-                    create_directory_structure(lead_path)
-                # Create a new symlink using site's updated path
-                if not exists(web_directory_path):
-                    update_symlink(code_directory_current, site['path'])
-        elif site['path'] == 'homepage':
-            with cd(SITES_WEB_ROOT):
-                for link in DRUPAL_CORE_PATHS:
-                    source_path = "{0}/{1}".format(code_directory_current, link)
-                    target_path = "{0}/{1}".format(SITES_WEB_ROOT, link)
-                    update_symlink(source_path, target_path)
-
 
 
 def backup_create(site, backup_type):

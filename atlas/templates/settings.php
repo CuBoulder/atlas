@@ -44,19 +44,19 @@ if (isset($launched) && $launched && isset($conf["cu_path"])) {
     if ($_SERVER['OSR_ENV'] == 'prod' &&
       strpos($_SERVER['REQUEST_URI'], $conf['cu_sid']) !== false) {
       header('HTTP/1.0 301 Moved Permanently');
-      header('Location: https://www-https.colorado.edu'. str_replace($conf['cu_sid'], $conf["cu_path"], $_SERVER['REQUEST_URI']));
+      header('Location: https://www-prod-new.colorado.edu'. str_replace($conf['cu_sid'], $conf["cu_path"], $_SERVER['REQUEST_URI']));
       exit();
     }
     elseif ($_SERVER['OSR_ENV'] == 'test' &&
       strpos($_SERVER['REQUEST_URI'], $conf['cu_sid']) !== false) {
       header('HTTP/1.0 301 Moved Permanently');
-      header('Location: https://www-test-https.colorado.edu'. str_replace($conf['cu_sid'], $conf["cu_path"], $_SERVER['REQUEST_URI']));
+      header('Location: https://www-test-new.colorado.edu'. str_replace($conf['cu_sid'], $conf["cu_path"], $_SERVER['REQUEST_URI']));
       exit();
     }
     elseif ($_SERVER['OSR_ENV'] == 'dev' &&
       strpos($_SERVER['REQUEST_URI'], $conf['cu_sid']) !== false) {
       header('HTTP/1.0 301 Moved Permanently');
-      header('Location: https://www-dev-https.colorado.edu'. str_replace($conf['cu_sid'], $conf["cu_path"], $_SERVER['REQUEST_URI']));
+      header('Location: https://www-dev-new.colorado.edu'. str_replace($conf['cu_sid'], $conf["cu_path"], $_SERVER['REQUEST_URI']));
       exit();
     }
     elseif ($_SERVER['OSR_ENV'] == 'local' &&
@@ -118,16 +118,16 @@ if (isset($_SERVER['OSR_ENV'])) {
    */
   switch($_SERVER['OSR_ENV']) {
     case 'prod':
-      $base_url .= 'https://www-https.colorado.edu';
-      $cookie_domain = '.www-https.colorado.edu';
+      $base_url .= 'https://www-prod-new.colorado.edu';
+      $cookie_domain = '.www-prod-new.colorado.edu';
       break;
     case 'test':
-      $base_url .= 'https://www-test-https.colorado.edu';
-      $cookie_domain = '.www-test-https.colorado.edu';
+      $base_url .= 'https://www-test-new.colorado.edu';
+      $cookie_domain = '.www-test-new.colorado.edu';
       break;
     case 'dev':
-      $base_url .= 'https://www-dev-https.colorado.edu';
-      $cookie_domain = '.www-dev-https.colorado.edu';
+      $base_url .= 'https://www-dev-new.colorado.edu';
+      $cookie_domain = '.www-dev-new.colorado.edu';
       break;
     case 'express_local':
       $base_url .= 'https://express.local';

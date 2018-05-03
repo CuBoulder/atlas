@@ -161,7 +161,7 @@ $conf['googleanalytics_account'] = 'UA-25752450-1';
 
 {% if environment == 'local' %}$conf['error_level'] = 2;{% endif %}
 
-$conf['file_temporary_path'] = '/tmp';
+$conf['file_temporary_path'] = '{{ tmp_path }}';
 
 // Min cache lifetime 0, max defaults to 300 seconds.
 $conf['cache_lifetime'] = 0;

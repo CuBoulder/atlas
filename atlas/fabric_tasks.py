@@ -578,6 +578,7 @@ def create_settings_files(site):
 
     template_dir = '{0}/templates'.format(ATLAS_LOCATION)
     destination = "{0}/{1}/{1}/sites/default".format(SITES_CODE_ROOT, site['sid'])
+    tmp_path = '{0}/{1}/tmp'.format(NFS_MOUNT_LOCATION[ENVIRONMENT], site['sid'])
 
     settings_variables = {
         'profile': profile_name,
@@ -599,7 +600,8 @@ def create_settings_files(site):
         'pw': database_password,
         'page_cache_maximum_age': page_cache_maximum_age,
         'database_servers': env.roledefs['database_servers'],
-        'environment': ENVIRONMENT
+        'environment': ENVIRONMENT,
+        'tmp_path': tmp_path
     }
 
     log.info('fabric_tasks | Create Settings file', )

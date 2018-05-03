@@ -862,10 +862,8 @@ def import_backup(backup, target_instance):
         log.debug('Instance | Restore Backup | DB imported')
         with settings(warn_only=True):
             run('drush rr')
-        run('drush spr')
-        run('drush updb -y')
-        with settings(warn_only=True):
-            run('drush cc all')
+        run('drush en ucb_on_prem_hosting -y')
+
 
     run('rm {0}'.format(files_path))
     run('rm {0}'.format(database_path))

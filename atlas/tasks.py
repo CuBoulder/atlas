@@ -492,7 +492,7 @@ def site_update(site, updates, original):
                 deploy_php_cache_clear = True
                 # Set update group and status
                 if site['path'] != 'homepage':
-                    update_group = randint(0, 10)
+                    update_group = random.randint(0, 10)
                 elif site['path'] == 'homepage':
                     update_group = 12
                 patch_payload = {'status': 'launched', 'update_group': update_group}

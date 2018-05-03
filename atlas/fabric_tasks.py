@@ -406,8 +406,6 @@ def update_settings_file(site):
         # Change permissions to allow us to update the template
         run("chmod u+w {0}/{1}/{1}/sites/default/settings.php".format(SITES_CODE_ROOT, site['sid']))
         execute(create_settings_files, site=site)
-        # And change the back
-        run("chmod u-w {0}/{1}/{1}/sites/default/settings.php".format(SITES_CODE_ROOT, site['sid']))
     except FabricException as error:
         log.error('fabric_tasks | Update Settings File | Site - %s | Error - %s',
                   site['sid'], error)
@@ -611,7 +609,7 @@ def create_settings_files(site):
                     use_jinja=True,
                     template_dir=template_dir,
                     backup=False,
-                    mode='0644')
+                    mode='0444')
 
 
 def clone_repo(git_url, checkout_item, destination):
@@ -863,6 +861,7 @@ def import_backup(backup, target_instance):
         with settings(warn_only=True):
             run('drush rr')
         run('drush en ucb_on_prem_hosting -y')
+        run('drush eylisa-cron run --ignore-time')
 
 
     run('rm {0}'.format(files_path))

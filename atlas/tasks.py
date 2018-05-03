@@ -9,6 +9,7 @@ import json
 from datetime import datetime, timedelta
 from collections import Counter
 from bson import json_util
+from random import randint
 import requests
 from celery import Celery
 from celery.utils.log import get_task_logger
@@ -492,7 +493,7 @@ def site_update(site, updates, original):
                 deploy_php_cache_clear = True
                 # Set update group and status
                 if site['path'] != 'homepage':
-                    update_group = random.randint(0, 10)
+                    update_group = randint(0, 10)
                 elif site['path'] == 'homepage':
                     update_group = 12
                 patch_payload = {'status': 'launched', 'update_group': update_group}

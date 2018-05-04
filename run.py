@@ -128,7 +128,7 @@ def import_backup():
     elif backup_request['env'] not in ['local', 'dev', 'test', 'prod', 'o-dev', 'o-test', 'o-prod']:
         abort(409, 'Error: Invalid env choose from [local, dev, test, prod, o-dev, o-test, o-prod].')
     elif not backup_request.get('target_id'):
-        abort(409, 'Error: Missing target_instance.')
+        abort(409, 'Error: Missing target_id.')
     ####
     #### Taking this part out for now. This is required for cloning between env, not for the migration.
     ####

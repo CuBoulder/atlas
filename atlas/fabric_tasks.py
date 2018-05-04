@@ -850,7 +850,7 @@ def import_backup(backup, target_instance):
         with settings(warn_only=True):
             run('drush rr')
         run('drush en ucb_on_prem_hosting -y')
-        run('drush eylisa-cron run --ignore-time')
+        run('drush elysia-cron run --ignore-time')
 
 
     run('rm {0}'.format(files_path))

@@ -1059,7 +1059,7 @@ def import_code(env):
     :param env: Environment to target get code list from
     """
     target_url = '{0}/code'.format(API_URLS[env])
-    r = requests.get(target_url)
+    r = requests.get(target_url, verify=SSL_VERIFICATION)
     if r.ok:
         data = r.json()
         log.debug('Import Code | Target data | %s', data)

@@ -531,7 +531,11 @@ STATISTICS_SCHEMA = {
                         'type': 'list',
                         'nullable': True,
                     },
-                    'forms_manager': {
+                    'configuration_manager': {
+                        'type': 'list',
+                        'nullable': True,
+                    },
+                    'form_manager': {
                         'type': 'list',
                         'nullable': True,
                     },
@@ -565,7 +569,11 @@ STATISTICS_SCHEMA = {
                         'type': 'list',
                         'nullable': True,
                     },
-                    'forms_manager': {
+                    'configuration_manager': {
+                        'type': 'list',
+                        'nullable': True,
+                    },
+                    'form_manager': {
                         'type': 'list',
                         'nullable': True,
                     },
@@ -603,7 +611,11 @@ STATISTICS_SCHEMA = {
                         'type': 'integer',
                         'nullable': True,
                     },
-                    'forms_manager': {
+                    'configuration_manager': {
+                        'type': 'integer',
+                        'nullable': True,
+                    },
+                    'form_manager': {
                         'type': 'integer',
                         'nullable': True,
                     },

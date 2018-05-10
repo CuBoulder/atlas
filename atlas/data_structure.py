@@ -507,7 +507,7 @@ STATISTICS_SCHEMA = {
                 'type': 'dict',
                 'nullable': True,
                 'schema': {
-                    'edit_my_content': {
+                    'site_owner': {
                         'type': 'list',
                         'nullable': True,
                     },
@@ -515,7 +515,23 @@ STATISTICS_SCHEMA = {
                         'type': 'list',
                         'nullable': True,
                     },
-                    'site_contact': {
+                    'edit_my_content': {
+                        'type': 'list',
+                        'nullable': True,
+                    },
+                    'site_editor': {
+                        'type': 'list',
+                        'nullable': True,
+                    },
+                    'access_manager': {
+                        'type': 'list',
+                        'nullable': True,
+                    },
+                    'campaign_manager': {
+                        'type': 'list',
+                        'nullable': True,
+                    },
+                    'forms_manager': {
                         'type': 'list',
                         'nullable': True,
                     },
@@ -525,7 +541,7 @@ STATISTICS_SCHEMA = {
                 'type': 'dict',
                 'nullable': True,
                 'schema': {
-                    'edit_my_content': {
+                    'site_owner': {
                         'type': 'list',
                         'nullable': True,
                     },
@@ -533,7 +549,23 @@ STATISTICS_SCHEMA = {
                         'type': 'list',
                         'nullable': True,
                     },
-                    'site_contact': {
+                    'edit_my_content': {
+                        'type': 'list',
+                        'nullable': True,
+                    },
+                    'site_editor': {
+                        'type': 'list',
+                        'nullable': True,
+                    },
+                    'access_manager': {
+                        'type': 'list',
+                        'nullable': True,
+                    },
+                    'campaign_manager': {
+                        'type': 'list',
+                        'nullable': True,
+                    },
+                    'forms_manager': {
                         'type': 'list',
                         'nullable': True,
                     },
@@ -547,7 +579,7 @@ STATISTICS_SCHEMA = {
                 'type': 'dict',
                 'nullable': True,
                 'schema': {
-                    'edit_my_content': {
+                    'site_owner': {
                         'type': 'integer',
                         'nullable': True,
                     },
@@ -555,7 +587,23 @@ STATISTICS_SCHEMA = {
                         'type': 'integer',
                         'nullable': True,
                     },
-                    'site_contact': {
+                    'edit_my_content': {
+                        'type': 'integer',
+                        'nullable': True,
+                    },
+                    'site_editor': {
+                        'type': 'integer',
+                        'nullable': True,
+                    },
+                    'access_manager': {
+                        'type': 'integer',
+                        'nullable': True,
+                    },
+                    'campaign_manager': {
+                        'type': 'integer',
+                        'nullable': True,
+                    },
+                    'forms_manager': {
                         'type': 'integer',
                         'nullable': True,
                     },

@@ -291,6 +291,27 @@ def version():
     response = make_response(VERSION_NUMBER)
     return response
 
+@app.route('/saml/create', methods=['GET', 'POST'])
+@requires_auth('sites')
+def saml_create():
+    if request.method == 'POST':
+        response = make_response("Started SAML database creation")
+        tasks.saml_create.delay()
+    else:
+        response = make_response("Did you mean to POST?")
+    return response
+
+
+@app.route('/saml/delete', methods=['GET', 'POST'])
+@requires_auth('sites')
+def saml_delete():
+    if request.method == 'POST':
+        response = make_response("Started SAML database delete")
+        tasks.saml_delete.delay()
+    else:
+        response = make_response("Did you mean to POST?")
+    return response
+
 
 # This config is only used when running via python, rather than mod_wsgi
 if __name__ == '__main__':

@@ -216,3 +216,14 @@ $conf['drupal_ssl_context_options'] = array(
   ),
 );
 {% endif %}
+
+// SAML DB
+$databases['saml']['default'] = array(
+  'driver' => 'mysql',
+  'database' => 'saml',
+  'username' => 'saml',
+  'password' => '{{ saml_pw }}',
+  'host' => '{{ database_servers.master }}',
+  'port' => '{{ database_servers.port }}',
+  'prefix' => '',
+);

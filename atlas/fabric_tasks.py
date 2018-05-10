@@ -22,7 +22,7 @@ from atlas.config import (ATLAS_LOCATION, ENVIRONMENT, SSH_USER, CODE_ROOT, SITE
                           SITES_WEB_ROOT, WEBSERVER_USER, WEBSERVER_USER_GROUP, NFS_MOUNT_FILES_DIR,
                           BACKUP_PATH, SERVICE_ACCOUNT_USERNAME, SERVICE_ACCOUNT_PASSWORD,
                           SITE_DOWN_PATH, LOAD_BALANCER, VARNISH_CONTROL_KEY, STATIC_WEB_PATH,
-                          SSL_VERIFICATION, DRUPAL_CORE_PATHS, BACKUP_IMPORT_PATH)
+                          SSL_VERIFICATION, DRUPAL_CORE_PATHS, BACKUP_IMPORT_PATH, SAML_AUTH)
 from atlas.config_servers import (SERVERDEFS, NFS_MOUNT_LOCATION, API_URLS,
                                   VARNISH_CONTROL_TERMINALS, LOAD_BALANCER_CONFIG_FILES,
                                   LOAD_BALANCER_CONFIG_GROUP, BASE_URLS, ATLAS_LOGGING_URLS)
@@ -594,6 +594,7 @@ def create_settings_files(site):
     template_dir = '{0}/templates'.format(ATLAS_LOCATION)
     destination = "{0}/{1}/{1}/sites/default".format(SITES_CODE_ROOT, site['sid'])
     tmp_path = '{0}/{1}/tmp'.format(NFS_MOUNT_LOCATION[ENVIRONMENT], site['sid'])
+    saml_auth = utilities.decrypt_string(SAML_AUTH)
 
     settings_variables = {
         'profile': profile_name,
@@ -616,10 +617,11 @@ def create_settings_files(site):
         'page_cache_maximum_age': page_cache_maximum_age,
         'database_servers': env.roledefs['database_servers'],
         'environment': ENVIRONMENT,
-        'tmp_path': tmp_path
+        'tmp_path': tmp_path,
+        'saml_pw': saml_auth
     }
 
-    log.info('fabric_tasks | Create Settings file', )
+    log.info('fabric_tasks | Create Settings file')
     upload_template('settings.php',
                     destination=destination,
                     context=settings_variables,

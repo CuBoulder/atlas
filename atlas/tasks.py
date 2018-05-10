@@ -1208,3 +1208,21 @@ def migrate_routing():
         for instance in verified_instances['_items']:
             utilities.patch_eve('sites', instance['_id'], old_infra_payload, env=env)
             utilities.patch_eve('sites', instance['_id'], new_infra_payload)
+
+@celery.task
+def saml_create():
+    try:
+        log.debug('Create SAML database')
+        utilities.create_saml_database()
+    except Exception as error:
+        log.error('SAML Database creation failed | %s', error)
+        raise
+
+@celery.task
+def saml_delete():
+    try:
+        log.debug('Delete SAML database')
+        utilities.delete_saml_database()
+    except Exception as error:
+        log.error('SAML Database deletion failed | %s', error)
+        raise

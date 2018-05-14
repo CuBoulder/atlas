@@ -358,6 +358,9 @@ def site_remove(site):
     web_directory = '{0}/{1}'.format(SITES_WEB_ROOT, site['sid'])
     web_directory_path = '{0}/{1}'.format(SITES_WEB_ROOT, site['path'])
 
+    # Fix perms to allow settings file to be removed.
+    run("chmod u+w {0}/{1}/{1}/sites/default/settings.php".format(SITES_CODE_ROOT, site['sid']))
+
     remove_symlink(web_directory)
     remove_symlink(web_directory_path)
 

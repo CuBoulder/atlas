@@ -485,7 +485,7 @@ def create_saml_database():
         log.error('Create Database | saml | %s', error)
         raise
 
-    instance_database_password = decrypt_string(SAML_AUTH)
+    instance_database_password = SAML_AUTH
     # Add user
     try:
         if ENVIRONMENT != 'local':

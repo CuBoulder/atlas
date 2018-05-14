@@ -594,7 +594,7 @@ def create_settings_files(site):
     template_dir = '{0}/templates'.format(ATLAS_LOCATION)
     destination = "{0}/{1}/{1}/sites/default".format(SITES_CODE_ROOT, site['sid'])
     tmp_path = '{0}/{1}/tmp'.format(NFS_MOUNT_LOCATION[ENVIRONMENT], site['sid'])
-    saml_auth = utilities.decrypt_string(SAML_AUTH)
+    saml_auth = SAML_AUTH
 
     settings_variables = {
         'profile': profile_name,

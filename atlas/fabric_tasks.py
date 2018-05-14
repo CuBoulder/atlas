@@ -808,7 +808,7 @@ def backup_restore(backup_record, original_instance, package_list):
              backup_record['_id'], new_instance['_id'], new_instance['sid'], restore_time)
 
 
-def import_backup(backup, target_instance):
+def import_backup(backup, target_instance, source_env=ENVIRONMENT):
     """
     Connect to a single webserver, copy over the database and file backups, restore them into the
     Drupal instance, and remove the backup files.
@@ -822,7 +822,7 @@ def import_backup(backup, target_instance):
     backup_tmp_dir = '{0}/tmp'.format(BACKUP_PATH)
     file_date = datetime.strptime(backup['backup_date'], "%Y-%m-%d %H:%M:%S %Z")
     backup_date = file_date.strftime("%Y-%m-%d-%H-%M-%S")
-    site = utilities.get_single_eve('sites', backup['site'])
+    site = utilities.get_single_eve('sites', backup['site'], env=source_env)
     backup_db = '{0}_{1}.sql'.format(site['sid'], backup_date)
     backup_files = '{0}_{1}.tar.gz'.format(site['sid'], backup_date)
     backup_db_path = '{0}/{1}'.format(BACKUP_IMPORT_PATH, backup_db)

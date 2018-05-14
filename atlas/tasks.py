@@ -1173,7 +1173,7 @@ def import_backup(env, backup_id, target_instance):
     host = utilities.single_host()
     utilities.create_database(target['sid'], target['db_key'])
     execute(fabric_tasks.instance_heal, item=target)
-    execute(fabric_tasks.import_backup, backup=backup.json(), target_instance=target, hosts=host)
+    execute(fabric_tasks.import_backup, backup=backup.json(), target_instance=target, hosts=host, source_env=env)
 
 
 @celery.task

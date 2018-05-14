@@ -715,10 +715,10 @@ def backup_create(site, backup_type):
     # Instance paths
     web_directory = '{0}/{1}'.format(SITES_WEB_ROOT, site['sid'])
     database_result_file = '{0}_{1}.sql'.format(site['sid'], date_time_string)
-    database_result_file_path = '{0}/{1}'.format(BACKUP_PATH, database_result_file)
+    database_result_file_path = '{0}/backups/{1}'.format(BACKUP_PATH, database_result_file)
     nfs_files_dir = '{0}/{1}/files'.format(NFS_MOUNT_LOCATION[ENVIRONMENT], site['sid'])
     files_result_file = '{0}_{1}.tar.gz'.format(site['sid'], date_time_string)
-    files_result_file_path = '{0}/{1}'.format(BACKUP_PATH, files_result_file)
+    files_result_file_path = '{0}/backups/{1}'.format(BACKUP_PATH, files_result_file)
 
     # Start the actual process.
     with cd(web_directory):
@@ -753,9 +753,9 @@ def backup_restore(backup_record, original_instance, package_list):
     pretty_filename = '{0}_{1}'.format(
         original_instance['sid'], file_date.strftime("%Y-%m-%d-%H-%M-%S"))
     pretty_database_filename = '{0}.sql'.format(pretty_filename)
-    database_path = '{0}/{1}'.format(BACKUP_PATH, pretty_database_filename)
+    database_path = '{0}/backups/{1}'.format(BACKUP_PATH, pretty_database_filename)
     pretty_files_filename = '{0}.tar.gz'.format(pretty_filename)
-    files_path = '{0}/{1}'.format(BACKUP_PATH, pretty_files_filename)
+    files_path = '{0}/backups/{1}'.format(BACKUP_PATH, pretty_files_filename)
 
     # Grab available instance and add packages if needed
     available_instances = utilities.get_eve('sites', 'where={"status":"available"}')

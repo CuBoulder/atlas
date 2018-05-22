@@ -21,21 +21,21 @@ $conf["atlas_password"] = "{{atlas_password}}";
 $conf["atlas_status"] = "{{status}}";
 $conf["atlas_statistics_id"] = "{{atlas_statistics_id}}";
 $conf["atlas_logging_url"] = "{{atlas_logging_url|join(sid)}}";
-{% if google_cse_csx %}
+{% if google_cse_csx -%}
 $conf["google_cse_cx"] = "{{google_cse_csx}}";
-{% else %}
+{% else -%}
 $conf["google_cse_cx"] = NULL;
 {% endif %}
 $path = "{{path}}";
 
-{% if status in ['launched', 'launching'] %}
+{% if status in ['launched', 'launching'] -%}
 $launched = TRUE;
-{% else %}
+{% else -%}
 $launched = FALSE;
 {% endif %}
-{% if path == 'homepage' %}
+{% if path == 'homepage' -%}
 $conf["cu_path"] = "";
-{% else %}
+{% else -%}
 $conf["cu_path"] = "{{path}}";
 {% endif %}
 
@@ -43,33 +43,50 @@ $conf["cu_path"] = "{{path}}";
 $conf["smtp_client_hostname"] = "{{smtp_client_hostname}}";
 $conf["smtp_password"] = "{{smtp_password}}";
 
-if (isset($launched) && $launched && isset($conf["cu_path"])) {
-  if (isset($_SERVER['OSR_ENV'])) {
-    if ($_SERVER['OSR_ENV'] == 'prod' &&
-      strpos($_SERVER['REQUEST_URI'], $conf['cu_sid']) !== false) {
+
+if (isset($_SERVER['OSR_ENV'])) {
+  if (isset($launched) && $launched && isset($conf["cu_path"])) {
+    if (&& strpos($_SERVER['REQUEST_URI'], $conf['cu_sid']) !== false) {
       header('HTTP/1.0 301 Moved Permanently');
+      {% if environment == 'prod' -%}
       header('Location: https://www-prod-new.colorado.edu'. str_replace($conf['cu_sid'], $conf["cu_path"], $_SERVER['REQUEST_URI']));
-      exit();
-    }
-    elseif ($_SERVER['OSR_ENV'] == 'test' &&
-      strpos($_SERVER['REQUEST_URI'], $conf['cu_sid']) !== false) {
-      header('HTTP/1.0 301 Moved Permanently');
+      {% elif environment == 'test' -%}
       header('Location: https://www-test-new.colorado.edu'. str_replace($conf['cu_sid'], $conf["cu_path"], $_SERVER['REQUEST_URI']));
-      exit();
-    }
-    elseif ($_SERVER['OSR_ENV'] == 'dev' &&
-      strpos($_SERVER['REQUEST_URI'], $conf['cu_sid']) !== false) {
-      header('HTTP/1.0 301 Moved Permanently');
+      {% elif environment == 'dev' -%}
       header('Location: https://www-dev-new.colorado.edu'. str_replace($conf['cu_sid'], $conf["cu_path"], $_SERVER['REQUEST_URI']));
-      exit();
-    }
-    elseif ($_SERVER['OSR_ENV'] == 'local' &&
-      strpos($_SERVER['REQUEST_URI'], $conf['cu_sid']) !== false) {
-      header('HTTP/1.0 301 Moved Permanently');
+      {% elif environment == 'local' -%}
       header('Location: https://express.local'. str_replace($conf['cu_sid'], $conf["cu_path"], $_SERVER['REQUEST_URI']));
+      {% endif %}
       exit();
     }
   }
+  /**
+   * Drupal generates a unique session cookie name for each site based on its full domain name.
+   * Since we want different cookies per environment, we need to specify that here.
+   * Make sure to always start the $cookie_domain with a leading dot, as per RFC 2109.
+   * We also set the cookie path so that we don't bypass Varnish for instances we are not logged into.
+   */
+  global $base_url;
+  {% if environment == 'prod' -%}
+  $base_url .= 'https://www-prod-new.colorado.edu';
+  $cookie_domain = '.www-prod-new.colorado.edu';
+  {% elif environment == 'test' -%}
+  $base_url .= 'https://www-test-new.colorado.edu';
+  $cookie_domain = '.www-test-new.colorado.edu';
+  {% elif environment == 'dev' -%}
+  $base_url .= 'https://www-dev-new.colorado.edu';
+  $cookie_domain = '.www-dev-new.colorado.edu';
+  {% elif environment == 'local' -%}
+  $base_url .= 'https://express.local';
+  // We don't need a cookie_domain for locals.
+  {% endif %}
+  ini_set('session.cookie_lifetime', 93600);
+{% if path != 'homepage' -%}
+  ini_set('session.cookie_path', '/' . $conf["cu_path"]);
+  $base_url .= '/' . $conf["cu_path"];
+{% else -%}
+  ini_set('session.cookie_path', '/');
+{% endif %}
 }
 
 $host = $_SERVER['HTTP_HOST'];
@@ -93,7 +110,7 @@ $conf['preprocess_js'] = TRUE;
 // Drupal doesn't cache if we invoke hooks during bootstrap.
 $conf['page_cache_invoke_hooks'] = FALSE;
 
-{% if environment != 'local' %}
+{% if environment != 'local' -%}
 // Varnish Backends.
 $conf['cache_backends'] = array(
   'profiles/{{profile}}/modules/contrib/varnish/varnish.cache.inc',
@@ -108,44 +125,6 @@ $conf['cron_safe_threshold'] = 0;
 
 // No IP blocking from the UI, we'll take care of that at a higher level.
 $conf['blocked_ips'] = array();
-
-if (isset($_SERVER['OSR_ENV'])) {
-  global $base_url;
-
-  /**
-   * Drupal automatically generates a unique session cookie name for each site
-   * based on its full domain name. Since we want different cookies per
-   * environment, we need to specify that here. Make sure to always start the
-   * $cookie_domain with a leading dot, as per RFC 2109. We also set the
-   * cookie path so that we don't bypass Varnish for instances we are not
-   * logged into.
-   */
-  switch($_SERVER['OSR_ENV']) {
-    case 'prod':
-      $base_url .= 'https://www-prod-new.colorado.edu';
-      $cookie_domain = '.www-prod-new.colorado.edu';
-      break;
-    case 'test':
-      $base_url .= 'https://www-test-new.colorado.edu';
-      $cookie_domain = '.www-test-new.colorado.edu';
-      break;
-    case 'dev':
-      $base_url .= 'https://www-dev-new.colorado.edu';
-      $cookie_domain = '.www-dev-new.colorado.edu';
-      break;
-    case 'express_local':
-      $base_url .= 'https://express.local';
-      // We don't need a cookie_domain for locals.
-      break;
-  }
-  ini_set('session.cookie_lifetime', 93600);
-{% if path != 'homepage' %}
-  ini_set('session.cookie_path', '/' . $conf["cu_path"]);
-  $base_url .= '/' . $conf["cu_path"];
-{% else %}
-  ini_set('session.cookie_path', '/');
-{% endif %}
-}
 
 {% if environment != 'local' %}
 // Varnish

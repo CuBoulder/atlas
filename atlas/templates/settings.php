@@ -21,6 +21,7 @@ $conf["atlas_password"] = "{{atlas_password}}";
 $conf["atlas_status"] = "{{status}}";
 $conf["atlas_statistics_id"] = "{{atlas_statistics_id}}";
 $conf["atlas_logging_url"] = "{{atlas_logging_url|join(sid)}}";
+
 {% if google_cse_csx -%}
 $conf["google_cse_cx"] = "{{google_cse_csx}}";
 {% else -%}
@@ -37,12 +38,11 @@ $launched = FALSE;
 $conf["cu_path"] = "";
 {% else -%}
 $conf["cu_path"] = "{{path}}";
-{% endif %}
+{%- endif %}
 
 // SMTP configuration, see also relevant hosting module install hook.
 $conf["smtp_client_hostname"] = "{{smtp_client_hostname}}";
 $conf["smtp_password"] = "{{smtp_password}}";
-
 
 if (isset($_SERVER['OSR_ENV'])) {
   if (isset($launched) && $launched && isset($conf["cu_path"])) {
@@ -56,7 +56,7 @@ if (isset($_SERVER['OSR_ENV'])) {
       header('Location: https://www-dev-new.colorado.edu'. str_replace($conf['cu_sid'], $conf["cu_path"], $_SERVER['REQUEST_URI']));
       {% elif environment == 'local' -%}
       header('Location: https://express.local'. str_replace($conf['cu_sid'], $conf["cu_path"], $_SERVER['REQUEST_URI']));
-      {% endif %}
+      {%- endif %}
       exit();
     }
   }
@@ -86,7 +86,7 @@ if (isset($_SERVER['OSR_ENV'])) {
   $base_url .= '/' . $conf["cu_path"];
 {% else -%}
   ini_set('session.cookie_path', '/');
-{% endif %}
+{%- endif %}
 }
 
 $host = $_SERVER['HTTP_HOST'];
@@ -115,7 +115,7 @@ $conf['page_cache_invoke_hooks'] = FALSE;
 $conf['cache_backends'] = array(
   'profiles/{{profile}}/modules/contrib/varnish/varnish.cache.inc',
 );
-{% endif %}
+{%- endif %}
 
 // Setup cache_form bin.
 $conf['cache_class_cache_form'] = 'DrupalDatabaseCache';
@@ -126,7 +126,7 @@ $conf['cron_safe_threshold'] = 0;
 // No IP blocking from the UI, we'll take care of that at a higher level.
 $conf['blocked_ips'] = array();
 
-{% if environment != 'local' %}
+{% if environment != 'local' -%}
 // Varnish
 $conf['reverse_proxy'] = TRUE;
 $conf['reverse_proxy_addresses'] = array({% for ip in reverse_proxies -%}'{{ip}}',{% endfor %});
@@ -136,13 +136,18 @@ $conf['reverse_proxy_header'] = 'X-Forwarded-For';
 $conf['varnish_control_terminal'] = '{{ varnish_control }}';
 $conf['varnish_version'] = 4;
 $conf['varnish_control_key'] = '{{ varnish_control_key }}';
-{% endif %}
+{%- endif %}
 
-{% if environment in ['local','dev'] %}$conf['drupal_http_request_fails'] = FALSE;{% endif %}
+{% if environment in ['local','dev'] -%}
+$conf['drupal_http_request_fails'] = FALSE;
+{%- endif %}
+
 // Google Analytics
 $conf['googleanalytics_account'] = 'UA-25752450-1';
 
-{% if environment == 'local' %}$conf['error_level'] = 2;{% endif %}
+{% if environment == 'local' -%}
+$conf['error_level'] = 2;
+{%- endif %}
 
 $conf['file_temporary_path'] = '{{ tmp_path }}';
 
@@ -150,7 +155,7 @@ $conf['file_temporary_path'] = '{{ tmp_path }}';
 $conf['cache_lifetime'] = 0;
 $conf['page_cache_maximum_age'] = {{ page_cache_maximum_age }};
 
-{% if environment != 'local' %}
+{% if environment != 'local' -%}
 $databases['default']['default'] = array(
   'driver' => 'mysql',
   'database' => '{{ sid }}',
@@ -170,7 +175,7 @@ $databases['default']['slave'][] = array(
   'port' => '3307',
   'prefix' => '',
 );
-{% else %}
+{% else -%}
 $databases['default']['default'] = array(
   'driver' => 'mysql',
   'database' => '{{ sid }}',
@@ -198,7 +203,7 @@ $conf['drupal_ssl_context_options'] = array(
     ),
   ),
 );
-{% endif %}
+{%- endif %}
 
 // SAML DB
 $databases['saml']['default'] = array(

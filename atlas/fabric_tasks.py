@@ -573,6 +573,7 @@ def create_settings_files(site):
     status = site['status']
     atlas_id = site['_id']
     statistics = site['statistics']
+    migration_verification = site['verification']['verification_status']
     if site['settings'].get('siteimprove_site'):
         siteimprove_site = site['settings']['siteimprove_site']
     else:
@@ -624,6 +625,7 @@ def create_settings_files(site):
         'saml_pw': saml_auth,
         'smtp_client_hostname': BASE_URLS[ENVIRONMENT],
         'smtp_password': SMTP_PASSWORD
+        'migration_verification': migration_verification
     }
 
     log.info('fabric_tasks | Create Settings file')

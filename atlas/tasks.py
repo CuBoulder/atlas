@@ -534,8 +534,13 @@ def site_update(site, updates, original):
     if updates.get('settings'):
         if not updates.get('status') or updates['status'] != 'locked':
             log.debug('Found settings change.')
-            if updates['settings'].get('page_cache_maximum_age') != original['settings'].get('page_cache_maximum_age'):
-                log.debug('Found page_cache_maximum_age change.')
+            execute(fabric_tasks.update_settings_file, site=site)
+            deploy_php_cache_clear = True
+
+    # Update settings file when migration is approved
+    if updates.get('verification'):
+        if updates['verification']['verification_status'] == 'approved' :
+            log.debug('Verification approved')
             execute(fabric_tasks.update_settings_file, site=site)
             deploy_php_cache_clear = True
 

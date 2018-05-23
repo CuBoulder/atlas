@@ -48,18 +48,30 @@ $conf['googleanalytics_account'] = 'UA-25752450-1';
 $conf["smtp_client_hostname"] = "{{smtp_client_hostname}}";
 $conf["smtp_password"] = "{{smtp_password}}";
 
-// Redirect p1 url to path if site is launched.
+// Redirect URLs that include a p1 to path version if site is launched.
 if (isset($launched) && $launched && isset($conf["cu_path"])) {
   if (strpos($_SERVER['REQUEST_URI'], $conf['cu_sid']) !== false) {
     header('HTTP/1.0 301 Moved Permanently');
-    {% if environment == 'prod' -%}
-    header('Location: https://www-prod-new.colorado.edu'. str_replace($conf['cu_sid'], $conf["cu_path"], $_SERVER['REQUEST_URI']));
-    {% elif environment == 'test' -%}
-    header('Location: https://www-test-new.colorado.edu'. str_replace($conf['cu_sid'], $conf["cu_path"], $_SERVER['REQUEST_URI']));
-    {% elif environment == 'dev' -%}
-    header('Location: https://www-dev-new.colorado.edu'. str_replace($conf['cu_sid'], $conf["cu_path"], $_SERVER['REQUEST_URI']));
-    {% elif environment == 'local' -%}
+    {% if migration_verification == 'approved' -%}
+      {% if environment == 'prod' -%}
+    header('Location: https://www.colorado.edu'. str_replace($conf['cu_sid'], $conf["cu_path"], $_SERVER['REQUEST_URI']));
+      {% elif environment == 'test' -%}
+    header('Location: https://www-test.colorado.edu'. str_replace($conf['cu_sid'], $conf["cu_path"], $_SERVER['REQUEST_URI']));
+      {% elif environment == 'dev' -%}
+    header('Location: https://www-dev.colorado.edu'. str_replace($conf['cu_sid'], $conf["cu_path"], $_SERVER['REQUEST_URI']));
+      {% elif environment == 'local' -%}
     header('Location: https://express.local'. str_replace($conf['cu_sid'], $conf["cu_path"], $_SERVER['REQUEST_URI']));
+      {% endif -%}
+    {% else -%}
+      {% if environment == 'prod' -%}
+    header('Location: https://www-prod-new.colorado.edu'. str_replace($conf['cu_sid'], $conf["cu_path"], $_SERVER['REQUEST_URI']));
+      {% elif environment == 'test' -%}
+    header('Location: https://www-test-new.colorado.edu'. str_replace($conf['cu_sid'], $conf["cu_path"], $_SERVER['REQUEST_URI']));
+      {% elif environment == 'dev' -%}
+    header('Location: https://www-dev-new.colorado.edu'. str_replace($conf['cu_sid'], $conf["cu_path"], $_SERVER['REQUEST_URI']));
+      {% elif environment == 'local' -%}
+    header('Location: https://express.local'. str_replace($conf['cu_sid'], $conf["cu_path"], $_SERVER['REQUEST_URI']));
+      {% endif -%}
     {% endif -%}
     exit();
   }
@@ -74,19 +86,34 @@ if (isset($launched) && $launched && isset($conf["cu_path"])) {
  * We also set the cookie path so that we don't bypass Varnish for instances we are not logged into.
  */
 global $base_url;
-{% if environment == 'prod' -%}
+{% if migration_verification == 'approved' -%}
+  {% if environment == 'prod' -%}
+$base_url .= 'https://www.colorado.edu';
+$cookie_domain = '.www.colorado.edu';
+  {% elif environment == 'test' -%}
+$base_url .= 'https://www-test.colorado.edu';
+$cookie_domain = '.www-test.colorado.edu';
+  {% elif environment == 'dev' -%}
+$base_url .= 'https://www-dev.colorado.edu';
+$cookie_domain = '.www-dev.colorado.edu';
+  {% elif environment == 'local' -%}
+$base_url .= 'https://express.local';
+  {% endif -%}
+{% else -%}
+  {% if environment == 'prod' -%}
 $base_url .= 'https://www-prod-new.colorado.edu';
 $cookie_domain = '.www-prod-new.colorado.edu';
-{% elif environment == 'test' -%}
+  {% elif environment == 'test' -%}
 $base_url .= 'https://www-test-new.colorado.edu';
 $cookie_domain = '.www-test-new.colorado.edu';
-{% elif environment == 'dev' -%}
+  {% elif environment == 'dev' -%}
 $base_url .= 'https://www-dev-new.colorado.edu';
 $cookie_domain = '.www-dev-new.colorado.edu';
-{% elif environment == 'local' -%}
+  {% elif environment == 'local' -%}
 $base_url .= 'https://express.local';
+  {% endif -%}
+{% endif -%}
 // We don't need a cookie_domain for locals.
-{% endif %}
 ini_set('session.cookie_lifetime', 93600);
 {% if path != 'homepage' -%}
 ini_set('session.cookie_path', '/' . $conf["cu_path"]);

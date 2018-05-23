@@ -11,6 +11,8 @@
  * Include a pre local settings file if it exists.
  */
 global $conf;
+
+// Atlas information
 $conf["install_profile"] = "{{profile}}";
 $conf["cu_sid"] = "{{sid}}";
 
@@ -22,13 +24,7 @@ $conf["atlas_status"] = "{{status}}";
 $conf["atlas_statistics_id"] = "{{atlas_statistics_id}}";
 $conf["atlas_logging_url"] = "{{atlas_logging_url|join(sid)}}";
 
-{% if google_cse_csx -%}
-$conf["google_cse_cx"] = "{{google_cse_csx}}";
-{% else -%}
-$conf["google_cse_cx"] = NULL;
-{% endif %}
 $path = "{{path}}";
-
 {% if status in ['launched', 'launching'] -%}
 $launched = TRUE;
 {% else -%}
@@ -40,92 +36,93 @@ $conf["cu_path"] = "";
 $conf["cu_path"] = "{{path}}";
 {%- endif %}
 
+// Google Data
+{% if google_cse_csx -%}
+$conf["google_cse_cx"] = "{{google_cse_csx}}";
+{% else -%}
+$conf["google_cse_cx"] = NULL;
+{% endif %}
+$conf['googleanalytics_account'] = 'UA-25752450-1';
+
 // SMTP configuration, see also relevant hosting module install hook.
 $conf["smtp_client_hostname"] = "{{smtp_client_hostname}}";
 $conf["smtp_password"] = "{{smtp_password}}";
 
-if (isset($_SERVER['OSR_ENV'])) {
-  if (isset($launched) && $launched && isset($conf["cu_path"])) {
-    if (strpos($_SERVER['REQUEST_URI'], $conf['cu_sid']) !== false) {
-      header('HTTP/1.0 301 Moved Permanently');
-      {% if environment == 'prod' -%}
-      header('Location: https://www-prod-new.colorado.edu'. str_replace($conf['cu_sid'], $conf["cu_path"], $_SERVER['REQUEST_URI']));
-      {% elif environment == 'test' -%}
-      header('Location: https://www-test-new.colorado.edu'. str_replace($conf['cu_sid'], $conf["cu_path"], $_SERVER['REQUEST_URI']));
-      {% elif environment == 'dev' -%}
-      header('Location: https://www-dev-new.colorado.edu'. str_replace($conf['cu_sid'], $conf["cu_path"], $_SERVER['REQUEST_URI']));
-      {% elif environment == 'local' -%}
-      header('Location: https://express.local'. str_replace($conf['cu_sid'], $conf["cu_path"], $_SERVER['REQUEST_URI']));
-      {% endif -%}
-      exit();
-    }
+// Redirect p1 url to path if site is launched.
+if (isset($launched) && $launched && isset($conf["cu_path"])) {
+  if (strpos($_SERVER['REQUEST_URI'], $conf['cu_sid']) !== false) {
+    header('HTTP/1.0 301 Moved Permanently');
+    {% if environment == 'prod' -%}
+    header('Location: https://www-prod-new.colorado.edu'. str_replace($conf['cu_sid'], $conf["cu_path"], $_SERVER['REQUEST_URI']));
+    {% elif environment == 'test' -%}
+    header('Location: https://www-test-new.colorado.edu'. str_replace($conf['cu_sid'], $conf["cu_path"], $_SERVER['REQUEST_URI']));
+    {% elif environment == 'dev' -%}
+    header('Location: https://www-dev-new.colorado.edu'. str_replace($conf['cu_sid'], $conf["cu_path"], $_SERVER['REQUEST_URI']));
+    {% elif environment == 'local' -%}
+    header('Location: https://express.local'. str_replace($conf['cu_sid'], $conf["cu_path"], $_SERVER['REQUEST_URI']));
+    {% endif -%}
+    exit();
   }
-  /**
-   * Drupal generates a unique session cookie name for each site based on its full domain name.
-   * Since we want different cookies per environment, we need to specify that here.
-   * Make sure to always start the $cookie_domain with a leading dot, as per RFC 2109.
-   * We also set the cookie path so that we don't bypass Varnish for instances we are not logged into.
-   */
-  global $base_url;
-  {% if environment == 'prod' -%}
-  $base_url .= 'https://www-prod-new.colorado.edu';
-  $cookie_domain = '.www-prod-new.colorado.edu';
-  {% elif environment == 'test' -%}
-  $base_url .= 'https://www-test-new.colorado.edu';
-  $cookie_domain = '.www-test-new.colorado.edu';
-  {% elif environment == 'dev' -%}
-  $base_url .= 'https://www-dev-new.colorado.edu';
-  $cookie_domain = '.www-dev-new.colorado.edu';
-  {% elif environment == 'local' -%}
-  $base_url .= 'https://express.local';
-  // We don't need a cookie_domain for locals.
-  {% endif %}
-  ini_set('session.cookie_lifetime', 93600);
-{% if path != 'homepage' -%}
-  ini_set('session.cookie_path', '/' . $conf["cu_path"]);
-  $base_url .= '/' . $conf["cu_path"];
-{% else -%}
-  ini_set('session.cookie_path', '/');
-{% endif -%}
 }
+
+/**
+ * Cookies
+ *
+ * Drupal generates a unique session cookie name for each site based on its full domain name.
+ * Since we want different cookies per environment, we need to specify that here.
+ * Make sure to always start the $cookie_domain with a leading dot, as per RFC 2109.
+ * We also set the cookie path so that we don't bypass Varnish for instances we are not logged into.
+ */
+global $base_url;
+{% if environment == 'prod' -%}
+$base_url .= 'https://www-prod-new.colorado.edu';
+$cookie_domain = '.www-prod-new.colorado.edu';
+{% elif environment == 'test' -%}
+$base_url .= 'https://www-test-new.colorado.edu';
+$cookie_domain = '.www-test-new.colorado.edu';
+{% elif environment == 'dev' -%}
+$base_url .= 'https://www-dev-new.colorado.edu';
+$cookie_domain = '.www-dev-new.colorado.edu';
+{% elif environment == 'local' -%}
+$base_url .= 'https://express.local';
+// We don't need a cookie_domain for locals.
+{% endif %}
+ini_set('session.cookie_lifetime', 93600);
+{% if path != 'homepage' -%}
+ini_set('session.cookie_path', '/' . $conf["cu_path"]);
+$base_url .= '/' . $conf["cu_path"];
+{% else -%}
+ini_set('session.cookie_path', '/');
+{% endif -%}
 
 $host = $_SERVER['HTTP_HOST'];
 
+/*
+ * Caching and performance
+ */
 // Compress cached pages always off; we use mod_deflate
 $conf['page_compression'] = 0;
-
-// Never allow updating modules through UI.
-$conf['allow_authorize_operations'] = FALSE;
-
 // Caching across all of Express.
 $conf['cache'] = 1;
 // @todo Solve js inclusion issues to re-enable block cache.
 // @see #attached.
 $conf['block_cache'] = 0;
-
 // Aggregate css and js files.
 $conf['preprocess_css'] = TRUE;
 $conf['preprocess_js'] = TRUE;
-
+// Min cache lifetime 0, max defaults to 300 seconds.
+$conf['cache_lifetime'] = 0;
+$conf['page_cache_maximum_age'] = {{ page_cache_maximum_age }};
 // Drupal doesn't cache if we invoke hooks during bootstrap.
 $conf['page_cache_invoke_hooks'] = FALSE;
-
+{%- endif %}
+// Setup cache_form bin.
+$conf['cache_class_cache_form'] = 'DrupalDatabaseCache';
 {% if environment != 'local' -%}
 // Varnish Backends.
 $conf['cache_backends'] = array(
   'profiles/{{profile}}/modules/contrib/varnish/varnish.cache.inc',
 );
-{%- endif %}
-
-// Setup cache_form bin.
-$conf['cache_class_cache_form'] = 'DrupalDatabaseCache';
-
-// Disable poorman cron.
-$conf['cron_safe_threshold'] = 0;
-
-// No IP blocking from the UI, we'll take care of that at a higher level.
-$conf['blocked_ips'] = array();
-
 {% if environment != 'local' -%}
 // Varnish
 $conf['reverse_proxy'] = TRUE;
@@ -138,22 +135,20 @@ $conf['varnish_version'] = 4;
 $conf['varnish_control_key'] = '{{ varnish_control_key }}';
 {%- endif %}
 
+// Never allow updating modules through UI.
+$conf['allow_authorize_operations'] = FALSE;
+// No IP blocking from the UI, we'll take care of that at a higher level.
+$conf['blocked_ips'] = array();
+// Disable poorman cron.
+$conf['cron_safe_threshold'] = 0;
 {% if environment in ['local','dev'] -%}
 $conf['drupal_http_request_fails'] = FALSE;
 {%- endif %}
 
-// Google Analytics
-$conf['googleanalytics_account'] = 'UA-25752450-1';
-
 {% if environment == 'local' -%}
 $conf['error_level'] = 2;
 {%- endif %}
-
 $conf['file_temporary_path'] = '{{ tmp_path }}';
-
-// Min cache lifetime 0, max defaults to 300 seconds.
-$conf['cache_lifetime'] = 0;
-$conf['page_cache_maximum_age'] = {{ page_cache_maximum_age }};
 
 {% if environment != 'local' -%}
 $databases['default']['default'] = array(

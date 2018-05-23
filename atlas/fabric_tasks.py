@@ -624,7 +624,7 @@ def create_settings_files(site):
         'tmp_path': tmp_path,
         'saml_pw': saml_auth,
         'smtp_client_hostname': BASE_URLS[ENVIRONMENT],
-        'smtp_password': SMTP_PASSWORD
+        'smtp_password': SMTP_PASSWORD,
         'migration_verification': migration_verification
     }
 

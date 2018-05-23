@@ -573,7 +573,11 @@ def create_settings_files(site):
     status = site['status']
     atlas_id = site['_id']
     statistics = site['statistics']
-    migration_verification = site['verification']['verification_status']
+
+    if site.get('verification'):
+        migration_verification = site['verification']['verification_status']
+    else:
+        migration_verification = None
     if site['settings'].get('siteimprove_site'):
         siteimprove_site = site['settings']['siteimprove_site']
     else:
@@ -582,6 +586,7 @@ def create_settings_files(site):
         siteimprove_group = site['settings']['siteimprove_group']
     else:
         siteimprove_group = None
+
     page_cache_maximum_age = site['settings']['page_cache_maximum_age']
     atlas_url = '{0}/'.format(API_URLS[ENVIRONMENT])
     atlas_logging_url = ATLAS_LOGGING_URLS[ENVIRONMENT]

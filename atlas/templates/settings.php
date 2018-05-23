@@ -46,7 +46,7 @@ $conf["smtp_password"] = "{{smtp_password}}";
 
 if (isset($_SERVER['OSR_ENV'])) {
   if (isset($launched) && $launched && isset($conf["cu_path"])) {
-    if (&& strpos($_SERVER['REQUEST_URI'], $conf['cu_sid']) !== false) {
+    if (strpos($_SERVER['REQUEST_URI'], $conf['cu_sid']) !== false) {
       header('HTTP/1.0 301 Moved Permanently');
       {% if environment == 'prod' -%}
       header('Location: https://www-prod-new.colorado.edu'. str_replace($conf['cu_sid'], $conf["cu_path"], $_SERVER['REQUEST_URI']));
@@ -56,7 +56,7 @@ if (isset($_SERVER['OSR_ENV'])) {
       header('Location: https://www-dev-new.colorado.edu'. str_replace($conf['cu_sid'], $conf["cu_path"], $_SERVER['REQUEST_URI']));
       {% elif environment == 'local' -%}
       header('Location: https://express.local'. str_replace($conf['cu_sid'], $conf["cu_path"], $_SERVER['REQUEST_URI']));
-      {%- endif %}
+      {% endif -%}
       exit();
     }
   }
@@ -86,7 +86,7 @@ if (isset($_SERVER['OSR_ENV'])) {
   $base_url .= '/' . $conf["cu_path"];
 {% else -%}
   ini_set('session.cookie_path', '/');
-{%- endif %}
+{% endif -%}
 }
 
 $host = $_SERVER['HTTP_HOST'];
@@ -211,7 +211,7 @@ $databases['saml']['default'] = array(
   'database' => 'saml',
   'username' => 'saml',
   'password' => '{{ saml_pw }}',
-  'host' => '{{ database_servers.master }}',
-  'port' => '{{ database_servers.port }}',
+  'host' => '127.0.0.1',
+  'port' => '3306',
   'prefix' => '',
 );

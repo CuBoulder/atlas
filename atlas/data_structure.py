@@ -197,8 +197,7 @@ SITES_SCHEMA = {
             'poolb-express',
             'poolb-homepage',
             'WWWLegacy',
-            'osr-prod-https',
-            'osr-test-https'],
+            'pool-varnish-new'],
         'default': 'poolb-express',
     },
     'update_group': {

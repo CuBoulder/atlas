@@ -472,6 +472,11 @@ def site_update(site, updates, original):
             email_to = ['{0}@colorado.edu'.format(site['modified_by'])]
             utilities.send_email(email_message=message, email_subject=subject, email_to=email_to)
 
+    if updates.get('verification'):
+        if updates.get('verification_status'):
+            if updates['verification']['verification_status'] == 'approved':
+                execute(fabric_tasks.update_settings_file, site=site)
+
     if updates.get('status'):
         log.debug('Site update | ID - %s | Found status change', site['_id'])
         if updates['status'] in ['installing', 'launching', 'locked', 'take_down', 'restore']:

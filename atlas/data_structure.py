@@ -276,9 +276,6 @@ SITES_SCHEMA = {
             'verification': {
                 'type': 'datetime',
             },
-            'activation': {
-                'type': 'datetime',
-            },
         },
     },
     'verification': {

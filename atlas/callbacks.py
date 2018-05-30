@@ -309,6 +309,12 @@ def on_update_sites(updates, original):
 
                 updates['dates'] = json.loads(date_json)
 
+        if updates.get('verification'):
+            if updates.get('verification_status'):
+                if updates['verification']['verification_status'] == 'approved':
+                    date_json = '{{"verification":"{0} GMT"}}'.format(updates['_updated'])
+                    updates['dates'] = json.loads(date_json)
+
         log.debug('sites | Update | Ready for Celery | Site - %s | Updates - %s', site, updates)
         tasks.site_update.delay(site=site, updates=updates, original=original)
 

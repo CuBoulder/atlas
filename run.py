@@ -126,12 +126,13 @@ def import_backup():
     elif not backup_request.get('id'):
         abort(409, 'Error: Missing id.')
     elif backup_request['env'] not in ['local', 'dev', 'test', 'prod', 'o-dev', 'o-test', 'o-prod']:
-        abort(409, 'Error: Invalid env choose from [local, dev, test, prod, o-dev, o-test, o-prod].')
+        abort(
+            409, 'Error: Invalid env choose from [local, dev, test, prod, o-dev, o-test, o-prod].')
     elif not backup_request.get('target_id'):
         abort(409, 'Error: Missing target_id.')
-    ####
-    #### Taking this part out for now. This is required for cloning between env, not for the migration.
-    ####
+    """
+    Taking this part out for now. This is required for cloning between env, not for the migration.
+    """
     # backup_record = utilities.get_single_eve(
     #     'backup', backup_request['id'], env=backup_request['env'])
     # app.logger.debug('Backup | Import | Backup record - %s', backup_record)
@@ -145,10 +146,11 @@ def import_backup():
     #     abort(500, error)
 
     tasks.import_backup.delay(
-        env=backup_request['env'], backup_id=backup_request['id'], target_instance=backup_request['target_id'])
+        env=backup_request['env'],
+        backup_id=backup_request['id'],
+        target_instance=backup_request['target_id'])
 
     return make_response('I am trying')
-
 
 
 @app.route('/backup/<string:backup_id>/restore', methods=['POST'])
@@ -290,6 +292,7 @@ def custom409(error):
 def version():
     response = make_response(VERSION_NUMBER)
     return response
+
 
 @app.route('/saml/create', methods=['GET', 'POST'])
 @requires_auth('sites')

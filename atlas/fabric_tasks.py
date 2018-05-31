@@ -22,7 +22,8 @@ from atlas.config import (ATLAS_LOCATION, ENVIRONMENT, SSH_USER, CODE_ROOT, SITE
                           SITES_WEB_ROOT, WEBSERVER_USER, WEBSERVER_USER_GROUP, NFS_MOUNT_FILES_DIR,
                           BACKUP_PATH, SERVICE_ACCOUNT_USERNAME, SERVICE_ACCOUNT_PASSWORD,
                           SITE_DOWN_PATH, LOAD_BALANCER, VARNISH_CONTROL_KEY, STATIC_WEB_PATH,
-                          SSL_VERIFICATION, DRUPAL_CORE_PATHS, BACKUP_IMPORT_PATH, SAML_AUTH, SMTP_PASSWORD)
+                          SSL_VERIFICATION, DRUPAL_CORE_PATHS, BACKUP_IMPORT_PATH, SAML_AUTH,
+                          SMTP_PASSWORD)
 from atlas.config_servers import (SERVERDEFS, NFS_MOUNT_LOCATION, API_URLS,
                                   VARNISH_CONTROL_TERMINALS, LOAD_BALANCER_CONFIG_FILES,
                                   LOAD_BALANCER_CONFIG_GROUP, BASE_URLS, ATLAS_LOGGING_URLS)
@@ -74,7 +75,8 @@ def code_deploy(item):
                     item['meta']['name'])
                 update_symlink(code_folder, code_folder_current)
             if item['meta']['code_type'] == 'static':
-                static_target = '{0}/{1}-{2}'.format(STATIC_WEB_PATH, item['meta']['name'], item['meta']['version'])
+                static_target = '{0}/{1}-{2}'.format(STATIC_WEB_PATH,
+                                                     item['meta']['name'], item['meta']['version'])
                 log.debug('Code | Deploy | Static | Target - %s', static_target)
                 update_symlink(code_folder, static_target)
 
@@ -141,7 +143,8 @@ def code_remove(item):
             item['meta']['name'])
         remove_symlink(code_folder_current)
     if item['meta']['code_type'] == 'static':
-        static_target = '{0}/{1}-{2}'.format(STATIC_WEB_PATH, item['meta']['name'], item['meta']['version'])
+        static_target = '{0}/{1}-{2}'.format(STATIC_WEB_PATH,
+                                             item['meta']['name'], item['meta']['version'])
         remove_symlink(static_target)
 
 
@@ -392,7 +395,8 @@ def instance_heal(item):
     log.info('Instance | Heal | Item ID - %s | Path list - %s', item['sid'], path_list)
     for path_to_check in path_list:
         if not exists(path_to_check):
-            log.info('Instance | Heal | Item ID - %s | Path check failed - %s', item['sid'], path_to_check)
+            log.info('Instance | Heal | Item ID - %s | Path check failed - %s',
+                     item['sid'], path_to_check)
             reprovison = True
             break
     # If we are missing any of the paths, wipe the instance and rebuild it.
@@ -511,16 +515,24 @@ def registry_rebuild(site):
         run('drush rr; drush cc drush;')
 
 
-# We use a dynamic host list to round-robin, so you need to pass a host list when calling it or call
-# it from a parent fabric task that has a role.
 def drush_cache_clear(sid):
+    """
+    Clear the Drupal cache
+
+    We use a dynamic host list to round-robin, so you need to pass a host list when calling it or
+    call it from a parent fabric task that has a role.
+    """
     code_directory_current = '{0}/{1}/current'.format(SITES_CODE_ROOT, sid)
     with cd(code_directory_current):
         run('drush cc all')
 
 
-# We use a dynamic host list to round-robin, so you need to pass a host list when calling it.
 def site_install(site):
+    """
+    Run Drupal install
+
+    We use a dynamic host list to round-robin, so you need to pass a host list when calling it.
+    """
     code_directory = '{0}/{1}'.format(SITES_CODE_ROOT, site['sid'])
     code_directory_current = '{0}/current'.format(code_directory)
     profile = utilities.get_single_eve('code', site['code']['profile'])
@@ -734,16 +746,18 @@ def backup_create(site, backup_type):
 
     # Start the actual process.
     with cd(web_directory):
-        run('drush sql-dump --structure-tables-list=cache,cache_*,sessions,watchdog,history --result-file={0}'.format(database_result_file_path))
+        run('drush sql-dump --structure-tables-list=cache,cache_*,sessions,watchdog,history --result-file={0}'.format(
+            database_result_file_path))
     with cd(nfs_files_dir):
-        run('tar --exclude "imagecache" --exclude "css" --exclude "js" --exclude "backup_migrate" --exclude "styles" --exclude "xmlsitemap" --exclude "honeypot" -czf {0} *'.format(files_result_file_path))
+        run('tar --exclude "imagecache" --exclude "css" --exclude "js" --exclude "backup_migrate" --exclude "styles" --exclude "xmlsitemap" --exclude "honeypot" -czf {0} *'.format(
+            files_result_file_path))
 
     patch_payload = {
         'site': site['_id'],
         'site_version': site['_version'],
         'backup_date': datetime_string,
         'backup_type': backup_type,
-        'files' : files_result_file,
+        'files': files_result_file,
         'database': database_result_file,
         'state': 'complete'
     }
@@ -866,9 +880,9 @@ def import_backup(backup, target_instance, source_env=ENVIRONMENT):
         run('drush en ucb_on_prem_hosting -y')
         run('drush elysia-cron run --ignore-time')
 
-
     run('rm {0}'.format(files_path))
     run('rm {0}'.format(database_path))
 
     restore_time = time() - start_time
-    log.info('Import Backup | Complete | Target Instance - %s (%s) | %s sec', target_instance['_id'], target_instance['sid'], restore_time)
+    log.info('Import Backup | Complete | Target Instance - %s (%s) | %s sec',
+             target_instance['_id'], target_instance['sid'], restore_time)

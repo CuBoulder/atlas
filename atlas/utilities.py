@@ -445,8 +445,7 @@ def package_import(site, env=ENVIRONMENT):
         package_list = []
         for package in site['code']['package']:
             package_result = get_single_eve('code', package, env=env)
-            log.debug(
-                'Utilities | Package import | Checking for packages | Request result - %s', package_result)
+            log.debug('Utilities | Package import | Checking for packages | Request result - %s', package_result)
             if package_result['_deleted']:
                 current_package = get_current_code(
                     package_result['meta']['name'], package_result['meta']['code_type'])
@@ -454,8 +453,7 @@ def package_import(site, env=ENVIRONMENT):
                 if current_package:
                     package_list.append(current_package)
                 else:
-                    raise Exception('There is no current version of {0}. This backup cannot be restored.'.format(
-                        package_result['meta']['name']))
+                    raise Exception('There is no current version of {0}. This backup cannot be restored.'.format(package_result['meta']['name']))
             else:
                 package_list.append(package_result['_id'])
     else:

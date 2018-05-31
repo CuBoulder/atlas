@@ -531,7 +531,6 @@ def site_update(site, updates, original):
                 patch_payload = '{"status": "installed"}'
                 deploy_drupal_cache_clear = True
 
-
             patch = utilities.patch_eve('sites', site['_id'], patch_payload)
             log.debug(patch)
 
@@ -544,7 +543,7 @@ def site_update(site, updates, original):
 
     # Update settings file when migration is approved
     if updates.get('verification'):
-        if updates['verification']['verification_status'] == 'approved' :
+        if updates['verification']['verification_status'] == 'approved':
             log.debug('Verification approved')
             execute(fabric_tasks.update_settings_file, site=site)
             deploy_php_cache_clear = True
@@ -683,8 +682,7 @@ def drush_prepare(drush_id, run=True):
         batch_count = 1
         for site in sites['_items']:
             batch_string = str(batch_count) + ' of ' + str(sites['_meta']['total'])
-            drush_command_run.delay(
-                site=site, command_list=drush_command['commands'], user=drush_command['modified_by'], batch_id=datetime.now(), batch_count=batch_string)
+            drush_command_run.delay(site=site, command_list=drush_command['commands'], user=drush_command['modified_by'], batch_id=datetime.now(), batch_count=batch_string)
             batch_count += 1
         return 'Batch started'
     else:
@@ -1128,12 +1126,15 @@ def rebalance_update_groups():
 
 @celery.task
 def update_settings_file(site, batch_id, count, total):
-    log.info('Command | Update Settings file | Batch - %s | %s of %s | Instance - %s', batch_id, count, total, site)
+    log.info('Command | Update Settings file | Batch - %s | %s of %s | Instance - %s',
+             batch_id, count, total, site)
     try:
         execute(fabric_tasks.update_settings_file, site=site)
-        log.info('Command | Update Settings file | Batch - %s | %s of %s | Instance - %s | Complete', batch_id, count, total, site)
+        log.info('Command | Update Settings file | Batch - %s | %s of %s | Instance - %s | Complete',
+                 batch_id, count, total, site)
     except Exception as error:
-        log.error('Command | Update Settings file | Batch - %s | %s of %s | Instance - %s | Error - %s', batch_id, count, total, site, error)
+        log.error('Command | Update Settings file | Batch - %s | %s of %s | Instance - %s | Error - %s',
+                  batch_id, count, total, site, error)
         raise
 
 
@@ -1175,15 +1176,16 @@ def import_backup(env, backup_id, target_instance):
     """
     log.info('Import Backup | Source ENV - %s | Source Backup ID - %s | Target Instance - %s',
              env, backup_id, target_instance)
-
-    backup = requests.get('{0}/backup/{1}'.format(API_URLS[env], backup_id), verify=SSL_VERIFICATION)
+    backup = requests.get(
+        '{0}/backup/{1}'.format(API_URLS[env], backup_id), verify=SSL_VERIFICATION)
     log.info('Import Backup | Backup - %s', backup)
     target = utilities.get_single_eve('sites', target_instance)
     # Get a host to run this on.
     host = utilities.single_host()
     utilities.create_database(target['sid'], target['db_key'])
     execute(fabric_tasks.instance_heal, item=target)
-    execute(fabric_tasks.import_backup, backup=backup.json(), target_instance=target, hosts=host, source_env=env)
+    execute(fabric_tasks.import_backup, backup=backup.json(),
+            target_instance=target, hosts=host, source_env=env)
 
 
 @celery.task
@@ -1214,10 +1216,6 @@ def migrate_routing():
             utilities.patch_eve('sites', instance['_id'], old_infra_payload, env=env)
             utilities.patch_eve('sites', instance['_id'], new_infra_payload)
 
-    if verified_instances['_meta']['total'] is not 0:
-        for instance in verified_instances['_items']:
-            utilities.patch_eve('sites', instance['_id'], old_infra_payload, env=env)
-            utilities.patch_eve('sites', instance['_id'], new_infra_payload)
 
 @celery.task
 def saml_create():
@@ -1227,6 +1225,7 @@ def saml_create():
     except Exception as error:
         log.error('SAML Database creation failed | %s', error)
         raise
+
 
 @celery.task
 def saml_delete():

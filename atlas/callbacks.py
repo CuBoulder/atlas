@@ -66,6 +66,7 @@ def pre_patch_sites(request, payload):
         log.error('sites | PATCH | Pre patch callback | Protected path')
         abort(409, 'Error: Cannot use this path, it is on the protected list.')
 
+
 def pre_put_sites(request, payload):
     """
     :param request: flask.request object

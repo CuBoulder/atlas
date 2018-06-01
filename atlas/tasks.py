@@ -1089,4 +1089,4 @@ def heal_instance(instance):
     """
     log.info('Heal | Instance | Instance - %s', instance)
     if instance['code'].get('package'):
-        execute(fabric_tasks.site_package_update, item=instance)
+        execute(fabric_tasks.site_package_update, site=instance)

@@ -1080,3 +1080,13 @@ def remove_extra_backups():
             # Remove the oldest
             log.info('Delete extra backup | backup - %s', item)
             utilities.delete_eve('backup', item)
+
+
+@celery.task
+def heal_instance(instance):
+    """
+    Re deploy packages
+    """
+    log.info('Heal | Instance | Instance - %s', instance)
+    if instance['code'].get('package'):
+        execute(fabric_tasks.site_package_update, item=instance)

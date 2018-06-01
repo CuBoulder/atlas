@@ -157,6 +157,36 @@ def sites_statistics():
     return response
 
 
+@app.route('/sites/<string:site_id>/heal_packages', methods=['POST'])
+# TODO: Test what happens with 404 for site_id
+@requires_auth('sites')
+def heal_instance(site_id):
+    """
+    Create a backup of an instance.
+    :param machine_name: id of instance to restore
+    """
+    app.logger.debug('Site | Heal | Site ID - %s', site_id)
+    instance = utilities.get_single_eve('sites', site_id)
+    tasks.heal_instance.delay(instance)
+    return make_response('Instance heal has been initiated.')
+
+
+@app.route('/commands/heal_instance_packages', methods=['POST'])
+def get_command():
+    """
+    Get a single command.
+    :param machine_name: command to return a definition for.
+    """
+    # Loop through the commands list and grab the one we want
+    app.logger.debug('Command | Execute | Heal instances')
+    instance_query = 'where={"type":"express","f5only":false}'
+    instances = utilities.get_eve('sites', instance_query)
+    for instance in instances['_items']:
+        tasks.heal_instance.delay(instance)
+        continue
+    return make_response('Command "Heal Instances" has been initiated.')
+
+
 # Specific callbacks.
 # Use pre event hooks if there is a chance you want to abort.
 # Use DB hooks if you want to modify data on the way in.

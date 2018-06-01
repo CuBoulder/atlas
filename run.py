@@ -179,7 +179,7 @@ def get_command():
     """
     # Loop through the commands list and grab the one we want
     app.logger.debug('Command | Execute | Heal instances')
-    instance_query = 'where={"type":"express","f5only":false}'
+    instance_query = 'where={"type":"express","f5only":false}&max_results=2000'
     instances = utilities.get_eve('sites', instance_query)
     for instance in instances['_items']:
         tasks.heal_instance.delay(instance)

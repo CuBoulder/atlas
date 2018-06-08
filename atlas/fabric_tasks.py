@@ -427,8 +427,11 @@ def clear_php_cache():
 def update_settings_file(site):
     log.info('fabric_tasks | Update Settings File | Site - %s', site['sid'])
     try:
-        # Change permissions to allow us to update the template
-        run("chmod u+w {0}/{1}/{1}/sites/default/settings.php".format(SITES_CODE_ROOT, site['sid']))
+        # If the settings file exists, change permissions to allow us to update the template.
+        settings_file = "{0}/{1}/{1}/sites/default/settings.php".format(
+            SITES_CODE_ROOT, site['sid'])
+        if exists(settings_file):
+            run("chmod u+w {0}".format(settings_file))
         execute(create_settings_files, site=site)
     except FabricException as error:
         log.error('fabric_tasks | Update Settings File | Site - %s | Error - %s',

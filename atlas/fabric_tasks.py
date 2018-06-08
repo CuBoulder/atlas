@@ -364,7 +364,7 @@ def site_remove(site):
     # Fix perms to allow settings file to be removed.
     settings_file = "{0}/{1}/{1}/sites/default/settings.php".format(SITES_CODE_ROOT, site['sid'])
     if exists(settings_file):
-        run("chmod u+w {0}".format(settings_file)
+        run("chmod u+w {0}".format(settings_file))
 
     remove_symlink(web_directory)
     remove_symlink(web_directory_path)
@@ -430,8 +430,7 @@ def update_settings_file(site):
     log.info('fabric_tasks | Update Settings File | Site - %s', site['sid'])
     try:
         # If the settings file exists, change permissions to allow us to update the template.
-        settings_file = "{0}/{1}/{1}/sites/default/settings.php".format(
-            SITES_CODE_ROOT, site['sid'])
+        settings_file = "{0}/{1}/{1}/sites/default/settings.php".format(SITES_CODE_ROOT, site['sid'])
         if exists(settings_file):
             run("chmod u+w {0}".format(settings_file))
         execute(create_settings_files, site=site)

@@ -841,6 +841,10 @@ BACKUP_SCHEMA = {
 }
 
 DRUSH_SCHEMA = {
+    'title': {
+        'type': 'string',
+        'required': True,
+    },
     'commands': {
         'type': 'list',
         'schema': {

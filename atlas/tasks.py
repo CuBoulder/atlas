@@ -438,7 +438,9 @@ def site_update(site, updates, original):
         if 'package' in updates['code']:
             log.debug('Site update | ID - %s | Found package changes', site['_id'])
             execute(fabric_tasks.site_package_update, site=site)
-            code_to_update.append(str(updates['code']['package']))
+            # Get a single string of all packages.
+            for code in updates['code']['package']:
+                code_to_update.append(str(code))
         if code_to_update:
             log.debug('Site update | ID - %s | Deploy | Code to update - %s', site['_id'],
                       code_to_update)
@@ -550,6 +552,7 @@ def site_update(site, updates, original):
     # Get a host to run single server commands on.
     host = utilities.single_host()
     # We want to run these commands in this specific order.
+    log.info('Site Update | Closing operations commands | PHP Cache clear - %s | Registry rebuild - %s | Drush updb - %s | Drush cc - %s', deploy_php_cache_clear, deploy_registry_rebuild, deploy_update_database, deploy_drupal_cache_clear)
     if deploy_php_cache_clear:
         execute(fabric_tasks.clear_php_cache)
     if deploy_registry_rebuild:

@@ -841,7 +841,7 @@ BACKUP_SCHEMA = {
 }
 
 DRUSH_SCHEMA = {
-    'title': {
+    'label': {
         'type': 'string',
         'required': True,
     },

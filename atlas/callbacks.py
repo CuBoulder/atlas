@@ -11,22 +11,24 @@ from bson import ObjectId
 
 from atlas import tasks
 from atlas import utilities
-from atlas.config import (ATLAS_LOCATION, DEFAULT_CORE, DEFAULT_PROFILE, SERVICE_ACCOUNT_USERNAME)
+from atlas.config import (ATLAS_LOCATION, DEFAULT_CORE, DEFAULT_PROFILE, SERVICE_ACCOUNT_USERNAME,
+                          PROTECTED_PATHS)
 
 # Setup a sub-logger. See tasks.py for longer comment.
 log = logging.getLogger('atlas.callbacks')
 
 
 # Callbacks
-def pre_post_callback(resource, request):
+def pre_post(resource, request):
     """
     :param resource: resource accessed
     :param request: flask.request object
     """
-    log.debug('POST | Resource - %s | %s', resource, request)
+    log.debug('POST | Resource - %s | Request - %s, | request.data - %s',
+              resource, str(request), request.data)
 
 
-def pre_post_sites_callback(request):
+def pre_post_sites(request):
     """
     :param request: flask.request object
     """
@@ -47,8 +49,37 @@ def pre_post_sites_callback(request):
         log.error('sites | POST | Pre post callback | No current profile')
         abort(409, 'Error: There is no current profile.')
 
+    # Check for a protected path.
+    if json.loads(request.data).get('path') and json.loads(request.data)['path'] in PROTECTED_PATHS:
+        log.error('sites | POST | Pre post callback | Protected path')
+        abort(409, 'Error: Cannot use this path, it is on the protected list.')
 
-def pre_delete_code_callback(request, lookup):
+
+def pre_patch_sites(request, payload):
+    """
+    :param request: flask.request object
+    """
+    log.debug('sites | PATCH | Pre patch callback | Payload - %s', payload)
+
+    # Check for a protected path.
+    if 'path' in json.loads(request.data) and json.loads(request.data)['path'] in PROTECTED_PATHS:
+        log.error('sites | PATCH | Pre patch callback | Protected path')
+        abort(409, 'Error: Cannot use this path, it is on the protected list.')
+
+
+def pre_put_sites(request, payload):
+    """
+    :param request: flask.request object
+    """
+    log.debug('sites | PUT | Pre put callback | Payload - %s', payload)
+
+    # Check for a protected path.
+    if 'path' in json.loads(request.data) and json.loads(request.data)['path'] in PROTECTED_PATHS:
+        log.error('sites | PUT | Pre put callback | Protected path')
+        abort(409, 'Error: Cannot use this path, it is on the protected list.')
+
+
+def pre_delete_code(request, lookup):
     """
     Make sure no sites are using the code.
 
@@ -82,7 +113,7 @@ def pre_delete_code_callback(request, lookup):
         abort(409, 'A conflict happened while processing the request. Code item is in use by one or more sites.')
 
 
-def on_insert_sites_callback(items):
+def on_insert_sites(items):
     """
     Assign a sid, an update group, db_key, any missing code, and date fields.
 
@@ -91,7 +122,7 @@ def on_insert_sites_callback(items):
     log.debug(items)
     for item in items:
         log.debug(item)
-        if item['type'] == 'express' and not item['f5only']:
+        if item['type'] == 'express':
             if not item.get('sid'):
                 item['sid'] = 'p1' + sha1(utilities.randomstring()).hexdigest()[0:10]
             if not item.get('path'):
@@ -117,7 +148,7 @@ def on_insert_sites_callback(items):
             item['dates'] = json.loads(date_json)
 
 
-def on_inserted_sites_callback(items):
+def on_inserted_sites(items):
     """
     Provision Express instances.
 
@@ -127,7 +158,7 @@ def on_inserted_sites_callback(items):
     for item in items:
         log.debug(item)
         log.debug('site | Site object created | site - %s', item)
-        if item['type'] == 'express' and not item['f5only']:
+        if item['type'] == 'express':
             # Create statistics item
             statistics_payload = {}
             # Need to get the string out of the ObjectID.
@@ -139,7 +170,7 @@ def on_inserted_sites_callback(items):
             tasks.site_provision.delay(item)
 
 
-def on_insert_code_callback(items):
+def on_insert_code(items):
     """
     Deploy code onto servers as the items are created.
 
@@ -171,7 +202,7 @@ def on_insert_code_callback(items):
         tasks.code_deploy.delay(item)
 
 
-def pre_delete_sites_callback(request, lookup):
+def pre_delete_sites(request, lookup):
     """
     Remove site from servers right before the item is removed.
 
@@ -183,7 +214,7 @@ def pre_delete_sites_callback(request, lookup):
     tasks.site_remove.delay(site)
 
 
-def on_delete_item_code_callback(item):
+def on_delete_item_code(item):
     """
     Remove code from servers right before the item is removed.
 
@@ -193,7 +224,7 @@ def on_delete_item_code_callback(item):
     tasks.code_remove.delay(item)
 
 
-def on_update_code_callback(updates, original):
+def on_update_code(updates, original):
     """
     Update code on the servers as the item is updated.
 
@@ -240,7 +271,7 @@ def on_update_code_callback(updates, original):
         tasks.code_update.delay(updated_item, original)
 
 
-def on_update_sites_callback(updates, original):
+def on_update_sites(updates, original):
     """
     Update an instance.
 
@@ -249,7 +280,7 @@ def on_update_sites_callback(updates, original):
     """
     log.debug('sites | Update | Updates - %s | Original - %s', updates, original)
     site_type = updates['type'] if updates.get('type') else original['type']
-    if site_type == 'express':
+    if site_type in ['express']:
         site = original.copy()
         site.update(updates)
         # Only need to rewrite the nested dicts if they got updated.
@@ -279,24 +310,17 @@ def on_update_sites_callback(updates, original):
 
                 updates['dates'] = json.loads(date_json)
 
+        if updates.get('verification'):
+            if updates.get('verification_status'):
+                if updates['verification']['verification_status'] == 'approved':
+                    date_json = '{{"verification":"{0} GMT"}}'.format(updates['_updated'])
+                    updates['dates'] = json.loads(date_json)
+
         log.debug('sites | Update | Ready for Celery | Site - %s | Updates - %s', site, updates)
         tasks.site_update.delay(site=site, updates=updates, original=original)
 
 
-def on_update_commands_callback(updates, original):
-    """
-    Run commands when API endpoints are called.
-
-    :param updates:
-    :param original:
-    """
-    item = original.copy()
-    item.update(updates)
-    log.debug('command | Update | Item - %s | Update - %s | Original - %s', item, updates, original)
-    tasks.command_prepare.delay(item)
-
-
-def on_updated_code_callback(updates, original):
+def on_updated_code(updates, original):
     """
     Find instances that use this code asset and re-add them.
 

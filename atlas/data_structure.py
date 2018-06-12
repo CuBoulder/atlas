@@ -33,13 +33,12 @@ ENFORCE_IF_MATCH = True
 
 # Definitions of schemas for Items. Schema is based on Cerberus grammar
 # https://github.com/nicolaiarocci/cerberus.
-#
 
 # Mongo creates the following: '_created', '_updated', '_etag', and '_id'.
 # We don't use those fields in our logic because want to be able to move or
 # recreate a record without losing any information.
 
-# Code schema. Defines a code asset that can be applied to a site.
+# Code schema. Defines a code asset that can be applied to an instance.
 # We nest in 'meta' to allow us to check for a unique combo
 CODE_SCHEMA = {
     'meta': {
@@ -58,7 +57,7 @@ CODE_SCHEMA = {
             },
             'code_type': {
                 'type': 'string',
-                'allowed': ['library', 'theme', 'module', 'core', 'profile'],
+                'allowed': ['library', 'theme', 'module', 'core', 'profile', 'static'],
                 'required': True,
             },
             'label': {
@@ -164,7 +163,7 @@ SITES_SCHEMA = {
     },
     'type': {
         'type': 'string',
-        'allowed':  ['express', 'legacy', 'homepage'],
+        'allowed':  ['express', 'legacy'],
         'default': 'express',
     },
     'status': {
@@ -192,20 +191,8 @@ SITES_SCHEMA = {
             'prod'
         ],
     },
-    'pool': {
-        'type': 'string',
-        'allowed': [
-            'poolb-express',
-            'poolb-homepage',
-            'WWWLegacy'],
-        'default': 'poolb-express',
-    },
     'update_group': {
         'type': 'integer',
-    },
-    'f5only': {
-        'type': 'boolean',
-        'default': False
     },
     'settings': {
         'type': 'dict',
@@ -283,6 +270,24 @@ SITES_SCHEMA = {
                 'type': 'datetime',
                 'nullable': True,
             },
+            'migration': {
+                'type': 'datetime',
+            },
+            'verification': {
+                'type': 'datetime',
+            },
+        },
+    },
+    'verification': {
+        'type': 'dict',
+        'schema': {
+            'verification_status': {
+                'type': 'string',
+                'allowed': ['not_ready', 'ready', 'failed', 'approved'],
+            },
+            'verification_user': {
+                'type': 'string',
+            },
         },
     },
     'statistics': {
@@ -344,6 +349,7 @@ STATISTICS_SCHEMA = {
             'person': {'type': 'integer', 'nullable': True},
             'person_list_page': {'type': 'integer', 'nullable': True},
             'photo_gallery': {'type': 'integer', 'nullable': True},
+            'full_html': {'type': 'integer', 'nullable': True},
         },
     },
     'nodes_other': {
@@ -387,6 +393,7 @@ STATISTICS_SCHEMA = {
             'facebook_activity': {'type': 'integer', 'nullable': True},
             'facebook_like_button': {'type': 'integer', 'nullable': True},
             'twitter_block': {'type': 'integer', 'nullable': True},
+            'full_html': {'type': 'integer', 'nullable': True},
         },
     },
     'beans_other': {
@@ -506,7 +513,7 @@ STATISTICS_SCHEMA = {
                 'type': 'dict',
                 'nullable': True,
                 'schema': {
-                    'edit_my_content': {
+                    'site_owner': {
                         'type': 'list',
                         'nullable': True,
                     },
@@ -514,7 +521,27 @@ STATISTICS_SCHEMA = {
                         'type': 'list',
                         'nullable': True,
                     },
-                    'site_contact': {
+                    'edit_my_content': {
+                        'type': 'list',
+                        'nullable': True,
+                    },
+                    'site_editor': {
+                        'type': 'list',
+                        'nullable': True,
+                    },
+                    'access_manager': {
+                        'type': 'list',
+                        'nullable': True,
+                    },
+                    'campaign_manager': {
+                        'type': 'list',
+                        'nullable': True,
+                    },
+                    'configuration_manager': {
+                        'type': 'list',
+                        'nullable': True,
+                    },
+                    'form_manager': {
                         'type': 'list',
                         'nullable': True,
                     },
@@ -524,7 +551,7 @@ STATISTICS_SCHEMA = {
                 'type': 'dict',
                 'nullable': True,
                 'schema': {
-                    'edit_my_content': {
+                    'site_owner': {
                         'type': 'list',
                         'nullable': True,
                     },
@@ -532,7 +559,27 @@ STATISTICS_SCHEMA = {
                         'type': 'list',
                         'nullable': True,
                     },
-                    'site_contact': {
+                    'edit_my_content': {
+                        'type': 'list',
+                        'nullable': True,
+                    },
+                    'site_editor': {
+                        'type': 'list',
+                        'nullable': True,
+                    },
+                    'access_manager': {
+                        'type': 'list',
+                        'nullable': True,
+                    },
+                    'campaign_manager': {
+                        'type': 'list',
+                        'nullable': True,
+                    },
+                    'configuration_manager': {
+                        'type': 'list',
+                        'nullable': True,
+                    },
+                    'form_manager': {
                         'type': 'list',
                         'nullable': True,
                     },
@@ -546,7 +593,7 @@ STATISTICS_SCHEMA = {
                 'type': 'dict',
                 'nullable': True,
                 'schema': {
-                    'edit_my_content': {
+                    'site_owner': {
                         'type': 'integer',
                         'nullable': True,
                     },
@@ -554,7 +601,27 @@ STATISTICS_SCHEMA = {
                         'type': 'integer',
                         'nullable': True,
                     },
-                    'site_contact': {
+                    'edit_my_content': {
+                        'type': 'integer',
+                        'nullable': True,
+                    },
+                    'site_editor': {
+                        'type': 'integer',
+                        'nullable': True,
+                    },
+                    'access_manager': {
+                        'type': 'integer',
+                        'nullable': True,
+                    },
+                    'campaign_manager': {
+                        'type': 'integer',
+                        'nullable': True,
+                    },
+                    'configuration_manager': {
+                        'type': 'integer',
+                        'nullable': True,
+                    },
+                    'form_manager': {
                         'type': 'integer',
                         'nullable': True,
                     },
@@ -731,25 +798,62 @@ STATISTICS_SCHEMA = {
     },
 }
 
-COMMANDS_SCHEMA = {
-    'name': {
+BACKUP_SCHEMA = {
+    'state': {
         'type': 'string',
-        'minlength': 3,
+        'allowed': ['pending', 'complete'],
+        'default': 'pending',
         'required': True,
     },
-    'command': {
-        'type': 'string',
-        'minlength': 3,
+    'site': {
+        'type': 'objectid',
+        'data_relation': {
+            'resource': 'sites',
+            'field': '_id',
+        },
         'required': True,
+    },
+    'site_version': {
+        'type': 'integer',
+        'required': True,
+    },
+    'backup_date': {
+        'type': 'datetime',
+    },
+    'backup_type': {
+        'type': 'string',
+        'allowed': ['on_demand', 'update', 'routine'],
+        'default': 'routine',
+        'required': True,
+    },
+    'files': {
+        'type': 'string',
+    },
+    'database': {
+        'type': 'string',
+    },
+    'created_by': {
+        'type': 'string',
+    },
+    'modified_by': {
+        'type': 'string',
+    },
+}
+
+DRUSH_SCHEMA = {
+    'commands': {
+        'type': 'list',
+        'schema': {
+            'type': 'string',
+            'minlength': 5,
+        },
+        'required': True,
+        'unique': True,
     },
     # String that is stored needs to be posted with Unicode character encodings
     'query': {
         'type': 'string',
         'minlength': 9,
-    },
-    'single_server': {
-        'type': 'boolean',
-        'required': True,
         'default': True,
     },
     'created_by': {
@@ -808,22 +912,29 @@ STATISTICS = {
     'schema': STATISTICS_SCHEMA,
 }
 
-# Command resource
-# Empty public_item_methods means that you can't call actual commands without authentication.
-# Anonymous users can list the commands, but not call them.
-COMMANDS = {
-    'item_title': 'commands',
+# Backup resource
+BACKUP = {
+    'item_title': 'backup',
     'public_methods': ['GET'],
-    'public_item_methods': [],
+    'public_item_methods': ['GET'],
+    'schema': BACKUP_SCHEMA,
+}
+
+# Drush resource
+DRUSH = {
+    'item_title': 'drush',
+    'public_methods': ['GET'],
+    'public_item_methods': ['GET'],
     'versioning': True,
-    'schema': COMMANDS_SCHEMA,
+    'schema': DRUSH_SCHEMA,
 }
 
 # Domain definition. Tells Eve what resources are available on this domain.
 DOMAIN = {
     'sites': SITES,
     'code': CODE,
-    'commands': COMMANDS,
+    'drush': DRUSH,
     'query': QUERY,
     'statistics': STATISTICS,
+    'backup': BACKUP,
 }

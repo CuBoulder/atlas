@@ -1,5 +1,29 @@
 # Change log
 
+## v2.2.0
+
+This release supports the new infrastructure.
+## v2.1.5
+
+Improves backup functionality, adds a logging url to the settings file
+
+Resolves:
+
+- &#35;463 Update stats for CuBoulder/express#2291
+
+## v2.1.4
+
+Resolves:
+
+- &#35;90 - Create resource for backups
+- &#35;431 - Support static assets.
+- &#35;428 - Add protected paths
+- &#35;303 - Pipe Atlas logs to Logstash
+- &#35;372 - Support new infrastructure
+- &#35;393 - Round robin commands
+- &#35;373 - Support pooling
+- &#35;370 - Switch to new homepage location
+
 ## v2.1.3
 
 Resolves:
@@ -23,6 +47,7 @@ Resolves:
 ## v2.1.0
 
 This release adds granular deployment options for code assets. The following required fields (with the noted defaults) have been added to code items:
+
 ```json
 "deploy": {
   "registry_rebuild": False,
@@ -30,20 +55,21 @@ This release adds granular deployment options for code assets. The following req
   "update_database": True
 }
 ```
+
 When a code item is added to an instance, the above drush commands will be run as indicated by the code asset. If multiple items are added, the commands will be run after all code is changed.
 
 Need to
 
-- Add a list of users to exclude from emails in config_local.py
-- Be able to run `sudo -u [webserver_user] drush` without a password.
+- Add a list of users to exclude from emails in `config_local.py`
+- Ensure `sudo -u [webserver_user] drush` can run without a password.
 
 Resolves:
 
 - &#35;95 Periodically check for unused code
 - &#35;304 As a Service Manager, need to be able to deploy profile updates without updb
-    - &#35;22 Add field for 'requires updb'
-    - &#35;311 Add field for 'requires registry rebuild'
-    - &#35;312 Add field for 'requires cache clear'
+  - &#35;22 Add field for 'requires updb'
+  - &#35;311 Add field for 'requires registry rebuild'
+  - &#35;312 Add field for 'requires cache clear'
 - &#35;330 During launch, drupal caches are cleared a lot
 - &#35;412 Return something like `Command [xx:xx:xx] 2 of 16 - Success` in Slack
 - &#35;10 Re-add packages to sites when changing meta data of a code item.
@@ -55,14 +81,14 @@ Resolves:
 
 Resolves:
 
-- &#35;406 Stats are getting deleted for available instances.
-- &#35;404 Fixed homepage cron command.
+- &#35;406 - Stats are getting deleted for available instances.
+- &#35;404 - Fixed homepage cron command.
 
 ## v2.0.2
 
 Resolves:
 
-- &#35;403 Bug with code labels in email messages.
+- &#35;403 - Bug with code labels in email messages.
 
 ## v2.0.1
 
@@ -74,17 +100,17 @@ This release restructures Atlas and allows the Eve portion to be run from the co
 
 Resolves:
 
-- &#35;371 Refactor code to run as a proper python application
-- &#35;329 Remove code dependencies Code
-- &#35;378 Switch from APC to OPCache clearing
-- &#35;331 Standardize logging structure
-- &#35;397 Homepage sitemap.xml includes P1
-- &#35;383 Pull stats from logs, not HTTP input
-- &#35;368 Bug in slack post Bug
-- &#35;391 Add `node_revision_total`
-- &#35;386 Update DB settings
-- &#35;200 Delete GSA code Instance
-- &#35;106 Check for meta uniqueness in code items
+- &#35;371 - Refactor code to run as a proper python application
+- &#35;329 - Remove code dependencies Code
+- &#35;378 - Switch from APC to OPCache clearing
+- &#35;331 - Standardize logging structure
+- &#35;397 - Homepage sitemap.xml includes P1
+- &#35;383 - Pull stats from logs, not HTTP input
+- &#35;368 - Bug in slack post Bug
+- &#35;391 - Add `node_revision_total`
+- &#35;386 - Update DB settings
+- &#35;200 - Delete GSA code Instance
+- &#35;106 - Check for meta uniqueness in code items
 
 ## v1.0.26
 
@@ -182,6 +208,7 @@ Resolves:
 - &#35;251 - Stuck pending instances not being removed
 - &#35;269 - Capture all bundles as typed or other
 - &#35;282 - Provision often fails, but the instance ends up 'available'. Settings files or DB creation fails. Switched to Fabric templating. Wrapped fabric commands in exception catching.
+- &#35;433 - Only update the f5 when working with legacy records
 
 ## v1.0.16
 

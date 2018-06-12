@@ -768,7 +768,7 @@ def cron_run(site):
     log.info('Site - %s | %s', site['sid'], site)
     start_time = time.time()
 
-    if site['type'] == 'express':
+    if site['path'] != 'homepage':
         uri = BASE_URLS[ENVIRONMENT] + '/' + site['path']
     else:
         # Homepage

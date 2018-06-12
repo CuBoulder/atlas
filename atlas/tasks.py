@@ -14,7 +14,6 @@ import requests
 from celery import Celery
 from celery.utils.log import get_task_logger
 from fabric.api import execute
-from bson import json_util
 
 from atlas import fabric_tasks
 from atlas import utilities

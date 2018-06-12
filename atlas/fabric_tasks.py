@@ -491,6 +491,29 @@ def command_run_single(site, command, warn_only=False):
 
 
 # We use a dynamic host list to round-robin, so you need to pass a host list when calling it.
+def correct_nfs_file_permissions(instance=None):
+    """
+    Correct the nfs mount file permissions for an instance
+    """
+    if instance:
+        log.info('Correct NFS File permissions | Instance - %s | Start', instance['sid'])
+        nfs_files_dir = '{0}/{1}/files'.format(NFS_MOUNT_LOCATION[ENVIRONMENT], instance['sid'])
+    else:
+        log.info('Correct NFS File permissions | All instances | Start')
+        nfs_files_dir = NFS_MOUNT_LOCATION[ENVIRONMENT]
+
+    with settings(warn_only=True):
+        run('find {0} -type f -or -type d -exec chgrp apache {{}} \\;'.format(nfs_files_dir))
+        run('find {0} -type f -exec chmod g+rw {{}} \\;'.format(nfs_files_dir))
+        run('find {0} -type d -exec chmod g+rws {{}} \\;'.format(nfs_files_dir))
+
+    if instance:
+        log.info('Correct NFS File permissions | Instance - %s | Complete', instance['sid'])
+    else:
+        log.info('Correct NFS File permissions | All instances | Complete')
+
+
+# We use a dynamic host list to round-robin, so you need to pass a host list when calling it.
 def update_database(site):
     """
     Run a updb

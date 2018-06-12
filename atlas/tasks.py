@@ -779,6 +779,7 @@ def cron_run(site):
         # Get a host to run this command on.
         host = utilities.single_host()
         execute(fabric_tasks.command_run_single, site=site, command=command, hosts=host)
+        execute(fabric_tasks.correct_nfs_file_permissions, instance=site, hosts=host)
     except CronException as error:
         log.error('Site - %s | Cron failed | Error - %s', site['sid'], error)
         raise
@@ -1167,6 +1168,21 @@ def heal_instance(instance):
     log.info('Heal | Instance | Instance - %s', instance)
     utilities.create_database(instance['sid'], instance['db_key'])
     execute(fabric_tasks.instance_heal, item=instance)
+
+
+@celery.task
+def correct_nfs_file_permissions(instance):
+    """
+    Verify code is correctly deployed.
+    """
+    log.info('Correct NFS file permissions | Instance - %s', instance)
+    try:
+        # Get a host to run this command on.
+        host = utilities.single_host()
+        execute(fabric_tasks.correct_nfs_file_permissions, site=instance, hosts=host)
+    except Exception as error:
+        log.error('Correct NFS file permissions | Instance - %s | Error', instance['sid'], error)
+        raise
 
 
 @celery.task(time_limit=2000)

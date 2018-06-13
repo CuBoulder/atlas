@@ -1022,7 +1022,7 @@ def update_f5():
         execute(fabric_tasks.update_f5)
 
 
-@celery.task
+@celery.task(time_limit=2000)
 def backup_create(site, backup_type):
     log.debug('Backup | Create | Site - %s', site)
     log.info('Backup | Create | Site - %s', site['_id'])
@@ -1080,3 +1080,13 @@ def remove_extra_backups():
             # Remove the oldest
             log.info('Delete extra backup | backup - %s', item)
             utilities.delete_eve('backup', item)
+
+
+@celery.task
+def heal_instance(instance):
+    """
+    Re deploy packages
+    """
+    log.info('Heal | Instance | Instance - %s', instance)
+    if instance['code'].get('package'):
+        execute(fabric_tasks.site_package_update, site=instance)

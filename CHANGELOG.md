@@ -1,5 +1,13 @@
 # Change log
 
+## v2.1.5
+
+Improves backup functionality, adds a logging url to the settings file
+
+Resolves:
+
+- &#35;463 Update stats for CuBoulder/express#2291
+
 ## v2.1.4
 
 Resolves:

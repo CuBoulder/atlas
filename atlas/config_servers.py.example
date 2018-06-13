@@ -141,3 +141,19 @@ LOAD_BALANCER_CONFIG_GROUP = {
     'test': 'lb-test1-2',
     'dev': 'lb-dev1-2',
 }
+
+ATLAS_LOGGING_URLS = {
+    'local': [],
+    'dev': [
+        "https://logs.example.com/",
+        "/report"
+    ],
+    'test': [
+        "https://logs.example.com/",
+        "/report"
+    ],
+    'prod': [
+        "https://logs.example.com/",
+        "/report"
+    ],
+}

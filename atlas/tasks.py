@@ -545,7 +545,7 @@ def site_update(site, updates, original):
     # Update settings file when migration is approved
     if updates.get('verification'):
         if updates['verification']['verification_status'] == 'approved':
-            log.debug('Verification approved')
+            log.info('Verification approved | Instance - %s', site['_id'])
             execute(fabric_tasks.update_settings_file, site=site)
             deploy_php_cache_clear = True
 
@@ -1205,6 +1205,19 @@ def import_backup(env, backup_id, target_instance):
     execute(fabric_tasks.import_backup, backup=backup.json(),
             target_instance=target, hosts=host, source_env=env)
 
+    migration_date = datetime.utcnow().strftime("%Y-%m-%d %H:%M:%S GMT")
+    payload = {
+        'verification': {'verification_status': 'ready'},
+        'dates': {'migration': migration_date}
+    }
+    utilities.patch_eve('sites', target['_id'], payload)
+    # Notify users that site is ready for verification
+    path = '{0}/{1}'.format(BASE_URLS[ENVIRONMENT], target['path'])
+    subject = 'Site ready to be reviewed - {0}'.format(path)
+    message = "Your instance has been migrated to the new infrastructure and is ready to be verified. Please visit your instance at {0} and verify it. Visit https://www.colorado.edu/webcentral/server-migration for more information about verification. After your instance is verified, it will be queued into the next Activation Batch (runs Monday thru Friday at 9am, 11am, 1pm, and 3pm).\n\n If the instance is not verified within 48 hours, it will be activated automatically. \n\n - Web Express Team.".format(path)
+    statistics = utilities.get_single_eve('statistics', target['statistics'])
+    site_owners = statistics['users']['email_address']['site_owner']
+    utilities.send_email(email_message=message, email_subject=subject, email_to=site_owners)
 
 @celery.task
 def migrate_routing():

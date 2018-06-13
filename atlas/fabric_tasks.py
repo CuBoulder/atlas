@@ -906,6 +906,7 @@ def import_backup(backup, target_instance, source_env=ENVIRONMENT):
             run('drush rr')
         run('drush en ucb_on_prem_hosting -y')
         run('drush elysia-cron run --ignore-time')
+        run('drush atst')
 
     run('rm {0}'.format(files_path))
     run('rm {0}'.format(database_path))

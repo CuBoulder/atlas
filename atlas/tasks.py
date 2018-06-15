@@ -681,12 +681,21 @@ def drush_prepare(drush_id, run=True):
     sites = utilities.get_eve('sites', site_query)
     log.debug('Drush | Prepare | Drush command - %s | Ran query - %s', drush_id, sites)
     if not sites['_meta']['total'] == 0 and run is True:
+        batch_id = datetime.datetime.now().timestamp()
         batch_count = 1
+        batch_log = 'Batch started | ID - {0} | Batch size - {1}'.format(
+            batch_id, str(sites['_meta']['total']))
+        log.info(batch_log)
         for site in sites['_items']:
             batch_string = str(batch_count) + ' of ' + str(sites['_meta']['total'])
-            drush_command_run.delay(site=site, command_list=drush_command['commands'], user=drush_command['modified_by'], batch_id=datetime.now(), batch_count=batch_string)
+            drush_command_run.delay(
+                site=site,
+                command_list=drush_command['commands'],
+                user=drush_command['modified_by'],
+                batch_id=batch_id,
+                batch_count=batch_string)
             batch_count += 1
-        return 'Batch started'
+        return batch_log
     else:
         return sites
 

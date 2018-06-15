@@ -632,39 +632,6 @@ def site_remove(site):
 
         execute(fabric_tasks.site_remove, site=site)
 
-    slack_text = 'Site Remove - Success - {0}/{1}'.format(BASE_URLS[ENVIRONMENT], site['path'])
-    slack_color = 'good'
-    slack_link = '{0}/{1}'.format(BASE_URLS[ENVIRONMENT], site['path'])
-
-    slack_payload = {
-        "text": slack_text,
-        "username": 'Atlas',
-        "attachments": [
-            {
-                "fallback": slack_text,
-                "color": slack_color,
-                "fields": [
-                    {
-                        "title": "Instance",
-                        "value": slack_link,
-                        "short": False
-                    },
-                    {
-                        "title": "Environment",
-                        "value": ENVIRONMENT,
-                        "short": True
-                    },
-                    {
-                        "title": "Delete requested by",
-                        "value": site['modified_by'],
-                        "short": True
-                    }
-                ],
-            }
-        ],
-    }
-    utilities.post_to_slack_payload(slack_payload)
-
 
 @celery.task
 def drush_prepare(drush_id, run=True):

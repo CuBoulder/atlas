@@ -12,7 +12,7 @@ from bson import ObjectId
 from atlas import tasks
 from atlas import utilities
 from atlas.config import (ATLAS_LOCATION, DEFAULT_CORE, DEFAULT_PROFILE, SERVICE_ACCOUNT_USERNAME,
-                          PROTECTED_PATHS)
+                          PROTECTED_PATHS, BASE_URLS, ENVIRONMENT)
 
 # Setup a sub-logger. See tasks.py for longer comment.
 log = logging.getLogger('atlas.callbacks')
@@ -402,3 +402,52 @@ def pre_replace(resource, item, original):
         if username is not None:
             if username is not SERVICE_ACCOUNT_USERNAME:
                 item['modified_by'] = username
+
+
+def on_delete_item(resource, item):
+    """
+    On DELETE, get the username from the request and add it to the record if one was not provided.
+    """
+    # Only update if a username was not provided.
+    log.debug('On Delete | Update modified user')
+    username = g.get('username', None)
+    if username is not None:
+        item['modified_by'] = username
+
+
+def on_deleted_item(resource, item):
+    """
+    After the DELETE, notify slack
+    """
+    slack_text = 'Site Remove - Success - {0}/{1}'.format(BASE_URLS[ENVIRONMENT], item['path'])
+    slack_color = 'good'
+    slack_link = '{0}/{1}'.format(BASE_URLS[ENVIRONMENT], item['path'])
+
+    slack_payload = {
+        "text": slack_text,
+        "username": 'Atlas',
+        "attachments": [
+            {
+                "fallback": slack_text,
+                "color": slack_color,
+                "fields": [
+                    {
+                        "title": "Instance",
+                        "value": slack_link,
+                        "short": False
+                    },
+                    {
+                        "title": "Environment",
+                        "value": ENVIRONMENT,
+                        "short": True
+                    },
+                    {
+                        "title": "Delete requested by",
+                        "value": item['modified_by'],
+                        "short": True
+                    }
+                ],
+            }
+        ],
+    }
+    utilities.post_to_slack_payload(slack_payload)

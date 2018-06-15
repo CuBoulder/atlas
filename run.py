@@ -268,6 +268,8 @@ app.on_delete_item_code += callbacks.on_delete_item_code
 app.on_insert += callbacks.pre_insert
 app.on_update += callbacks.pre_update
 app.on_replace += callbacks.pre_replace
+app.on_delete_item += callbacks.on_delete_item
+app.on_deleted_item += callbacks.on_deleted_item
 
 
 @app.errorhandler(409)

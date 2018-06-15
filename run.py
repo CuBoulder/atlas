@@ -183,23 +183,6 @@ def restore_backup(backup_id):
     return response
 
 
-@app.route('/backup/<string:backup_id>/download', methods=['GET'])
-# TODO: Test what happens with 404 for backup_id
-@requires_auth('backup')
-def download_backup(backup_id):
-    """
-    Return URLs to download the database and files
-    """
-    app.logger.info('Backup | Download | ID - %s', backup_id)
-    backup_record = utilities.get_single_eve('backup', backup_id)
-    app.logger.debug('Backup | Download | Backup record - %s', backup_record)
-    urls = {
-        'files': '{0}/download/{1}'.format(API_URLS[ENVIRONMENT], backup_record['files']),
-        'db': '{0}/download/{1}'.format(API_URLS[ENVIRONMENT], backup_record['database'])
-    }
-    return jsonify(result=urls)
-
-
 @app.route('/sites/<string:site_id>/backup', methods=['POST'])
 # TODO: Test what happens with 404 for site_id
 @requires_auth('backup')
@@ -285,6 +268,8 @@ app.on_delete_item_code += callbacks.on_delete_item_code
 app.on_insert += callbacks.pre_insert
 app.on_update += callbacks.pre_update
 app.on_replace += callbacks.pre_replace
+app.on_delete_item += callbacks.on_delete_item
+app.on_deleted_item += callbacks.on_deleted_item
 
 
 @app.errorhandler(409)

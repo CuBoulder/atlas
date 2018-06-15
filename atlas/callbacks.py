@@ -431,21 +431,9 @@ def on_deleted_item(resource, item):
                 "fallback": slack_text,
                 "color": slack_color,
                 "fields": [
-                    {
-                        "title": "Instance",
-                        "value": slack_link,
-                        "short": False
-                    },
-                    {
-                        "title": "Environment",
-                        "value": ENVIRONMENT,
-                        "short": True
-                    },
-                    {
-                        "title": "Delete requested by",
-                        "value": item['modified_by'],
-                        "short": True
-                    }
+                    {"title": "Instance", "value": slack_link, "short": False},
+                    {"title": "Environment", "value": ENVIRONMENT, "short": True},
+                    {"title": "Delete requested by", "value": item['modified_by'], "short": True}
                 ],
             }
         ],

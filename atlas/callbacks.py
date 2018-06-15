@@ -209,9 +209,18 @@ def pre_delete_sites(request, lookup):
     :param request: flask.request object
     :param lookup:
     """
-    log.debug('sites | Pre Delete | lookup - %s', lookup)
-    site = utilities.get_single_eve('sites', lookup['_id'])
-    tasks.site_remove.delay(site)
+    log.debug('Instances | Pre Delete | lookup - %s', lookup)
+    instance = utilities.get_single_eve('sites', lookup['_id'])
+    log.debug('Instances | Pre Delete | instance - %s', instance)
+
+    # Check if instance is launched.
+    if not instance['status'] in ['launched', 'launching']:
+        log.debug('Instances | Pre Delete | instance - %s | Instance state - %s | Okay to delete', instance, instance['status'])
+        tasks.site_remove.delay(instance)
+    else:
+        log.error('Instances | Delete | instance - %s | Instance is launched or launching',
+                  instance['_id'])
+        abort(409, 'Instance is launched or launching. To delete, take instance down first.')
 
 
 def on_delete_item_code(item):

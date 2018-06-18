@@ -503,9 +503,9 @@ def correct_nfs_file_permissions(instance=None):
         nfs_files_dir = NFS_MOUNT_LOCATION[ENVIRONMENT]
 
     with settings(warn_only=True):
-        run('find {0} -type f -or -type d -exec chgrp apache {{}} \\;'.format(nfs_files_dir))
-        run('find {0} -type f -exec chmod g+rw {{}} \\;'.format(nfs_files_dir))
-        run('find {0} -type d -exec chmod g+rws {{}} \\;'.format(nfs_files_dir))
+        run('find {0} -type f -or -type d -not -group {1} -exec chgrp {1} {{}} \\;'.format(nfs_files_dir, WEBSERVER_USER_GROUP))
+        run('find {0} -type f -user {1} -exec chmod g+rw {{}} \\;'.format(nfs_files_dir, SSH_USER))
+        run('find {0} -type d -user {1} -exec chmod g+rws {{}} \\;'.format(nfs_files_dir, SSH_USER))
 
     if instance:
         log.info('Correct NFS File permissions | Instance - %s | Complete', instance['sid'])

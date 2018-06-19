@@ -648,7 +648,7 @@ def drush_prepare(drush_id, run=True):
     sites = utilities.get_eve('sites', site_query)
     log.debug('Drush | Prepare | Drush command - %s | Ran query - %s', drush_id, sites)
     if not sites['_meta']['total'] == 0 and run is True:
-        batch_id = datetime.datetime.now().timestamp()
+        batch_id = time.time()
         batch_count = 1
         batch_log = 'Batch started | ID - {0} | Batch size - {1}'.format(
             batch_id, str(sites['_meta']['total']))
@@ -969,11 +969,47 @@ def verify_statistics():
 
 
 @celery.task
-def backup_create(site, backup_type):
-    log.debug('Backup | Create | Site - %s', site)
-    log.info('Backup | Create | Site - %s', site['_id'])
+def backup_instances_all(backup_type='routine'):
+    log.info('Backup all instances')
+    # TODO: Max results
+    statistics = utilities.get_eve(
+        'statistics', 'where={"status":{"$in":["installed","launched"]},"days_since_last_edit":0}')
+    batch_id = time.time()
+    if not statistics['_meta']['total'] == 0:
+        for statistic in statistics['_items']:
+            site = utilities.get_single_eve('sites', statistic['site'])
+            backup_create.delay(site=site, backup_type=backup_type, batch=batch_id)
+    # Report to slack
+    log.info('Atlas operational statistic | Batch - %s | Routine backups - %s',
+             batch_id, statistics['_meta']['total'])
+
+    slack_fallback = '{0} {1} backups started'.format(statistics['_meta']['total'], backup_type)
+    slack_color = 'good'
+    slack_payload = {
+        "text": 'Backups started',
+        "username": 'Atlas',
+        "attachments": [
+            {
+                "fallback": slack_fallback,
+                "color": slack_color,
+                "fields": [
+                    {"title": "Environment", "value": ENVIRONMENT, "short": True},
+                    {"title": "Backup Type", "value": backup_type, "short": True},
+                    {"title": "Count", "value": statistics['_meta']['total'], "short": True}
+                ],
+            }
+        ],
+    }
+    utilities.post_to_slack_payload(slack_payload)
+
+
+@celery.task
+def backup_create(site, backup_type, batch=None):
+    log.debug('Backup | Create | Batch - %s | Site - %s', batch, site)
+    log.info('Backup | Create | Batch - %s | Site - %s', batch, site['_id'])
     host = utilities.single_host()
     execute(fabric_tasks.backup_create, site=site, backup_type=backup_type, hosts=host)
+    log.info('Backup | Create | Batch - %s | Site - %s | Backup finished', batch, site['_id'])
 
 
 @celery.task
@@ -989,13 +1025,13 @@ def backup_restore(backup_record, original_instance, package_list):
 @celery.task
 def remove_old_backups():
     """
-    Delete backups older than 90 days.
+    Delete backups older than 30 days.
     """
-    time_ago = datetime.utcnow() - timedelta(days=90)
+    time_ago = datetime.utcnow() - timedelta(days=30)
     backup_query = 'where={{"_created":{{"$lte":"{0}"}}}}&max_results=2000'.format(
         time_ago.strftime("%Y-%m-%d %H:%M:%S GMT"))
     backups = utilities.get_eve('backup', backup_query)
-    # Loop through and remove sites that are more than 90 days old.
+    # Loop through and remove sites that are more than 30 days old.
     for backup in backups['_items']:
         log.info('Delete old backup | backup - %s', backup)
         utilities.delete_eve('backup', backup['_id'])
@@ -1008,7 +1044,7 @@ def remove_extra_backups():
     Delete extra backups, we only want to keep 5 per instance.
     """
     # Get all backups
-    backups = utilities.get_eve('backup', 'max_results=2000')
+    backups = utilities.get_eve('backup', 'max_results=10000')
     instance_ids = []
     for item in backups['_items']:
         instance_ids.append(item['site'])
@@ -1020,13 +1056,18 @@ def remove_extra_backups():
     log.info('Delete extra backups | High Count - %s', high_count)
     if high_count:
         for item in high_count:
-            # Get a list of backups for this instance, sorted by age
-            instance_backup_query = 'where={{"site":"{0}"}}&sort=[("_created", -1)]'.format(item)
+            # Get a list of backups for this instance, sorted by age (oldest first)
+            instance_backup_query = 'where={{"site":"{0}"}}&sort=[("_created",1)]'.format(item)
             instance_backups = utilities.get_eve('backup', instance_backup_query)
             log.info('Delete extra backups | List of backups - %s', instance_backups)
             # Remove the oldest
-            log.info('Delete extra backup | backup - %s', item)
-            utilities.delete_eve('backup', item)
+            backup_count = instance_backups['_meta']['total']
+            for back_to_remove in instance_backups['_items']:
+                if backup_count > 5:
+                    log.info('Delete extra backups | Backup count - %s', backup_count)
+                    log.info('Delete extra backup | Backup to remove - %s', back_to_remove['_id'])
+                    utilities.delete_eve('backup', back_to_remove['_id'])
+                    backup_count -= 1
 
 
 @celery.task

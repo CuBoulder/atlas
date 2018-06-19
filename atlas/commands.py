@@ -40,5 +40,9 @@ COMMANDS = [
     {
         'machine_name': u'correct_nfs_file_permissions',
         'description': u'Correct the group file and directory permissions for an instance.',
+    },
+    {
+        'machine_name': u'backup_all_instances',
+        'description': u'Start the process of generating an On Demand backup for all instances.',
     }
 ]

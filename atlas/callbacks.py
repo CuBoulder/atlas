@@ -424,7 +424,7 @@ def on_delete_item(resource, item):
         item['modified_by'] = username
 
 
-def on_deleted_item(resource, item):
+def on_deleted_item_sites(item):
     """
     After the DELETE, notify slack
     """

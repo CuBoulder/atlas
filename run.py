@@ -113,6 +113,8 @@ def get_command(machine_name):
             for instance in instances['_items']:
                 tasks.correct_nfs_file_permissions.delay(instance)
                 continue
+        elif command == 'backup_all_instances':
+            tasks.backup_instances_all.delay(backup_type='on_demand')
         return make_response('Command "{0}" has been initiated.'.format(command))
 
 
@@ -269,7 +271,7 @@ app.on_insert += callbacks.pre_insert
 app.on_update += callbacks.pre_update
 app.on_replace += callbacks.pre_replace
 app.on_delete_item += callbacks.on_delete_item
-app.on_deleted_item += callbacks.on_deleted_item
+app.on_deleted_sites += callbacks.on_deleted_item_sites
 
 
 @app.errorhandler(409)

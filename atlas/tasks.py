@@ -1039,7 +1039,6 @@ def remove_old_backups():
 
 @celery.task
 def remove_extra_backups():
-    # TODO: Finish this.
     """
     Delete extra backups, we only want to keep 5 per instance.
     """
@@ -1068,6 +1067,38 @@ def remove_extra_backups():
                     log.info('Delete extra backup | Backup to remove - %s', back_to_remove['_id'])
                     utilities.delete_eve('backup', back_to_remove['_id'])
                     backup_count -= 1
+
+
+@celery.task
+def report_routine_backups():
+    """
+    Report count of complete routine backups in the last 24 hours.
+    """
+    time_ago = datetime.utcnow() - timedelta(hours=24)
+    query = 'where={{"status":"complete","type":"routine","_created":{{"$lte":"{0}"}}}}'.format(
+        time_ago.strftime("%Y-%m-%d %H:%M:%S GMT"))
+    backups = utilities.get_eve('backup', query)
+    log.info('Atlas operational statistic | Complete routine backups in last 24 hours - %s',
+             backups['_meta']['total'])
+
+    slack_fallback = '{0} complete routine backups in last 24 hours'.format(
+        backups['_meta']['total'])
+    slack_color = 'good'
+    slack_payload = {
+        "text": 'Report - Routine backups in last 24 hours.',
+        "username": 'Atlas',
+        "attachments": [
+            {
+                "fallback": slack_fallback,
+                "color": slack_color,
+                "fields": [
+                    {"title": "Environment", "value": ENVIRONMENT, "short": True},
+                    {"title": "Complete routine backups", "value": backups['_meta']['total'], "short": False}
+                ],
+            }
+        ],
+    }
+    utilities.post_to_slack_payload(slack_payload)
 
 
 @celery.task
@@ -1235,6 +1266,7 @@ def import_backup(env, backup_id, target_instance):
     statistics = utilities.get_single_eve('statistics', target['statistics'])
     site_owners = statistics['users']['email_address']['site_owner']
     utilities.send_email(email_message=message, email_subject=subject, email_to=site_owners)
+
 
 @celery.task
 def migrate_routing():

@@ -426,7 +426,7 @@ def rebalance_update_groups(item):
                         launched_update_group += 1
                     else:
                         launched_update_group = 0
-                elif site['status'] == 'installed':
+                else:
                     patch_payload = '{{"update_group": {0}}}'.format(installed_update_group)
                     if installed_update_group < 2:
                         installed_update_group += 1

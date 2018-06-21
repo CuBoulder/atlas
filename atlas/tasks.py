@@ -499,9 +499,9 @@ def site_update(site, updates, original):
                 deploy_php_cache_clear = True
                 # Set update group and status
                 if site['path'] != 'homepage':
-                    update_group = randint(0, 10)
+                    update_group = randint(0, 5)
                 elif site['path'] == 'homepage':
-                    update_group = 12
+                    update_group = 6
                 patch_payload = {'status': 'launched', 'update_group': update_group}
 
                 # Let fabric send patch since it is changing update group.
@@ -1171,10 +1171,10 @@ def rebalance_update_groups():
 
     if not launched_sites['_meta']['total'] == 0:
         for site in launched_sites['_items']:
-            # Only update if the group is less than 11.
-            if site['update_group'] < 11:
+            # Only update if the group is less than 6.
+            if site['update_group'] < 6:
                 patch_payload = '{{"update_group": {0}}}'.format(launched_update_group)
-                if launched_update_group < 10:
+                if launched_update_group < 5:
                     launched_update_group += 1
                 else:
                     launched_update_group = 0

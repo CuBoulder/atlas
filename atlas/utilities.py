@@ -417,14 +417,16 @@ def rebalance_update_groups(item):
     if not sites['_meta']['total'] == 0:
         for site in sites['_items']:
             # Only update if the group is less than 11.
+            log.debug('Rebalance | Launched counter - %s | Installed counter- %s | Site - %s | Site update group - %s', launched_update_group, installed_update_group, site['_id'], site['update_group'])
             if site['update_group'] < 11:
                 if site['status'] == 'launched':
                     patch_payload = '{{"update_group": {0}}}'.format(launched_update_group)
+                    log.debug('Rebalance | Site - %s | Site update group changed to - %s', site['_id'], launched_update_group)
                     if launched_update_group < 5:
                         launched_update_group += 1
                     else:
                         launched_update_group = 0
-                if site['status'] == 'installed':
+                elif site['status'] == 'installed':
                     patch_payload = '{{"update_group": {0}}}'.format(installed_update_group)
                     if installed_update_group < 2:
                         installed_update_group += 1
@@ -432,6 +434,8 @@ def rebalance_update_groups(item):
                         installed_update_group = 0
                 if patch_payload:
                     patch_eve('sites', site['_id'], patch_payload)
+                log.debug('Rebalance | Site - %s | Site update group changed to - %s', site['_id'], patch_payload)
+                log.debug('Rebalance | Launched counter - %s | Installed counter- %s | End of loop', launched_update_group, installed_update_group)
 
 
 def post_to_slack_payload(payload):

@@ -418,7 +418,7 @@ def rebalance_update_groups(item):
         for site in sites['_items']:
             # Only update if the group is less than 11.
             log.debug('Rebalance | Launched counter - %s | Installed counter- %s | Site - %s | Site update group - %s', launched_update_group, installed_update_group, site['_id'], site['update_group'])
-            if site['update_group'] < 11:
+            if site['update_group'] < 5:
                 if site['status'] == 'launched':
                     patch_payload = '{{"update_group": {0}}}'.format(launched_update_group)
                     log.debug('Rebalance | Site - %s | Site update group changed to - %s', site['_id'], launched_update_group)

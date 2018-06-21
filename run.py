@@ -137,14 +137,16 @@ def sites_statistics():
     express_sites = express_result['_items']
     agg = {}
     count = Counter()
-    bundle = Counter()
+    group = Counter()
     bundle_total = 0
     ## Total by state
     for site in express_sites:
         count[site['status']] += 1
+        group[site['update_group']] += 1
         if site['code'].get('pacakge'):
             bundle_total += 1
     agg['express'] = {'status': dict(count)}
+    agg['express'] = {'update_group': dict(group)}
     # Total
     agg['express']['status']['total'] = express_result['_meta']['total']
     ## Total with bundles

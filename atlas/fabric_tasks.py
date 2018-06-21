@@ -722,8 +722,8 @@ def launch_site(site):
             web_directory = '{0}/{1}'.format(SITES_WEB_ROOT, 'homepage')
             with cd(SITES_WEB_ROOT):
                 update_symlink(code_directory_current, web_directory)
-            # Assign site to update group 12.
-            update_group = 12
+            # Assign site to update group 6.
+            update_group = 6
         payload = {'status': 'launched', 'update_group': update_group}
         utilities.patch_eve('sites', site['_id'], payload)
 

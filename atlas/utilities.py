@@ -420,7 +420,7 @@ def rebalance_update_groups(item):
             if site['update_group'] < 11:
                 if site['status'] == 'launched':
                     patch_payload = '{{"update_group": {0}}}'.format(launched_update_group)
-                    if launched_update_group < 10:
+                    if launched_update_group < 5:
                         launched_update_group += 1
                     else:
                         launched_update_group = 0

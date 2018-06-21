@@ -717,7 +717,7 @@ def launch_site(site):
                 if not exists(web_directory_path):
                     update_symlink(code_directory_current, site['path'])
             # Assign it to an update group.
-            update_group = randint(0, 10)
+            update_group = randint(0, 5)
         if site['pool'] == 'poolb-homepage':
             web_directory = '{0}/{1}'.format(SITES_WEB_ROOT, 'homepage')
             with cd(SITES_WEB_ROOT):

@@ -126,15 +126,15 @@ CELERYBEAT_SCHEDULE = {
     },
     'routine_backups': {
         'task': 'atlas.tasks.backup_instances_all',
-        'schedule': crontab(hour=22)
+        'schedule': crontab(minute=0, hour=20)
     },
     'report_routine_backups': {
         'task': 'atlas.tasks.report_routine_backups',
-        'schedule': crontab(hour=6)
+        'schedule': crontab(minute=0, hour=6)
     },
     'verify_statistics_updating': {
         'task': 'atlas.tasks.verify_statistics',
-        'schedule': crontab(hour=6),
+        'schedule': crontab(minute=0, hour=6),
     },
     # 'migrate_routing': {
     #     'task': 'atlas.tasks.migrate_routing',

@@ -122,7 +122,7 @@ CELERYBEAT_SCHEDULE = {
     },
     'remove_extra_backups': {
         'task': 'atlas.tasks.remove_extra_backups',
-        'schedule': timedelta(hours=12),
+        'schedule': timedelta(hours=6),
     },
     'routine_backups': {
         'task': 'atlas.tasks.backup_instances_all',

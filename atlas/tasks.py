@@ -1025,16 +1025,22 @@ def backup_restore(backup_record, original_instance, package_list):
 @celery.task
 def remove_old_backups():
     """
-    Delete backups older than 30 days.
+    Delete backups older than 90 days unless it is the only backup.
     """
-    time_ago = datetime.utcnow() - timedelta(days=30)
+    time_ago = datetime.utcnow() - timedelta(days=90)
     backup_query = 'where={{"_created":{{"$lte":"{0}"}}}}&max_results=2000'.format(
         time_ago.strftime("%Y-%m-%d %H:%M:%S GMT"))
     backups = utilities.get_eve('backup', backup_query)
-    # Loop through and remove sites that are more than 30 days old.
-    for backup in backups['_items']:
-        log.info('Delete old backup | backup - %s', backup)
-        utilities.delete_eve('backup', backup['_id'])
+    # Loop through and remove backups that are old.
+    if not backups['_meta']['total'] == 0:
+        for backup in backups['_items']:
+            check_for_other = utilities.get_eve('backup', 'where={{"site":"{0}"}}'.format(backup['site']))
+            if not check_for_other['_meta']['total'] == 1:
+                log.info('Delete old backup | backup - %s', backup)
+                utilities.delete_eve('backup', backup['_id'])
+            else:
+                log.info('Backups | Will not remove old backup, it is the only one | Backup - %s | Site %s',
+                         backup['_id'], backup['site'])
 
 
 @celery.task

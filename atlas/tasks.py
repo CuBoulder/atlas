@@ -980,8 +980,8 @@ def backup_instances_all(backup_type='routine'):
             site = utilities.get_single_eve('sites', statistic['site'])
             backup_create.delay(site=site, backup_type=backup_type, batch=batch_id)
     # Report to slack
-    log.info('Atlas operational statistic | Batch - %s | Routine backups - %s',
-             batch_id, statistics['_meta']['total'])
+    log.info('Atlas operational statistic | Batch - %s | Type - %s | Count - %s',
+             batch_id, backup_type, statistics['_meta']['total'])
 
     slack_fallback = '{0} {1} backups started'.format(statistics['_meta']['total'], backup_type)
     slack_color = 'good'
@@ -1274,12 +1274,12 @@ def migrate_routing():
     Find instances that are verified or outside of the verification window and update the routing.
     """
     log.info('Migrate Routing | Start')
-    verified_instances_query = 'where={"verification.verification_status":"approved","dates.migration":{"$exists":false}}'
+    verified_instances_query = 'where={"verification.verification_status":"approved","dates.activation":{"$exists":false}}'
     verified_instances = utilities.get_eve('sites', verified_instances_query)
     log.debug('Migrate routing | verified_instances - %s', verified_instances)
 
-    time_ago = datetime.utcnow() - timedelta(hours=48)
-    timeout_verification_query = 'where={{"verification.verification_status":"ready","dates.verification":{{"$lte":"{0}"}}}}'.format(
+    time_ago = datetime.utcnow() - timedelta(hours=49)
+    timeout_verification_query = 'where={{"verification.verification_status":"ready","dates.migration":{{"$lte":"{0}"}}}}'.format(
         time_ago.strftime("%Y-%m-%d %H:%M:%S GMT"))
     timeout_verification_instances = utilities.get_eve('sites', timeout_verification_query)
     log.debug('Migrate routing | timeout_verification - %s', timeout_verification_instances)
@@ -1293,8 +1293,33 @@ def migrate_routing():
 
     if verified_instances['_meta']['total'] is not 0:
         for instance in verified_instances['_items']:
+            statistic = utilities.get_single_eve('statistics', instance['statistics'])
+            if statistic['bundles'].get('cu_seo_bundle'):
+                if statistic['bundles']['cu_seo_bundle']['schema_version'] != 0:
+                    # Run the link checker command 10 minutes later.
+                    migration_linkchecker.apply_async(countdown=600)
             utilities.patch_eve('sites', instance['_id'], old_infra_payload, env=env)
             utilities.patch_eve('sites', instance['_id'], new_infra_payload)
+
+    if timeout_verification_instances['_meta']['total'] is not 0:
+        for instance in timeout_verification_instances['_items']:
+            statistic = utilities.get_single_eve('statistics', instance['statistics'])
+            if statistic['bundles'].get('cu_seo_bundle'):
+                if statistic['bundles']['cu_seo_bundle']['schema_version'] != 0:
+                    # Run the link checker command 10 minutes later.
+                    migration_linkchecker.apply_async(countdown=600)
+            utilities.patch_eve('sites', instance['_id'], old_infra_payload, env=env)
+            utilities.patch_eve('sites', instance['_id'], new_infra_payload)
+
+
+@celery.task
+def migration_linkchecker(instance):
+    """
+    Run the link checker command for sites that have updated routing.
+    """
+    log.info('Migration linkchecker | Item - %s', instance)
+    host = utilities.single_host()
+    execute(fabric_tasks.migration_linkchecker, instance=instance, hosts=host)
 
 
 @celery.task

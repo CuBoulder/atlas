@@ -914,3 +914,13 @@ def import_backup(backup, target_instance, source_env=ENVIRONMENT):
     restore_time = time() - start_time
     log.info('Import Backup | Complete | Target Instance - %s (%s) | %s sec',
              target_instance['_id'], target_instance['sid'], restore_time)
+
+
+def migration_linkchecker(instance):
+    """
+    Run the linkchecker command post migration routing change.
+    """
+    log.info('Migration linkchecker | Instance - %s', instance['_id'])
+    code_directory_sid = '{0}/{1}/{1}'.format(SITES_CODE_ROOT, instance['sid'])
+    with cd(code_directory_sid):
+        run("drush linkchecker-clear")

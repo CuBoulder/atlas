@@ -1269,7 +1269,7 @@ def import_backup(env, backup_id, target_instance):
     if target_instance['status'] == 'launched':
         path = '{0}/{1}'.format(BASE_URLS[ENVIRONMENT], target['path'])
         subject = 'Site ready to be reviewed - {0}'.format(path)
-        message = "Your instance has been migrated to the new infrastructure and is ready to be verified. Please visit your instance at {0} and verify it. Visit https://www.colorado.edu/webcentral/server-migration for more information about verification. After your instance is verified, it will be queued into the next Activation Batch (runs Monday thru Friday at 9am, 11am, 1pm, and 3pm).\n\n If the instance is not verified within 48 hours, it will be activated automatically. \n\n - Web Express Team.".format(path)
+        message = "Your site at {0} has been migrated to the new infrastructure and is ready to be verified. Visit https://www.colorado.edu/webcentral/site-verification-steps for details on what you need to do next.\n\nAfter you have verified your site, it will be put in queue to relaunch at your normal URL. Relaunch windows are scheduled for 9am, 11am, 1pm and 3pm. You will be placed in the next time slot based on the time you verify your site.\n\nIf you do not verify the migration within 48 hours, your site will automatically relaunch at the normal URL.\n\n- Web Express Team".format(path)
         statistics = utilities.get_single_eve('statistics', target['statistics'])
         site_owners = statistics['users']['email_address']['site_owner']
         utilities.send_email(email_message=message, email_subject=subject, email_to=site_owners)

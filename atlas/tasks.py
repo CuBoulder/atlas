@@ -1081,7 +1081,7 @@ def report_routine_backups():
     Report count of complete routine backups in the last 24 hours.
     """
     time_ago = datetime.utcnow() - timedelta(hours=24)
-    query = 'where={{"status":"complete","type":"routine","_created":{{"$lte":"{0}"}}}}'.format(
+    query = 'where={{"state":"complete","backup_type":"routine","_created":{{"$gte":"{0}"}}}}'.format(
         time_ago.strftime("%Y-%m-%d %H:%M:%S GMT"))
     backups = utilities.get_eve('backup', query)
     log.info('Atlas operational statistic | Complete routine backups in last 24 hours - %s',

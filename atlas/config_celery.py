@@ -44,9 +44,6 @@ CELERY_ROUTES = {
     'atlas.tasks.cron': {
         'queue': 'cron_queue'
     },
-    'atlas.tasks.cron_run': {
-        'queue': 'cron_queue'
-    },
     'atlas.tasks.available_sites_check': {
         'queue': 'atlas_queue'
     },
@@ -65,9 +62,9 @@ CELERY_ROUTES = {
     'atlas.tasks.remove_old_backups': {
         'queue': 'atlas_queue'
     },
-    'atlas.tasks.migrate_routing': {
-        'queue': 'atlas_queue'
-    },
+    # 'atlas.tasks.migrate_routing': {
+    #     'queue': 'atlas_queue'
+    # },
 }
 
 CELERYBEAT_SCHEDULE = {
@@ -92,6 +89,13 @@ CELERYBEAT_SCHEDULE = {
             "status": "installed",
         },
     },
+    'available_cron': {
+        'task': 'atlas.tasks.cron',
+        'schedule': timedelta(hours=3),
+        'kwargs': {
+            "status": "available",
+        },
+    },
     'available_sites_check': {
         'task': 'atlas.tasks.available_sites_check',
         'schedule': timedelta(minutes=5),
@@ -108,10 +112,6 @@ CELERYBEAT_SCHEDULE = {
         'task': 'atlas.tasks.take_down_installed_old_sites',
         'schedule': crontab(minute=0, hour=2),
     },
-    'verify_statistics_updating': {
-        'task': 'atlas.tasks.verify_statistics',
-        'schedule': timedelta(hours=24),
-    },
     'remove_unused_code': {
         'task': 'atlas.tasks.remove_unused_code',
         'schedule': timedelta(hours=24),
@@ -120,8 +120,24 @@ CELERYBEAT_SCHEDULE = {
         'task': 'atlas.tasks.remove_old_backups',
         'schedule': timedelta(hours=24),
     },
-    'migrate_routing': {
-        'task': 'atlas.tasks.migrate_routing',
-        'schedule': crontab(minute=0, hour='9,11,13,15', day_of_week='mon-fri')
+    'remove_extra_backups': {
+        'task': 'atlas.tasks.remove_extra_backups',
+        'schedule': timedelta(hours=6),
     },
+    'routine_backups': {
+        'task': 'atlas.tasks.backup_instances_all',
+        'schedule': crontab(minute=0, hour=20)
+    },
+    'report_routine_backups': {
+        'task': 'atlas.tasks.report_routine_backups',
+        'schedule': crontab(minute=0, hour=6)
+    },
+    'verify_statistics_updating': {
+        'task': 'atlas.tasks.verify_statistics',
+        'schedule': crontab(minute=0, hour=6),
+    },
+    # 'migrate_routing': {
+    #     'task': 'atlas.tasks.migrate_routing',
+    #     'schedule': crontab(minute=0, hour='9,11,13,15', day_of_week='mon-fri')
+    # },
 }

@@ -362,9 +362,9 @@ def site_remove(site):
     web_directory_path = '{0}/{1}'.format(SITES_WEB_ROOT, site['path'])
 
     # Fix perms to allow settings file to be removed.
-    settings_file = "{0}/{1}/{1}/sites/default/settings.php".format(SITES_CODE_ROOT, site['sid'])
-    if exists(settings_file):
-        run("chmod u+w {0}".format(settings_file))
+    sites_dir = "{0}/{1}/{1}/sites".format(SITES_CODE_ROOT, site['sid'])
+    if exists(sites_dir):
+        run("chmod -R u+w {0}".format(sites_dir))
 
     remove_symlink(web_directory)
     remove_symlink(web_directory_path)
@@ -503,9 +503,9 @@ def correct_nfs_file_permissions(instance=None):
         nfs_files_dir = NFS_MOUNT_LOCATION[ENVIRONMENT]
 
     with settings(warn_only=True):
-        run('find {0} -type f -or -type d -exec chgrp apache {{}} \\;'.format(nfs_files_dir))
-        run('find {0} -type f -exec chmod g+rw {{}} \\;'.format(nfs_files_dir))
-        run('find {0} -type d -exec chmod g+rws {{}} \\;'.format(nfs_files_dir))
+        run('find {0} -type f -or -type d -not -group {1} -exec chgrp {1} {{}} \\;'.format(nfs_files_dir, WEBSERVER_USER_GROUP))
+        run('find {0} -type f -user {1} -exec chmod g+rw {{}} \\;'.format(nfs_files_dir, SSH_USER))
+        run('find {0} -type d -user {1} -exec chmod g+rws {{}} \\;'.format(nfs_files_dir, SSH_USER))
 
     if instance:
         log.info('Correct NFS File permissions | Instance - %s | Complete', instance['sid'])
@@ -906,6 +906,7 @@ def import_backup(backup, target_instance, source_env=ENVIRONMENT):
             run('drush rr')
         run('drush en ucb_on_prem_hosting -y')
         run('drush elysia-cron run --ignore-time')
+        run('drush atst')
 
     run('rm {0}'.format(files_path))
     run('rm {0}'.format(database_path))
@@ -913,3 +914,13 @@ def import_backup(backup, target_instance, source_env=ENVIRONMENT):
     restore_time = time() - start_time
     log.info('Import Backup | Complete | Target Instance - %s (%s) | %s sec',
              target_instance['_id'], target_instance['sid'], restore_time)
+
+
+def migration_linkchecker(instance):
+    """
+    Run the linkchecker command post migration routing change.
+    """
+    log.info('Migration linkchecker | Instance - %s', instance['_id'])
+    code_directory_sid = '{0}/{1}/{1}'.format(SITES_CODE_ROOT, instance['sid'])
+    with cd(code_directory_sid):
+        run("drush linkchecker-clear")

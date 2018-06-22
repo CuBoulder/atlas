@@ -499,9 +499,9 @@ def site_update(site, updates, original):
                 deploy_php_cache_clear = True
                 # Set update group and status
                 if site['path'] != 'homepage':
-                    update_group = randint(0, 10)
+                    update_group = randint(0, 5)
                 elif site['path'] == 'homepage':
-                    update_group = 12
+                    update_group = 6
                 patch_payload = {'status': 'launched', 'update_group': update_group}
 
                 # Let fabric send patch since it is changing update group.
@@ -545,7 +545,7 @@ def site_update(site, updates, original):
     # Update settings file when migration is approved
     if updates.get('verification'):
         if updates['verification']['verification_status'] == 'approved':
-            log.debug('Verification approved')
+            log.info('Verification approved | Instance - %s', site['_id'])
             execute(fabric_tasks.update_settings_file, site=site)
             deploy_php_cache_clear = True
 
@@ -632,39 +632,6 @@ def site_remove(site):
 
         execute(fabric_tasks.site_remove, site=site)
 
-    slack_text = 'Site Remove - Success - {0}/{1}'.format(BASE_URLS[ENVIRONMENT], site['path'])
-    slack_color = 'good'
-    slack_link = '{0}/{1}'.format(BASE_URLS[ENVIRONMENT], site['path'])
-
-    slack_payload = {
-        "text": slack_text,
-        "username": 'Atlas',
-        "attachments": [
-            {
-                "fallback": slack_text,
-                "color": slack_color,
-                "fields": [
-                    {
-                        "title": "Instance",
-                        "value": slack_link,
-                        "short": False
-                    },
-                    {
-                        "title": "Environment",
-                        "value": ENVIRONMENT,
-                        "short": True
-                    },
-                    {
-                        "title": "Delete requested by",
-                        "value": site['modified_by'],
-                        "short": True
-                    }
-                ],
-            }
-        ],
-    }
-    utilities.post_to_slack_payload(slack_payload)
-
 
 @celery.task
 def drush_prepare(drush_id, run=True):
@@ -681,12 +648,21 @@ def drush_prepare(drush_id, run=True):
     sites = utilities.get_eve('sites', site_query)
     log.debug('Drush | Prepare | Drush command - %s | Ran query - %s', drush_id, sites)
     if not sites['_meta']['total'] == 0 and run is True:
+        batch_id = time.time()
         batch_count = 1
+        batch_log = 'Batch started | ID - {0} | Batch size - {1}'.format(
+            batch_id, str(sites['_meta']['total']))
+        log.info(batch_log)
         for site in sites['_items']:
             batch_string = str(batch_count) + ' of ' + str(sites['_meta']['total'])
-            drush_command_run.delay(site=site, command_list=drush_command['commands'], user=drush_command['modified_by'], batch_id=datetime.now(), batch_count=batch_string)
+            drush_command_run.delay(
+                site=site,
+                command_list=drush_command['commands'],
+                user=drush_command['modified_by'],
+                batch_id=batch_id,
+                batch_count=batch_string)
             batch_count += 1
-        return 'Batch started'
+        return batch_log
     else:
         return sites
 
@@ -993,11 +969,47 @@ def verify_statistics():
 
 
 @celery.task
-def backup_create(site, backup_type):
-    log.debug('Backup | Create | Site - %s', site)
-    log.info('Backup | Create | Site - %s', site['_id'])
+def backup_instances_all(backup_type='routine'):
+    log.info('Backup all instances')
+    # TODO: Max results
+    statistics = utilities.get_eve(
+        'statistics', 'where={"status":{"$in":["installed","launched"]},"days_since_last_edit":0}')
+    batch_id = time.time()
+    if not statistics['_meta']['total'] == 0:
+        for statistic in statistics['_items']:
+            site = utilities.get_single_eve('sites', statistic['site'])
+            backup_create.delay(site=site, backup_type=backup_type, batch=batch_id)
+    # Report to slack
+    log.info('Atlas operational statistic | Batch - %s | Type - %s | Count - %s',
+             batch_id, backup_type, statistics['_meta']['total'])
+
+    slack_fallback = '{0} {1} backups started'.format(statistics['_meta']['total'], backup_type)
+    slack_color = 'good'
+    slack_payload = {
+        "text": 'Backups started',
+        "username": 'Atlas',
+        "attachments": [
+            {
+                "fallback": slack_fallback,
+                "color": slack_color,
+                "fields": [
+                    {"title": "Environment", "value": ENVIRONMENT, "short": True},
+                    {"title": "Backup Type", "value": backup_type, "short": True},
+                    {"title": "Count", "value": statistics['_meta']['total'], "short": True}
+                ],
+            }
+        ],
+    }
+    utilities.post_to_slack_payload(slack_payload)
+
+
+@celery.task
+def backup_create(site, backup_type, batch=None):
+    log.debug('Backup | Create | Batch - %s | Site - %s', batch, site)
+    log.info('Backup | Create | Batch - %s | Site - %s', batch, site['_id'])
     host = utilities.single_host()
     execute(fabric_tasks.backup_create, site=site, backup_type=backup_type, hosts=host)
+    log.info('Backup | Create | Batch - %s | Site - %s | Backup finished', batch, site['_id'])
 
 
 @celery.task
@@ -1013,26 +1025,31 @@ def backup_restore(backup_record, original_instance, package_list):
 @celery.task
 def remove_old_backups():
     """
-    Delete backups older than 90 days.
+    Delete backups older than 90 days unless it is the only backup.
     """
     time_ago = datetime.utcnow() - timedelta(days=90)
     backup_query = 'where={{"_created":{{"$lte":"{0}"}}}}&max_results=2000'.format(
         time_ago.strftime("%Y-%m-%d %H:%M:%S GMT"))
     backups = utilities.get_eve('backup', backup_query)
-    # Loop through and remove sites that are more than 90 days old.
-    for backup in backups['_items']:
-        log.info('Delete old backup | backup - %s', backup)
-        utilities.delete_eve('backup', backup['_id'])
+    # Loop through and remove backups that are old.
+    if not backups['_meta']['total'] == 0:
+        for backup in backups['_items']:
+            check_for_other = utilities.get_eve('backup', 'where={{"site":"{0}"}}'.format(backup['site']))
+            if not check_for_other['_meta']['total'] == 1:
+                log.info('Delete old backup | backup - %s', backup)
+                utilities.delete_eve('backup', backup['_id'])
+            else:
+                log.info('Backups | Will not remove old backup, it is the only one | Backup - %s | Site %s',
+                         backup['_id'], backup['site'])
 
 
 @celery.task
 def remove_extra_backups():
-    # TODO: Finish this.
     """
     Delete extra backups, we only want to keep 5 per instance.
     """
     # Get all backups
-    backups = utilities.get_eve('backup', 'max_results=2000')
+    backups = utilities.get_eve('backup', 'max_results=10000')
     instance_ids = []
     for item in backups['_items']:
         instance_ids.append(item['site'])
@@ -1044,13 +1061,50 @@ def remove_extra_backups():
     log.info('Delete extra backups | High Count - %s', high_count)
     if high_count:
         for item in high_count:
-            # Get a list of backups for this instance, sorted by age
-            instance_backup_query = 'where={{"site":"{0}"}}&sort=[("_created", -1)]'.format(item)
+            # Get a list of backups for this instance, sorted by age (oldest first)
+            instance_backup_query = 'where={{"site":"{0}"}}&sort=[("_created",1)]'.format(item)
             instance_backups = utilities.get_eve('backup', instance_backup_query)
             log.info('Delete extra backups | List of backups - %s', instance_backups)
             # Remove the oldest
-            log.info('Delete extra backup | backup - %s', item)
-            utilities.delete_eve('backup', item)
+            backup_count = instance_backups['_meta']['total']
+            for back_to_remove in instance_backups['_items']:
+                if backup_count > 5:
+                    log.info('Delete extra backups | Backup count - %s', backup_count)
+                    log.info('Delete extra backup | Backup to remove - %s', back_to_remove['_id'])
+                    utilities.delete_eve('backup', back_to_remove['_id'])
+                    backup_count -= 1
+
+
+@celery.task
+def report_routine_backups():
+    """
+    Report count of complete routine backups in the last 24 hours.
+    """
+    time_ago = datetime.utcnow() - timedelta(hours=24)
+    query = 'where={{"status":"complete","type":"routine","_created":{{"$lte":"{0}"}}}}'.format(
+        time_ago.strftime("%Y-%m-%d %H:%M:%S GMT"))
+    backups = utilities.get_eve('backup', query)
+    log.info('Atlas operational statistic | Complete routine backups in last 24 hours - %s',
+             backups['_meta']['total'])
+
+    slack_fallback = '{0} complete routine backups in last 24 hours'.format(
+        backups['_meta']['total'])
+    slack_color = 'good'
+    slack_payload = {
+        "text": 'Report - Routine backups in last 24 hours.',
+        "username": 'Atlas',
+        "attachments": [
+            {
+                "fallback": slack_fallback,
+                "color": slack_color,
+                "fields": [
+                    {"title": "Environment", "value": ENVIRONMENT, "short": True},
+                    {"title": "Complete routine backups", "value": backups['_meta']['total'], "short": False}
+                ],
+            }
+        ],
+    }
+    utilities.post_to_slack_payload(slack_payload)
 
 
 @celery.task
@@ -1117,10 +1171,10 @@ def rebalance_update_groups():
 
     if not launched_sites['_meta']['total'] == 0:
         for site in launched_sites['_items']:
-            # Only update if the group is less than 11.
-            if site['update_group'] < 11:
+            # Only update if the group is less than 6.
+            if site['update_group'] < 6:
                 patch_payload = '{{"update_group": {0}}}'.format(launched_update_group)
-                if launched_update_group < 10:
+                if launched_update_group < 5:
                     launched_update_group += 1
                 else:
                     launched_update_group = 0
@@ -1205,6 +1259,21 @@ def import_backup(env, backup_id, target_instance):
     execute(fabric_tasks.import_backup, backup=backup.json(),
             target_instance=target, hosts=host, source_env=env)
 
+    migration_date = datetime.utcnow().strftime("%Y-%m-%d %H:%M:%S GMT")
+    payload = {
+        'verification': {'verification_status': 'ready'},
+        'dates': {'migration': migration_date}
+    }
+    utilities.patch_eve('sites', target['_id'], payload)
+    # Notify users that site is ready for verification
+    if target_instance['status'] == 'launched':
+        path = '{0}/{1}'.format(BASE_URLS[ENVIRONMENT], target['path'])
+        subject = 'Site ready to be reviewed - {0}'.format(path)
+        message = "Your site at {0} has been migrated to the new infrastructure and is ready to be verified. Visit https://www.colorado.edu/webcentral/site-verification-steps for details on what you need to do next.\n\nAfter you have verified your site, it will be put in queue to relaunch at your normal URL. Relaunch windows are scheduled for 9am, 11am, 1pm and 3pm. You will be placed in the next time slot based on the time you verify your site.\n\nIf you do not verify the migration within 48 hours, your site will automatically relaunch at the normal URL.\n\n- Web Express Team".format(path)
+        statistics = utilities.get_single_eve('statistics', target['statistics'])
+        site_owners = statistics['users']['email_address']['site_owner']
+        utilities.send_email(email_message=message, email_subject=subject, email_to=site_owners)
+
 
 @celery.task
 def migrate_routing():
@@ -1212,12 +1281,12 @@ def migrate_routing():
     Find instances that are verified or outside of the verification window and update the routing.
     """
     log.info('Migrate Routing | Start')
-    verified_instances_query = 'where={"verification.verification_status":"approved","dates.migration":{"$exists":false}}'
+    verified_instances_query = 'where={"verification.verification_status":"approved","dates.activation":{"$exists":false}}'
     verified_instances = utilities.get_eve('sites', verified_instances_query)
     log.debug('Migrate routing | verified_instances - %s', verified_instances)
 
-    time_ago = datetime.utcnow() - timedelta(hours=48)
-    timeout_verification_query = 'where={{"verification.verification_status":"ready","dates.verification":{{"$lte":"{0}"}}}}'.format(
+    time_ago = datetime.utcnow() - timedelta(hours=49)
+    timeout_verification_query = 'where={{"verification.verification_status":"ready","dates.migration":{{"$lte":"{0}"}}}}'.format(
         time_ago.strftime("%Y-%m-%d %H:%M:%S GMT"))
     timeout_verification_instances = utilities.get_eve('sites', timeout_verification_query)
     log.debug('Migrate routing | timeout_verification - %s', timeout_verification_instances)
@@ -1231,8 +1300,33 @@ def migrate_routing():
 
     if verified_instances['_meta']['total'] is not 0:
         for instance in verified_instances['_items']:
+            statistic = utilities.get_single_eve('statistics', instance['statistics'])
+            if statistic['bundles'].get('cu_seo_bundle'):
+                if statistic['bundles']['cu_seo_bundle']['schema_version'] != 0:
+                    # Run the link checker command 10 minutes later.
+                    migration_linkchecker.apply_async(countdown=600)
             utilities.patch_eve('sites', instance['_id'], old_infra_payload, env=env)
             utilities.patch_eve('sites', instance['_id'], new_infra_payload)
+
+    if timeout_verification_instances['_meta']['total'] is not 0:
+        for instance in timeout_verification_instances['_items']:
+            statistic = utilities.get_single_eve('statistics', instance['statistics'])
+            if statistic['bundles'].get('cu_seo_bundle'):
+                if statistic['bundles']['cu_seo_bundle']['schema_version'] != 0:
+                    # Run the link checker command 10 minutes later.
+                    migration_linkchecker.apply_async(countdown=600)
+            utilities.patch_eve('sites', instance['_id'], old_infra_payload, env=env)
+            utilities.patch_eve('sites', instance['_id'], new_infra_payload)
+
+
+@celery.task
+def migration_linkchecker(instance):
+    """
+    Run the link checker command for sites that have updated routing.
+    """
+    log.info('Migration linkchecker | Item - %s', instance)
+    host = utilities.single_host()
+    execute(fabric_tasks.migration_linkchecker, instance=instance, hosts=host)
 
 
 @celery.task

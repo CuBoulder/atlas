@@ -1235,7 +1235,7 @@ def correct_nfs_file_permissions(instance):
     try:
         # Get a host to run this command on.
         host = utilities.single_host()
-        execute(fabric_tasks.correct_nfs_file_permissions, site=instance, hosts=host)
+        execute(fabric_tasks.correct_nfs_file_permissions, instance=instance, hosts=host)
     except Exception as error:
         log.error('Correct NFS file permissions | Instance - %s | Error', instance['sid'], error)
         raise
@@ -1258,7 +1258,7 @@ def import_backup(env, backup_id, target_instance):
     execute(fabric_tasks.instance_heal, item=target)
     execute(fabric_tasks.import_backup, backup=backup.json(),
             target_instance=target, hosts=host, source_env=env)
-    execute(fabric_tasks.correct_nfs_file_permissions, site=target, hosts=host)
+    execute(fabric_tasks.correct_nfs_file_permissions, instance=target, hosts=host)
 
     migration_date = datetime.utcnow().strftime("%Y-%m-%d %H:%M:%S GMT")
     payload = {

@@ -287,6 +287,7 @@ SITES_SCHEMA = {
             'verification_status': {
                 'type': 'string',
                 'allowed': ['not_ready', 'ready', 'failed', 'approved'],
+                'default': 'approved'
             },
             'verification_user': {
                 'type': 'string',

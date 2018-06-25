@@ -712,7 +712,7 @@ def cron(status=None):
     site_query_string = ['max_results=2000']
     log.debug('Prepare Cron | Found argument')
     # Start by eliminating legacy items.
-    site_query_string.append('&where={"type":"express",')
+    site_query_string.append('&where={"type":"express","verification.verification_status":{"$ne":"not_ready"},')
     if status:
         log.debug('Found status')
         site_query_string.append('"status":"{0}",'.format(status))

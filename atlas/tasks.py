@@ -1258,6 +1258,7 @@ def import_backup(env, backup_id, target_instance):
     execute(fabric_tasks.instance_heal, item=target)
     execute(fabric_tasks.import_backup, backup=backup.json(),
             target_instance=target, hosts=host, source_env=env)
+    execute(fabric_tasks.correct_nfs_file_permissions, site=target, hosts=host)
 
     migration_date = datetime.utcnow().strftime("%Y-%m-%d %H:%M:%S GMT")
     payload = {
@@ -1266,7 +1267,7 @@ def import_backup(env, backup_id, target_instance):
     }
     utilities.patch_eve('sites', target['_id'], payload)
     # Notify users that site is ready for verification
-    if target_instance['status'] == 'launched':
+    if target['status'] == 'launched':
         path = '{0}/{1}'.format(BASE_URLS[ENVIRONMENT], target['path'])
         subject = 'Site ready to be reviewed - {0}'.format(path)
         message = "Your site at {0} has been migrated to the new infrastructure and is ready to be verified. Visit https://www.colorado.edu/webcentral/site-verification-steps for details on what you need to do next.\n\nAfter you have verified your site, it will be put in queue to relaunch at your normal URL. Relaunch windows are scheduled for 9am, 11am, 1pm and 3pm. You will be placed in the next time slot based on the time you verify your site.\n\nIf you do not verify the migration within 48 hours, your site will automatically relaunch at the normal URL.\n\n- Web Express Team".format(path)

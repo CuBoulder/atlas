@@ -136,8 +136,8 @@ CELERYBEAT_SCHEDULE = {
         'task': 'atlas.tasks.verify_statistics',
         'schedule': crontab(minute=0, hour=6),
     },
-    # 'migrate_routing': {
-    #     'task': 'atlas.tasks.migrate_routing',
-    #     'schedule': crontab(minute=0, hour='9,11,13,15', day_of_week='mon-fri')
-    # },
+    'migrate_routing': {
+        'task': 'atlas.tasks.migrate_routing',
+        'schedule': crontab(minute=0, hour='9,11,13,15', day_of_week='mon-fri')
+    },
 }

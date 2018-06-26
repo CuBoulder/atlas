@@ -1305,7 +1305,7 @@ def migrate_routing():
             if statistic['bundles'].get('cu_seo_bundle'):
                 if statistic['bundles']['cu_seo_bundle']['schema_version'] != 0:
                     # Run the link checker command 10 minutes later.
-                    migration_linkchecker.apply_async(countdown=600)
+                    migration_linkchecker.apply_async((instance), countdown=600)
             utilities.patch_eve('sites', instance['_id'], old_infra_payload, env=env)
             utilities.patch_eve('sites', instance['_id'], new_infra_payload)
 
@@ -1315,7 +1315,7 @@ def migrate_routing():
             if statistic['bundles'].get('cu_seo_bundle'):
                 if statistic['bundles']['cu_seo_bundle']['schema_version'] != 0:
                     # Run the link checker command 10 minutes later.
-                    migration_linkchecker.apply_async(countdown=600)
+                    migration_linkchecker.apply_async((instance), countdown=600)
             utilities.patch_eve('sites', instance['_id'], old_infra_payload, env=env)
             utilities.patch_eve('sites', instance['_id'], new_infra_payload)
 

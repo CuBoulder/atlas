@@ -712,7 +712,7 @@ def cron(status=None):
     site_query_string = ['max_results=2000']
     log.debug('Prepare Cron | Found argument')
     # Start by eliminating legacy items.
-    site_query_string.append('&where={"type":"express",')
+    site_query_string.append('&where={"type":"express","verification.verification_status":{"$ne":"not_ready"},')
     if status:
         log.debug('Found status')
         site_query_string.append('"status":"{0}",'.format(status))
@@ -1081,7 +1081,7 @@ def report_routine_backups():
     Report count of complete routine backups in the last 24 hours.
     """
     time_ago = datetime.utcnow() - timedelta(hours=24)
-    query = 'where={{"status":"complete","type":"routine","_created":{{"$lte":"{0}"}}}}'.format(
+    query = 'where={{"state":"complete","backup_type":"routine","_created":{{"$gte":"{0}"}}}}'.format(
         time_ago.strftime("%Y-%m-%d %H:%M:%S GMT"))
     backups = utilities.get_eve('backup', query)
     log.info('Atlas operational statistic | Complete routine backups in last 24 hours - %s',
@@ -1235,7 +1235,7 @@ def correct_nfs_file_permissions(instance):
     try:
         # Get a host to run this command on.
         host = utilities.single_host()
-        execute(fabric_tasks.correct_nfs_file_permissions, site=instance, hosts=host)
+        execute(fabric_tasks.correct_nfs_file_permissions, instance=instance, hosts=host)
     except Exception as error:
         log.error('Correct NFS file permissions | Instance - %s | Error', instance['sid'], error)
         raise
@@ -1258,6 +1258,7 @@ def import_backup(env, backup_id, target_instance):
     execute(fabric_tasks.instance_heal, item=target)
     execute(fabric_tasks.import_backup, backup=backup.json(),
             target_instance=target, hosts=host, source_env=env)
+    execute(fabric_tasks.correct_nfs_file_permissions, instance=target, hosts=host)
 
     migration_date = datetime.utcnow().strftime("%Y-%m-%d %H:%M:%S GMT")
     payload = {
@@ -1266,13 +1267,13 @@ def import_backup(env, backup_id, target_instance):
     }
     utilities.patch_eve('sites', target['_id'], payload)
     # Notify users that site is ready for verification
-    if target_instance['status'] == 'launched':
+    if target['status'] == 'launched':
         path = '{0}/{1}'.format(BASE_URLS[ENVIRONMENT], target['path'])
         subject = 'Site ready to be reviewed - {0}'.format(path)
         message = "Your site at {0} has been migrated to the new infrastructure and is ready to be verified. Visit https://www.colorado.edu/webcentral/site-verification-steps for details on what you need to do next.\n\nAfter you have verified your site, it will be put in queue to relaunch at your normal URL. Relaunch windows are scheduled for 9am, 11am, 1pm and 3pm. You will be placed in the next time slot based on the time you verify your site.\n\nIf you do not verify the migration within 48 hours, your site will automatically relaunch at the normal URL.\n\n- Web Express Team".format(path)
         statistics = utilities.get_single_eve('statistics', target['statistics'])
         site_owners = statistics['users']['email_address']['site_owner']
-        utilities.send_email(email_message=message, email_subject=subject, email_to=site_owners)
+        #utilities.send_email(email_message=message, email_subject=subject, email_to=site_owners)
 
 
 @celery.task
@@ -1292,29 +1293,30 @@ def migrate_routing():
     log.debug('Migrate routing | timeout_verification - %s', timeout_verification_instances)
 
     # Payload vars.
-    pool = 'osr-{0}-https'.format(ENVIRONMENT)
-    old_infra_payload = {'pool': pool}
-    env = 'old-{0}'.format(ENVIRONMENT)
-    new_infra_payload = "{{'dates':{{'activation':'{0}'}}}}".format(
-        datetime.utcnow().strftime("%Y-%m-%d %H:%M:%S GMT"))
+    old_infra_payload = {'pool': 'pool-varnish-new'}
+    env = 'o-{0}'.format(ENVIRONMENT)
+    date = datetime.utcnow().strftime("%Y-%m-%d %H:%M:%S GMT")
+    new_infra_payload = {'dates':{'activation':date}}
 
     if verified_instances['_meta']['total'] is not 0:
         for instance in verified_instances['_items']:
             statistic = utilities.get_single_eve('statistics', instance['statistics'])
-            if statistic['bundles'].get('cu_seo_bundle'):
-                if statistic['bundles']['cu_seo_bundle']['schema_version'] != 0:
-                    # Run the link checker command 10 minutes later.
-                    migration_linkchecker.apply_async(countdown=600)
+            if statistic.get('bundles'):
+                if statistic['bundles'].get('cu_seo_bundle'):
+                    if statistic['bundles']['cu_seo_bundle']['schema_version'] != 0:
+                        # Run the link checker command 10 minutes later.
+                        migration_linkchecker.apply_async([instance], countdown=600)
             utilities.patch_eve('sites', instance['_id'], old_infra_payload, env=env)
             utilities.patch_eve('sites', instance['_id'], new_infra_payload)
 
     if timeout_verification_instances['_meta']['total'] is not 0:
         for instance in timeout_verification_instances['_items']:
             statistic = utilities.get_single_eve('statistics', instance['statistics'])
-            if statistic['bundles'].get('cu_seo_bundle'):
-                if statistic['bundles']['cu_seo_bundle']['schema_version'] != 0:
-                    # Run the link checker command 10 minutes later.
-                    migration_linkchecker.apply_async(countdown=600)
+            if statistic.get('bundles'):
+                if statistic['bundles'].get('cu_seo_bundle'):
+                    if statistic['bundles']['cu_seo_bundle']['schema_version'] != 0:
+                        # Run the link checker command 10 minutes later.
+                        migration_linkchecker.apply_async([instance], countdown=600)
             utilities.patch_eve('sites', instance['_id'], old_infra_payload, env=env)
             utilities.patch_eve('sites', instance['_id'], new_infra_payload)
 

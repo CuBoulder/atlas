@@ -1293,8 +1293,7 @@ def migrate_routing():
     log.debug('Migrate routing | timeout_verification - %s', timeout_verification_instances)
 
     # Payload vars.
-    pool = 'osr-{0}-https'.format(ENVIRONMENT)
-    old_infra_payload = {'pool': pool}
+    old_infra_payload = {'pool': 'pool-varnish-new'}
     env = 'o-{0}'.format(ENVIRONMENT)
     date = datetime.utcnow().strftime("%Y-%m-%d %H:%M:%S GMT")
     new_infra_payload = {'dates':{'activation':date}}

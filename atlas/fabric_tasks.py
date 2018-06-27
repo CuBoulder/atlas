@@ -745,14 +745,12 @@ def update_f5():
                 if 'path' in site:
                     # If a site is down or scheduled for deletion, skip to the next
                     # site.
-                    if 'status' in site and (site['status'] == 'down' or site['status'] == 'delete'):
+                    if 'status' in site and (site['status'] == 'down' or site['status'] == 'take_down' or site['status'] == 'delete'):
                         continue
                     # In case a path was saved with a leading slash
                     instance_path = site["path"] if site["path"][0] == '/' else '/' + site["path"]
-                    # Ignore 'p1' paths but let the /p1 pattern through
-                    if not instance_path.startswith("/p1") or len(instance_path) == 3:
-                        ofile.write('"{0}" := "{1}",\n'.format(instance_path, site['pool']))
-
+                    ofile.write('"{0}" := "{1}",\n'.format(instance_path, site['pool']))
+        ofile.write('"/p1" := "poolb-express",\n')
         execute(exportf5,
                 file_name=LOAD_BALANCER_CONFIG_FILES[ENVIRONMENT],
                 load_balancer_config_dir=load_balancer_config_dir)

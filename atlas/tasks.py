@@ -420,6 +420,7 @@ def site_update(site, updates, original):
     deploy_update_database = False
     deploy_drupal_cache_clear = False
     deploy_php_cache_clear = False
+    update_f5 = False
 
     if updates.get('code'):
         log.debug('Site update | ID - %s | Found code changes', site['_id'])
@@ -487,7 +488,7 @@ def site_update(site, updates, original):
                 deploy_drupal_cache_clear = True
                 deploy_php_cache_clear = True
                 if ENVIRONMENT is not 'local':
-                    execute(fabric_tasks.update_f5)
+                    update_f5 = True
                 # Let fabric send patch since it is changing update group.
             elif updates['status'] == 'locked':
                 log.debug('Site update | ID - %s | Status changed to locked', site['_id'])
@@ -531,7 +532,10 @@ def site_update(site, updates, original):
 
     # Only need to update the f5 if this is a legacy instance.
     if ENVIRONMENT != 'local' and site['type'] == 'legacy':
-        execute(fabric_tasks.update_f5)
+        update_f5 = True
+    # Update f5 if we are changing pools
+    if updates.get('pool'):
+        update_f5 = True
 
     # Get a host to run single server commands on.
     # We want to run these commands in this specific order.
@@ -543,6 +547,8 @@ def site_update(site, updates, original):
         execute(fabric_tasks.update_database, site=site)
     if deploy_drupal_cache_clear:
         execute(fabric_tasks.cache_clear, sid=site['sid'])
+    if update_f5:
+        execute(fabric_tasks.update_f5)
 
     slack_text = 'Site Update - Success - {0}/sites/{1}'.format(API_URLS[ENVIRONMENT], site['_id'])
     slack_color = 'good'

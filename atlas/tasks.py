@@ -1301,20 +1301,22 @@ def migrate_routing():
     if verified_instances['_meta']['total'] is not 0:
         for instance in verified_instances['_items']:
             statistic = utilities.get_single_eve('statistics', instance['statistics'])
-            if statistic['bundles'].get('cu_seo_bundle'):
-                if statistic['bundles']['cu_seo_bundle']['schema_version'] != 0:
-                    # Run the link checker command 10 minutes later.
-                    migration_linkchecker.apply_async([instance], countdown=600)
+            if statistic.get('bundles'):
+                if statistic['bundles'].get('cu_seo_bundle'):
+                    if statistic['bundles']['cu_seo_bundle']['schema_version'] != 0:
+                        # Run the link checker command 10 minutes later.
+                        migration_linkchecker.apply_async([instance], countdown=600)
             utilities.patch_eve('sites', instance['_id'], old_infra_payload, env=env)
             utilities.patch_eve('sites', instance['_id'], new_infra_payload)
 
     if timeout_verification_instances['_meta']['total'] is not 0:
         for instance in timeout_verification_instances['_items']:
             statistic = utilities.get_single_eve('statistics', instance['statistics'])
-            if statistic['bundles'].get('cu_seo_bundle'):
-                if statistic['bundles']['cu_seo_bundle']['schema_version'] != 0:
-                    # Run the link checker command 10 minutes later.
-                    migration_linkchecker.apply_async([instance], countdown=600)
+            if statistic.get('bundles'):
+                if statistic['bundles'].get('cu_seo_bundle'):
+                    if statistic['bundles']['cu_seo_bundle']['schema_version'] != 0:
+                        # Run the link checker command 10 minutes later.
+                        migration_linkchecker.apply_async([instance], countdown=600)
             utilities.patch_eve('sites', instance['_id'], old_infra_payload, env=env)
             utilities.patch_eve('sites', instance['_id'], new_infra_payload)
 

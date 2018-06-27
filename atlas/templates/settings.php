@@ -79,6 +79,23 @@ if (isset($launched) && $launched && isset($conf["cu_path"])) {
 }
 
 /**
+ * Redirect from www-prod-new to www if the site has been approved.
+ */
+{% if migration_verification == 'approved' -%}
+  {% if environment == 'prod' -%}
+if ($_SERVER['HTTP_HOST'] == 'www-prod-new.colorado.edu') {
+  header('Location: https://www.colorado.edu/'.$_SERVER['REQUEST_URI']);
+  {% elif environment == 'test' -%}
+if ($_SERVER['HTTP_HOST'] == 'www-test-new.colorado.edu') {
+  header('Location: https://www-test.colorado.edu/'.$_SERVER['REQUEST_URI']);
+  {% elif environment == 'dev' -%}
+if ($_SERVER['HTTP_HOST'] == 'www-dev-new.colorado.edu') {
+  header('Location: https://www-dev.colorado.edu/'.$_SERVER['REQUEST_URI']);
+  {% endif -%}
+  exit;
+}
+{% endif -%}
+/**
  * Cookies
  *
  * Drupal generates a unique session cookie name for each site based on its full domain name.

@@ -1296,8 +1296,8 @@ def migrate_routing():
     pool = 'osr-{0}-https'.format(ENVIRONMENT)
     old_infra_payload = {'pool': pool}
     env = 'o-{0}'.format(ENVIRONMENT)
-    new_infra_payload = "{{'dates':{{'activation':'{0}'}}}}".format(
-        datetime.utcnow().strftime("%Y-%m-%d %H:%M:%S GMT"))
+    date = datetime.utcnow().strftime("%Y-%m-%d %H:%M:%S GMT")
+    new_infra_payload = {'dates':{'activation':date}}
 
     if verified_instances['_meta']['total'] is not 0:
         for instance in verified_instances['_items']:

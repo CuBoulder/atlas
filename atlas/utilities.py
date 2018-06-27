@@ -272,7 +272,7 @@ def patch_eve(resource, id, request_payload, env=ENVIRONMENT):
     :return:
     """
     url = "{0}/{1}/{2}".format(API_URLS[env], resource, id)
-    get_etag = get_single_eve(resource, id)
+    get_etag = get_single_eve(resource, id, env=env)
     headers = {'Content-Type': 'application/json', 'If-Match': get_etag['_etag']}
 
     try:

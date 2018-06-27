@@ -750,7 +750,7 @@ def update_f5():
                     # In case a path was saved with a leading slash
                     instance_path = site["path"] if site["path"][0] == '/' else '/' + site["path"]
                     ofile.write('"{0}" := "{1}",\n'.format(instance_path, site['pool']))
-        ofile.write('"/p1" := "poolb-express",\n')
+            ofile.write('"/p1" := "poolb-express",\n')
         execute(exportf5,
                 file_name=LOAD_BALANCER_CONFIG_FILES[ENVIRONMENT],
                 load_balancer_config_dir=load_balancer_config_dir)

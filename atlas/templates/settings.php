@@ -92,7 +92,7 @@ if ($_SERVER['HTTP_HOST'] == 'www-test-new.colorado.edu') {
 if ($_SERVER['HTTP_HOST'] == 'www-dev-new.colorado.edu') {
   header('Location: https://www-dev.colorado.edu/'.$_SERVER['REQUEST_URI']);
   {% endif -%}
-  exit;
+  exit();
 }
 {% endif -%}
 /**

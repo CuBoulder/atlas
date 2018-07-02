@@ -906,9 +906,10 @@ def import_backup(backup, target_instance, source_env=ENVIRONMENT):
             run('drush rr')
         run('drush en ucb_on_prem_hosting -y')
         run('drush elysia-cron run --ignore-time')
+        run('drush xmlsitemap-regenerate')
         run('drush atst')
         run('drush vset profile_module_manager_disable_enabling_atlas_bundles 0')
-        run('drush lock_user_dev')
+        run('drush express-unlock')
 
     run('rm {0}'.format(files_path))
     run('rm {0}'.format(database_path))

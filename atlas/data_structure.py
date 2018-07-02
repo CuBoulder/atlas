@@ -292,6 +292,9 @@ SITES_SCHEMA = {
             'verification_user': {
                 'type': 'string',
             },
+            'scheduled_migration': {
+                'type': 'datetime',
+            },
         },
     },
     'statistics': {

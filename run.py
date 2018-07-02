@@ -102,13 +102,13 @@ def get_command(machine_name):
                 tasks.heal_code.delay(code)
                 continue
         elif command == 'heal_instances':
-            instance_query = 'where={"type":"express","f5only":false}'
+            instance_query = 'where={"type":"express","f5only":false}&max_results=2000'
             instances = utilities.get_eve('sites', instance_query)
             for instance in instances['_items']:
                 tasks.heal_instance.delay(instance)
                 continue
         elif command == 'correct_nfs_file_permissions':
-            instance_query = 'where={"type":"express","f5only":false}'
+            instance_query = 'where={"type":"express","f5only":false}&max_results=2000'
             instances = utilities.get_eve('sites', instance_query)
             for instance in instances['_items']:
                 tasks.correct_nfs_file_permissions.delay(instance)

@@ -1296,7 +1296,6 @@ def migrate_routing():
     old_infra_payload = {'pool': 'pool-varnish-new'}
     env = 'o-{0}'.format(ENVIRONMENT)
     date = datetime.utcnow().strftime("%Y-%m-%d %H:%M:%S GMT")
-    new_infra_payload = {'dates':{'activation':date}}
 
     if verified_instances['_meta']['total'] is not 0:
         for instance in verified_instances['_items']:
@@ -1307,6 +1306,7 @@ def migrate_routing():
                         # Run the link checker command 10 minutes later.
                         migration_linkchecker.apply_async([instance], countdown=600)
             utilities.patch_eve('sites', instance['_id'], old_infra_payload, env=env)
+            new_infra_payload = {'dates':{'activation':date}}
             utilities.patch_eve('sites', instance['_id'], new_infra_payload)
 
     if timeout_verification_instances['_meta']['total'] is not 0:
@@ -1318,6 +1318,10 @@ def migrate_routing():
                         # Run the link checker command 10 minutes later.
                         migration_linkchecker.apply_async([instance], countdown=600)
             utilities.patch_eve('sites', instance['_id'], old_infra_payload, env=env)
+            new_infra_payload = {
+                'dates':{'activation':date},
+                'verification':{'verification_status':'approved', 'verification_user':'timeout'}
+            }
             utilities.patch_eve('sites', instance['_id'], new_infra_payload)
 
 

@@ -1081,7 +1081,7 @@ def remove_failed_backups():
     Delete failed backups.
     """
     # Get all backups
-    time_ago = datetime.utcnow() - timedelta(mintues=90)
+    time_ago = datetime.utcnow() - timedelta(minutes=90)
     backup_query = 'where={{"state":"pending","_created":{{"$lte":"{0}"}}}}&max_results=2000'.format(
         time_ago.strftime("%Y-%m-%d %H:%M:%S GMT"))
     backups = utilities.get_eve('backup', backup_query)

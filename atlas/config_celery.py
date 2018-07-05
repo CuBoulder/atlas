@@ -124,6 +124,10 @@ CELERYBEAT_SCHEDULE = {
         'task': 'atlas.tasks.remove_extra_backups',
         'schedule': timedelta(hours=6),
     },
+    'remove_failed_backups': {
+        'task': 'atlas.tasks.remove_failed_backups',
+        'schedule': timedelta(hours=24),
+    },
     'routine_backups': {
         'task': 'atlas.tasks.backup_instances_all',
         'schedule': crontab(minute=0, hour=20)

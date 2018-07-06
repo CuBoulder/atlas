@@ -21,12 +21,10 @@ from atlas import utilities
 from atlas.config import (ATLAS_LOCATION, ENVIRONMENT, SSH_USER, CODE_ROOT, SITES_CODE_ROOT,
                           SITES_WEB_ROOT, WEBSERVER_USER, WEBSERVER_USER_GROUP, NFS_MOUNT_FILES_DIR,
                           BACKUP_PATH, SERVICE_ACCOUNT_USERNAME, SERVICE_ACCOUNT_PASSWORD,
-                          SITE_DOWN_PATH, LOAD_BALANCER, VARNISH_CONTROL_KEY, STATIC_WEB_PATH,
-                          SSL_VERIFICATION, DRUPAL_CORE_PATHS, BACKUP_IMPORT_PATH, SAML_AUTH,
-                          SMTP_PASSWORD)
+                          SITE_DOWN_PATH, VARNISH_CONTROL_KEY, STATIC_WEB_PATH, SSL_VERIFICATION,
+                          DRUPAL_CORE_PATHS, BACKUP_IMPORT_PATH, SAML_AUTH, SMTP_PASSWORD)
 from atlas.config_servers import (SERVERDEFS, NFS_MOUNT_LOCATION, API_URLS,
-                                  VARNISH_CONTROL_TERMINALS, LOAD_BALANCER_CONFIG_FILES,
-                                  LOAD_BALANCER_CONFIG_GROUP, BASE_URLS, ATLAS_LOGGING_URLS)
+                                  VARNISH_CONTROL_TERMINALS, BASE_URLS, ATLAS_LOGGING_URLS)
 
 # Setup a sub-logger. See tasks.py for longer comment.
 log = logging.getLogger('atlas.fabric_tasks')
@@ -178,18 +176,11 @@ def site_provision(site):
     code_directory = '{0}/{1}'.format(SITES_CODE_ROOT, site['sid'])
     code_directory_sid = '{0}/{1}'.format(code_directory, site['sid'])
     code_directory_current = '{0}/current'.format(code_directory)
-    web_directory_type = '{0}/{1}'.format(SITES_WEB_ROOT, site['type'])
-    web_directory_sid = '{0}/{1}'.format(web_directory_type, site['sid'])
+    web_directory_sid = '{0}/{1}'.format(SITES_WEB_ROOT, site['sid'])
     profile = utilities.get_single_eve('code', site['code']['profile'])
 
     try:
         execute(create_directory_structure, folder=code_directory)
-    except FabricException as error:
-        log.error('Site | Provision | Create directory structure failed | Error - %s', error)
-        return error
-
-    try:
-        execute(create_directory_structure, folder=web_directory_type)
     except FabricException as error:
         log.error('Site | Provision | Create directory structure failed | Error - %s', error)
         return error
@@ -240,20 +231,6 @@ def site_provision(site):
         execute(update_symlink, source=code_directory_current, destination=web_directory_sid)
     except FabricException as error:
         log.error('Site | Provision | Update symlink failed | Error - %s', error)
-        return error
-
-
-def site_install(site):
-    code_directory = '{0}/{1}'.format(SITES_CODE_ROOT, site['sid'])
-    code_directory_current = '{0}/current'.format(code_directory)
-    profile = utilities.get_single_eve('code', site['code']['profile'])
-    profile_name = profile['meta']['name']
-
-    try:
-        execute(install_site, profile_name=profile_name,
-                code_directory_current=code_directory_current)
-    except FabricException as error:
-        log.error('Site | Install | Instance install failed | Error - %s', error)
         return error
 
 
@@ -377,15 +354,10 @@ def site_remove(site):
     :return:
     """
     log.info('Site | Remove | Site - %s', site['_id'])
+
     code_directory = '{0}/{1}'.format(SITES_CODE_ROOT, site['sid'])
-    web_directory = '{0}/{1}/{2}'.format(
-        SITES_WEB_ROOT,
-        site['type'],
-        site['sid'])
-    web_directory_path = '{0}/{1}/{2}'.format(
-        SITES_WEB_ROOT,
-        site['type'],
-        site['path'])
+    web_directory = '{0}/{1}'.format(SITES_WEB_ROOT, site['sid'])
+    web_directory_path = '{0}/{1}'.format(SITES_WEB_ROOT, site['path'])
 
     # Fix perms to allow settings file to be removed.
     sites_dir = "{0}/{1}/{1}/sites".format(SITES_CODE_ROOT, site['sid'])
@@ -397,7 +369,7 @@ def site_remove(site):
 
     if NFS_MOUNT_FILES_DIR:
         nfs_dir = NFS_MOUNT_LOCATION[ENVIRONMENT]
-        nfs_files_dir = '{0}/sitefiles/{1}'.format(nfs_dir, site['sid'])
+        nfs_files_dir = '{0}/{1}/files'.format(nfs_dir, site['sid'])
         remove_directory(nfs_files_dir)
 
     remove_directory(code_directory)
@@ -469,10 +441,7 @@ def update_settings_file(site):
 @roles('webservers')
 def update_homepage_files():
     """
-    Run a command on a single server
-
-    :param site: Site to run command on
-    :param command: Command to run
+    SCP the homepage files to web heads.
     :return:
     """
     send_from_robots = '{0}/files/homepage_robots'.format(ATLAS_LOCATION)
@@ -495,7 +464,7 @@ def command_run(site, command):
     :return:
     """
     log.info('Command | Multiple Servers | Site - %s | Command - %s', site['sid'], command)
-    web_directory = '{0}/{1}/{2}'.format(SITES_WEB_ROOT, site['type'], site['sid'])
+    web_directory = '{0}/{1}'.format(SITES_WEB_ROOT, site['sid'])
     with cd(web_directory):
         run('{0}'.format(command))
 
@@ -556,7 +525,7 @@ def update_database(site):
         run('drush updb -y')
 
 
-@roles('webserver_single')
+# We use a dynamic host list to round-robin, so you need to pass a host list when calling it.
 def registry_rebuild(site):
     """
     Run a drush rr and drush cc drush.
@@ -594,17 +563,13 @@ def site_install(site):
     profile = utilities.get_single_eve('code', site['code']['profile'])
     profile_name = profile['meta']['name']
 
-@roles('webservers')
-def update_settings_file(site):
-    log.info('fabric_tasks | Update Settings File | Site - %s', site['sid'])
     try:
         with cd(code_directory_current):
             run('drush site-install -y {0}'.format(profile_name))
             run('chgrp -R {0} sites/default/files/*'.format(WEBSERVER_USER_GROUP))
             run('drush rr; drush cc drush')
     except FabricException as error:
-        log.error('fabric_tasks | Update Settings File | Site - %s | Error - %s',
-                  site['sid'], error)
+        log.error('Site | Install | Instance install failed | Error - %s', error)
         return error
 
 
@@ -613,6 +578,10 @@ def create_nfs_files_dir(nfs_dir):
     nfs_tmp_dir = '{0}/tmp'.format(nfs_dir)
     create_directory_structure(nfs_files_dir)
     create_directory_structure(nfs_tmp_dir)
+    run('chown {0}:{1} {2}'.format(SSH_USER, WEBSERVER_USER_GROUP, nfs_files_dir))
+    run('chown {0}:{1} {2}'.format(SSH_USER, WEBSERVER_USER_GROUP, nfs_tmp_dir))
+    run('chmod 775 {0}'.format(nfs_files_dir))
+    run('chmod 775 {0}'.format(nfs_tmp_dir))
 
 
 def create_directory_structure(folder):
@@ -709,13 +678,6 @@ def create_settings_files(site):
                     template_dir=template_dir,
                     backup=False,
                     mode='0444')
-
-
-@roles('webserver_single')
-def install_site(profile_name, code_directory_current):
-    with cd(code_directory_current):
-        run('sudo -u {0} drush site-install -y {1}'.format(WEBSERVER_USER, profile_name))
-        run('sudo -u {0} drush rr; sudo -u {0} drush cc drush'.format(WEBSERVER_USER))
 
 
 def clone_repo(git_url, checkout_item, destination):
@@ -832,7 +794,6 @@ def backup_create(site, backup_type):
     log.info('Atlas operational statistic | Backup Create | %s', backup_time)
 
 
-@roles('webserver_single')
 def backup_restore(backup_record, original_instance, package_list):
     """
     Restore database and files to a new instance.

@@ -337,8 +337,7 @@ def site_provision(site):
         raise
 
     try:
-        host = utilities.single_host()
-        execute(fabric_tasks.site_install, site=site, hosts=host)
+        execute(fabric_tasks.site_install, site=site)
     except Exception as error:
         log.error('Site install failed | Error Message | %s', error)
         raise
@@ -422,6 +421,7 @@ def site_update(site, updates, original):
     deploy_update_database = False
     deploy_drupal_cache_clear = False
     deploy_php_cache_clear = False
+    update_f5 = False
 
     if updates.get('code'):
         log.debug('Site update | ID - %s | Found code changes', site['_id'])
@@ -550,17 +550,18 @@ def site_update(site, updates, original):
             deploy_php_cache_clear = True
 
     # Get a host to run single server commands on.
-    host = utilities.single_host()
     # We want to run these commands in this specific order.
     log.info('Site Update | Closing operations commands | PHP Cache clear - %s | Registry rebuild - %s | Drush updb - %s | Drush cc - %s', deploy_php_cache_clear, deploy_registry_rebuild, deploy_update_database, deploy_drupal_cache_clear)
     if deploy_php_cache_clear:
         execute(fabric_tasks.clear_php_cache)
     if deploy_registry_rebuild:
-        execute(fabric_tasks.registry_rebuild, site=site, hosts=host)
+        execute(fabric_tasks.registry_rebuild, site=site)
     if deploy_update_database:
-        execute(fabric_tasks.update_database, site=site, hosts=host)
+        execute(fabric_tasks.update_database, site=site)
     if deploy_drupal_cache_clear:
-        execute(fabric_tasks.drush_cache_clear, sid=site['sid'], hosts=host)
+        execute(fabric_tasks.cache_clear, sid=site['sid'])
+    if update_f5:
+        execute(fabric_tasks.update_f5)
 
     slack_text = 'Site Update - Success - {0}/sites/{1}'.format(API_URLS[ENVIRONMENT], site['_id'])
     slack_color = 'good'
@@ -926,8 +927,7 @@ def verify_statistics():
 
             log.info('sites_id_list | %s', str(sites_id_list))
 
-            slack_fallback = '{0} statistics items have not been updated in 36 hours.'.format(
-                    len(statistic_id_list))
+            slack_fallback = '{0} statistics items have not been updated in 36 hours.'.format(len(statistic_id_list))
             slack_link = '{0}/statistics?{1}'.format(BASE_URLS[ENVIRONMENT], site_query)
             slack_payload = {
                 "text": 'Outdated Statistics',
@@ -1004,7 +1004,7 @@ def backup_instances_all(backup_type='routine'):
     utilities.post_to_slack_payload(slack_payload)
 
 
-@celery.task
+@celery.task(time_limit=2000)
 def backup_create(site, backup_type, batch=None):
     log.debug('Backup | Create | Batch - %s | Site - %s', batch, site)
     log.info('Backup | Create | Batch - %s | Site - %s', batch, site['_id'])
@@ -1018,9 +1018,8 @@ def backup_restore(backup_record, original_instance, package_list):
     log.info('Backup | Restore | Backup ID - %s', backup_record['_id'])
     log.debug('Backup | Restore | Backup Recorsd - %s | Original instance - %s | Package List - %s',
               backup_record, original_instance, package_list)
-    host = utilities.single_host()
     execute(fabric_tasks.backup_restore, backup_record=backup_record,
-            original_instance=original_instance, package_list=package_list, hosts=host)
+            original_instance=original_instance, package_list=package_list)
 
 
 @celery.task

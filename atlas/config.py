@@ -9,7 +9,7 @@ import os
 
 from atlas.config_servers import (SERVERDEFS, VARNISH_CONTROL_TERMINALS, NFS_MOUNT_LOCATION,
                                   BASE_URLS, API_URLS, LOAD_BALANCER_CONFIG_FILES,
-                                  LOAD_BALANCER_CONFIG_GROUP)
+                                  LOAD_BALANCER_CONFIG_GROUP, ATLAS_LOGGING_URLS)
 from atlas.config_local import (ENVIRONMENT, SSL_KEY_FILE, SSL_CRT_FILE, ALLOWED_USERS,
                                 NFS_MOUNT_FILES_DIR, LOAD_BALANCER, DESIRED_SITE_COUNT, CODE_ROOT,
                                 SITES_WEB_ROOT, SITES_CODE_ROOT, SITE_DOWN_PATH, DEFAULT_CORE,
@@ -17,7 +17,7 @@ from atlas.config_local import (ENVIRONMENT, SSL_KEY_FILE, SSL_CRT_FILE, ALLOWED
                                 LDAP_DNS_DOMAIN_NAME, SSH_USER, WEBSERVER_USER,
                                 WEBSERVER_USER_GROUP, DATABASE_USER, DATABASE_PASSWORD,
                                 SERVICE_ACCOUNT_USERNAME, SERVICE_ACCOUNT_PASSWORD,
-                                SLACK_NOTIFICATIONS, SLACK_URL, SLACK_USERNAME, VARNISH_CONTROL_KEY,
+                                SLACK_NOTIFICATIONS, SLACK_URL, SLACK_USERNAME,
                                 SEND_NOTIFICATION_EMAILS, SEND_NOTIFICATION_FROM_EMAIL, EMAIL_HOST,
                                 EMAIL_PORT, EMAIL_USERNAME, EMAIL_PASSWORD, LOG_LOCATION,
                                 EMAIL_USERS_EXCLUDE, STATIC_WEB_PATH, BACKUP_PATH,

@@ -14,8 +14,9 @@ CELERY_MONGODB_BACKEND_SETTINGS = {
 CELERY_TIMEZONE = 'MST'
 CELERY_ENABLE_UTC = True
 # Time in seconds
-CELERYD_TASK_TIME_LIMIT = 900
+CELERYD_TASK_TIME_LIMIT = 600
 
+# Setup routing to isolate routine cron from other commands..
 CELERY_ROUTES = {
     'atlas.tasks.code_deploy': {
         'queue': 'update_queue'
@@ -62,9 +63,12 @@ CELERY_ROUTES = {
     'atlas.tasks.remove_old_backups': {
         'queue': 'atlas_queue'
     },
-    # 'atlas.tasks.migrate_routing': {
-    #     'queue': 'atlas_queue'
-    # },
+    'atlas.tasks.remove_failed_backups': {
+        'queue': 'atlas_queue'
+    },
+    'atlas.tasks.migrate_routing': {
+        'queue': 'atlas_queue'
+    },
 }
 
 CELERYBEAT_SCHEDULE = {

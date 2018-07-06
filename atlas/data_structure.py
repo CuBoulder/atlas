@@ -57,7 +57,7 @@ CODE_SCHEMA = {
             },
             'code_type': {
                 'type': 'string',
-                'allowed': ['library', 'theme', 'module', 'core', 'profile', 'static'],
+                'allowed': ['library', 'theme', 'module', 'core', 'profile'],
                 'required': True,
             },
             'label': {

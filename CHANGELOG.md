@@ -3,46 +3,75 @@
 ## v2.2.0
 
 This release supports the new infrastructure.
+
+Resolves:
+
+- &#35;248 - Change the way we call commands
+- &#35;303 - Pipe Atlas logs to Logstash
+- &#35;328 - Add support for pools
+- &#35;366 - Figure out how to handle commands endpoint with new drush command syntax
+- &#35;370 - Switch to new homepage location
+- &#35;372 - Support new infrastructure
+- &#35;373 - Support pooling
+- &#35;393 - Round robin commands
+- &#35;414 - Add stat elements for beans_by_type.full_html and nodes_by_type.full_html
+- &#35;422 - Support running an array of commands
+- &#35;428 - Add protected paths
+- &#35;431 - Support static assets.
+- &#35;433 - Only update the f5 when working with legacy records
+- &#35;434 - Remove pools and use only type
+- &#35;446 - Move f5 work to ansible
+- &#35;448 - Self restore code
+- &#35;449 - Self restore instances
+- &#35;450 - Purge code and instances
+- &#35;451 - Function to update routing for verified instances
+- &#35;452 - Infrastructure Migration
+- &#35;454 - Separate drush commands and other commands
+- &#35;455 - Add multiple Atlas URLs to the settings file
+- &#35;458 - Import backups from current infra
+- &#35;461 - Verify that instances can be fully deleted.
+
 ## v2.1.5
 
 Improves backup functionality, adds a logging url to the settings file
 
 Resolves:
 
-- &#35;463 Update stats for CuBoulder/express#2291
+- &#35;463 - Update stats for CuBoulder/express#2291
 
 ## v2.1.4
 
 Resolves:
 
-- &#35;90 - Create resource for backups
-- &#35;431 - Support static assets.
-- &#35;428 - Add protected paths
-- &#35;303 - Pipe Atlas logs to Logstash
-- &#35;372 - Support new infrastructure
-- &#35;393 - Round robin commands
-- &#35;373 - Support pooling
-- &#35;370 - Switch to new homepage location
+- &#35;456 - Eve returns a different query result when compared to MongoDB
 
 ## v2.1.3
 
+This release adds basic backup and restore functionality.
+
 Resolves:
 
-- &#35;453 Remove nightly instance churn.
+- &#35;90 - Create resource for backups (aka Make backups work)
+- &#35;453 - Remove nightly instance churn.
 
 ## v2.1.2
 
+Need to:
+
+- Add `BACKUP_TMP_PATH` and `MEDIA_STORAGE_PATH` to `config_local.py`
+
 Resolves:
 
-- &#35;441 Add a cookie domain to settings file
+- &#35;441 - Add a cookie domain to settings file
+- &#35;90 - Create resource for backups
 
 ## v2.1.1
 
 Resolves:
 
-- &#35;437 Remove commands posting to Slack
-- &#35;408 Get timestamp into atlas.log
-- &#35;438 Updating the current and label meta data for a code asset should not trigger a code-re-add process
+- &#35;437 - Remove commands posting to Slack
+- &#35;408 - Get timestamp into atlas.log
+- &#35;438 - Updating the current and label meta data for a code asset should not trigger a code-re-add process
 
 ## v2.1.0
 
@@ -58,24 +87,25 @@ This release adds granular deployment options for code assets. The following req
 
 When a code item is added to an instance, the above drush commands will be run as indicated by the code asset. If multiple items are added, the commands will be run after all code is changed.
 
-Need to
+As part of deployment:
 
 - Add a list of users to exclude from emails in `config_local.py`
 - Ensure `sudo -u [webserver_user] drush` can run without a password.
 
 Resolves:
 
-- &#35;95 Periodically check for unused code
-- &#35;304 As a Service Manager, need to be able to deploy profile updates without updb
-  - &#35;22 Add field for 'requires updb'
-  - &#35;311 Add field for 'requires registry rebuild'
-  - &#35;312 Add field for 'requires cache clear'
-- &#35;330 During launch, drupal caches are cleared a lot
-- &#35;412 Return something like `Command [xx:xx:xx] 2 of 16 - Success` in Slack
-- &#35;10 Re-add packages to sites when changing meta data of a code item.
-- &#35;338 Exclude the '_id' of the item we are updating as a query parameter
-- &#35;401 Remove test accounts from bundle adding emails
-- &#35;220 Started to review settings.php
+- &#35;90 - Create resource for backups
+- &#35;95 - Periodically check for unused code
+- &#35;304 - As a Service Manager, need to be able to deploy profile updates without updb
+  - &#35;22 - Add field for 'requires updb'
+  - &#35;311 - Add field for 'requires registry rebuild'
+  - &#35;312 - Add field for 'requires cache clear'
+- &#35;330 - During launch, drupal caches are cleared a lot
+- &#35;412 - Return something like `Command [xx:xx:xx] 2 of 16 - Success` in Slack
+- &#35;10 - Re-add packages to sites when changing meta data of a code item.
+- &#35;338 - Exclude the '_id' of the item we are updating as a query parameter
+- &#35;401 - Remove test accounts from bundle adding emails
+- &#35;220 - Started to review settings.php
 
 ## v2.0.3
 

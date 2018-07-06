@@ -5,10 +5,12 @@
 """
 import os
 import sys
+import json
 import logging
 from logging.handlers import WatchedFileHandler
 import ssl
 
+from collections import Counter
 from datetime import datetime
 from eve import Eve
 from eve.auth import requires_auth
@@ -158,7 +160,7 @@ def import_backup():
         backup_id=backup_request['id'],
         target_instance=backup_request['target_id'])
 
-    return make_response('I am trying')
+    return make_response('Attempting to import backup')
 
 
 @app.route('/backup/<string:backup_id>/restore', methods=['POST'])
@@ -198,6 +200,41 @@ def create_backup(site_id):
     app.logger.debug('Backup | Create | Site Response - %s', site)
     tasks.backup_create.delay(site=site, backup_type='on_demand')
     response = make_response('Backup started')
+    return response
+
+
+@app.route('/sites/aggregation', methods=['GET'])
+@app.route('/sites/agg', methods=['GET'])
+@requires_auth('sites')
+def sites_statistics():
+    """
+    Give some basic aggregations about site objects
+    """
+    app.logger.debug('Sites | Aggregations')
+    express_result = utilities.get_eve('sites','where={"type":"express","f5only":false}&max_results=2000')
+    legacy_result = utilities.get_eve('sites','where={"type":"legacy","f5only":false}&max_results=2000')
+    app.logger.debug('Sites | Aggregations | Express Result - %s', express_result)
+    app.logger.debug('Sites | Aggregations | Legacy Result - %s', legacy_result)
+    # Express sites
+    express_sites = express_result['_items']
+    agg = {}
+    count = Counter()
+    group = Counter()
+    ## Total by state
+    for site in express_sites:
+        count[site['status']] += 1
+        group[site['update_group']] += 1
+    agg['express'] = {
+        'status': dict(count),
+        'update_group': dict(group)
+    }
+    # Total
+    agg['express']['status']['total'] = express_result['_meta']['total']
+    # Legacy
+    ## Total routes
+    agg['legacy'] = {'total': legacy_result['_meta']['total']}
+
+    response = make_response(jsonify(agg))
     return response
 
 

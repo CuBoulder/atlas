@@ -28,7 +28,10 @@ SERVERDEFS = {
             'memcache1.example.com:port',
             'memcache2.example.com:port',
         ],
-        'load_balancer': 'lb-prod1.example.com',
+        'load_balancers': [
+            'lb1.example.com',
+            'lb2.example.com',
+        ],
     },
     'test': {
         'webservers': [
@@ -53,7 +56,10 @@ SERVERDEFS = {
             'memcache-test1.example.com:port',
             'memcache-test2.example.com:port',
         ],
-        'load_balancer': 'lb-test1.example.com',
+        'load_balancers': [
+            'lb-test1.example.com',
+            'lb-test2.example.com',
+        ],
     },
     'dev': {
         'webservers': [
@@ -76,7 +82,10 @@ SERVERDEFS = {
         'memcache_servers': [
             'memcache-dev1.example.com:port',
         ],
-        'load_balancer': 'lb-dev1.example.com',
+        'load_balancers': [
+            'lb-dev1.example.com',
+            'lb-dev2.example.com',
+        ],
     },
     'local': {
         'webservers': ['express.local'],
@@ -87,6 +96,7 @@ SERVERDEFS = {
         },
         'varnish_servers': ['localhost'],
         'memcache_servers': ['localhost:11211'],
+        'load_balancers': [],
     },
 }
 
@@ -130,4 +140,20 @@ LOAD_BALANCER_CONFIG_GROUP = {
     'prod': 'lb-prod1-2',
     'test': 'lb-test1-2',
     'dev': 'lb-dev1-2',
+}
+
+ATLAS_LOGGING_URLS = {
+    'local': [],
+    'dev': [
+        "https://logs.example.com/",
+        "/report"
+    ],
+    'test': [
+        "https://logs.example.com/",
+        "/report"
+    ],
+    'prod': [
+        "https://logs.example.com/",
+        "/report"
+    ],
 }

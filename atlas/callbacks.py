@@ -297,7 +297,7 @@ def on_update_sites(updates, original):
             code = original['code'].copy()
             code.update(updates['code'])
             site['code'] = code
-        if updates.get('dates'):
+        if updates.get('dates') and original.get('dates'):
             dates = original['dates'].copy()
             dates.update(updates['dates'])
             site['dates'] = dates
@@ -361,7 +361,7 @@ def on_updated_code(updates, original):
         update_sites = False
 
     if update_sites:
-        log.debug('code | on updated | Preparing to update instances')
+        log.info('Code | on updated | Preparing to update instances')
         query = 'where={{"code.{0}":"{1}"}}'.format(code_type, original['_id'])
         sites_get = utilities.get_eve('sites', query)
 

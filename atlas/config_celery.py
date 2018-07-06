@@ -124,6 +124,10 @@ CELERYBEAT_SCHEDULE = {
         'task': 'atlas.tasks.remove_extra_backups',
         'schedule': timedelta(hours=6),
     },
+    'remove_failed_backups': {
+        'task': 'atlas.tasks.remove_failed_backups',
+        'schedule': timedelta(hours=24),
+    },
     'routine_backups': {
         'task': 'atlas.tasks.backup_instances_all',
         'schedule': crontab(minute=0, hour=20)
@@ -136,8 +140,8 @@ CELERYBEAT_SCHEDULE = {
         'task': 'atlas.tasks.verify_statistics',
         'schedule': crontab(minute=0, hour=6),
     },
-    # 'migrate_routing': {
-    #     'task': 'atlas.tasks.migrate_routing',
-    #     'schedule': crontab(minute=0, hour='9,11,13,15', day_of_week='mon-fri')
-    # },
+    'migrate_routing': {
+        'task': 'atlas.tasks.migrate_routing',
+        'schedule': crontab(minute=0, hour='8,10,12,14', day_of_week='mon-fri')
+    },
 }

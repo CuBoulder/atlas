@@ -830,6 +830,7 @@ def backup_restore(backup_record, original_instance, package_list):
         try:
             new_instance_refresh = utilities.get_single_eve('sites', new_instance['_id'])
             if new_instance_refresh['status'] != 'installed':
+                log.info('Instance | Restore Backup | New instance is not ready | %s', new_instance['_id'])
                 raise ValueError('Status has not yet updated.')
             break
         except ValueError, e:
@@ -841,19 +842,18 @@ def backup_restore(backup_record, original_instance, package_list):
             else:
                 exit(str(e))
 
-    log.debug('Instance | Restore Backup | New instance is ready for DB and files | %s',
-              new_instance['_id'])
-    web_directory = '{0}/{1}/{2}'.format(SITES_WEB_ROOT, new_instance['type'], new_instance['sid'])
-    nfs_files_dir = '{0}/sitefiles/{1}/files'.format(
-        NFS_MOUNT_LOCATION[ENVIRONMENT], new_instance['sid'])
+    log.info('Instance | Restore Backup | New instance is ready for DB and files | %s',
+             new_instance['_id'])
+    web_directory = '{0}/{1}'.format(SITES_WEB_ROOT, new_instance['sid'])
+    nfs_files_dir = '{0}/{1}/files'.format(NFS_MOUNT_LOCATION[ENVIRONMENT], new_instance['sid'])
 
     with cd(nfs_files_dir):
         run('tar -xzf {0}'.format(files_path))
-        log.debug('Instance | Restore Backup | Files replaced')
+        log.info('Instance | Restore Backup | Files replaced')
 
     with cd(web_directory):
         run('drush sql-cli < {0}'.format(database_path))
-        log.debug('Instance | Restore Backup | DB imported')
+        log.info('Instance | Restore Backup | DB imported')
         run('drush cc all')
 
     restore_time = time() - start_time
@@ -906,7 +906,10 @@ def import_backup(backup, target_instance, source_env=ENVIRONMENT):
             run('drush rr')
         run('drush en ucb_on_prem_hosting -y')
         run('drush elysia-cron run --ignore-time')
+        run('drush xmlsitemap-regenerate')
         run('drush atst')
+        run('drush vset profile_module_manager_disable_enabling_atlas_bundles 0')
+        run('drush express-unlock')
 
     run('rm {0}'.format(files_path))
     run('rm {0}'.format(database_path))

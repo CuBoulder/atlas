@@ -163,7 +163,7 @@ SITES_SCHEMA = {
     },
     'type': {
         'type': 'string',
-        'allowed':  ['express', 'legacy', 'homepage'],
+        'allowed':  ['express', 'legacy'],
         'default': 'express',
     },
     'status': {
@@ -191,21 +191,8 @@ SITES_SCHEMA = {
             'prod'
         ],
     },
-    'pool': {
-        'type': 'string',
-        'allowed': [
-            'poolb-express',
-            'poolb-homepage',
-            'WWWLegacy',
-            'pool-varnish-new'],
-        'default': 'poolb-express',
-    },
     'update_group': {
         'type': 'integer',
-    },
-    'f5only': {
-        'type': 'boolean',
-        'default': False
     },
     'settings': {
         'type': 'dict',
@@ -283,6 +270,31 @@ SITES_SCHEMA = {
                 'type': 'datetime',
                 'nullable': True,
             },
+            'migration': {
+                'type': 'datetime',
+            },
+            'verification': {
+                'type': 'datetime',
+            },
+            'activation': {
+                'type': 'datetime',
+            },
+        },
+    },
+    'verification': {
+        'type': 'dict',
+        'schema': {
+            'verification_status': {
+                'type': 'string',
+                'allowed': ['not_ready', 'ready', 'failed', 'approved'],
+                'default': 'not_ready'
+            },
+            'verification_user': {
+                'type': 'string',
+            },
+            'scheduled_migration': {
+                'type': 'datetime',
+            },
         },
     },
     'statistics': {
@@ -344,6 +356,7 @@ STATISTICS_SCHEMA = {
             'person': {'type': 'integer', 'nullable': True},
             'person_list_page': {'type': 'integer', 'nullable': True},
             'photo_gallery': {'type': 'integer', 'nullable': True},
+            'full_html': {'type': 'integer', 'nullable': True},
         },
     },
     'nodes_other': {
@@ -387,6 +400,7 @@ STATISTICS_SCHEMA = {
             'facebook_activity': {'type': 'integer', 'nullable': True},
             'facebook_like_button': {'type': 'integer', 'nullable': True},
             'twitter_block': {'type': 'integer', 'nullable': True},
+            'full_html': {'type': 'integer', 'nullable': True},
         },
     },
     'beans_other': {
@@ -833,25 +847,24 @@ BACKUP_SCHEMA = {
     },
 }
 
-COMMANDS_SCHEMA = {
-    'name': {
+DRUSH_SCHEMA = {
+    'label': {
         'type': 'string',
-        'minlength': 3,
         'required': True,
     },
-    'command': {
-        'type': 'string',
-        'minlength': 3,
+    'commands': {
+        'type': 'list',
+        'schema': {
+            'type': 'string',
+            'minlength': 5,
+        },
         'required': True,
+        'unique': True,
     },
     # String that is stored needs to be posted with Unicode character encodings
     'query': {
         'type': 'string',
         'minlength': 9,
-    },
-    'single_server': {
-        'type': 'boolean',
-        'required': True,
         'default': True,
     },
     'created_by': {
@@ -918,22 +931,20 @@ BACKUP = {
     'schema': BACKUP_SCHEMA,
 }
 
-# Command resource
-# Empty public_item_methods means that you can't call actual commands without authentication.
-# Anonymous users can list the commands, but not call them.
-COMMANDS = {
-    'item_title': 'commands',
+# Drush resource
+DRUSH = {
+    'item_title': 'drush',
     'public_methods': ['GET'],
-    'public_item_methods': [],
+    'public_item_methods': ['GET'],
     'versioning': True,
-    'schema': COMMANDS_SCHEMA,
+    'schema': DRUSH_SCHEMA,
 }
 
 # Domain definition. Tells Eve what resources are available on this domain.
 DOMAIN = {
     'sites': SITES,
     'code': CODE,
-    'commands': COMMANDS,
+    'drush': DRUSH,
     'query': QUERY,
     'statistics': STATISTICS,
     'backup': BACKUP,

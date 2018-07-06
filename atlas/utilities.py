@@ -25,7 +25,7 @@ from atlas.config import (ATLAS_LOCATION, ALLOWED_USERS, LDAP_SERVER, LDAP_ORG_U
                           SERVICE_ACCOUNT_USERNAME, SERVICE_ACCOUNT_PASSWORD, SSL_VERIFICATION,
                           SLACK_USERNAME, SLACK_URL, SEND_NOTIFICATION_EMAILS,
                           SEND_NOTIFICATION_FROM_EMAIL, EMAIL_HOST, EMAIL_PORT, EMAIL_USERNAME,
-                          EMAIL_PASSWORD, EMAIL_USERS_EXCLUDE)
+                          EMAIL_PASSWORD, EMAIL_USERS_EXCLUDE, SAML_AUTH)
 from atlas.config_servers import (SERVERDEFS, API_URLS)
 
 # Setup a sub-logger. See tasks.py for longer comment.
@@ -34,6 +34,7 @@ log = logging.getLogger('atlas.utilities')
 
 if ATLAS_LOCATION not in sys.path:
     sys.path.append(ATLAS_LOCATION)
+
 
 class AtlasBasicAuth(BasicAuth):
     """
@@ -138,34 +139,22 @@ def create_database(site_sid, site_db_key):
 
     # Create database
     try:
-        cursor.execute("CREATE DATABASE `{0}`;".format(site_sid))
+        cursor.execute("CREATE DATABASE IF NOT EXISTS `{0}`;".format(site_sid))
     except mariadb.Error as error:
         log.error('Create Database | %s | %s', site_sid, error)
         raise
 
     instance_database_password = decrypt_string(site_db_key)
-    # Add user
+    # Grant privileges/add user
     try:
         if ENVIRONMENT != 'local':
-            cursor.execute("CREATE USER '{0}'@'{1}' IDENTIFIED BY '{2}';".format(
+            cursor.execute("GRANT ALL PRIVILEGES ON {0}.* TO '{0}'@'{1}' IDENTIFIED BY '{2}';".format(
                 site_sid,
                 SERVERDEFS[ENVIRONMENT]['database_servers']['user_host_pattern'],
                 instance_database_password))
         else:
-            cursor.execute("CREATE USER '{0}'@'localhost' IDENTIFIED BY '{1}';".format(
+            cursor.execute("GRANT ALL PRIVILEGES ON {0}.* TO '{0}'@'localhost' IDENTIFIED BY '{1}';".format(
                 site_sid, instance_database_password))
-    except mariadb.Error as error:
-        log.error('Create User | %s | %s', site_sid, error)
-        raise
-
-    # Grant privileges
-    try:
-        if ENVIRONMENT != 'local':
-            cursor.execute("GRANT ALL PRIVILEGES ON {0}.* TO '{0}'@'{1}';".format(
-                site_sid,
-                SERVERDEFS[ENVIRONMENT]['database_servers']['user_host_pattern']))
-        else:
-            cursor.execute("GRANT ALL PRIVILEGES ON {0}.* TO '{0}'@'localhost';".format(site_sid))
     except mariadb.Error as error:
         log.error('Grant Privileges | %s | %s', site_sid, error)
         raise
@@ -273,7 +262,7 @@ def get_single_eve(resource, id, version=None, env=ENVIRONMENT):
 
     return r.json()
 
-def patch_eve(resource, id, request_payload):
+def patch_eve(resource, id, request_payload, env=ENVIRONMENT):
     """
     Patch items in the Atlas API.
 
@@ -282,14 +271,14 @@ def patch_eve(resource, id, request_payload):
     :param request_payload:
     :return:
     """
-    url = "{0}/{1}/{2}".format(API_URLS[ENVIRONMENT], resource, id)
-    get_etag = get_single_eve(resource, id)
+    url = "{0}/{1}/{2}".format(API_URLS[env], resource, id)
+    get_etag = get_single_eve(resource, id, env=env)
     headers = {'Content-Type': 'application/json', 'If-Match': get_etag['_etag']}
 
     try:
         r = requests.patch(url, headers=headers, data=json.dumps(request_payload), auth=(
             SERVICE_ACCOUNT_USERNAME, SERVICE_ACCOUNT_PASSWORD), verify=SSL_VERIFICATION)
-        log.debug('PATCH to Atlas | URL - %s | Response - %s', url, r.text)
+        log.info('PATCH to Atlas | URL - %s | Response - %s', url, r.text)
     except Exception as error:
         log.error('PATCH to Atlas | URL - %s | Error - %s', url, error)
 
@@ -376,68 +365,6 @@ def get_code_label(code_id):
         return get_code_name_version(code_id)
 
 
-def import_code(query):
-    """
-    Import code definitions from a URL. Should be a JSON file export from Atlas or a live Atlas code
-    endpoint.
-
-    :param query: URL for JSON to import
-    """
-    r = requests.get(query)
-    log.debug('Import Code | JSON Import | %s', r.json())
-    data = r.json()
-    for code in data['_items']:
-        payload = {
-            'git_url': code['git_url'],
-            'commit_hash': code['commit_hash'],
-            'meta': {
-                'name': code['meta']['name'],
-                'version': code['meta']['version'],
-                'code_type': code['meta']['code_type'],
-                'is_current': code['meta']['is_current'],
-            },
-        }
-        if code['meta'].get('tag'):
-            payload['meta']['tag'] = code['meta']['tag']
-        if code['meta'].get('label'):
-            payload['meta']['label'] = code['meta']['label']
-        post_eve('code', payload)
-
-
-def rebalance_update_groups(item):
-    """
-    Redistribute instances into update groups.
-    :param item: command item
-    :return:
-    """
-    site_query = 'where={0}&max_results=2000'.format(item['query'])
-    sites = get_eve('sites', site_query)
-    installed_update_group = 0
-    launched_update_group = 0
-    if not sites['_meta']['total'] == 0:
-        for site in sites['_items']:
-            # Only update if the group is less than 11.
-            log.debug('Rebalance | Launched counter - %s | Installed counter- %s | Site - %s | Site update group - %s', launched_update_group, installed_update_group, site['_id'], site['update_group'])
-            if site['update_group'] < 5:
-                if site['status'] == 'launched':
-                    patch_payload = '{{"update_group": {0}}}'.format(launched_update_group)
-                    log.debug('Rebalance | Site - %s | Site update group changed to - %s', site['_id'], launched_update_group)
-                    if launched_update_group < 5:
-                        launched_update_group += 1
-                    else:
-                        launched_update_group = 0
-                else:
-                    patch_payload = '{{"update_group": {0}}}'.format(installed_update_group)
-                    if installed_update_group < 2:
-                        installed_update_group += 1
-                    else:
-                        installed_update_group = 0
-                if patch_payload:
-                    patch_eve('sites', site['_id'], patch_payload)
-                log.debug('Rebalance | Site - %s | Site update group changed to - %s', site['_id'], patch_payload)
-                log.debug('Rebalance | Launched counter - %s | Installed counter- %s | End of loop', launched_update_group, installed_update_group)
-
-
 def post_to_slack_payload(payload):
     """
     Posts a message to a given channel using the Slack Incoming Webhooks API.
@@ -484,6 +411,28 @@ def send_email(email_message, email_subject, email_to):
             s.quit()
 
 
+# When we start the app, set the round-robin counter to 0.
+HOST_ROUND_ROBIN_COUNTER = 0
+
+def single_host():
+    """
+    Round-robin the webserver host list for tasks that are only run on a single host.
+    """
+    global HOST_ROUND_ROBIN_COUNTER
+    log.debug('Single host | Start | Counter - %s', HOST_ROUND_ROBIN_COUNTER)
+    host = SERVERDEFS[ENVIRONMENT]['webservers'][HOST_ROUND_ROBIN_COUNTER]
+
+    # Increment the counter if it is less than the total number of webservers (need to account for
+    # arrays starting at 0), otherwise reset it.
+    if HOST_ROUND_ROBIN_COUNTER < (len(SERVERDEFS[ENVIRONMENT]['webservers']) - 1):
+        HOST_ROUND_ROBIN_COUNTER += 1
+    else:
+        HOST_ROUND_ROBIN_COUNTER = 0
+
+    log.debug('Single host | End | Counter - %s | Host - %s', HOST_ROUND_ROBIN_COUNTER, host)
+    return host
+
+
 def package_import(site, env=ENVIRONMENT):
     """
     Take a site record, lookup the packages, and return a list of packages to add to the instance.
@@ -494,8 +443,7 @@ def package_import(site, env=ENVIRONMENT):
         package_list = []
         for package in site['code']['package']:
             package_result = get_single_eve('code', package, env=env)
-            log.debug(
-                'Utilities | Package import | Checking for packages | Request result - %s', package_result)
+            log.debug('Utilities | Package import | Checking for packages | Request result - %s', package_result)
             if package_result['_deleted']:
                 current_package = get_current_code(
                     package_result['meta']['name'], package_result['meta']['code_type'])
@@ -503,10 +451,99 @@ def package_import(site, env=ENVIRONMENT):
                 if current_package:
                     package_list.append(current_package)
                 else:
-                    raise Exception('There is no current version of {0}. This backup cannot be restored.'.format(
-                        package_result['meta']['name']))
+                    raise Exception('There is no current version of {0}. This backup cannot be restored.'.format(package_result['meta']['name']))
             else:
                 package_list.append(package_result['_id'])
     else:
         package_list = None
     return package_list
+
+
+def create_saml_database():
+    """
+    Create a database and user for SAML auth
+    """
+    log.info('Create SAML Database')
+    # Start connection
+    mariadb_connection = mariadb.connect(
+        user=DATABASE_USER,
+        password=DATABASE_PASSWORD,
+        host=SERVERDEFS[ENVIRONMENT]['database_servers']['master'],
+        port=SERVERDEFS[ENVIRONMENT]['database_servers']['port']
+    )
+
+    cursor = mariadb_connection.cursor()
+
+    # Create database
+    try:
+        cursor.execute("CREATE DATABASE `saml`;")
+    except mariadb.Error as error:
+        log.error('Create Database | saml | %s', error)
+        raise
+
+    instance_database_password = SAML_AUTH
+    # Add user
+    try:
+        if ENVIRONMENT != 'local':
+            cursor.execute("CREATE USER 'saml'@'{0}' IDENTIFIED BY '{1}';".format(
+                SERVERDEFS[ENVIRONMENT]['database_servers']['user_host_pattern'],
+                instance_database_password))
+        else:
+            cursor.execute("CREATE USER 'saml'@'localhost' IDENTIFIED BY '{0}';".format(
+                instance_database_password))
+    except mariadb.Error as error:
+        log.error('Create User | saml | %s', error)
+        raise
+
+    # Grant privileges
+    try:
+        if ENVIRONMENT != 'local':
+            cursor.execute("GRANT ALL PRIVILEGES ON saml.* TO 'saml'@'{0}';".format(
+                SERVERDEFS[ENVIRONMENT]['database_servers']['user_host_pattern']))
+        else:
+            cursor.execute("GRANT ALL PRIVILEGES ON saml.* TO 'saml'@'localhost';")
+    except mariadb.Error as error:
+        log.error('Grant Privileges | saml | %s', error)
+        raise
+
+    mariadb_connection.commit()
+    mariadb_connection.close()
+
+    log.info('Create Database | saml | Success')
+
+
+def delete_saml_database():
+    """
+    Delete database and user
+
+    :param site_id: SID for instance to remove.
+    """
+    log.info('Delete Database | saml')
+    # Start connection
+    mariadb_connection = mariadb.connect(
+        user=DATABASE_USER,
+        password=DATABASE_PASSWORD,
+        host=SERVERDEFS[ENVIRONMENT]['database_servers']['master'],
+        port=SERVERDEFS[ENVIRONMENT]['database_servers']['port']
+    )
+    cursor = mariadb_connection.cursor()
+
+    # Drop database
+    try:
+        cursor.execute("DROP DATABASE IF EXISTS `saml`;")
+    except mariadb.Error as error:
+        log.error('Drop Database | saml | %s', error)
+
+    # Drop user
+    try:
+        if ENVIRONMENT != 'local':
+            cursor.execute("DROP USER 'saml'@'{0}';".format(
+                SERVERDEFS[ENVIRONMENT]['database_servers']['user_host_pattern']))
+        else:
+            cursor.execute("DROP USER 'saml'@'localhost';")
+    except mariadb.Error as error:
+        log.error('Drop User | saml | %s', error)
+
+    mariadb_connection.commit()
+    mariadb_connection.close()
+    log.info('Delete Database | saml | Success')

@@ -11,7 +11,8 @@ from bson import ObjectId
 
 from atlas import tasks
 from atlas import utilities
-from atlas.config import (ATLAS_LOCATION, DEFAULT_CORE, DEFAULT_PROFILE, SERVICE_ACCOUNT_USERNAME)
+from atlas.config import (ATLAS_LOCATION, DEFAULT_CORE, DEFAULT_PROFILE, SERVICE_ACCOUNT_USERNAME,
+                          PROTECTED_PATHS, BASE_URLS, ENVIRONMENT)
 
 # Setup a sub-logger. See tasks.py for longer comment.
 log = logging.getLogger('atlas.callbacks')
@@ -23,7 +24,8 @@ def pre_post(resource, request):
     :param resource: resource accessed
     :param request: flask.request object
     """
-    log.debug('POST | Resource - %s | Request - %s, | request.data - %s', resource, str(request), request.data)
+    log.debug('POST | Resource - %s | Request - %s, | request.data - %s',
+              resource, str(request), request.data)
 
 
 def pre_post_sites(request):
@@ -46,6 +48,30 @@ def pre_post_sites(request):
     elif not profile:
         log.error('sites | POST | Pre post callback | No current profile')
         abort(409, 'Error: There is no current profile.')
+
+
+def pre_patch_sites(request, payload):
+    """
+    :param request: flask.request object
+    """
+    log.debug('sites | PATCH | Pre patch callback | Payload - %s', payload)
+
+    # Check for a protected path.
+    if 'path' in json.loads(request.data) and json.loads(request.data)['path'] in PROTECTED_PATHS:
+        log.error('sites | PATCH | Pre patch callback | Protected path')
+        abort(409, 'Error: Cannot use this path, it is on the protected list.')
+
+
+def pre_put_sites(request, payload):
+    """
+    :param request: flask.request object
+    """
+    log.debug('sites | PUT | Pre put callback | Payload - %s', payload)
+
+    # Check for a protected path.
+    if 'path' in json.loads(request.data) and json.loads(request.data)['path'] in PROTECTED_PATHS:
+        log.error('sites | PUT | Pre put callback | Protected path')
+        abort(409, 'Error: Cannot use this path, it is on the protected list.')
 
 
 def pre_delete_code(request, lookup):
@@ -91,7 +117,7 @@ def on_insert_sites(items):
     log.debug(items)
     for item in items:
         log.debug(item)
-        if item['type'] == 'express' and not item['f5only']:
+        if item['type'] == 'express':
             if not item.get('sid'):
                 item['sid'] = 'p1' + sha1(utilities.randomstring()).hexdigest()[0:10]
             if not item.get('path'):
@@ -127,7 +153,7 @@ def on_inserted_sites(items):
     for item in items:
         log.debug(item)
         log.debug('site | Site object created | site - %s', item)
-        if item['type'] == 'express' and not item['f5only']:
+        if item['type'] == 'express':
             # Create statistics item
             statistics_payload = {}
             # Need to get the string out of the ObjectID.
@@ -137,8 +163,6 @@ def on_inserted_sites(items):
             item['statistics'] = str(statistics['_id'])
 
             tasks.site_provision.delay(item)
-        if item['type'] == 'legacy' or item['f5only']:
-            tasks.update_f5.delay()
 
 
 def on_insert_code(items):
@@ -180,9 +204,18 @@ def pre_delete_sites(request, lookup):
     :param request: flask.request object
     :param lookup:
     """
-    log.debug('sites | Pre Delete | lookup - %s', lookup)
-    site = utilities.get_single_eve('sites', lookup['_id'])
-    tasks.site_remove.delay(site)
+    log.debug('Instances | Pre Delete | lookup - %s', lookup)
+    instance = utilities.get_single_eve('sites', lookup['_id'])
+    log.debug('Instances | Pre Delete | instance - %s', instance)
+
+    # Check if instance is launched.
+    if not instance['status'] in ['launched', 'launching']:
+        log.debug('Instances | Pre Delete | instance - %s | Instance state - %s | Okay to delete', instance, instance['status'])
+        tasks.site_remove.delay(instance)
+    else:
+        log.error('Instances | Delete | instance - %s | Instance is launched or launching',
+                  instance['_id'])
+        abort(409, 'Instance is launched or launching. To delete, take instance down first.')
 
 
 def on_delete_item_code(item):
@@ -251,7 +284,7 @@ def on_update_sites(updates, original):
     """
     log.debug('sites | Update | Updates - %s | Original - %s', updates, original)
     site_type = updates['type'] if updates.get('type') else original['type']
-    if site_type == 'express':
+    if site_type in ['express']:
         site = original.copy()
         site.update(updates)
         # Only need to rewrite the nested dicts if they got updated.
@@ -259,7 +292,7 @@ def on_update_sites(updates, original):
             code = original['code'].copy()
             code.update(updates['code'])
             site['code'] = code
-        if updates.get('dates'):
+        if updates.get('dates') and original.get('dates'):
             dates = original['dates'].copy()
             dates.update(updates['dates'])
             site['dates'] = dates
@@ -281,21 +314,14 @@ def on_update_sites(updates, original):
 
                 updates['dates'] = json.loads(date_json)
 
+        if updates.get('verification'):
+            if updates.get('verification_status'):
+                if updates['verification']['verification_status'] == 'approved':
+                    date_json = '{{"verification":"{0} GMT"}}'.format(updates['_updated'])
+                    updates['dates'] = json.loads(date_json)
+
         log.debug('sites | Update | Ready for Celery | Site - %s | Updates - %s', site, updates)
         tasks.site_update.delay(site=site, updates=updates, original=original)
-
-
-def on_update_commands(updates, original):
-    """
-    Run commands when API endpoints are called.
-
-    :param updates:
-    :param original:
-    """
-    item = original.copy()
-    item.update(updates)
-    log.debug('command | Update | Item - %s | Update - %s | Original - %s', item, updates, original)
-    tasks.command_prepare.delay(item)
 
 
 def on_updated_code(updates, original):
@@ -330,7 +356,7 @@ def on_updated_code(updates, original):
         update_sites = False
 
     if update_sites:
-        log.debug('code | on updated | Preparing to update instances')
+        log.info('Code | on updated | Preparing to update instances')
         query = 'where={{"code.{0}":"{1}"}}'.format(code_type, original['_id'])
         sites_get = utilities.get_eve('sites', query)
 
@@ -380,3 +406,40 @@ def pre_replace(resource, item, original):
         if username is not None:
             if username is not SERVICE_ACCOUNT_USERNAME:
                 item['modified_by'] = username
+
+
+def on_delete_item(resource, item):
+    """
+    On DELETE, get the username from the request and add it to the record if one was not provided.
+    """
+    # Only update if a username was not provided.
+    log.debug('On Delete | Update modified user')
+    username = g.get('username', None)
+    if username is not None:
+        item['modified_by'] = username
+
+
+def on_deleted_item_sites(item):
+    """
+    After the DELETE, notify slack
+    """
+    slack_text = 'Site Remove - Success - {0}/{1}'.format(BASE_URLS[ENVIRONMENT], item['path'])
+    slack_color = 'good'
+    slack_link = '{0}/{1}'.format(BASE_URLS[ENVIRONMENT], item['path'])
+
+    slack_payload = {
+        "text": slack_text,
+        "username": 'Atlas',
+        "attachments": [
+            {
+                "fallback": slack_text,
+                "color": slack_color,
+                "fields": [
+                    {"title": "Instance", "value": slack_link, "short": False},
+                    {"title": "Environment", "value": ENVIRONMENT, "short": True},
+                    {"title": "Delete requested by", "value": item['modified_by'], "short": True}
+                ],
+            }
+        ],
+    }
+    utilities.post_to_slack_payload(slack_payload)

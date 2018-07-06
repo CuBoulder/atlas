@@ -677,8 +677,7 @@ def drush_command_run(site, command_list, user=None, batch_id=None, batch_count=
     :param user: string Username that called the command.
     :return:
     """
-    log.info('Batch ID - %s | Count - %s | Command - %s', batch_id, batch_count, command_list)
-    log.debug('Batch ID - %s | Count - %s | Site - %s | Command - %s', batch_id, batch_count, site['sid'], command_list)
+    log.info('Batch ID - %s | Count - %s | Site - %s | Command - %s', batch_id, batch_count, site['sid'], command_list)
 
     # 'match' searches for strings that begin with
     if site['path'] != 'homepage':
@@ -696,10 +695,8 @@ def drush_command_run(site, command_list, user=None, batch_id=None, batch_count=
                                  command=final_command, warn_only=True, hosts=host)
 
     command_time = time.time() - start_time
-    log.info('Batch ID - %s | Count - %s | Command - %s | Time - %s | Result - %s',
-             batch_id, batch_count, command_list, command_time, fabric_task_result)
-    log.debug('Batch ID - %s | Count - %s | Site - %s | Command - %s | Time - %s | Result - %s',
-             batch_id, batch_count, site['sid'], command_list, command_time, fabric_task_result)
+    log.info('Batch ID - %s | Count - %s | Site - %s | Command - %s | Time - %s | Result - %s',
+             batch_id, batch_count, site['sid'], site['sid'], command_list, command_time, fabric_task_result)
 
 
 @celery.task

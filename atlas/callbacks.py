@@ -49,6 +49,16 @@ def pre_post_sites(request):
         log.error('sites | POST | Pre post callback | No current profile')
         abort(409, 'Error: There is no current profile.')
 
+    # Check for a protected path.
+    if json.loads(request.data).get('path') and json.loads(request.data)['path'] in PROTECTED_PATHS:
+        log.error('sites | POST | Pre post callback | Protected path')
+        abort(409, 'Error: Cannot use this path, it is on the protected list.')
+
+    # Check for a protected path.
+    if json.loads(request.data).get('path') and json.loads(request.data)['path'] in PROTECTED_PATHS:
+        log.error('sites | POST | Pre post callback | Protected path')
+        abort(409, 'Error: Cannot use this path, it is on the protected list.')
+
 
 def pre_patch_sites(request, payload):
     """
@@ -128,17 +138,17 @@ def on_insert_sites(items):
             # The 'get' method checks if the key exists.
             if item.get('code'):
                 if not item['code'].get('core'):
-                    item['code']['core'] = ObjectId(utilities.get_current_code(
-                        name=DEFAULT_CORE, code_type='core'))
+                    item['code']['core'] = utilities.get_current_code(
+                        name=DEFAULT_CORE, code_type='core')
                 if not item['code'].get('profile'):
-                    item['code']['profile'] = ObjectId(utilities.get_current_code(
-                        name=DEFAULT_PROFILE, code_type='profile'))
+                    item['code']['profile'] = utilities.get_current_code(
+                        name=DEFAULT_PROFILE, code_type='profile')
             else:
                 item['code'] = {}
-                item['code']['core'] = ObjectId(utilities.get_current_code(
-                    name=DEFAULT_CORE, code_type='core'))
-                item['code']['profile'] = ObjectId(utilities.get_current_code(
-                    name=DEFAULT_PROFILE, code_type='profile'))
+                item['code']['core'] = utilities.get_current_code(
+                    name=DEFAULT_CORE, code_type='core')
+                item['code']['profile'] = utilities.get_current_code(
+                    name=DEFAULT_PROFILE, code_type='profile')
             date_json = '{{"created":"{0} GMT"}}'.format(item['_created'])
             item['dates'] = json.loads(date_json)
 

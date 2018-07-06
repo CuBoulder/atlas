@@ -14,9 +14,8 @@ CELERY_MONGODB_BACKEND_SETTINGS = {
 CELERY_TIMEZONE = 'MST'
 CELERY_ENABLE_UTC = True
 # Time in seconds
-CELERYD_TASK_TIME_LIMIT = 600
+CELERYD_TASK_TIME_LIMIT = 900
 
-# Setup routing to isolate routine cron from other commands..
 CELERY_ROUTES = {
     'atlas.tasks.code_deploy': {
         'queue': 'update_queue'

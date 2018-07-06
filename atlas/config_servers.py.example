@@ -28,10 +28,6 @@ SERVERDEFS = {
             'memcache1.example.com:port',
             'memcache2.example.com:port',
         ],
-        'load_balancers': [
-            'lb1.example.com',
-            'lb2.example.com',
-        ],
     },
     'test': {
         'webservers': [
@@ -56,10 +52,6 @@ SERVERDEFS = {
             'memcache-test1.example.com:port',
             'memcache-test2.example.com:port',
         ],
-        'load_balancers': [
-            'lb-test1.example.com',
-            'lb-test2.example.com',
-        ],
     },
     'dev': {
         'webservers': [
@@ -82,10 +74,6 @@ SERVERDEFS = {
         'memcache_servers': [
             'memcache-dev1.example.com:port',
         ],
-        'load_balancers': [
-            'lb-dev1.example.com',
-            'lb-dev2.example.com',
-        ],
     },
     'local': {
         'webservers': ['express.local'],
@@ -96,7 +84,6 @@ SERVERDEFS = {
         },
         'varnish_servers': ['localhost'],
         'memcache_servers': ['localhost:11211'],
-        'load_balancers': [],
     },
 }
 
@@ -127,19 +114,6 @@ API_URLS = {
     'test': 'https://atlas-test.example.com/atlas',
     'dev': 'https://atlas-dev.example.com/atlas',
     'local': 'https://inventory.local/atlas',
-}
-
-LOAD_BALANCER_CONFIG_FILES = {
-    'prod': 'ProdDataGroup.dat',
-    'test': 'TestDataGroup.dat',
-    'dev': 'DevDataGroup.dat',
-}
-
-# Needed for reload configuration commands.
-LOAD_BALANCER_CONFIG_GROUP = {
-    'prod': 'lb-prod1-2',
-    'test': 'lb-test1-2',
-    'dev': 'lb-dev1-2',
 }
 
 ATLAS_LOGGING_URLS = {

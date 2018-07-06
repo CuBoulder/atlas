@@ -828,7 +828,8 @@ def remove_unused_code():
     If a code item is more than 90 days old, not current, and unused then remove it.
     """
     time_ago = datetime.utcnow() - timedelta(days=90)
-    code_query = 'where={{"meta.is_current":false,"_created":{{"$lte":"{0}"}}}}'.format(time_ago.strftime("%Y-%m-%d %H:%M:%S GMT"))
+    code_query = 'where={{"meta.is_current":false,"_created":{{"$lte":"{0}"}}}}'.format(
+        time_ago.strftime("%Y-%m-%d %H:%M:%S GMT"))
     code_items = utilities.get_eve('code', code_query)
 
     for code in code_items['_items']:
@@ -1112,8 +1113,16 @@ def report_routine_backups():
                 "fallback": slack_fallback,
                 "color": slack_color,
                 "fields": [
-                    {"title": "Environment", "value": ENVIRONMENT, "short": True},
-                    {"title": "Complete routine backups", "value": backups['_meta']['total'], "short": False}
+                    {
+                        "title": "Environment",
+                        "value": ENVIRONMENT,
+                        "short": True
+                    },
+                    {
+                        "title": "Complete routine backups",
+                        "value": backups['_meta']['total'],
+                        "short": False
+                    }
                 ],
             }
         ],
@@ -1287,7 +1296,7 @@ def import_backup(env, backup_id, target_instance):
         message = "Your site at {0} has been migrated to the new infrastructure and is ready to be verified. Visit https://www.colorado.edu/webcentral/site-verification-steps for details on what you need to do next.\n\nAfter you have verified your site, it will be put in queue to relaunch at your normal URL. Relaunch windows are scheduled for 9am, 11am, 1pm and 3pm. You will be placed in the next time slot based on the time you verify your site.\n\nIf you do not verify the migration within 48 hours, your site will automatically relaunch at the normal URL.\n\n- Web Express Team".format(path)
         statistics = utilities.get_single_eve('statistics', target['statistics'])
         site_owners = statistics['users']['email_address']['site_owner']
-        #utilities.send_email(email_message=message, email_subject=subject, email_to=site_owners)
+        utilities.send_email(email_message=message, email_subject=subject, email_to=site_owners)
 
 
 @celery.task

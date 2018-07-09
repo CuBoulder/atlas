@@ -744,10 +744,25 @@ def cron_run(site):
     start_time = time.time()
 
     if site['path'] != 'homepage':
-        uri = BASE_URLS[ENVIRONMENT] + '/' + site['path']
+        # Remove this hack after migration is complete.
+        if updates.get('verification'):
+            if updates['verification'].get('verification_status'):
+                if updates['verification']['verification_status'] == 'approved':
+                    base_url = True
+                else:
+                    base_url = False
+            else:
+                base_url = False
+        else:
+            base_url = False
+
+        if base_url:
+            uri = 'https://www.colorado.edu' + '/' + site['path']
+        else:
+            uri = BASE_URLS[ENVIRONMENT] + '/' + site['path']
     else:
         # Homepage
-        uri = BASE_URLS[ENVIRONMENT]
+        uri = 'https://www.colorado.edu'
     log.debug('Site - %s | uri - %s', site['sid'], uri)
     command = 'drush elysia-cron run --uri={1}'.format(WEBSERVER_USER, uri)
     try:

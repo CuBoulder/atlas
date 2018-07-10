@@ -44,6 +44,9 @@ CELERY_ROUTES = {
     'atlas.tasks.cron': {
         'queue': 'cron_queue'
     },
+    'atlas.tasks.cron_run': {
+        'queue': 'cron_queue'
+    },
     'atlas.tasks.available_sites_check': {
         'queue': 'atlas_queue'
     },

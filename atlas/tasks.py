@@ -745,9 +745,9 @@ def cron_run(site):
 
     if site['path'] != 'homepage':
         # Remove this hack after migration is complete.
-        if updates.get('verification'):
-            if updates['verification'].get('verification_status'):
-                if updates['verification']['verification_status'] == 'approved':
+        if site.get('verification'):
+            if site['verification'].get('verification_status'):
+                if site['verification']['verification_status'] == 'approved':
                     base_url = True
                 else:
                     base_url = False

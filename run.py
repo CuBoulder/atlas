@@ -92,7 +92,7 @@ def get_command(machine_name):
             sites = utilities.get_eve('sites', query)
             timestamp = datetime.now()
             count = 0
-            total = sites['_meta']['max_results']
+            total = sites['_meta']['total']
             for instance in sites['_items']:
                 count += 1
                 tasks.update_settings_file.delay(instance, timestamp, count, total)

@@ -544,10 +544,11 @@ def site_update(site, updates, original):
 
     # Update settings file when migration is approved
     if updates.get('verification'):
-        if updates['verification']['verification_status'] == 'approved':
-            log.info('Verification approved | Instance - %s', site['_id'])
-            execute(fabric_tasks.update_settings_file, site=site)
-            deploy_php_cache_clear = True
+        if updates['verification'].get('verification_status'):
+            if updates['verification']['verification_status'] == 'approved':
+                log.info('Verification approved | Instance - %s', site['_id'])
+                execute(fabric_tasks.update_settings_file, site=site)
+                deploy_php_cache_clear = True
 
     # Get a host to run single server commands on.
     host = utilities.single_host()

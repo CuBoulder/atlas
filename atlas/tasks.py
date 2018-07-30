@@ -681,11 +681,25 @@ def drush_command_run(site, command_list, user=None, batch_id=None, batch_count=
     log.info('Batch ID - %s | Count - %s | Command - %s', batch_id, batch_count, command_list)
     log.debug('Batch ID - %s | Count - %s | Site - %s | Command - %s', batch_id, batch_count, site['sid'], command_list)
 
-    # 'match' searches for strings that begin with
     if site['path'] != 'homepage':
-        uri = BASE_URLS[ENVIRONMENT] + '/' + site['path']
-    elif site['path'] == 'homepage':
-        uri = BASE_URLS[ENVIRONMENT]
+        # Remove this hack after migration is complete.
+        if site.get('verification'):
+            if site['verification'].get('verification_status'):
+                if site['verification']['verification_status'] == 'approved':
+                    base_url = True
+                else:
+                    base_url = False
+            else:
+                base_url = False
+        else:
+            base_url = False
+        if base_url:
+            uri = 'https://www.colorado.edu' + '/' + site['path']
+        else:
+            uri = BASE_URLS[ENVIRONMENT] + '/' + site['path']
+    else:
+        # Homepage
+        uri = 'https://www.colorado.edu'
     # Use List comprehension to add user prefix and URI suffix, then join the result.
     final_command = ' && '.join([command + ' --uri={0}'.format(uri) for command in command_list])
     log.debug('Batch ID - %s | Count - %s | Final Command - %s', batch_id, batch_count, final_command)

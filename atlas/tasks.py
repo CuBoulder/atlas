@@ -645,7 +645,7 @@ def drush_prepare(drush_id, run=True):
     log.debug('Drush | Prepare | Drush command - %s', drush_id)
     drush_command = utilities.get_single_eve('drush', drush_id)
 
-    site_query = 'where={0}'.format(drush_command['query'])
+    site_query = 'where={0}&max_results=2000'.format(drush_command['query'])
     sites = utilities.get_eve('sites', site_query)
     log.debug('Drush | Prepare | Drush command - %s | Ran query - %s', drush_id, sites)
     if not sites['_meta']['total'] == 0 and run is True:

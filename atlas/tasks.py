@@ -337,8 +337,7 @@ def site_provision(site):
         raise
 
     try:
-        host = utilities.single_host()
-        execute(fabric_tasks.site_install, site=site, hosts=host)
+        execute(fabric_tasks.site_install, site=site)
     except Exception as error:
         log.error('Site install failed | Error Message | %s', error)
         raise
@@ -550,18 +549,16 @@ def site_update(site, updates, original):
                 execute(fabric_tasks.update_settings_file, site=site)
                 deploy_php_cache_clear = True
 
-    # Get a host to run single server commands on.
-    host = utilities.single_host()
     # We want to run these commands in this specific order.
     log.info('Site Update | Closing operations commands | PHP Cache clear - %s | Registry rebuild - %s | Drush updb - %s | Drush cc - %s', deploy_php_cache_clear, deploy_registry_rebuild, deploy_update_database, deploy_drupal_cache_clear)
     if deploy_php_cache_clear:
         execute(fabric_tasks.clear_php_cache)
     if deploy_registry_rebuild:
-        execute(fabric_tasks.registry_rebuild, site=site, hosts=host)
+        execute(fabric_tasks.registry_rebuild, site=site)
     if deploy_update_database:
-        execute(fabric_tasks.update_database, site=site, hosts=host)
+        execute(fabric_tasks.update_database, site=site)
     if deploy_drupal_cache_clear:
-        execute(fabric_tasks.drush_cache_clear, sid=site['sid'], hosts=host)
+        execute(fabric_tasks.drush_cache_clear, sid=site['sid'])
 
     slack_text = 'Site Update - Success - {0}/sites/{1}'.format(API_URLS[ENVIRONMENT], site['_id'])
     slack_color = 'good'
@@ -706,9 +703,8 @@ def drush_command_run(site, command_list, user=None, batch_id=None, batch_count=
 
     start_time = time.time()
 
-    host = utilities.single_host()
     fabric_task_result = execute(fabric_tasks.command_run_single, site=site,
-                                 command=final_command, warn_only=True, hosts=host)
+                                 command=final_command, warn_only=True)
 
     command_time = time.time() - start_time
     log.info('Batch ID - %s | Count - %s | Command - %s | Time - %s | Result - %s',
@@ -784,10 +780,8 @@ def cron_run(site):
     log.debug('Site - %s | uri - %s', site['sid'], uri)
     command = 'drush elysia-cron run --uri={1}'.format(WEBSERVER_USER, uri)
     try:
-        # Get a host to run this command on.
-        host = utilities.single_host()
-        execute(fabric_tasks.command_run_single, site=site, command=command, hosts=host)
-        execute(fabric_tasks.correct_nfs_file_permissions, instance=site, hosts=host)
+        execute(fabric_tasks.command_run_single, site=site, command=command)
+        execute(fabric_tasks.correct_nfs_file_permissions, instance=site)
     except CronException as error:
         log.error('Site - %s | Cron failed | Error - %s', site['sid'], error)
         raise
@@ -1038,8 +1032,7 @@ def backup_instances_all(backup_type='routine'):
 def backup_create(site, backup_type, batch=None):
     log.debug('Backup | Create | Batch - %s | Site - %s', batch, site)
     log.info('Backup | Create | Batch - %s | Site - %s', batch, site['_id'])
-    host = utilities.single_host()
-    execute(fabric_tasks.backup_create, site=site, backup_type=backup_type, hosts=host)
+    execute(fabric_tasks.backup_create, site=site, backup_type=backup_type)
     log.info('Backup | Create | Batch - %s | Site - %s | Backup finished', batch, site['_id'])
 
 
@@ -1050,7 +1043,7 @@ def backup_restore(backup_record, original_instance, package_list):
               backup_record, original_instance, package_list)
     host = utilities.single_host()
     execute(fabric_tasks.backup_restore, backup_record=backup_record,
-            original_instance=original_instance, package_list=package_list, hosts=host)
+            original_instance=original_instance, package_list=package_list)
 
 
 @celery.task
@@ -1286,9 +1279,7 @@ def correct_nfs_file_permissions(instance):
     """
     log.info('Correct NFS file permissions | Instance - %s', instance)
     try:
-        # Get a host to run this command on.
-        host = utilities.single_host()
-        execute(fabric_tasks.correct_nfs_file_permissions, instance=instance, hosts=host)
+        execute(fabric_tasks.correct_nfs_file_permissions, instance=instance)
     except Exception as error:
         log.error('Correct NFS file permissions | Instance - %s | Error', instance['sid'], error)
         raise
@@ -1306,12 +1297,11 @@ def import_backup(env, backup_id, target_instance):
     log.info('Import Backup | Backup - %s', backup)
     target = utilities.get_single_eve('sites', target_instance)
     # Get a host to run this on.
-    host = utilities.single_host()
     utilities.create_database(target['sid'], target['db_key'])
     execute(fabric_tasks.instance_heal, item=target)
     execute(fabric_tasks.import_backup, backup=backup.json(),
-            target_instance=target, hosts=host, source_env=env)
-    execute(fabric_tasks.correct_nfs_file_permissions, instance=target, hosts=host)
+            target_instance=target, source_env=env)
+    execute(fabric_tasks.correct_nfs_file_permissions, instance=target)
 
     migration_date = datetime.utcnow().strftime("%Y-%m-%d %H:%M:%S GMT")
     payload = {
@@ -1387,7 +1377,7 @@ def migration_linkchecker(instance):
     """
     log.info('Migration linkchecker | Item - %s', instance)
     host = utilities.single_host()
-    execute(fabric_tasks.migration_linkchecker, instance=instance, hosts=host)
+    execute(fabric_tasks.migration_linkchecker, instance=instance)
 
 
 @celery.task

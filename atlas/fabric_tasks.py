@@ -42,7 +42,7 @@ class FabricException(Exception):
 
 
 # Code Commands.
-@roles('webservers')
+@roles('webservers', 'operations_server')
 def code_deploy(item):
     """
     Responds to POSTs to deploy code to the right places on the server.
@@ -82,7 +82,7 @@ def code_deploy(item):
             return clone_task
 
 
-@roles('webservers')
+@roles('webservers', 'operations_server')
 def code_update(updated_item, original_item):
     """
     Responds to PATCHes to update code in the right places on the server.
@@ -115,7 +115,7 @@ def code_update(updated_item, original_item):
     clear_php_cache()
 
 
-@roles('webservers')
+@roles('webservers', 'operations_server')
 def code_remove(item):
     """
     Responds to DELETEs to remove code from the server.
@@ -146,7 +146,7 @@ def code_remove(item):
         remove_symlink(static_target)
 
 
-@roles('webservers')
+@roles('webservers', 'operations_server')
 def code_heal(item):
     log.info('Code | Heal | Item - %s', item)
     if item['meta']['code_type'] == 'library':
@@ -164,7 +164,7 @@ def code_heal(item):
         checkout_repo(item["commit_hash"], code_folder)
 
 
-@roles('webservers')
+@roles('webservers', 'operations_server')
 def site_provision(site):
     """
     Responds to POSTs to provision a site to the right places on the server.
@@ -234,7 +234,7 @@ def site_provision(site):
         return error
 
 
-@roles('webservers')
+@roles('webservers', 'operations_server')
 def site_package_update(site):
     log.info('Site | Package Update | Site - %s', site['_id'])
     code_directory_sid = '{0}/{1}/{1}'.format(SITES_CODE_ROOT, site['sid'])
@@ -255,7 +255,7 @@ def site_package_update(site):
             run("drush dslm-add-package {0}".format(package_name_string))
 
 
-@roles('webservers')
+@roles('webservers', 'operations_server')
 def site_core_update(site):
     log.info('Site | Core Update | Site - %s', site['_id'])
     code_directory_sid = '{0}/{1}/{1}'.format(SITES_CODE_ROOT, site['sid'])
@@ -265,7 +265,7 @@ def site_core_update(site):
         run("drush dslm-switch-core {0}".format(core_string))
 
 
-@roles('webservers')
+@roles('webservers', 'operations_server')
 def site_profile_update(site, original, updates):
     log.info('Site | Profile Update | Site - %s', site['_id'])
     code_directory_sid = '{0}/{1}/{1}'.format(SITES_CODE_ROOT, site['sid'])
@@ -281,7 +281,7 @@ def site_profile_update(site, original, updates):
             new_profile_full_string))
 
 
-@roles('webservers')
+@roles('webservers', 'operations_server')
 def site_profile_swap(site):
     log.info('Site | Profile Swap | Site - %s', site['_id'])
     code_directory_sid = '{0}/{1}/{1}'.format(SITES_CODE_ROOT, site['sid'])
@@ -296,7 +296,7 @@ def site_profile_swap(site):
             new_profile_full_string))
 
 
-@roles('webservers')
+@roles('webservers', 'operations_server')
 def site_launch(site):
     """
     Create symlinks with new site name.
@@ -324,7 +324,7 @@ def site_launch(site):
                     update_symlink(source_path, target_path)
 
 
-@roles('webservers')
+@roles('webservers', 'operations_server')
 def site_take_down(site):
     """
     Point the site to the 'Down' page.
@@ -334,7 +334,7 @@ def site_take_down(site):
     update_symlink(SITE_DOWN_PATH, code_directory_current)
 
 
-@roles('webservers')
+@roles('webservers', 'operations_server')
 def site_restore(site):
     """
     Point the site to the current release.
@@ -345,7 +345,7 @@ def site_restore(site):
     update_symlink(code_directory_sid, code_directory_current)
 
 
-@roles('webservers')
+@roles('webservers', 'operations_server')
 def site_remove(site):
     """
     Responds to DELETEs to remove site from the server.
@@ -375,7 +375,7 @@ def site_remove(site):
     remove_directory(code_directory)
 
 
-@roles('webservers')
+@roles('webservers', 'operations_server')
 def instance_heal(item):
     log.info('Instance | Heal | Item ID - %s | Item - %s', item['sid'], item)
     path_list = []
@@ -414,7 +414,7 @@ def instance_heal(item):
         log.info('Instance | Heal | Item ID - %s | Instance okay', item['sid'])
 
 
-@roles('webservers')
+@roles('webservers', 'operations_server')
 def clear_php_cache():
     try:
         run('curl -ks https://127.0.0.1/opcache/reset.php;')
@@ -423,7 +423,7 @@ def clear_php_cache():
         return error
 
 
-@roles('webservers')
+@roles('webservers', 'operations_server')
 def update_settings_file(site):
     log.info('fabric_tasks | Update Settings File | Site - %s', site['sid'])
     try:
@@ -438,7 +438,7 @@ def update_settings_file(site):
         return error
 
 
-@roles('webservers')
+@roles('webservers', 'operations_server')
 def update_homepage_files():
     """
     SCP the homepage files to web heads.
@@ -469,7 +469,7 @@ def command_run(site, command):
         run('{0}'.format(command))
 
 
-# We use a dynamic host list to round-robin, so you need to pass a host list when calling it.
+@roles('operations_server')
 def command_run_single(site, command, warn_only=False):
     """
     Run a command on a single server
@@ -488,7 +488,7 @@ def command_run_single(site, command, warn_only=False):
                 return command_result
 
 
-# We use a dynamic host list to round-robin, so you need to pass a host list when calling it.
+@roles('operations_server')
 def correct_nfs_file_permissions(instance=None):
     """
     Correct the nfs mount file permissions for an instance
@@ -511,7 +511,7 @@ def correct_nfs_file_permissions(instance=None):
         log.info('Correct NFS File permissions | All instances | Complete')
 
 
-# We use a dynamic host list to round-robin, so you need to pass a host list when calling it.
+@roles('operations_server')
 def update_database(site):
     """
     Run a updb
@@ -525,7 +525,7 @@ def update_database(site):
         run('drush updb -y')
 
 
-# We use a dynamic host list to round-robin, so you need to pass a host list when calling it.
+@roles('operations_server')
 def registry_rebuild(site):
     """
     Run a drush rr and drush cc drush.
@@ -540,6 +540,7 @@ def registry_rebuild(site):
         run('drush rr; drush cc drush;')
 
 
+@roles('operations_server')
 def drush_cache_clear(sid):
     """
     Clear the Drupal cache
@@ -552,6 +553,7 @@ def drush_cache_clear(sid):
         run('drush cc all')
 
 
+@roles('operations_server')
 def site_install(site):
     """
     Run Drupal install
@@ -728,6 +730,7 @@ def update_symlink(source, destination):
     run('ln -s {0} {1}'.format(source, destination))
 
 
+@roles('operations_server')
 def backup_create(site, backup_type):
     """
     Backup the database and files for an site.
@@ -794,6 +797,7 @@ def backup_create(site, backup_type):
     log.info('Atlas operational statistic | Backup Create | %s', backup_time)
 
 
+@roles('operations_server')
 def backup_restore(backup_record, original_instance, package_list):
     """
     Restore database and files to a new instance.
@@ -859,6 +863,7 @@ def backup_restore(backup_record, original_instance, package_list):
              backup_record['_id'], new_instance['_id'], new_instance['sid'], restore_time)
 
 
+@roles('operations_server')
 def import_backup(backup, target_instance, source_env=ENVIRONMENT):
     """
     Connect to a single webserver, copy over the database and file backups, restore them into the
@@ -917,6 +922,7 @@ def import_backup(backup, target_instance, source_env=ENVIRONMENT):
              target_instance['_id'], target_instance['sid'], restore_time)
 
 
+@roles('operations_server')
 def migration_linkchecker(instance):
     """
     Run the linkchecker command post migration routing change.

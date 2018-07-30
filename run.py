@@ -252,6 +252,20 @@ def heal_instance(site_id):
     return make_response('Instance heal has been initiated.')
 
 
+@app.route('/sites/<string:site_id>/file_permissions', methods=['POST'])
+# TODO: Test what happens with 404 for site_id
+@requires_auth('sites')
+def correct_nfs_file_permissions(site_id):
+    """
+    Correct file permissions for an instance's NFS files.
+    :param machine_name: id of instance to fix
+    """
+    app.logger.debug('Site | Correct file permissions | Site ID - %s', site_id)
+    instance = utilities.get_single_eve('sites', site_id)
+    tasks.correct_nfs_file_permissions.delay(instance)
+    return make_response('Fixing permissions for NFS mounted files.')
+
+
 @app.route('/drush/<string:drush_id>/execute', methods=['POST'])
 # TODO: Test what happens with 404 for drush_id
 @requires_auth('drush')

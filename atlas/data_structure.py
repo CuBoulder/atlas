@@ -312,6 +312,10 @@ SITES_SCHEMA = {
     'modified_by': {
         'type': 'string',
     },
+    'install': {
+        'type': 'boolean',
+        'nullable': True,
+    },
 }
 
 STATISTICS_SCHEMA = {

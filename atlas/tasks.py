@@ -336,16 +336,19 @@ def site_provision(site):
         log.error('Site provision failed | Error Message | %s', error)
         raise
 
-    try:
-        host = utilities.single_host()
-        execute(fabric_tasks.site_install, site=site, hosts=host)
-    except Exception as error:
-        log.error('Site install failed | Error Message | %s', error)
-        raise
+    if site.get('install') and site['install'] is not False:
+        try:
+            host = utilities.single_host()
+            execute(fabric_tasks.site_install, site=site, hosts=host)
+        except Exception as error:
+            log.error('Site install failed | Error Message | %s', error)
+            raise
 
-    patch_payload = {'status': 'available',
-                     'db_key': site['db_key'],
-                     'statistics': site['statistics']}
+    patch_payload = {'db_key': site['db_key'],
+                     'statistics': site['statistics'],
+                     'install': None}
+    if site['status'] == 'pending':
+        patch_payload['stauts'] = 'available'
     patch = utilities.patch_eve('sites', site['_id'], patch_payload)
 
     profile = utilities.get_single_eve('code', site['code']['profile'])
@@ -1295,7 +1298,7 @@ def correct_nfs_file_permissions(instance):
 
 
 @celery.task(time_limit=2000)
-def import_backup(env, backup_id, target_instance):
+def import_backup(env, backup_id, target_instance, clone=False):
     """
     Download and import a backup
     """
@@ -1307,26 +1310,28 @@ def import_backup(env, backup_id, target_instance):
     target = utilities.get_single_eve('sites', target_instance)
     # Get a host to run this on.
     host = utilities.single_host()
-    utilities.create_database(target['sid'], target['db_key'])
+    if not clone:
+        utilities.create_database(target['sid'], target['db_key'])
     execute(fabric_tasks.instance_heal, item=target)
     execute(fabric_tasks.import_backup, backup=backup.json(),
             target_instance=target, hosts=host, source_env=env)
     execute(fabric_tasks.correct_nfs_file_permissions, instance=target, hosts=host)
 
-    migration_date = datetime.utcnow().strftime("%Y-%m-%d %H:%M:%S GMT")
-    payload = {
-        'verification': {'verification_status': 'ready'},
-        'dates': {'migration': migration_date}
-    }
-    utilities.patch_eve('sites', target['_id'], payload)
-    # Notify users that site is ready for verification
-    if target['status'] == 'launched':
-        path = '{0}/{1}'.format(BASE_URLS[ENVIRONMENT], target['path'])
-        subject = 'Site ready to be reviewed - {0}'.format(path)
-        message = "Your site at {0} has been migrated to the new infrastructure and is ready to be verified. Visit https://www.colorado.edu/webcentral/site-verification-steps for details on what you need to do next.\n\nAfter you have verified your site, it will be put in queue to relaunch at your normal URL. Relaunch windows are scheduled for 9am, 11am, 1pm and 3pm. You will be placed in the next time slot based on the time you verify your site.\n\nIf you do not verify the migration within 48 hours, your site will automatically relaunch at the normal URL.\n\n- Web Express Team".format(path)
-        statistics = utilities.get_single_eve('statistics', target['statistics'])
-        site_owners = statistics['users']['email_address']['site_owner']
-        utilities.send_email(email_message=message, email_subject=subject, email_to=site_owners)
+    if not clone:
+        migration_date = datetime.utcnow().strftime("%Y-%m-%d %H:%M:%S GMT")
+        payload = {
+            'verification': {'verification_status': 'ready'},
+            'dates': {'migration': migration_date}
+        }
+        utilities.patch_eve('sites', target['_id'], payload)
+        # Notify users that site is ready for verification
+        if target['status'] == 'launched':
+            path = '{0}/{1}'.format(BASE_URLS[ENVIRONMENT], target['path'])
+            subject = 'Site ready to be reviewed - {0}'.format(path)
+            message = "Your site at {0} has been migrated to the new infrastructure and is ready to be verified. Visit https://www.colorado.edu/webcentral/site-verification-steps for details on what you need to do next.\n\nAfter you have verified your site, it will be put in queue to relaunch at your normal URL. Relaunch windows are scheduled for 9am, 11am, 1pm and 3pm. You will be placed in the next time slot based on the time you verify your site.\n\nIf you do not verify the migration within 48 hours, your site will automatically relaunch at the normal URL.\n\n- Web Express Team".format(path)
+            statistics = utilities.get_single_eve('statistics', target['statistics'])
+            site_owners = statistics['users']['email_address']['site_owner']
+            utilities.send_email(email_message=message, email_subject=subject, email_to=site_owners)
 
 
 @celery.task

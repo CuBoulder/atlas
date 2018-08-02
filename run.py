@@ -113,7 +113,7 @@ def get_command(machine_name):
             instance_query = 'where={"type":"express"}&max_results=2000'
             instances = utilities.get_eve('sites', instance_query)
             for instance in instances['_items']:
-                tasks.heal_instance.delay(instance, db=False)
+                tasks.heal_instance.delay(instance, db=False, ops=True)
                 continue
         elif command == 'correct_nfs_file_permissions':
             instance_query = 'where={"type":"express"}&max_results=2000'

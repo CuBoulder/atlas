@@ -414,6 +414,45 @@ def instance_heal(item):
         log.info('Instance | Heal | Item ID - %s | Instance okay', item['sid'])
 
 
+@roles('operations_server')
+def instance_heal_ops(item):
+    log.info('Instance | Heal | Item ID - %s | Item - %s', item['sid'], item)
+    path_list = []
+    # Check for code root
+    path_list.append('{0}/{1}'.format(SITES_CODE_ROOT, item['sid']))
+    path_list.append('{0}/{1}/{2}'.format(SITES_CODE_ROOT, item['sid'], item['sid']))
+    path_list.append('{0}/{1}/current'.format(SITES_CODE_ROOT, item['sid']))
+    # Check for NFS
+    path_list.append('{0}/{1}/files'.format(NFS_MOUNT_LOCATION[ENVIRONMENT], item['sid']))
+    # Check for web root symlinks
+    path_list.append('{0}/{1}'.format(SITES_WEB_ROOT, item['sid']))
+    # Build list of paths to check
+    reprovison = False
+    if item['status'] == 'launched':
+        path_symlink = '{0}/{1}'.format(SITES_WEB_ROOT, item['path'])
+        path_list.append(path_symlink)
+    log.info('Instance | Heal | Item ID - %s | Path list - %s', item['sid'], path_list)
+    for path_to_check in path_list:
+        if not exists(path_to_check):
+            log.info('Instance | Heal | Item ID - %s | Path check failed - %s',
+                     item['sid'], path_to_check)
+            reprovison = True
+            break
+    # If we are missing any of the paths, wipe the instance and rebuild it.
+    if reprovison:
+        log.info('Instance | Heal | Item ID - %s | Begin reprovision', item['sid'])
+        site_remove(item)
+        site_provision(item)
+        # Add packages
+        if item['code'].get('package'):
+            site_package_update(item)
+        if item['status'] == 'launched':
+            site_launch(item)
+        log.info('Instance | Heal | Item ID - %s | Reprovision finished', item['sid'])
+    else:
+        log.info('Instance | Heal | Item ID - %s | Instance okay', item['sid'])
+
+
 @roles('webservers', 'operations_server')
 def clear_php_cache():
     try:

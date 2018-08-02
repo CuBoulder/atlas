@@ -1262,7 +1262,7 @@ def heal_code(item):
 
 
 @celery.task
-def heal_instance(instance, db=True):
+def heal_instance(instance, db=True, ops=False):
     """
     Verify code is correctly deployed.
     """
@@ -1270,7 +1270,10 @@ def heal_instance(instance, db=True):
     log.info('Heal | Instance | Instance - %s', instance)
     if db:
         utilities.create_database(instance['sid'], instance['db_key'])
-    execute(fabric_tasks.instance_heal, item=instance)
+    if ops:
+        execute(fabric_tasks.instance_heal_ops, item=instance)
+    else:
+        execute(fabric_tasks.instance_heal, item=instance)
 
 
 @celery.task

@@ -1262,13 +1262,14 @@ def heal_code(item):
 
 
 @celery.task
-def heal_instance(instance):
+def heal_instance(instance, db=True):
     """
     Verify code is correctly deployed.
     """
     # DB create has 'if not exists' included
     log.info('Heal | Instance | Instance - %s', instance)
-    utilities.create_database(instance['sid'], instance['db_key'])
+    if db:
+        utilities.create_database(instance['sid'], instance['db_key'])
     execute(fabric_tasks.instance_heal, item=instance)
 
 

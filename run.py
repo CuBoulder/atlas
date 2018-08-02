@@ -109,6 +109,12 @@ def get_command(machine_name):
             for instance in instances['_items']:
                 tasks.heal_instance.delay(instance)
                 continue
+        elif command == 'heal_instances_no_db:
+            instance_query = 'where={"type":"express","f5only":false}&max_results=2000'
+            instances = utilities.get_eve('sites', instance_query)
+            for instance in instances['_items']:
+                tasks.heal_instance_ops.delay(instance, db=False)
+                continue
         elif command == 'correct_nfs_file_permissions':
             instance_query = 'where={"type":"express","f5only":false}&max_results=2000'
             instances = utilities.get_eve('sites', instance_query)

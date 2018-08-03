@@ -487,7 +487,7 @@ def package_import_cross_env(site, env=ENVIRONMENT):
     :return: List of package IDs
     """
     if 'package' in site['code']:
-        metadata_list = package_import(site, env=env, metadata_list=True)
+        metadata_list = package_import(site, env=env, metadata=True)
         for item in metadata_list:
             package_list = []
             current_package = package_result = get_current_code(item[0], item[1])

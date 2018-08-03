@@ -104,13 +104,19 @@ def get_command(machine_name):
                 tasks.heal_code.delay(code)
                 continue
         elif command == 'heal_instances':
-            instance_query = 'where={"type":"express","f5only":false}&max_results=2000'
+            instance_query = 'where={"type":"express"}&max_results=2000'
             instances = utilities.get_eve('sites', instance_query)
             for instance in instances['_items']:
                 tasks.heal_instance.delay(instance)
                 continue
+        elif command == 'heal_instances_no_db':
+            instance_query = 'where={"type":"express"}&max_results=2000'
+            instances = utilities.get_eve('sites', instance_query)
+            for instance in instances['_items']:
+                tasks.heal_instance.delay(instance, db=False, ops=True)
+                continue
         elif command == 'correct_nfs_file_permissions':
-            instance_query = 'where={"type":"express","f5only":false}&max_results=2000'
+            instance_query = 'where={"type":"express"}&max_results=2000'
             instances = utilities.get_eve('sites', instance_query)
             for instance in instances['_items']:
                 tasks.correct_nfs_file_permissions.delay(instance)
@@ -140,7 +146,10 @@ def import_backup():
 
     # We are attempting a clone, we want to clone to the original site if possible
     # and alert if the instance already exists.
+    ###
+    ### This makes this function less suitable for migrations, we should replicate the older ones for that purpose.
     clone = True
+    ###
     backup_record = utilities.get_single_eve('backup', backup_request['id'], env=backup_request['env'])
     app.logger.debug('Backup | Import | Backup record - %s', backup_record)
     remote_site_record = utilities.get_single_eve('sites', backup_record['site'], backup_record['site_version'], env=backup_request['env'])

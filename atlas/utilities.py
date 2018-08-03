@@ -421,34 +421,12 @@ def send_email(email_message, email_subject, email_to):
             s.quit()
 
 
-# When we start the app, set the round-robin counter to 0.
-HOST_ROUND_ROBIN_COUNTER = 0
-
-def single_host():
-    """
-    Round-robin the webserver host list for tasks that are only run on a single host.
-    """
-    global HOST_ROUND_ROBIN_COUNTER
-    log.debug('Single host | Start | Counter - %s', HOST_ROUND_ROBIN_COUNTER)
-    host = SERVERDEFS[ENVIRONMENT]['webservers'][HOST_ROUND_ROBIN_COUNTER]
-
-    # Increment the counter if it is less than the total number of webservers (need to account for
-    # arrays starting at 0), otherwise reset it.
-    if HOST_ROUND_ROBIN_COUNTER < (len(SERVERDEFS[ENVIRONMENT]['webservers']) - 1):
-        HOST_ROUND_ROBIN_COUNTER += 1
-    else:
-        HOST_ROUND_ROBIN_COUNTER = 0
-
-    log.debug('Single host | End | Counter - %s | Host - %s', HOST_ROUND_ROBIN_COUNTER, host)
-    return host
-
-
-def package_import(site, env=ENVIRONMENT, metadata_list=False):
+def package_import(site, env=ENVIRONMENT, metadata=False):
     """
     Take a site record, lookup the packages, and return a list of packages to add to the instance.
     :param site: Instance to lookup
     :param env: Environment to look in
-    :param metadata_list: If true return a list of metadata instead of _ids
+    :param metadata: If true return a list of metadata instead of _ids
     :return: List of package IDs or a list of hashes
     """
     if 'package' in site['code']:
@@ -473,7 +451,7 @@ def package_import(site, env=ENVIRONMENT, metadata_list=False):
     else:
         package_list = None
 
-    if metadata_list:
+    if metadata:
         log.debug('Utilities | Package import | Return metadata list')
         return metadata_list
 

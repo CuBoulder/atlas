@@ -44,6 +44,7 @@ python-ldap==2.4.28
 pytz==2016.4
 PyYAML==3.12
 requests==2.18.3
+setuptools==18.5
 simplejson==3.16.0
 Sphinx==1.4.6
 sphinx-autobuild==0.6.0

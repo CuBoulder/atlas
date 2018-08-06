@@ -203,8 +203,8 @@ $databases['default']['default'] = array(
   'prefix' => '',
 );
 {% if database_servers.slaves %}
-{% for slave in database_servers.slaves -%}
 // Define our slave database(s)
+{% for slave in database_servers.slaves -%}
 $databases['default']['slave'][] = array(
   'driver' => 'mysql',
   'database' => '{{ sid }}',

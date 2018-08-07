@@ -348,7 +348,7 @@ def site_provision(site):
                      'statistics': site['statistics'],
                      'install': None}
     if site['status'] == 'pending':
-        patch_payload['stauts'] = 'available'
+        patch_payload['status'] = 'available'
     patch = utilities.patch_eve('sites', site['_id'], patch_payload)
 
     profile = utilities.get_single_eve('code', site['code']['profile'])

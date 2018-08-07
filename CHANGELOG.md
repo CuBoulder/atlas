@@ -1,5 +1,11 @@
 # Change log
 
+## v2.2.1
+
+Resolves:
+
+- Security updates for python packages
+
 ## v2.2.0
 
 This release supports the new infrastructure.

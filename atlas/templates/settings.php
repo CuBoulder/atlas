@@ -212,7 +212,7 @@ $databases['default']['slave'][] = array(
 );
 {% endfor %}
 // Use locking that supports force master
-$conf['lock_inc'] = 'sites/all/modules/autoslave/lock.inc';
+$conf['lock_inc'] = 'profiles/{{profile}}/modules/contrib/autoslave/lock.inc';
 
 $databases['default']['default'] = array (
   'driver' => 'autoslave',

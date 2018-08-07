@@ -223,7 +223,6 @@ $databases['default']['default'] = array (
 if (drupal_is_cli() || basename($_SERVER['PHP_SELF']) == 'update.php') {
   $databases['default']['default'] = $databases['default']['master'];
 }
-{% endif %}
 {% else %}
 $databases['default']['default'] = array(
   'driver' => 'mysql',

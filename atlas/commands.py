@@ -38,6 +38,10 @@ COMMANDS = [
         'description': u'Check that all intances are present and the directory structure is correct. Fix any instances that are irregular.',
     },
     {
+        'machine_name': u'heal_instances_no_db',
+        'description': u'Check that all intances are present and the directory structure is correct. Fix any instances that are irregular. Do not create databases.',
+    },
+    {
         'machine_name': u'correct_nfs_file_permissions',
         'description': u'Correct the group file and directory permissions for an instance.',
     },

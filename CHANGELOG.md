@@ -5,6 +5,7 @@
 Resolves:
 
 - Security updates for python packages
+- &#35;489 - Move drush commands to 'ops' server
 
 ## v2.2.0
 

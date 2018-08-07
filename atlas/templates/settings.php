@@ -193,7 +193,8 @@ $conf['error_level'] = 2;
 $conf['file_temporary_path'] = '{{ tmp_path }}';
 
 {% if environment != 'local' -%}
-$databases['default']['default'] = array(
+{%- if database_servers.slaves -%}
+$databases['default']['master'] = array(
   'driver' => 'mysql',
   'database' => '{{ sid }}',
   'username' => '{{ sid }}',
@@ -215,6 +216,15 @@ $databases['default']['slave'][] = array(
   'prefix' => '',
 );
 {% endfor %}
+$databases['default']['default'] = array (
+  'driver' => 'autoslave',
+  'master' => array('master', 'slave'),
+  'slave' => array('slave', 'master'),
+);
+
+if (drupal_is_cli() || basename($_SERVER['PHP_SELF']) == 'update.php') {
+  $databases['default']['default'] = $databases['default']['master'];
+}
 {% endif %}
 {% else %}
 $databases['default']['default'] = array(
@@ -222,8 +232,8 @@ $databases['default']['default'] = array(
   'database' => '{{ sid }}',
   'username' => '{{ sid }}',
   'password' => '{{ pw }}',
-  'host' => 'localhost',
-  'port' => '3306',
+  'host' => '{{ database_servers.master }}',
+  'port' => '{{ database_servers.port }}',
   'prefix' => '',
 );
 

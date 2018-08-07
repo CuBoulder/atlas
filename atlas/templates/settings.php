@@ -187,8 +187,7 @@ $conf['cron_safe_threshold'] = 0;
 $conf['drupal_http_request_fails'] = FALSE;
 {%- endif %}
 
-{% if environment == 'local' -%}
-$conf['error_level'] = 2;
+
 {%- endif %}
 $conf['file_temporary_path'] = '{{ tmp_path }}';
 
@@ -203,7 +202,6 @@ $databases['default']['master'] = array(
   'port' => '{{ database_servers.port }}',
   'prefix' => '',
 );
-{% if database_servers.slaves %}
 // Define our slave database(s)
 {% for slave in database_servers.slaves -%}
 $databases['default']['slave'][] = array(
@@ -239,7 +237,10 @@ $databases['default']['default'] = array(
   'port' => '{{ database_servers.port }}',
   'prefix' => '',
 );
+{% endif %}
 
+{% if environment == 'local' -%}
+$conf['error_level'] = 2;
 // Allow self signed certs for python.local.
 $conf['drupal_ssl_context_options'] = array(
   'default' => array(

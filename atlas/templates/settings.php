@@ -187,11 +187,8 @@ $conf['cron_safe_threshold'] = 0;
 $conf['drupal_http_request_fails'] = FALSE;
 {%- endif %}
 
-
-{%- endif %}
 $conf['file_temporary_path'] = '{{ tmp_path }}';
 
-{% if environment != 'local' -%}
 {%- if database_servers.slaves -%}
 $databases['default']['master'] = array(
   'driver' => 'mysql',

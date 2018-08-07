@@ -1,8 +1,6 @@
 # Change log
 
-## v2.3.0
-
-This release supports the new infrastructure.
+## v2.2.1
 
 Resolves:
 

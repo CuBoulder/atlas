@@ -147,8 +147,10 @@ $host = $_SERVER['HTTP_HOST'];
  */
 // Compress cached pages always off; we use mod_deflate
 $conf['page_compression'] = 0;
-// Caching across all of Express.
-$conf['cache'] = 1;
+if (!basename($_SERVER['PHP_SELF']) == 'install.php') {
+  // Caching across all of Express, disable during install
+  $conf['cache'] = 1;
+}
 // @todo Solve js inclusion issues to re-enable block cache.
 // @see #attached.
 $conf['block_cache'] = 0;

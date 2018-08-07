@@ -206,7 +206,6 @@ def post_eve(resource, payload):
 
     :param resource: A resource as defined in config_data_structure.py
     :param payload: argument string
-    :param no_install: Send a header to indicate skip install process.
     """
     url = "{0}/{1}".format(API_URLS[ENVIRONMENT], resource)
     headers = {"content-type": "application/json"}

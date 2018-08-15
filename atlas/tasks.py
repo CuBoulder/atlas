@@ -337,8 +337,7 @@ def site_provision(site):
         raise
 
     try:
-        host = utilities.single_host()
-        execute(fabric_tasks.site_install, site=site, hosts=host)
+        execute(fabric_tasks.site_install, site=site)
     except Exception as error:
         log.error('Site install failed | Error Message | %s', error)
         raise
@@ -544,23 +543,22 @@ def site_update(site, updates, original):
 
     # Update settings file when migration is approved
     if updates.get('verification'):
-        if updates['verification']['verification_status'] == 'approved':
-            log.info('Verification approved | Instance - %s', site['_id'])
-            execute(fabric_tasks.update_settings_file, site=site)
-            deploy_php_cache_clear = True
+        if updates['verification'].get('verification_status'):
+            if updates['verification']['verification_status'] == 'approved':
+                log.info('Verification approved | Instance - %s', site['_id'])
+                execute(fabric_tasks.update_settings_file, site=site)
+                deploy_php_cache_clear = True
 
-    # Get a host to run single server commands on.
-    host = utilities.single_host()
     # We want to run these commands in this specific order.
     log.info('Site Update | Closing operations commands | PHP Cache clear - %s | Registry rebuild - %s | Drush updb - %s | Drush cc - %s', deploy_php_cache_clear, deploy_registry_rebuild, deploy_update_database, deploy_drupal_cache_clear)
     if deploy_php_cache_clear:
         execute(fabric_tasks.clear_php_cache)
     if deploy_registry_rebuild:
-        execute(fabric_tasks.registry_rebuild, site=site, hosts=host)
+        execute(fabric_tasks.registry_rebuild, site=site)
     if deploy_update_database:
-        execute(fabric_tasks.update_database, site=site, hosts=host)
+        execute(fabric_tasks.update_database, site=site)
     if deploy_drupal_cache_clear:
-        execute(fabric_tasks.drush_cache_clear, sid=site['sid'], hosts=host)
+        execute(fabric_tasks.drush_cache_clear, sid=site['sid'])
 
     slack_text = 'Site Update - Success - {0}/sites/{1}'.format(API_URLS[ENVIRONMENT], site['_id'])
     slack_color = 'good'
@@ -644,7 +642,7 @@ def drush_prepare(drush_id, run=True):
     log.debug('Drush | Prepare | Drush command - %s', drush_id)
     drush_command = utilities.get_single_eve('drush', drush_id)
 
-    site_query = 'where={0}'.format(drush_command['query'])
+    site_query = 'where={0}&max_results=2000'.format(drush_command['query'])
     sites = utilities.get_eve('sites', site_query)
     log.debug('Drush | Prepare | Drush command - %s | Ran query - %s', drush_id, sites)
     if not sites['_meta']['total'] == 0 and run is True:
@@ -677,26 +675,42 @@ def drush_command_run(site, command_list, user=None, batch_id=None, batch_count=
     :param user: string Username that called the command.
     :return:
     """
-    log.info('Batch ID - %s | Count - %s | Site - %s | Command - %s', batch_id, batch_count, site['sid'], command_list)
+    log.info('Batch ID - %s | Count - %s | Command - %s', batch_id, batch_count, command_list)
+    log.debug('Batch ID - %s | Count - %s | Site - %s | Command - %s', batch_id, batch_count, site['sid'], command_list)
 
-    # 'match' searches for strings that begin with
     if site['path'] != 'homepage':
-        uri = BASE_URLS[ENVIRONMENT] + '/' + site['path']
-    elif site['path'] == 'homepage':
-        uri = BASE_URLS[ENVIRONMENT]
+        # Remove this hack after migration is complete.
+        if site.get('verification'):
+            if site['verification'].get('verification_status'):
+                if site['verification']['verification_status'] == 'approved':
+                    base_url = True
+                else:
+                    base_url = False
+            else:
+                base_url = False
+        else:
+            base_url = False
+        if base_url:
+            uri = 'https://www.colorado.edu' + '/' + site['path']
+        else:
+            uri = BASE_URLS[ENVIRONMENT] + '/' + site['path']
+    else:
+        # Homepage
+        uri = 'https://www.colorado.edu'
     # Use List comprehension to add user prefix and URI suffix, then join the result.
     final_command = ' && '.join([command + ' --uri={0}'.format(uri) for command in command_list])
     log.debug('Batch ID - %s | Count - %s | Final Command - %s', batch_id, batch_count, final_command)
 
     start_time = time.time()
 
-    host = utilities.single_host()
     fabric_task_result = execute(fabric_tasks.command_run_single, site=site,
-                                 command=final_command, warn_only=True, hosts=host)
+                                 command=final_command, warn_only=True)
 
     command_time = time.time() - start_time
-    log.info('Batch ID - %s | Count - %s | Site - %s | Command - %s | Time - %s | Result - %s',
-             batch_id, batch_count, site['sid'], site['sid'], command_list, command_time, fabric_task_result)
+    log.info('Batch ID - %s | Count - %s | Command - %s | Time - %s | Result - %s',
+             batch_id, batch_count, command_list, command_time, fabric_task_result)
+    log.debug('Batch ID - %s | Count - %s | Site - %s | Command - %s | Time - %s | Result - %s',
+             batch_id, batch_count, site['sid'], command_list, command_time, fabric_task_result)
 
 
 @celery.task
@@ -709,7 +723,9 @@ def cron(status=None):
     site_query_string = ['max_results=2000']
     log.debug('Prepare Cron | Found argument')
     # Start by eliminating legacy items.
-    site_query_string.append('&where={"type":"express","verification.verification_status":{"$ne":"not_ready"},')
+    site_query_string.append('&where={"type":"express",')
+    if ENVIRONMENT not in ['dev', 'test']:
+        site_query_string.append('"verification.verification_status":{"$ne":"not_ready"},')
     if status:
         log.debug('Found status')
         site_query_string.append('"status":"{0}",'.format(status))
@@ -766,10 +782,8 @@ def cron_run(site):
     log.debug('Site - %s | uri - %s', site['sid'], uri)
     command = 'drush elysia-cron run --uri={1}'.format(WEBSERVER_USER, uri)
     try:
-        # Get a host to run this command on.
-        host = utilities.single_host()
-        execute(fabric_tasks.command_run_single, site=site, command=command, hosts=host)
-        execute(fabric_tasks.correct_nfs_file_permissions, instance=site, hosts=host)
+        execute(fabric_tasks.command_run_single, site=site, command=command)
+        execute(fabric_tasks.correct_nfs_file_permissions, instance=site)
     except CronException as error:
         log.error('Site - %s | Cron failed | Error - %s', site['sid'], error)
         raise
@@ -1020,8 +1034,7 @@ def backup_instances_all(backup_type='routine'):
 def backup_create(site, backup_type, batch=None):
     log.debug('Backup | Create | Batch - %s | Site - %s', batch, site)
     log.info('Backup | Create | Batch - %s | Site - %s', batch, site['_id'])
-    host = utilities.single_host()
-    execute(fabric_tasks.backup_create, site=site, backup_type=backup_type, hosts=host)
+    execute(fabric_tasks.backup_create, site=site, backup_type=backup_type)
     log.info('Backup | Create | Batch - %s | Site - %s | Backup finished', batch, site['_id'])
 
 
@@ -1032,7 +1045,7 @@ def backup_restore(backup_record, original_instance, package_list):
               backup_record, original_instance, package_list)
     host = utilities.single_host()
     execute(fabric_tasks.backup_restore, backup_record=backup_record,
-            original_instance=original_instance, package_list=package_list, hosts=host)
+            original_instance=original_instance, package_list=package_list)
 
 
 @celery.task
@@ -1251,14 +1264,18 @@ def heal_code(item):
 
 
 @celery.task
-def heal_instance(instance):
+def heal_instance(instance, db=True, ops=False):
     """
     Verify code is correctly deployed.
     """
     # DB create has 'if not exists' included
     log.info('Heal | Instance | Instance - %s', instance)
-    utilities.create_database(instance['sid'], instance['db_key'])
-    execute(fabric_tasks.instance_heal, item=instance)
+    if db:
+        utilities.create_database(instance['sid'], instance['db_key'])
+    if ops:
+        execute(fabric_tasks.instance_heal_ops, item=instance)
+    else:
+        execute(fabric_tasks.instance_heal, item=instance)
 
 
 @celery.task
@@ -1268,9 +1285,7 @@ def correct_nfs_file_permissions(instance):
     """
     log.info('Correct NFS file permissions | Instance - %s', instance)
     try:
-        # Get a host to run this command on.
-        host = utilities.single_host()
-        execute(fabric_tasks.correct_nfs_file_permissions, instance=instance, hosts=host)
+        execute(fabric_tasks.correct_nfs_file_permissions, instance=instance)
     except Exception as error:
         log.error('Correct NFS file permissions | Instance - %s | Error', instance['sid'], error)
         raise
@@ -1288,12 +1303,11 @@ def import_backup(env, backup_id, target_instance):
     log.info('Import Backup | Backup - %s', backup)
     target = utilities.get_single_eve('sites', target_instance)
     # Get a host to run this on.
-    host = utilities.single_host()
     utilities.create_database(target['sid'], target['db_key'])
     execute(fabric_tasks.instance_heal, item=target)
     execute(fabric_tasks.import_backup, backup=backup.json(),
-            target_instance=target, hosts=host, source_env=env)
-    execute(fabric_tasks.correct_nfs_file_permissions, instance=target, hosts=host)
+            target_instance=target, source_env=env)
+    execute(fabric_tasks.correct_nfs_file_permissions, instance=target)
 
     migration_date = datetime.utcnow().strftime("%Y-%m-%d %H:%M:%S GMT")
     payload = {
@@ -1369,7 +1383,7 @@ def migration_linkchecker(instance):
     """
     log.info('Migration linkchecker | Item - %s', instance)
     host = utilities.single_host()
-    execute(fabric_tasks.migration_linkchecker, instance=instance, hosts=host)
+    execute(fabric_tasks.migration_linkchecker, instance=instance)
 
 
 @celery.task

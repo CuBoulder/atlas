@@ -11,7 +11,7 @@ SERVERDEFS = {
             'webserver2.example.com',
             'webserver3.example.com',
         ],
-        'webserver_single': [
+        'operations_server': [
             'webserver2.example.com',
         ],
         'database_servers': {
@@ -35,7 +35,7 @@ SERVERDEFS = {
             'webserver-test2.example.com',
             'webserver-test3.example.com',
         ],
-        'webserver_single': [
+        'operations_server': [
             'webserver-test2.example.com',
         ],
         'database_servers': {
@@ -58,7 +58,7 @@ SERVERDEFS = {
             'webserver-dev1.example.com',
 
         ],
-        'webserver_single': [
+        'operations_server': [
             'webserver-dev1.example.com',
         ],
         'database_servers': {
@@ -77,7 +77,7 @@ SERVERDEFS = {
     },
     'local': {
         'webservers': ['express.local'],
-        'webserver_single': ['express.local'],
+        'operations_server': ['express.local'],
         'database_servers': {
             'master': 'localhost',
             'port': 3306,

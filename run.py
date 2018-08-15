@@ -92,7 +92,7 @@ def get_command(machine_name):
             sites = utilities.get_eve('sites', query)
             timestamp = datetime.now()
             count = 0
-            total = sites['_meta']['max_results']
+            total = sites['_meta']['total']
             for instance in sites['_items']:
                 count += 1
                 tasks.update_settings_file.delay(instance, timestamp, count, total)
@@ -104,13 +104,19 @@ def get_command(machine_name):
                 tasks.heal_code.delay(code)
                 continue
         elif command == 'heal_instances':
-            instance_query = 'where={"type":"express","f5only":false}&max_results=2000'
+            instance_query = 'where={"type":"express"}&max_results=2000'
             instances = utilities.get_eve('sites', instance_query)
             for instance in instances['_items']:
                 tasks.heal_instance.delay(instance)
                 continue
+        elif command == 'heal_instances_no_db':
+            instance_query = 'where={"type":"express"}&max_results=2000'
+            instances = utilities.get_eve('sites', instance_query)
+            for instance in instances['_items']:
+                tasks.heal_instance.delay(instance, db=False, ops=True)
+                continue
         elif command == 'correct_nfs_file_permissions':
-            instance_query = 'where={"type":"express","f5only":false}&max_results=2000'
+            instance_query = 'where={"type":"express"}&max_results=2000'
             instances = utilities.get_eve('sites', instance_query)
             for instance in instances['_items']:
                 tasks.correct_nfs_file_permissions.delay(instance)
@@ -250,6 +256,20 @@ def heal_instance(site_id):
     instance = utilities.get_single_eve('sites', site_id)
     tasks.heal_instance.delay(instance)
     return make_response('Instance heal has been initiated.')
+
+
+@app.route('/sites/<string:site_id>/file_permissions', methods=['POST'])
+# TODO: Test what happens with 404 for site_id
+@requires_auth('sites')
+def correct_nfs_file_permissions(site_id):
+    """
+    Correct file permissions for an instance's NFS files.
+    :param machine_name: id of instance to fix
+    """
+    app.logger.debug('Site | Correct file permissions | Site ID - %s', site_id)
+    instance = utilities.get_single_eve('sites', site_id)
+    tasks.correct_nfs_file_permissions.delay(instance)
+    return make_response('Fixing permissions for NFS mounted files.')
 
 
 @app.route('/drush/<string:drush_id>/execute', methods=['POST'])

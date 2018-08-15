@@ -1,5 +1,12 @@
 # Change log
 
+## v2.2.1
+
+Resolves:
+
+- Security updates for python packages
+- &#35;489 - Move drush commands to 'ops' server
+
 ## v2.2.0
 
 This release supports the new infrastructure.

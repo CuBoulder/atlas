@@ -27,6 +27,7 @@ ecdsa==0.13
 emails==0.5.13
 enum34==1.1.6
 Events==0.2.2
+idna==2.5
 itsdangerous==0.24
 lxml==3.7.3
 MarkupSafe==0.23

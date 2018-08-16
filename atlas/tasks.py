@@ -540,6 +540,11 @@ def site_update(site, updates, original):
             log.debug('Found settings change.')
             execute(fabric_tasks.update_settings_file, site=site)
             deploy_php_cache_clear = True
+        if updates['settings'].get('memcache'):
+            if updates['settings']['memcache']:
+                command = 'drush en memcache -y'
+                execute(fabric_tasks.command_run_single, site=site, command=command)
+
 
     # Update settings file when migration is approved
     if updates.get('verification'):

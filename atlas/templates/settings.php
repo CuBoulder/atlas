@@ -159,7 +159,6 @@ $conf['cache_lifetime'] = 0;
 $conf['page_cache_maximum_age'] = {{ page_cache_maximum_age }};
 // Drupal doesn't cache if we invoke hooks during bootstrap.
 $conf['page_cache_invoke_hooks'] = FALSE;
-{% if environment != 'local' -%}
 // Cache backends
 if (function_exists('memcache_function_exists_check')) {
   $conf['cache_backends'] = array(
@@ -191,7 +190,7 @@ else {
   );
   $conf['cache_class_cache_form'] = 'DrupalDatabaseCache';
 }
-
+{% if environment != 'local' -%}
 // Varnish
 $conf['reverse_proxy'] = TRUE;
 $conf['reverse_proxy_addresses'] = array({% for ip in reverse_proxies -%}'{{ip}}',{% endfor %});

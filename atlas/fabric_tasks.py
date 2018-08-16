@@ -664,6 +664,10 @@ def create_settings_files(site):
         siteimprove_group = site['settings']['siteimprove_group']
     else:
         siteimprove_group = None
+    if site['settings'].get('memcache'):
+        memcache = site['settings']['memcache']
+    else:
+        memcache = None
 
     page_cache_maximum_age = site['settings']['page_cache_maximum_age']
     atlas_url = '{0}/'.format(API_URLS[ENVIRONMENT])
@@ -696,6 +700,7 @@ def create_settings_files(site):
         'atlas_statistics_id': statistics,
         'siteimprove_site': siteimprove_site,
         'siteimprove_group': siteimprove_group,
+        'memcache': memcache,
         'google_cse_csx': google_cse_csx,
         'reverse_proxies': env.roledefs['varnish_servers'],
         'varnish_control': VARNISH_CONTROL_TERMINALS[ENVIRONMENT],

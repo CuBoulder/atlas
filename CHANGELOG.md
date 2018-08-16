@@ -1,5 +1,12 @@
 # Change log
 
+## v2.2.
+
+Resolves:
+
+- Security updates for python packages
+- &#35;494 - Add support to enable memcache via atlas
+
 ## v2.2.1
 
 Resolves:

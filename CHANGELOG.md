@@ -1,5 +1,11 @@
 # Change log
 
+## v2.2.2
+
+Resolves:
+
+- &#35;493 - When deploying drupal structure to a new server, NFS mount is wiped
+
 ## v2.2.1
 
 Resolves:

@@ -1273,7 +1273,7 @@ def heal_instance(instance, db=True, ops=False):
     if db:
         utilities.create_database(instance['sid'], instance['db_key'])
     if ops:
-        execute(fabric_tasks.instance_heal_ops, item=instance)
+        execute(fabric_tasks.instance_rebuild_code, item=instance)
     else:
         execute(fabric_tasks.instance_heal, item=instance)
 

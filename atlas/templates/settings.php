@@ -72,8 +72,7 @@ if (isset($launched) && $launched && isset($conf["cu_path"])) {
       {% elif environment == 'local' -%}
     header('Location: https://express.local'. str_replace($conf['cu_sid'], $conf["cu_path"], $_SERVER['REQUEST_URI']));
       {% endif -%}
-    {% endif %}
-
+    {% endif -%}
     exit();
   }
 }

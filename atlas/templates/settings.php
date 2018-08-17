@@ -159,39 +159,23 @@ $conf['cache_lifetime'] = 0;
 $conf['page_cache_maximum_age'] = {{ page_cache_maximum_age }};
 // Drupal doesn't cache if we invoke hooks during bootstrap.
 $conf['page_cache_invoke_hooks'] = FALSE;
-// Cache backends
-if (function_exists('memcache_function_exists_check')) {
-  $conf['cache_backends'] = array(
-    'profiles/{{profile}}/modules/contrib/varnish/varnish.cache.inc',
-    'profiles/{{profile}}/modules/contrib/memcache/memcache.inc',
-  );
-  // Memcache lock file location.
-  $conf['lock_inc'] = 'profiles/{{profile}}/modules/contrib/memcache/memcache-lock.inc';
-  // Setup cache bins.
-  $conf['cache_class_cache_form'] = 'DrupalDatabaseCache';
-  $conf['cache_default_class'] = 'MemCacheDrupal';
-  // Memcache bins and stampede protection.
-  $conf['memcache_bins'] = array('cache' => 'default');
-  // Set to FALSE on Jan 5, 2012 - drastically improved performance.
-  $conf['memcache_stampede_protection'] = FALSE;
-  $conf['memcache_stampede_semaphore'] = 15;
-  $conf['memcache_stampede_wait_time'] = 5;
-  $conf['memcache_stampede_wait_limit'] = 3;
-  // Memcache
-  $conf['memcache_key_prefix'] = $conf['cu_sid'];
-  $conf['memcache_servers'] = array(
-    '127.0.0.1:11211' => 'default',
-    '127.0.0.1:11212' => 'default',
-  );
-}
-else {
-  $conf['cache_backends'] = array(
-    'profiles/{{profile}}/modules/contrib/varnish/varnish.cache.inc',
-  );
-  $conf['cache_class_cache_form'] = 'DrupalDatabaseCache';
-}
+// Setup cache_form bin.
+{%- if memcache %}
+$conf['cache_default_class'] = 'MemCacheDrupal';
+{%- endif %}
+$conf['cache_class_cache_form'] = 'DrupalDatabaseCache';
+{% if memcache -%}
+// Memcache lock file location.
+$conf['lock_inc'] = 'profiles/{{profile}}/modules/contrib/memcache/memcache-lock.inc';
+{%- endif -%}
 {% if environment != 'local' -%}
 // Varnish
+$conf['cache_backends'] = array(
+  'profiles/{{profile}}/modules/contrib/varnish/varnish.cache.inc',
+  {%- if memcache -%}
+  'profiles/{{profile}}/modules/contrib/memcache/memcache.inc',
+  {%- endif %}
+);
 $conf['reverse_proxy'] = TRUE;
 $conf['reverse_proxy_addresses'] = array({% for ip in reverse_proxies -%}'{{ip}}',{% endfor %});
 // Drupal will look for IP in $_SERVER['X-Forwarded-For']
@@ -201,7 +185,16 @@ $conf['varnish_control_terminal'] = '{{ varnish_control }}';
 $conf['varnish_version'] = 4;
 $conf['varnish_control_key'] = '{{ varnish_control_key }}';
 {%- endif %}
-
+{% if memcache -%}
+// Memcache bins and stampede protection.
+$conf['memcache_bins'] = array('cache' => 'default');
+$conf['memcache_key_prefix'] = $conf['cu_sid'];
+// Set to FALSE on Jan 5, 2012 - drastically improved performance.
+$conf['memcache_stampede_protection'] = FALSE;
+$conf['memcache_stampede_semaphore'] = 15;
+$conf['memcache_stampede_wait_time'] = 5;
+$conf['memcache_stampede_wait_limit'] = 3;
+{%- endif %}
 // Never allow updating modules through UI.
 $conf['allow_authorize_operations'] = FALSE;
 // No IP blocking from the UI, we'll take care of that at a higher level.

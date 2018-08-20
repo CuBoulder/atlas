@@ -9,6 +9,7 @@ flower==0.9.1
 python-ldap==2.4.28
 requests==2.18.3
 mysql-connector==2.1.4
+gitpython==2.1.11
 # Need to pin
 Flask-PyMongo==0.4.1 # https://github.com/pyeve/eve/issues/1172
 # Indirect Dependencies
@@ -27,6 +28,7 @@ ecdsa==0.13
 emails==0.5.13
 enum34==1.1.6
 Events==0.2.2
+gitdb2==2.0.4
 idna==2.5
 itsdangerous==0.24
 lxml==3.7.3
@@ -42,6 +44,7 @@ python-dateutil==2.6.0
 pytz==2016.4
 setuptools==18.5
 simplejson==3.16.0
+smmap2==2.0.4
 tornado==4.2
 urllib3==1.22
 Werkzeug==0.11.15

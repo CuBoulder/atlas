@@ -100,9 +100,8 @@ def get_command(machine_name):
             tasks.clear_php_cache.delay()
         elif command == 'heal_code':
             code_items = utilities.get_eve('code')
-            for code in code_items['_items']:
-                tasks.heal_code.delay(code)
-                continue
+            tasks.code_heal.delay(code_items)
+
         elif command == 'heal_instances':
             instance_query = 'where={"type":"express"}&max_results=2000'
             instances = utilities.get_eve('sites', instance_query)

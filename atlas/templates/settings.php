@@ -168,11 +168,11 @@ $conf['cache_class_cache_form'] = 'DrupalDatabaseCache';
 // Memcache lock file location.
 $conf['lock_inc'] = 'profiles/{{profile}}/modules/contrib/memcache/memcache-lock.inc';
 {%- endif -%}
-{% if environment != 'local' -%}
+{% if environment != 'local' %}
 // Varnish
 $conf['cache_backends'] = array(
   'profiles/{{profile}}/modules/contrib/varnish/varnish.cache.inc',
-  {%- if memcache -%}
+  {% if memcache -%}
   'profiles/{{profile}}/modules/contrib/memcache/memcache.inc',
   {%- endif %}
 );

@@ -47,6 +47,8 @@ if TRAILING_SLASH.search(SITES_WEB_ROOT):
 PROTECTED_PATHS = ['opcache', 'static', 'includes', 'misc',
                    'modules', 'profiles', 'scripts', 'sites', 'themes']
 
+LOCAL_CODE_ROOT = CODE_ROOT + '/atlas_repositories'
+
 # Drupal core paths to symlink. We are not including .htaccess or
 # robots.txt since they are managed seperately.
 DRUPAL_CORE_PATHS = ['authorize.php', 'cron.php', 'includes', 'index.php', 'install.php', 'misc',

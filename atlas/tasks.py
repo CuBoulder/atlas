@@ -20,7 +20,8 @@ from atlas import fabric_tasks
 from atlas import utilities
 from atlas import config_celery
 from atlas import code_operations
-from atlas.config import (ENVIRONMENT, WEBSERVER_USER, DESIRED_SITE_COUNT, SSL_VERIFICATION)
+from atlas.config import (ENVIRONMENT, WEBSERVER_USER, DESIRED_SITE_COUNT,
+                          SSL_VERIFICATION, LOCAL_CODE_ROOT)
 from atlas.config_servers import (BASE_URLS, API_URLS)
 
 # Setup a sub-logger
@@ -134,9 +135,7 @@ def code_deploy(item):
     checkout = code_operations.repository_checkout(item)
     log.debug('Code deploy | Checkout | %s', checkout)
     if item['meta']['is_current']:
-        symlink = code_operations.symlink_current(item)
-        os.unlink(symlink)
-        os.symlink(code_operations.code_path(item), symlink)
+        code_operations.update_symlink_current(item)
         log.debug('Code deploy | Symlink | Is current')
     sync = code_operations.sync_code()
 
@@ -227,11 +226,9 @@ def code_update(updated_item, original_item):
 
     checkout = code_operations.repository_checkout(final_item)
     log.debug('Code deploy | Checkout | %s', checkout)
-    if updated_item['meta']['is_current']:
-        symlink = code_operations.symlink_current(final_item)
-        os.unlink(symlink)
-        os.symlink(code_operations.code_path(item), symlink)
-        log.debug('Code deploy | Symlink | %s', symlink)
+    if item['meta']['is_current']:
+        code_operations.update_symlink_current(item)
+        log.debug('Code deploy | Symlink | Is current')
 
     sync = code_operations.sync_code()
     # TODO Clear PHP cache?
@@ -285,7 +282,11 @@ def code_remove(item):
     log.info('Code remove | %s', item)
     code_operations.repository_remove(item)
     if item['meta']['is_current']:
-        os.unlink(code_operations.symlink_current(item))
+        code_folder_current = '{0}/{1}/{2}/{2}-current'.format(
+            LOCAL_CODE_ROOT,
+            code_operations.code_type_directory_name(item['meta']['code_type']),
+            item['meta']['name'])
+        os.unlink(code_folder_current)
 
     sync = code_operations.sync_code()
 

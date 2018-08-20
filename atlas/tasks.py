@@ -340,6 +340,7 @@ def code_heal(code_items):
     # previous tasks will be ignored.
     task_group = chord((_code_heal.s(code) for code in code_items['_items']), _code_sync.si())()
 
+
 @celery.task
 def _code_heal(item):
     """

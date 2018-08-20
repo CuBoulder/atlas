@@ -18,6 +18,7 @@ log = logging.getLogger('atlas.code_operations')
 
 LOCAL_CODE_ROOT = CODE_ROOT + '/atlas_cloned_repos'
 
+
 def repository_clone(item):
     """
     Clone code to the local server.
@@ -25,7 +26,7 @@ def repository_clone(item):
     :param item:
     :return:
     """
-    # TODO See if I need to setup directory structures via ansible, either on Atlas or on deploy target nodes
+    # TODO Do we need to setup dirs via ansible, either on Atlas or on deploy target nodes
     log.info('Code | Clone | Item - %s', item)
     code_dir = code_path(item)
     # Clone repo
@@ -40,7 +41,7 @@ def repository_checkout(item):
     :param item:
     :return:
     """
-    # TODO See if I need to setup directory structures via ansible, either on Atlas or on deploy target nodes
+    # TODO Do we need to setup dirs via ansible, either on Atlas or on deploy target nodes
     log.info('Code | Checkout | Item - %s', item)
     # Checkout commit
     # TODO what happens when the commit is invalid
@@ -89,9 +90,9 @@ def sync_code():
         log.info('Code | Sync | %s', output)
 
 
-#######
-##### Utility functions for code operations
-#######q
+##
+# Utility functions for code operations
+##
 def code_path(item):
     """
     Determine the path for a code item

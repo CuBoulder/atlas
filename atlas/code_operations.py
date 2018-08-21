@@ -24,7 +24,6 @@ def repository_clone(item):
     :param item:
     :return:
     """
-    # TODO Do we need to setup dirs via ansible, either on Atlas or on deploy target nodes
     log.info('Code | Clone | Item - %s', item)
     code_dir = code_path(item)
     # Clone repo
@@ -76,20 +75,17 @@ def update_symlink_current(item):
     log.debug('Code deploy | Symlink | %s', code_folder_current)
 
 
-
 def sync_code():
     """
     Use rsync to copy the code to all of the relevant nodes.
     """
     log.info('Code | Sync')
-    # TODO Check ownership on web and operations nodes
-    # TODO Do we need to setup dirs via ansible, either on Atlas or on deploy target nodes
     # Sync code directory
     hosts = SERVERDEFS[ENVIRONMENT]['webservers'] + SERVERDEFS[ENVIRONMENT]['operations_server']
     # Recreate readme
     filename = LOCAL_CODE_ROOT + "/README.md"
-    f= open(filename, "w+")
-    f.write("The contents of this directory are rsynced from Atlas. Any changes will be overwritten.")
+    f = open(filename, "w+")
+    f.write("Directory is rsynced from Atlas. Any changes will be overwritten.")
     f.close()
     for host in hosts:
         # -a archive mode; equals -rlptgoD

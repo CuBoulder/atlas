@@ -10,7 +10,7 @@ import os
 from atlas.config_servers import (SERVERDEFS, VARNISH_CONTROL_TERMINALS, NFS_MOUNT_LOCATION,
                                   BASE_URLS, API_URLS)
 from atlas.config_local import (ENVIRONMENT, SSL_KEY_FILE, SSL_CRT_FILE, ALLOWED_USERS,
-                                NFS_MOUNT_FILES_DIR, DESIRED_SITE_COUNT, CODE_ROOT,
+                                NFS_MOUNT_FILES_DIR, DESIRED_SITE_COUNT, CODE_ROOT, LOCAL_CODE_ROOT,
                                 SITES_WEB_ROOT, SITES_CODE_ROOT, SITE_DOWN_PATH, DEFAULT_CORE,
                                 DEFAULT_PROFILE, ENCRYPTION_KEY, LDAP_SERVER, LDAP_ORG_UNIT,
                                 LDAP_DNS_DOMAIN_NAME, SSH_USER, WEBSERVER_USER,
@@ -46,8 +46,6 @@ if TRAILING_SLASH.search(SITES_WEB_ROOT):
 # These are paths that we cannot route to instances.
 PROTECTED_PATHS = ['opcache', 'static', 'includes', 'misc',
                    'modules', 'profiles', 'scripts', 'sites', 'themes']
-
-LOCAL_CODE_ROOT = CODE_ROOT + '/atlas_repositories'
 
 # Drupal core paths to symlink. We are not including .htaccess or
 # robots.txt since they are managed seperately.

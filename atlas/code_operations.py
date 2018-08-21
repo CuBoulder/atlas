@@ -96,6 +96,7 @@ def sync_code():
         cmd = 'rsync -aqz {0}/ {1}:{2} --delete'.format(LOCAL_CODE_ROOT, host, CODE_ROOT)
         log.info('Code | Sync | Command - %s', cmd)
         output = subprocess.check_output(cmd, shell=True)
+        # TODO Catch exception for file permissions on target
         log.info('Code | Sync | %s', output)
 
 

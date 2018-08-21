@@ -15,6 +15,7 @@ import requests
 from celery import Celery, chord
 from celery.utils.log import get_task_logger
 from fabric.api import execute
+from git import GitCommandError
 
 from atlas import fabric_tasks
 from atlas import utilities
@@ -130,10 +131,14 @@ def code_deploy(item):
     :return:
     """
     log.debug('Code deploy | %s', item)
-    clone = code_operations.repository_clone(item)
-    log.debug('Code deploy | Clone | %s', clone)
-    checkout = code_operations.repository_checkout(item)
-    log.debug('Code deploy | Checkout | %s', checkout)
+    try:
+        clone = code_operations.repository_clone(item)
+    except GitCommandError:
+        log.error('Code | Clone | Cannot clone repository, check URL.')
+    try:
+        checkout = code_operations.repository_checkout(item)
+    except GitCommandError:
+        log.error('Code | Checkout | Cannot checkout requested tag, check value.')
     if item['meta']['is_current']:
         code_operations.update_symlink_current(item)
         log.debug('Code deploy | Symlink | Is current')

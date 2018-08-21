@@ -17,20 +17,6 @@ from atlas.config_servers import (SERVERDEFS)
 log = logging.getLogger('atlas.code_operations')
 
 
-# We pass this execption so that we can do our own logging.
-# TODO Fix exception handling.
-class GitCommandError(Exception):
-    """ Thrown if execution of the git command fails with non-zero status code. """
-
-    def __init__(self, command, status, stderr=None, stdout=None):
-        super(GitCommandError, self).__init__(command, status, stderr, stdout)
-        if self.stdout:
-            log.error('Code | Clone | Message - %s', self.stdout)
-        if self.stderr:
-            log.error('Code | Clone | Message - %s', self.stderr)
-        pass
-
-
 def repository_clone(item):
     """
     Clone code to the local server.
@@ -44,14 +30,7 @@ def repository_clone(item):
     # Clone repo
     if os.path.exists(code_dir):
         raise Exception('Destinaton directory already exists')
-    try:
-        clone = Repo.clone_from(item['git_url'], code_dir)
-    except clone.GitCommandError as e:
-        log.error('Code | Clone | %s', str(e))
-        if e.stdout_value:
-            log.error('Code | Clone | Message - %s', e.stdout_value)
-        if e.stderr_value:
-            log.error('Code | Clone | Message - %s', e.stderr_value)
+    clone = Repo.clone_from(item['git_url'], code_dir)
     log.info('Code | Clone | Result - %s', clone)
 
 
@@ -64,23 +43,11 @@ def repository_checkout(item):
     """
     log.info('Code | Checkout | Item - %s', item)
     # Fetch repo
-    try:
-        repo = Repo(code_path(item))
-        repo.remote().fetch()
-    except repo.GitCommandError as e:
-        if e.stdout_value:
-            log.error('Code | Clone | Message - %s', e.stdout_value)
-        if e.stderr_value:
-            log.error('Code | Clone | Message - %s', e.stderr_value)
+    repo = Repo(code_path(item))
+    repo.remote().fetch()
     # Checkout commit
-    try:
-        g = Git(code_path(item))
-        g.checkout(item['commit_hash'])
-    except g.GitCommandError as e:
-        if e.stdout_value:
-            log.error('Code | Clone | Message - %s', e.stdout_value)
-        if e.stderr_value:
-            log.error('Code | Clone | Message - %s', e.stderr_value)
+    g = Git(code_path(item))
+    g.checkout(item['commit_hash'])
 
 
 def repository_remove(item):

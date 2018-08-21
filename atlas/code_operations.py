@@ -29,6 +29,7 @@ def repository_clone(item):
     # Clone repo
     if os.path.exists(code_dir):
         raise Exception('Destinaton directory already exists')
+    os.makedirs(code_dir)
     clone = Repo.clone_from(item['git_url'], code_dir)
     log.info('Code | Clone | Result - %s', clone)
 

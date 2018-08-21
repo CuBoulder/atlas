@@ -231,12 +231,11 @@ def code_update(updated_item, original_item):
 
     checkout = code_operations.repository_checkout(final_item)
     log.debug('Code deploy | Checkout | %s', checkout)
-    if item['meta']['is_current']:
-        code_operations.update_symlink_current(item)
+    if original_item['meta']['is_current']:
+        code_operations.update_symlink_current(original_item)
         log.debug('Code deploy | Symlink | Is current')
 
     sync = code_operations.sync_code()
-    # TODO Clear PHP cache?
 
     slack_title = 'Code Update - Success'
     slack_color = 'good'

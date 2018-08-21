@@ -8,6 +8,7 @@ from hashlib import sha1
 
 from flask import abort, g
 from bson import ObjectId
+from celery import chord
 
 from atlas import tasks
 from atlas import utilities
@@ -280,9 +281,9 @@ def on_update_code(updates, original):
         update_code = False
 
     if update_code:
-
         log.debug('code | on update | Ready to hand to Celery')
-        tasks.code_update.delay(updated_item, original)
+        # chord two tasks
+        chord(tasks.code_update.s(updated_item, original), tasks.clear_php_cache.si())()
 
 
 def on_update_sites(updates, original):

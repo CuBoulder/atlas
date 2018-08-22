@@ -544,6 +544,9 @@ def site_update(site, updates, original):
             if updates['settings']['memcache']:
                 command = 'drush en memcache -y'
                 execute(fabric_tasks.command_run_single, site=site, command=command)
+            else:
+                command = 'drush dis memcache -y'
+                execute(fabric_tasks.command_run_single, site=site, command=command)
 
 
     # Update settings file when migration is approved

@@ -543,6 +543,7 @@ def site_update(site, updates, original):
                 log.info('Memcache disable')
                 command = 'drush dis memcache -y'
                 execute(fabric_tasks.command_run_single, site=site, command=command)
+                deploy_drupal_cache_clear = True
         if not updates.get('status') or updates['status'] != 'locked':
             execute(fabric_tasks.update_settings_file, site=site)
             deploy_php_cache_clear = True

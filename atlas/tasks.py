@@ -540,17 +540,6 @@ def site_update(site, updates, original):
         if not updates.get('status') or updates['status'] != 'locked':
             execute(fabric_tasks.update_settings_file, site=site)
             deploy_php_cache_clear = True
-        if updates['settings'].get('memcache'):
-            log.info('Found memcache change.')
-            if updates['settings']['memcache']:
-                log.info('Memcache enable')
-                command = 'drush en memcache -y'
-                execute(fabric_tasks.command_run_single, site=site, command=command)
-            else:
-                log.info('Memcache disable')
-                command = 'drush dis memcache -y'
-                execute(fabric_tasks.command_run_single, site=site, command=command)
-
 
     # Update settings file when migration is approved
     if updates.get('verification'):
@@ -570,6 +559,20 @@ def site_update(site, updates, original):
         execute(fabric_tasks.update_database, site=site)
     if deploy_drupal_cache_clear:
         execute(fabric_tasks.drush_cache_clear, sid=site['sid'])
+
+    # Run changes to memcache
+    if updates.get('settings'):
+        if 'memcache' in updates['settings']:
+            log.info('Found memcache change.')
+            if updates['settings']['memcache']:
+                log.info('Memcache enable')
+                command = 'drush en memcache -y'
+                execute(fabric_tasks.command_run_single, site=site, command=command)
+            else:
+                log.info('Memcache disable')
+                command = 'drush dis memcache -y'
+                execute(fabric_tasks.command_run_single, site=site, command=command)
+
 
     slack_text = 'Site Update - Success - {0}/sites/{1}'.format(API_URLS[ENVIRONMENT], site['_id'])
     slack_color = 'good'

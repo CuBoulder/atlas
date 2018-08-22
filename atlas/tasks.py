@@ -537,6 +537,12 @@ def site_update(site, updates, original):
     # Don't update settings files a second time if status is changing to 'locked'.
     if updates.get('settings'):
         log.info('Found settings change | %s', updates)
+        # Need to disable memcache before rewriting settings file.
+        if 'memcache' in updates['settings']:
+            if not updates['settings']['memcache']:
+                log.info('Memcache disable')
+                command = 'drush dis memcache -y'
+                execute(fabric_tasks.command_run_single, site=site, command=command)
         if not updates.get('status') or updates['status'] != 'locked':
             execute(fabric_tasks.update_settings_file, site=site)
             deploy_php_cache_clear = True
@@ -560,17 +566,13 @@ def site_update(site, updates, original):
     if deploy_drupal_cache_clear:
         execute(fabric_tasks.drush_cache_clear, sid=site['sid'])
 
-    # Run changes to memcache
+    # Enable memcache if desired
     if updates.get('settings'):
         if 'memcache' in updates['settings']:
             log.info('Found memcache change.')
             if updates['settings']['memcache']:
                 log.info('Memcache enable')
                 command = 'drush en memcache -y'
-                execute(fabric_tasks.command_run_single, site=site, command=command)
-            else:
-                log.info('Memcache disable')
-                command = 'drush dis memcache -y'
                 execute(fabric_tasks.command_run_single, site=site, command=command)
 
 

@@ -194,6 +194,9 @@ $conf['memcache_stampede_protection'] = FALSE;
 $conf['memcache_stampede_semaphore'] = 15;
 $conf['memcache_stampede_wait_time'] = 5;
 $conf['memcache_stampede_wait_limit'] = 3;
+// Put into to fix issue that we think might be related to hashing the persistent connections with
+// the localhost haproxy setup.
+$conf['memcache_persistent'] = FALSE;
 {%- endif %}
 // Never allow updating modules through UI.
 $conf['allow_authorize_operations'] = FALSE;

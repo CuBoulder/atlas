@@ -536,15 +536,18 @@ def site_update(site, updates, original):
 
     # Don't update settings files a second time if status is changing to 'locked'.
     if updates.get('settings'):
+        log.info('Found settings change | %s', updates)
         if not updates.get('status') or updates['status'] != 'locked':
-            log.debug('Found settings change.')
             execute(fabric_tasks.update_settings_file, site=site)
             deploy_php_cache_clear = True
         if updates['settings'].get('memcache'):
+            log.info('Found memcache change.')
             if updates['settings']['memcache']:
+                log.info('Memcache enable')
                 command = 'drush en memcache -y'
                 execute(fabric_tasks.command_run_single, site=site, command=command)
             else:
+                log.info('Memcache disable')
                 command = 'drush dis memcache -y'
                 execute(fabric_tasks.command_run_single, site=site, command=command)
 

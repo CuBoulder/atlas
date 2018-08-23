@@ -1060,7 +1060,6 @@ def backup_restore(backup_record, original_instance, package_list):
     log.info('Backup | Restore | Backup ID - %s', backup_record['_id'])
     log.debug('Backup | Restore | Backup Recorsd - %s | Original instance - %s | Package List - %s',
               backup_record, original_instance, package_list)
-    host = utilities.single_host()
     execute(fabric_tasks.backup_restore, backup_record=backup_record,
             original_instance=original_instance, package_list=package_list)
 
@@ -1399,7 +1398,6 @@ def migration_linkchecker(instance):
     Run the link checker command for sites that have updated routing.
     """
     log.info('Migration linkchecker | Item - %s', instance)
-    host = utilities.single_host()
     execute(fabric_tasks.migration_linkchecker, instance=instance)
 
 

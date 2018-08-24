@@ -215,7 +215,7 @@ SITES_SCHEMA = {
             },
             'memcache': {
                 'type': 'boolean',
-                'default': False,
+                'default': True,
             },
         },
     },

@@ -1022,7 +1022,8 @@ def backup_instances_all(backup_type='routine'):
     if not statistics['_meta']['total'] == 0:
         for statistic in statistics['_items']:
             site = utilities.get_single_eve('sites', statistic['site'])
-            backup_create.delay(site=site, backup_type=backup_type, batch=batch_id)
+            if site['verification']['verification_status'] == 'approved':
+                backup_create.delay(site=site, backup_type=backup_type, batch=batch_id)
     # Report to slack
     log.info('Atlas operational statistic | Batch - %s | Type - %s | Count - %s',
              batch_id, backup_type, statistics['_meta']['total'])

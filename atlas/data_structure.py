@@ -213,10 +213,6 @@ SITES_SCHEMA = {
             'cse_id': {
                 'type': 'string',
             },
-            'memcache': {
-                'type': 'boolean',
-                'default': True,
-            },
         },
     },
     'tag': {

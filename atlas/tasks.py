@@ -576,7 +576,6 @@ def site_update(site, updates, original):
                 command = 'drush en memcache -y'
                 execute(fabric_tasks.command_run_single, site=site, command=command)
 
-
     slack_text = 'Site Update - Success - {0}/sites/{1}'.format(API_URLS[ENVIRONMENT], site['_id'])
     slack_color = 'good'
     slack_link = '{0}/{1}'.format(BASE_URLS[ENVIRONMENT], site['path'])

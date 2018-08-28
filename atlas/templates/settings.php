@@ -72,8 +72,7 @@ if (isset($launched) && $launched && isset($conf["cu_path"])) {
       {% elif environment == 'local' -%}
     header('Location: https://express.local'. str_replace($conf['cu_sid'], $conf["cu_path"], $_SERVER['REQUEST_URI']));
       {% endif -%}
-    {% endif %}
-
+    {% endif -%}
     exit();
   }
 }
@@ -161,11 +160,21 @@ $conf['page_cache_maximum_age'] = {{ page_cache_maximum_age }};
 // Drupal doesn't cache if we invoke hooks during bootstrap.
 $conf['page_cache_invoke_hooks'] = FALSE;
 // Setup cache_form bin.
+{%- if memcache %}
+$conf['cache_default_class'] = 'MemCacheDrupal';
+{%- endif %}
 $conf['cache_class_cache_form'] = 'DrupalDatabaseCache';
-{% if environment != 'local' -%}
+{% if memcache -%}
+// Memcache lock file location.
+$conf['lock_inc'] = 'profiles/{{profile}}/modules/contrib/memcache/memcache-lock.inc';
+{%- endif -%}
+{% if environment != 'local' %}
 // Varnish
 $conf['cache_backends'] = array(
   'profiles/{{profile}}/modules/contrib/varnish/varnish.cache.inc',
+  {% if memcache -%}
+  'profiles/{{profile}}/modules/contrib/memcache/memcache.inc',
+  {%- endif %}
 );
 $conf['reverse_proxy'] = TRUE;
 $conf['reverse_proxy_addresses'] = array({% for ip in reverse_proxies -%}'{{ip}}',{% endfor %});
@@ -176,7 +185,19 @@ $conf['varnish_control_terminal'] = '{{ varnish_control }}';
 $conf['varnish_version'] = 4;
 $conf['varnish_control_key'] = '{{ varnish_control_key }}';
 {%- endif %}
-
+{% if memcache -%}
+// Memcache bins and stampede protection.
+$conf['memcache_bins'] = array('cache' => 'default');
+$conf['memcache_key_prefix'] = $conf['cu_sid'];
+// Set to FALSE on Jan 5, 2012 - drastically improved performance.
+$conf['memcache_stampede_protection'] = FALSE;
+$conf['memcache_stampede_semaphore'] = 15;
+$conf['memcache_stampede_wait_time'] = 5;
+$conf['memcache_stampede_wait_limit'] = 3;
+// Put into to fix issue that we think might be related to hashing the persistent connections with
+// the localhost haproxy setup.
+$conf['memcache_persistent'] = FALSE;
+{%- endif %}
 // Never allow updating modules through UI.
 $conf['allow_authorize_operations'] = FALSE;
 // No IP blocking from the UI, we'll take care of that at a higher level.
@@ -212,6 +233,13 @@ $databases['default']['slave'][] = array(
   'port' => '3307',
   'prefix' => '',
 );
+{% if memcache -%}
+// Memcache servers
+$conf['memcache_servers'] = array(
+  '127.0.0.1:11211' => 'default',
+  '127.0.0.1:11212' => 'default',
+);
+{%- endif %}
 {% else -%}
 $databases['default']['default'] = array(
   'driver' => 'mysql',
@@ -240,6 +268,11 @@ $conf['drupal_ssl_context_options'] = array(
     ),
   ),
 );
+{% if memcache -%}
+$conf['memcache_servers'] = array(
+  '127.0.0.1:11211' => 'default',
+);
+{%- endif %}
 {%- endif %}
 
 // SAML DB

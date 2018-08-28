@@ -4,6 +4,7 @@
 
 Resolves:
 
+- &#35;494 - Add support to enable memcache via atlas
 - &#35;493 - When deploying drupal structure to a new server, NFS mount is wiped
 
 ## v2.2.1

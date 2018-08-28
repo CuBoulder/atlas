@@ -536,8 +536,15 @@ def site_update(site, updates, original):
 
     # Don't update settings files a second time if status is changing to 'locked'.
     if updates.get('settings'):
+        log.info('Found settings change | %s', updates)
+        # Need to disable memcache before rewriting settings file.
+        if 'memcache' in updates['settings']:
+            if not updates['settings']['memcache']:
+                log.info('Memcache disable')
+                command = 'drush dis memcache -y'
+                execute(fabric_tasks.command_run_single, site=site, command=command)
+                deploy_drupal_cache_clear = True
         if not updates.get('status') or updates['status'] != 'locked':
-            log.debug('Found settings change.')
             execute(fabric_tasks.update_settings_file, site=site)
             deploy_php_cache_clear = True
 
@@ -559,6 +566,15 @@ def site_update(site, updates, original):
         execute(fabric_tasks.update_database, site=site)
     if deploy_drupal_cache_clear:
         execute(fabric_tasks.drush_cache_clear, sid=site['sid'])
+
+    # Enable memcache if desired
+    if updates.get('settings'):
+        if 'memcache' in updates['settings']:
+            log.info('Found memcache change.')
+            if updates['settings']['memcache']:
+                log.info('Memcache enable')
+                command = 'drush en memcache -y'
+                execute(fabric_tasks.command_run_single, site=site, command=command)
 
     slack_text = 'Site Update - Success - {0}/sites/{1}'.format(API_URLS[ENVIRONMENT], site['_id'])
     slack_color = 'good'
@@ -1044,7 +1060,6 @@ def backup_restore(backup_record, original_instance, package_list):
     log.info('Backup | Restore | Backup ID - %s', backup_record['_id'])
     log.debug('Backup | Restore | Backup Recorsd - %s | Original instance - %s | Package List - %s',
               backup_record, original_instance, package_list)
-    host = utilities.single_host()
     execute(fabric_tasks.backup_restore, backup_record=backup_record,
             original_instance=original_instance, package_list=package_list)
 
@@ -1383,7 +1398,6 @@ def migration_linkchecker(instance):
     Run the link checker command for sites that have updated routing.
     """
     log.info('Migration linkchecker | Item - %s', instance)
-    host = utilities.single_host()
     execute(fabric_tasks.migration_linkchecker, instance=instance)
 
 

@@ -417,6 +417,7 @@ def instance_heal(item):
 @roles('operations_server')
 def instance_rebuild_code(item):
     log.info('Instance | Rebuild code | Item ID - %s | Item - %s', item['sid'], item)
+    # Build list of paths to check
     path_list = []
     # Check for code root
     path_list.append('{0}/{1}'.format(SITES_CODE_ROOT, item['sid']))
@@ -426,7 +427,6 @@ def instance_rebuild_code(item):
     path_list.append('{0}/{1}/files'.format(NFS_MOUNT_LOCATION[ENVIRONMENT], item['sid']))
     # Check for web root symlinks
     path_list.append('{0}/{1}'.format(SITES_WEB_ROOT, item['sid']))
-    # Build list of paths to check
     reprovison = False
     if item['status'] == 'launched':
         path_symlink = '{0}/{1}'.format(SITES_WEB_ROOT, item['path'])
@@ -519,6 +519,7 @@ def instance_add_code(site):
     if NFS_MOUNT_FILES_DIR:
         # Replace default files dir with this one
         site_files_dir = code_directory_current + '/sites/default/files'
+        nfs_files_dir = '{0}/{1}/files'.format(NFS_MOUNT_LOCATION[ENVIRONMENT], site['sid'])
         nfs_src = '{0}/files'.format(nfs_files_dir)
         try:
             execute(replace_files_directory, source=nfs_src, destination=site_files_dir)

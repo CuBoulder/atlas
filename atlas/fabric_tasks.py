@@ -1040,7 +1040,6 @@ def import_backup(backup, target_instance, source_env=ENVIRONMENT):
         run('drush en ucb_on_prem_hosting -y')
         run('drush elysia-cron run --ignore-time')
         run('drush xmlsitemap-regenerate')
-        run('drush atst')
         run('drush vset profile_module_manager_disable_enabling_atlas_bundles 0')
         run('drush express-unlock')
 

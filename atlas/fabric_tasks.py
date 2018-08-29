@@ -427,6 +427,10 @@ def instance_rebuild_code(item):
     path_list.append('{0}/{1}/files'.format(NFS_MOUNT_LOCATION[ENVIRONMENT], item['sid']))
     # Check for web root symlinks
     path_list.append('{0}/{1}'.format(SITES_WEB_ROOT, item['sid']))
+    # If homepage, add symlinks in webroot
+    if item['path'] == 'homepage':
+        for link in DRUPAL_CORE_PATHS:
+            path_list.append('{0}/{1}'.format(SITES_WEB_ROOT, link))
     reprovison = False
     if item['status'] == 'launched':
         path_symlink = '{0}/{1}'.format(SITES_WEB_ROOT, item['path'])

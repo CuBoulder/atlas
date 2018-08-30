@@ -50,7 +50,7 @@ COMMANDS = [
         'description': u'Start the process of generating an On Demand backup for all instances.',
     },
     {
-        'machine_name': u'migrate_rotuing',
+        'machine_name': u'migrate_routing',
         'description': u'Switch the routing for approved instances.',
     }
 ]

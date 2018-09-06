@@ -995,7 +995,7 @@ def verify_statistics():
             utilities.post_to_slack_payload(slack_payload)
 
 
-@celery.task
+@celery.task(time_limit=1200)
 def backup_instances_all(backup_type='routine'):
     log.info('Backup all instances')
     # TODO: Max results

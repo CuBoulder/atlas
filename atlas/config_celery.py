@@ -47,9 +47,6 @@ CELERY_ROUTES = {
     'atlas.tasks.cron_run': {
         'queue': 'cron_queue'
     },
-    'atlas.tasks.migration_linkchecker': {
-        'queue': 'cron_queue'
-    },
     'atlas.tasks.available_sites_check': {
         'queue': 'atlas_queue'
     },
@@ -69,9 +66,6 @@ CELERY_ROUTES = {
         'queue': 'atlas_queue'
     },
     'atlas.tasks.remove_failed_backups': {
-        'queue': 'atlas_queue'
-    },
-    'atlas.tasks.migrate_routing': {
         'queue': 'atlas_queue'
     },
 }
@@ -148,9 +142,5 @@ CELERYBEAT_SCHEDULE = {
     'verify_statistics_updating': {
         'task': 'atlas.tasks.verify_statistics',
         'schedule': crontab(minute=0, hour=6),
-    },
-    'migrate_routing': {
-        'task': 'atlas.tasks.migrate_routing',
-        'schedule': crontab(minute=0, hour='8,10,12,14', day_of_week='mon-fri')
     },
 }

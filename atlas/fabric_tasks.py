@@ -743,10 +743,6 @@ def create_settings_files(site):
     atlas_id = site['_id']
     statistics = site['statistics']
 
-    if site.get('verification'):
-        migration_verification = site['verification']['verification_status']
-    else:
-        migration_verification = None
     if site['settings'].get('siteimprove_site'):
         siteimprove_site = site['settings']['siteimprove_site']
     else:
@@ -799,7 +795,6 @@ def create_settings_files(site):
         'saml_pw': saml_auth,
         'smtp_client_hostname': BASE_URLS[ENVIRONMENT],
         'smtp_password': SMTP_PASSWORD,
-        'migration_verification': migration_verification
     }
 
     log.info('fabric_tasks | Create Settings file')
@@ -1037,11 +1032,8 @@ def import_backup(backup, target_instance, source_env=ENVIRONMENT):
         log.debug('Instance | Restore Backup | DB imported')
         with settings(warn_only=True):
             run('drush rr')
-        run('drush en ucb_on_prem_hosting -y')
         run('drush elysia-cron run --ignore-time')
         run('drush xmlsitemap-regenerate')
-        run('drush vset profile_module_manager_disable_enabling_atlas_bundles 0')
-        run('drush express-unlock')
 
     run('rm {0}'.format(files_path))
     run('rm {0}'.format(database_path))
@@ -1049,14 +1041,3 @@ def import_backup(backup, target_instance, source_env=ENVIRONMENT):
     restore_time = time() - start_time
     log.info('Import Backup | Complete | Target Instance - %s (%s) | %s sec',
              target_instance['_id'], target_instance['sid'], restore_time)
-
-
-@roles('operations_server')
-def migration_linkchecker(instance):
-    """
-    Run the linkchecker command post migration routing change.
-    """
-    log.info('Migration linkchecker | Instance - %s', instance['_id'])
-    code_directory_sid = '{0}/{1}/{1}'.format(SITES_CODE_ROOT, instance['sid'])
-    with cd(code_directory_sid):
-        run("drush linkchecker-clear")

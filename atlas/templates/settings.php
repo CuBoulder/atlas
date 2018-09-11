@@ -52,48 +52,18 @@ $conf["smtp_password"] = "{{smtp_password}}";
 if (isset($launched) && $launched && isset($conf["cu_path"])) {
   if (strpos($_SERVER['REQUEST_URI'], $conf['cu_sid']) !== false) {
     header('HTTP/1.0 301 Moved Permanently');
-    {% if migration_verification == 'approved' -%}
-      {% if environment == 'prod' -%}
+    {% if environment == 'prod' -%}
     header('Location: https://www.colorado.edu'. str_replace($conf['cu_sid'], $conf["cu_path"], $_SERVER['REQUEST_URI']));
-      {% elif environment == 'test' -%}
+    {% elif environment == 'test' -%}
     header('Location: https://www-test.colorado.edu'. str_replace($conf['cu_sid'], $conf["cu_path"], $_SERVER['REQUEST_URI']));
-      {% elif environment == 'dev' -%}
+    {% elif environment == 'dev' -%}
     header('Location: https://www-dev.colorado.edu'. str_replace($conf['cu_sid'], $conf["cu_path"], $_SERVER['REQUEST_URI']));
-      {% elif environment == 'local' -%}
+    {% elif environment == 'local' -%}
     header('Location: https://express.local'. str_replace($conf['cu_sid'], $conf["cu_path"], $_SERVER['REQUEST_URI']));
-      {% endif -%}
-    {% else -%}
-      {% if environment == 'prod' -%}
-    header('Location: https://www-prod-new.colorado.edu'. str_replace($conf['cu_sid'], $conf["cu_path"], $_SERVER['REQUEST_URI']));
-      {% elif environment == 'test' -%}
-    header('Location: https://www-test-new.colorado.edu'. str_replace($conf['cu_sid'], $conf["cu_path"], $_SERVER['REQUEST_URI']));
-      {% elif environment == 'dev' -%}
-    header('Location: https://www-dev-new.colorado.edu'. str_replace($conf['cu_sid'], $conf["cu_path"], $_SERVER['REQUEST_URI']));
-      {% elif environment == 'local' -%}
-    header('Location: https://express.local'. str_replace($conf['cu_sid'], $conf["cu_path"], $_SERVER['REQUEST_URI']));
-      {% endif -%}
     {% endif -%}
     exit();
   }
 }
-
-/**
- * Redirect from www-prod-new to www if the site has been approved.
- */
-{% if migration_verification == 'approved' -%}
-  {% if environment == 'prod' -%}
-if ($_SERVER['HTTP_HOST'] == 'www-prod-new.colorado.edu') {
-  header('Location: https://www.colorado.edu'.$_SERVER['REQUEST_URI']);
-  {% elif environment == 'test' -%}
-if ($_SERVER['HTTP_HOST'] == 'www-test-new.colorado.edu') {
-  header('Location: https://www-test.colorado.edu'.$_SERVER['REQUEST_URI']);
-  {% elif environment == 'dev' -%}
-if ($_SERVER['HTTP_HOST'] == 'www-dev-new.colorado.edu') {
-  header('Location: https://www-dev.colorado.edu'.$_SERVER['REQUEST_URI']);
-  {% endif -%}
-  exit();
-}
-{% endif -%}
 /**
  * Cookies
  *
@@ -103,32 +73,17 @@ if ($_SERVER['HTTP_HOST'] == 'www-dev-new.colorado.edu') {
  * We also set the cookie path so that we don't bypass Varnish for instances we are not logged into.
  */
 global $base_url;
-{% if migration_verification == 'approved' -%}
-  {% if environment == 'prod' -%}
+{% if environment == 'prod' -%}
 $base_url .= 'https://www.colorado.edu';
 $cookie_domain = '.www.colorado.edu';
-  {% elif environment == 'test' -%}
+{% elif environment == 'test' -%}
 $base_url .= 'https://www-test.colorado.edu';
 $cookie_domain = '.www-test.colorado.edu';
-  {% elif environment == 'dev' -%}
+{% elif environment == 'dev' -%}
 $base_url .= 'https://www-dev.colorado.edu';
 $cookie_domain = '.www-dev.colorado.edu';
-  {% elif environment == 'local' -%}
+{% elif environment == 'local' -%}
 $base_url .= 'https://express.local';
-  {% endif -%}
-{% else -%}
-  {% if environment == 'prod' -%}
-$base_url .= 'https://www-prod-new.colorado.edu';
-$cookie_domain = '.www-prod-new.colorado.edu';
-  {% elif environment == 'test' -%}
-$base_url .= 'https://www-test-new.colorado.edu';
-$cookie_domain = '.www-test-new.colorado.edu';
-  {% elif environment == 'dev' -%}
-$base_url .= 'https://www-dev-new.colorado.edu';
-$cookie_domain = '.www-dev-new.colorado.edu';
-  {% elif environment == 'local' -%}
-$base_url .= 'https://express.local';
-  {% endif -%}
 {% endif -%}
 // We don't need a cookie_domain for locals.
 ini_set('session.cookie_lifetime', 93600);

@@ -55,9 +55,9 @@ if (isset($launched) && $launched && isset($conf["cu_path"])) {
     {% if environment == 'prod' -%}
     header('Location: https://www.colorado.edu'. str_replace($conf['cu_sid'], $conf["cu_path"], $_SERVER['REQUEST_URI']));
     {% elif environment == 'test' -%}
-    header('Location: https://www-test.colorado.edu'. str_replace($conf['cu_sid'], $conf["cu_path"], $_SERVER['REQUEST_URI']));
+    header('Location: https://www-test-new.colorado.edu'. str_replace($conf['cu_sid'], $conf["cu_path"], $_SERVER['REQUEST_URI']));
     {% elif environment == 'dev' -%}
-    header('Location: https://www-dev.colorado.edu'. str_replace($conf['cu_sid'], $conf["cu_path"], $_SERVER['REQUEST_URI']));
+    header('Location: https://www-dev-new.colorado.edu'. str_replace($conf['cu_sid'], $conf["cu_path"], $_SERVER['REQUEST_URI']));
     {% elif environment == 'local' -%}
     header('Location: https://express.local'. str_replace($conf['cu_sid'], $conf["cu_path"], $_SERVER['REQUEST_URI']));
     {% endif -%}
@@ -77,11 +77,11 @@ global $base_url;
 $base_url .= 'https://www.colorado.edu';
 $cookie_domain = '.www.colorado.edu';
 {% elif environment == 'test' -%}
-$base_url .= 'https://www-test.colorado.edu';
-$cookie_domain = '.www-test.colorado.edu';
+$base_url .= 'https://www-test-new.colorado.edu';
+$cookie_domain = '.www-test-new.colorado.edu';
 {% elif environment == 'dev' -%}
-$base_url .= 'https://www-dev.colorado.edu';
-$cookie_domain = '.www-dev.colorado.edu';
+$base_url .= 'https://www-dev-new.colorado.edu';
+$cookie_domain = '.www-dev-new.colorado.edu';
 {% elif environment == 'local' -%}
 $base_url .= 'https://express.local';
 {% endif -%}

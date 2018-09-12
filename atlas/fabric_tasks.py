@@ -415,8 +415,9 @@ def instance_heal(item):
 
 
 @roles('operations_server')
-def instance_heal_ops(item):
-    log.info('Instance | Heal | Item ID - %s | Item - %s', item['sid'], item)
+def instance_rebuild_code(item):
+    log.info('Instance | Rebuild code | Item ID - %s | Item - %s', item['sid'], item)
+    # Build list of paths to check
     path_list = []
     # Check for code root
     path_list.append('{0}/{1}'.format(SITES_CODE_ROOT, item['sid']))
@@ -426,7 +427,10 @@ def instance_heal_ops(item):
     path_list.append('{0}/{1}/files'.format(NFS_MOUNT_LOCATION[ENVIRONMENT], item['sid']))
     # Check for web root symlinks
     path_list.append('{0}/{1}'.format(SITES_WEB_ROOT, item['sid']))
-    # Build list of paths to check
+    # If homepage, add symlinks in webroot
+    if item['path'] == 'homepage':
+        for link in DRUPAL_CORE_PATHS:
+            path_list.append('{0}/{1}'.format(SITES_WEB_ROOT, link))
     reprovison = False
     if item['status'] == 'launched':
         path_symlink = '{0}/{1}'.format(SITES_WEB_ROOT, item['path'])
@@ -441,8 +445,8 @@ def instance_heal_ops(item):
     # If we are missing any of the paths, wipe the instance and rebuild it.
     if reprovison:
         log.info('Instance | Heal | Item ID - %s | Begin reprovision', item['sid'])
-        site_remove(item)
-        site_provision(item)
+        instance_remove_code(item)
+        instance_add_code(item)
         # Add packages
         if item['code'].get('package'):
             site_package_update(item)
@@ -451,6 +455,93 @@ def instance_heal_ops(item):
         log.info('Instance | Heal | Item ID - %s | Reprovision finished', item['sid'])
     else:
         log.info('Instance | Heal | Item ID - %s | Instance okay', item['sid'])
+
+
+def instance_remove_code(site):
+    """
+    Remove code for instance
+
+    :param site: Instance to remove code from
+    :return:
+    """
+    log.info('Instance | Remove Code | Instance - %s', site['_id'])
+
+    code_directory = '{0}/{1}'.format(SITES_CODE_ROOT, site['sid'])
+    web_directory = '{0}/{1}'.format(SITES_WEB_ROOT, site['sid'])
+    web_directory_path = '{0}/{1}'.format(SITES_WEB_ROOT, site['path'])
+
+    # Fix perms to allow settings file to be removed.
+    sites_dir = "{0}/{1}/{1}/sites".format(SITES_CODE_ROOT, site['sid'])
+    if exists(sites_dir):
+        run("chmod -R u+w {0}".format(sites_dir))
+
+    remove_symlink(web_directory)
+    remove_symlink(web_directory_path)
+    remove_directory(code_directory)
+
+
+def instance_add_code(site):
+    """
+    Add code to instance
+
+    :param site: The site object
+    :return:
+    """
+    log.info('Site | Add Code | site - %s', site)
+    code_directory = '{0}/{1}'.format(SITES_CODE_ROOT, site['sid'])
+    code_directory_sid = '{0}/{1}'.format(code_directory, site['sid'])
+    code_directory_current = '{0}/current'.format(code_directory)
+    web_directory_sid = '{0}/{1}'.format(SITES_WEB_ROOT, site['sid'])
+    profile = utilities.get_single_eve('code', site['code']['profile'])
+
+    try:
+        execute(create_directory_structure, folder=code_directory)
+    except FabricException as error:
+        log.error('Site | Add Code | Create directory structure failed | Error - %s', error)
+        return error
+
+    with cd(code_directory):
+        core = utilities.get_code_name_version(site['code']['core'])
+        run('drush dslm-new {0} {1}'.format(site['sid'], core))
+        # Find all directories and set perms to 0755.
+        run('find {0} -type d -exec chmod 0755 {{}} \\;'.format(code_directory_sid))
+        # Find all directories and set group to `webserver_user_group`.
+        run('find {0} -type d -exec chgrp {1} {{}} \\;'.format(code_directory_sid, WEBSERVER_USER_GROUP))
+        # Find all files and set perms to 0644.
+        run('find {0} -type f -exec chmod 0644 {{}} \\;'.format(code_directory_sid))
+
+    with cd(code_directory_sid):
+        profile = utilities.get_code_name_version(site['code']['profile'])
+        run('drush dslm-add-profile {0}'.format(profile))
+
+    try:
+        execute(update_symlink, source=code_directory_sid, destination=code_directory_current)
+    except FabricException as error:
+        log.error('Site | Add Code | Update symlink failed | Error - %s', error)
+        return error
+
+    if NFS_MOUNT_FILES_DIR:
+        # Replace default files dir with this one
+        site_files_dir = code_directory_current + '/sites/default/files'
+        nfs_files_dir = '{0}/{1}/files'.format(NFS_MOUNT_LOCATION[ENVIRONMENT], site['sid'])
+        nfs_src = '{0}/files'.format(nfs_files_dir)
+        try:
+            execute(replace_files_directory, source=nfs_src, destination=site_files_dir)
+        except FabricException as error:
+            log.error('Site | Add Code | Replace file directory failed | Error - %s', error)
+            return error
+
+    try:
+        execute(create_settings_files, site=site)
+    except FabricException as error:
+        log.error('Site | Add Code | Settings file creation failed | Error - %s', error)
+        return error
+
+    try:
+        execute(update_symlink, source=code_directory_current, destination=web_directory_sid)
+    except FabricException as error:
+        log.error('Site | Add Code | Update symlink failed | Error - %s', error)
+        return error
 
 
 @roles('webservers', 'operations_server')
@@ -949,7 +1040,6 @@ def import_backup(backup, target_instance, source_env=ENVIRONMENT):
         run('drush en ucb_on_prem_hosting -y')
         run('drush elysia-cron run --ignore-time')
         run('drush xmlsitemap-regenerate')
-        run('drush atst')
         run('drush vset profile_module_manager_disable_enabling_atlas_bundles 0')
         run('drush express-unlock')
 

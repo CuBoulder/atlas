@@ -536,8 +536,8 @@ def site_update(site, updates, original):
 
     # Don't update settings files a second time if status is changing to 'locked'.
     if updates.get('settings'):
+        log.info('Found settings change | %s', updates)
         if not updates.get('status') or updates['status'] != 'locked':
-            log.debug('Found settings change.')
             execute(fabric_tasks.update_settings_file, site=site)
             deploy_php_cache_clear = True
 
@@ -995,7 +995,7 @@ def verify_statistics():
             utilities.post_to_slack_payload(slack_payload)
 
 
-@celery.task
+@celery.task(time_limit=1200)
 def backup_instances_all(backup_type='routine'):
     log.info('Backup all instances')
     # TODO: Max results
@@ -1005,7 +1005,8 @@ def backup_instances_all(backup_type='routine'):
     if not statistics['_meta']['total'] == 0:
         for statistic in statistics['_items']:
             site = utilities.get_single_eve('sites', statistic['site'])
-            backup_create.delay(site=site, backup_type=backup_type, batch=batch_id)
+            if site['verification']['verification_status'] == 'approved':
+                backup_create.delay(site=site, backup_type=backup_type, batch=batch_id)
     # Report to slack
     log.info('Atlas operational statistic | Batch - %s | Type - %s | Count - %s',
              batch_id, backup_type, statistics['_meta']['total'])
@@ -1043,7 +1044,6 @@ def backup_restore(backup_record, original_instance, package_list):
     log.info('Backup | Restore | Backup ID - %s', backup_record['_id'])
     log.debug('Backup | Restore | Backup Recorsd - %s | Original instance - %s | Package List - %s',
               backup_record, original_instance, package_list)
-    host = utilities.single_host()
     execute(fabric_tasks.backup_restore, backup_record=backup_record,
             original_instance=original_instance, package_list=package_list)
 
@@ -1273,7 +1273,7 @@ def heal_instance(instance, db=True, ops=False):
     if db:
         utilities.create_database(instance['sid'], instance['db_key'])
     if ops:
-        execute(fabric_tasks.instance_heal_ops, item=instance)
+        execute(fabric_tasks.instance_rebuild_code, item=instance)
     else:
         execute(fabric_tasks.instance_heal, item=instance)
 
@@ -1316,13 +1316,13 @@ def import_backup(env, backup_id, target_instance):
     }
     utilities.patch_eve('sites', target['_id'], payload)
     # Notify users that site is ready for verification
-    if target['status'] == 'launched':
-        path = '{0}/{1}'.format(BASE_URLS[ENVIRONMENT], target['path'])
-        subject = 'Site ready to be reviewed - {0}'.format(path)
-        message = "Your site at {0} has been migrated to the new infrastructure and is ready to be verified. Visit https://www.colorado.edu/webcentral/site-verification-steps for details on what you need to do next.\n\nAfter you have verified your site, it will be put in queue to relaunch at your normal URL. Relaunch windows are scheduled for 9am, 11am, 1pm and 3pm. You will be placed in the next time slot based on the time you verify your site.\n\nIf you do not verify the migration within 48 hours, your site will automatically relaunch at the normal URL.\n\n- Web Express Team".format(path)
-        statistics = utilities.get_single_eve('statistics', target['statistics'])
-        site_owners = statistics['users']['email_address']['site_owner']
-        utilities.send_email(email_message=message, email_subject=subject, email_to=site_owners)
+    # if target['status'] == 'launched':
+    #     path = '{0}/{1}'.format(BASE_URLS[ENVIRONMENT], target['path'])
+    #     subject = 'Site ready to be reviewed - {0}'.format(path)
+    #     message = "Your site at {0} has been migrated to the new infrastructure and is ready to be verified. Visit https://www.colorado.edu/webcentral/site-verification-steps for details on what you need to do next.\n\nAfter you have verified your site, it will be put in queue to relaunch at your normal URL. Relaunch windows are scheduled for 9am, 11am, 1pm and 3pm. You will be placed in the next time slot based on the time you verify your site.\n\nIf you do not verify the migration within 48 hours, your site will automatically relaunch at the normal URL.\n\n- Web Express Team".format(path)
+    #     statistics = utilities.get_single_eve('statistics', target['statistics'])
+    #     site_owners = statistics['users']['email_address']['site_owner']
+    #     utilities.send_email(email_message=message, email_subject=subject, email_to=site_owners)
 
 
 @celery.task
@@ -1382,7 +1382,6 @@ def migration_linkchecker(instance):
     Run the link checker command for sites that have updated routing.
     """
     log.info('Migration linkchecker | Item - %s', instance)
-    host = utilities.single_host()
     execute(fabric_tasks.migration_linkchecker, instance=instance)
 
 

@@ -78,8 +78,8 @@ def get_command(machine_name):
         if command == 'clear_php_cache':
             tasks.clear_php_cache.delay()
         elif command == 'import_code':
-            # Grab payload
-            payload = request.data
+            # Grab payload, it is a JSON string from the request
+            payload = json.loads(request.data)
             if not payload.get('env'):
                 abort(409, 'This command requires a payload containing a target `env`.')
             tasks.import_code.delay(payload['env'])
@@ -123,6 +123,8 @@ def get_command(machine_name):
                 continue
         elif command == 'backup_all_instances':
             tasks.backup_instances_all.delay(backup_type='on_demand')
+        elif command == 'migrate_routing':
+            tasks.migrate_routing.delay()
         return make_response('Command "{0}" has been initiated.'.format(command))
 
 

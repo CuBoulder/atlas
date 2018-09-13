@@ -270,31 +270,6 @@ SITES_SCHEMA = {
                 'type': 'datetime',
                 'nullable': True,
             },
-            'migration': {
-                'type': 'datetime',
-            },
-            'verification': {
-                'type': 'datetime',
-            },
-            'activation': {
-                'type': 'datetime',
-            },
-        },
-    },
-    'verification': {
-        'type': 'dict',
-        'schema': {
-            'verification_status': {
-                'type': 'string',
-                'allowed': ['not_ready', 'ready', 'failed', 'approved'],
-                'default': 'not_ready'
-            },
-            'verification_user': {
-                'type': 'string',
-            },
-            'scheduled_migration': {
-                'type': 'datetime',
-            },
         },
     },
     'statistics': {

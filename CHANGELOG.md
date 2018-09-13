@@ -1,5 +1,16 @@
 # Change log
 
+## v2.3.0-alpha1
+
+As part of deployment:
+
+- Delete unused database fields if desired: `verification` dict; `migration`, and `activation` in the `date` dict.
+- Check base URLs in config files.
+
+Resolves:
+
+- &#35;504 - Remove migration code
+
 ## v2.2.2
 
 Resolves:

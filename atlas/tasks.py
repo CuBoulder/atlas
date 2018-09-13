@@ -532,11 +532,6 @@ def site_update(site, updates, original):
             email_to = ['{0}@colorado.edu'.format(site['modified_by'])]
             utilities.send_email(email_message=message, email_subject=subject, email_to=email_to)
 
-    if updates.get('verification'):
-        if updates.get('verification_status'):
-            if updates['verification']['verification_status'] == 'approved':
-                execute(fabric_tasks.update_settings_file, site=site)
-
     if updates.get('status'):
         log.debug('Site update | ID - %s | Found status change', site['_id'])
         if updates['status'] in ['installing', 'launching', 'locked', 'take_down', 'restore']:
@@ -596,18 +591,10 @@ def site_update(site, updates, original):
 
     # Don't update settings files a second time if status is changing to 'locked'.
     if updates.get('settings'):
+        log.info('Found settings change | %s', updates)
         if not updates.get('status') or updates['status'] != 'locked':
-            log.debug('Found settings change.')
             execute(fabric_tasks.update_settings_file, site=site)
             deploy_php_cache_clear = True
-
-    # Update settings file when migration is approved
-    if updates.get('verification'):
-        if updates['verification'].get('verification_status'):
-            if updates['verification']['verification_status'] == 'approved':
-                log.info('Verification approved | Instance - %s', site['_id'])
-                execute(fabric_tasks.update_settings_file, site=site)
-                deploy_php_cache_clear = True
 
     # We want to run these commands in this specific order.
     log.info('Site Update | Closing operations commands | PHP Cache clear - %s | Registry rebuild - %s | Drush updb - %s | Drush cc - %s', deploy_php_cache_clear, deploy_registry_rebuild, deploy_update_database, deploy_drupal_cache_clear)
@@ -739,24 +726,10 @@ def drush_command_run(site, command_list, user=None, batch_id=None, batch_count=
     log.debug('Batch ID - %s | Count - %s | Site - %s | Command - %s', batch_id, batch_count, site['sid'], command_list)
 
     if site['path'] != 'homepage':
-        # Remove this hack after migration is complete.
-        if site.get('verification'):
-            if site['verification'].get('verification_status'):
-                if site['verification']['verification_status'] == 'approved':
-                    base_url = True
-                else:
-                    base_url = False
-            else:
-                base_url = False
-        else:
-            base_url = False
-        if base_url:
-            uri = 'https://www.colorado.edu' + '/' + site['path']
-        else:
-            uri = BASE_URLS[ENVIRONMENT] + '/' + site['path']
+        uri = BASE_URLS[ENVIRONMENT] + '/' + site['path']
     else:
         # Homepage
-        uri = 'https://www.colorado.edu'
+        uri = BASE_URLS[ENVIRONMENT]
     # Use List comprehension to add user prefix and URI suffix, then join the result.
     final_command = ' && '.join([command + ' --uri={0}'.format(uri) for command in command_list])
     log.debug('Batch ID - %s | Count - %s | Final Command - %s', batch_id, batch_count, final_command)
@@ -784,8 +757,6 @@ def cron(status=None):
     log.debug('Prepare Cron | Found argument')
     # Start by eliminating legacy items.
     site_query_string.append('&where={"type":"express",')
-    if ENVIRONMENT not in ['dev', 'test']:
-        site_query_string.append('"verification.verification_status":{"$ne":"not_ready"},')
     if status:
         log.debug('Found status')
         site_query_string.append('"status":"{0}",'.format(status))
@@ -820,25 +791,9 @@ def cron_run(site):
     start_time = time.time()
 
     if site['path'] != 'homepage':
-        # Remove this hack after migration is complete.
-        if site.get('verification'):
-            if site['verification'].get('verification_status'):
-                if site['verification']['verification_status'] == 'approved':
-                    base_url = True
-                else:
-                    base_url = False
-            else:
-                base_url = False
-        else:
-            base_url = False
-
-        if base_url:
-            uri = 'https://www.colorado.edu' + '/' + site['path']
-        else:
-            uri = BASE_URLS[ENVIRONMENT] + '/' + site['path']
+        uri = BASE_URLS[ENVIRONMENT] + '/' + site['path']
     else:
-        # Homepage
-        uri = 'https://www.colorado.edu'
+        uri = BASE_URLS[ENVIRONMENT]
     log.debug('Site - %s | uri - %s', site['sid'], uri)
     command = 'drush elysia-cron run --uri={1}'.format(WEBSERVER_USER, uri)
     try:
@@ -1055,7 +1010,7 @@ def verify_statistics():
             utilities.post_to_slack_payload(slack_payload)
 
 
-@celery.task
+@celery.task(time_limit=1200)
 def backup_instances_all(backup_type='routine'):
     log.info('Backup all instances')
     # TODO: Max results
@@ -1103,7 +1058,6 @@ def backup_restore(backup_record, original_instance, package_list):
     log.info('Backup | Restore | Backup ID - %s', backup_record['_id'])
     log.debug('Backup | Restore | Backup Recorsd - %s | Original instance - %s | Package List - %s',
               backup_record, original_instance, package_list)
-    host = utilities.single_host()
     execute(fabric_tasks.backup_restore, backup_record=backup_record,
             original_instance=original_instance, package_list=package_list)
 
@@ -1324,7 +1278,7 @@ def heal_instance(instance, db=True, ops=False):
     if db:
         utilities.create_database(instance['sid'], instance['db_key'])
     if ops:
-        execute(fabric_tasks.instance_heal_ops, item=instance)
+        execute(fabric_tasks.instance_rebuild_code, item=instance)
     else:
         execute(fabric_tasks.instance_heal, item=instance)
 
@@ -1359,82 +1313,6 @@ def import_backup(env, backup_id, target_instance):
     execute(fabric_tasks.import_backup, backup=backup.json(),
             target_instance=target, source_env=env)
     execute(fabric_tasks.correct_nfs_file_permissions, instance=target)
-
-    migration_date = datetime.utcnow().strftime("%Y-%m-%d %H:%M:%S GMT")
-    payload = {
-        'verification': {'verification_status': 'ready'},
-        'dates': {'migration': migration_date}
-    }
-    utilities.patch_eve('sites', target['_id'], payload)
-    # Notify users that site is ready for verification
-    if target['status'] == 'launched':
-        path = '{0}/{1}'.format(BASE_URLS[ENVIRONMENT], target['path'])
-        subject = 'Site ready to be reviewed - {0}'.format(path)
-        message = "Your site at {0} has been migrated to the new infrastructure and is ready to be verified. Visit https://www.colorado.edu/webcentral/site-verification-steps for details on what you need to do next.\n\nAfter you have verified your site, it will be put in queue to relaunch at your normal URL. Relaunch windows are scheduled for 9am, 11am, 1pm and 3pm. You will be placed in the next time slot based on the time you verify your site.\n\nIf you do not verify the migration within 48 hours, your site will automatically relaunch at the normal URL.\n\n- Web Express Team".format(path)
-        statistics = utilities.get_single_eve('statistics', target['statistics'])
-        site_owners = statistics['users']['email_address']['site_owner']
-        utilities.send_email(email_message=message, email_subject=subject, email_to=site_owners)
-
-
-@celery.task
-def migrate_routing():
-    """
-    Find instances that are verified or outside of the verification window and update the routing.
-    """
-    log.info('Migrate Routing | Start')
-    verified_instances_query = 'where={"verification.verification_status":"approved","dates.activation":{"$exists":false}}'
-    verified_instances = utilities.get_eve('sites', verified_instances_query)
-    log.debug('Migrate routing | verified_instances - %s', verified_instances)
-
-    time_ago = datetime.utcnow() - timedelta(hours=49)
-    timeout_verification_query = 'where={{"verification.verification_status":"ready","dates.migration":{{"$lte":"{0}"}}}}'.format(
-        time_ago.strftime("%Y-%m-%d %H:%M:%S GMT"))
-    timeout_verification_instances = utilities.get_eve('sites', timeout_verification_query)
-    log.debug('Migrate routing | timeout_verification - %s', timeout_verification_instances)
-
-    # Payload vars.
-    old_infra_payload = {'pool': 'pool-varnish-new'}
-    env = 'o-{0}'.format(ENVIRONMENT)
-    date = datetime.utcnow().strftime("%Y-%m-%d %H:%M:%S GMT")
-
-    if verified_instances['_meta']['total'] is not 0:
-        for instance in verified_instances['_items']:
-            statistic = utilities.get_single_eve('statistics', instance['statistics'])
-            # if statistic.get('bundles'):
-            #     if statistic['bundles'].get('cu_seo_bundle'):
-            #         if statistic['bundles']['cu_seo_bundle']['schema_version'] != 0:
-                        # Run the link checker command 10 minutes later.
-                        # Comment out for now
-                        #migration_linkchecker.apply_async([instance], countdown=600)
-            utilities.patch_eve('sites', instance['_id'], old_infra_payload, env=env)
-            new_infra_payload = {'dates':{'activation':date}}
-            utilities.patch_eve('sites', instance['_id'], new_infra_payload)
-
-    if timeout_verification_instances['_meta']['total'] is not 0:
-        for instance in timeout_verification_instances['_items']:
-            statistic = utilities.get_single_eve('statistics', instance['statistics'])
-            # if statistic.get('bundles'):
-            #     if statistic['bundles'].get('cu_seo_bundle'):
-            #         if statistic['bundles']['cu_seo_bundle']['schema_version'] != 0:
-                        # Run the link checker command 10 minutes later.
-                        # Comment out for now
-                        #migration_linkchecker.apply_async([instance], countdown=600)
-            utilities.patch_eve('sites', instance['_id'], old_infra_payload, env=env)
-            new_infra_payload = {
-                'dates':{'activation':date},
-                'verification':{'verification_status':'approved', 'verification_user':'timeout'}
-            }
-            utilities.patch_eve('sites', instance['_id'], new_infra_payload)
-
-
-@celery.task
-def migration_linkchecker(instance):
-    """
-    Run the link checker command for sites that have updated routing.
-    """
-    log.info('Migration linkchecker | Item - %s', instance)
-    host = utilities.single_host()
-    execute(fabric_tasks.migration_linkchecker, instance=instance)
 
 
 @celery.task

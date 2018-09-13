@@ -1,5 +1,24 @@
 # Change log
 
+## v2.3.0-alpha1
+
+As part of deployment:
+
+- Delete unused database fields if desired: `verification` dict; `migration`, and `activation` in the `date` dict.
+- Check base URLs in config files.
+
+Resolves:
+
+- &#35;504 - Remove migration code
+
+## v2.2.2
+
+Resolves:
+
+- &#35;494 - Add support to enable memcache via atlas
+- &#35;493 - When deploying drupal structure to a new server, NFS mount is wiped
+- &#35;502 - Increase time allowed for taking backups
+
 ## v2.2.1
 
 Resolves:

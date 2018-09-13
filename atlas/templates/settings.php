@@ -52,49 +52,18 @@ $conf["smtp_password"] = "{{smtp_password}}";
 if (isset($launched) && $launched && isset($conf["cu_path"])) {
   if (strpos($_SERVER['REQUEST_URI'], $conf['cu_sid']) !== false) {
     header('HTTP/1.0 301 Moved Permanently');
-    {% if migration_verification == 'approved' -%}
-      {% if environment == 'prod' -%}
+    {% if environment == 'prod' -%}
     header('Location: https://www.colorado.edu'. str_replace($conf['cu_sid'], $conf["cu_path"], $_SERVER['REQUEST_URI']));
-      {% elif environment == 'test' -%}
-    header('Location: https://www-test.colorado.edu'. str_replace($conf['cu_sid'], $conf["cu_path"], $_SERVER['REQUEST_URI']));
-      {% elif environment == 'dev' -%}
-    header('Location: https://www-dev.colorado.edu'. str_replace($conf['cu_sid'], $conf["cu_path"], $_SERVER['REQUEST_URI']));
-      {% elif environment == 'local' -%}
-    header('Location: https://express.local'. str_replace($conf['cu_sid'], $conf["cu_path"], $_SERVER['REQUEST_URI']));
-      {% endif -%}
-    {% else -%}
-      {% if environment == 'prod' -%}
-    header('Location: https://www-prod-new.colorado.edu'. str_replace($conf['cu_sid'], $conf["cu_path"], $_SERVER['REQUEST_URI']));
-      {% elif environment == 'test' -%}
+    {% elif environment == 'test' -%}
     header('Location: https://www-test-new.colorado.edu'. str_replace($conf['cu_sid'], $conf["cu_path"], $_SERVER['REQUEST_URI']));
-      {% elif environment == 'dev' -%}
+    {% elif environment == 'dev' -%}
     header('Location: https://www-dev-new.colorado.edu'. str_replace($conf['cu_sid'], $conf["cu_path"], $_SERVER['REQUEST_URI']));
-      {% elif environment == 'local' -%}
+    {% elif environment == 'local' -%}
     header('Location: https://express.local'. str_replace($conf['cu_sid'], $conf["cu_path"], $_SERVER['REQUEST_URI']));
-      {% endif -%}
-    {% endif %}
-
+    {% endif -%}
     exit();
   }
 }
-
-/**
- * Redirect from www-prod-new to www if the site has been approved.
- */
-{% if migration_verification == 'approved' -%}
-  {% if environment == 'prod' -%}
-if ($_SERVER['HTTP_HOST'] == 'www-prod-new.colorado.edu') {
-  header('Location: https://www.colorado.edu'.$_SERVER['REQUEST_URI']);
-  {% elif environment == 'test' -%}
-if ($_SERVER['HTTP_HOST'] == 'www-test-new.colorado.edu') {
-  header('Location: https://www-test.colorado.edu'.$_SERVER['REQUEST_URI']);
-  {% elif environment == 'dev' -%}
-if ($_SERVER['HTTP_HOST'] == 'www-dev-new.colorado.edu') {
-  header('Location: https://www-dev.colorado.edu'.$_SERVER['REQUEST_URI']);
-  {% endif -%}
-  exit();
-}
-{% endif -%}
 /**
  * Cookies
  *
@@ -104,32 +73,17 @@ if ($_SERVER['HTTP_HOST'] == 'www-dev-new.colorado.edu') {
  * We also set the cookie path so that we don't bypass Varnish for instances we are not logged into.
  */
 global $base_url;
-{% if migration_verification == 'approved' -%}
-  {% if environment == 'prod' -%}
+{% if environment == 'prod' -%}
 $base_url .= 'https://www.colorado.edu';
 $cookie_domain = '.www.colorado.edu';
-  {% elif environment == 'test' -%}
-$base_url .= 'https://www-test.colorado.edu';
-$cookie_domain = '.www-test.colorado.edu';
-  {% elif environment == 'dev' -%}
-$base_url .= 'https://www-dev.colorado.edu';
-$cookie_domain = '.www-dev.colorado.edu';
-  {% elif environment == 'local' -%}
-$base_url .= 'https://express.local';
-  {% endif -%}
-{% else -%}
-  {% if environment == 'prod' -%}
-$base_url .= 'https://www-prod-new.colorado.edu';
-$cookie_domain = '.www-prod-new.colorado.edu';
-  {% elif environment == 'test' -%}
+{% elif environment == 'test' -%}
 $base_url .= 'https://www-test-new.colorado.edu';
 $cookie_domain = '.www-test-new.colorado.edu';
-  {% elif environment == 'dev' -%}
+{% elif environment == 'dev' -%}
 $base_url .= 'https://www-dev-new.colorado.edu';
 $cookie_domain = '.www-dev-new.colorado.edu';
-  {% elif environment == 'local' -%}
+{% elif environment == 'local' -%}
 $base_url .= 'https://express.local';
-  {% endif -%}
 {% endif -%}
 // We don't need a cookie_domain for locals.
 ini_set('session.cookie_lifetime', 93600);
@@ -161,11 +115,15 @@ $conf['page_cache_maximum_age'] = {{ page_cache_maximum_age }};
 // Drupal doesn't cache if we invoke hooks during bootstrap.
 $conf['page_cache_invoke_hooks'] = FALSE;
 // Setup cache_form bin.
+$conf['cache_default_class'] = 'MemCacheDrupal';
 $conf['cache_class_cache_form'] = 'DrupalDatabaseCache';
-{% if environment != 'local' -%}
+// Memcache lock file location.
+$conf['lock_inc'] = 'profiles/{{profile}}/modules/contrib/memcache/memcache-lock.inc';
+{% if environment != 'local' %}
 // Varnish
 $conf['cache_backends'] = array(
   'profiles/{{profile}}/modules/contrib/varnish/varnish.cache.inc',
+  'profiles/{{profile}}/modules/contrib/memcache/memcache.inc',
 );
 $conf['reverse_proxy'] = TRUE;
 $conf['reverse_proxy_addresses'] = array({% for ip in reverse_proxies -%}'{{ip}}',{% endfor %});
@@ -176,7 +134,17 @@ $conf['varnish_control_terminal'] = '{{ varnish_control }}';
 $conf['varnish_version'] = 4;
 $conf['varnish_control_key'] = '{{ varnish_control_key }}';
 {%- endif %}
-
+// Memcache bins and stampede protection.
+$conf['memcache_bins'] = array('cache' => 'default');
+$conf['memcache_key_prefix'] = $conf['cu_sid'];
+// Set to FALSE on Jan 5, 2012 - drastically improved performance.
+$conf['memcache_stampede_protection'] = FALSE;
+$conf['memcache_stampede_semaphore'] = 15;
+$conf['memcache_stampede_wait_time'] = 5;
+$conf['memcache_stampede_wait_limit'] = 3;
+// Put into to fix issue that we think might be related to hashing the persistent connections with
+// the localhost haproxy setup.
+$conf['memcache_persistent'] = FALSE;
 // Never allow updating modules through UI.
 $conf['allow_authorize_operations'] = FALSE;
 // No IP blocking from the UI, we'll take care of that at a higher level.
@@ -212,6 +180,11 @@ $databases['default']['slave'][] = array(
   'port' => '3307',
   'prefix' => '',
 );
+// Memcache servers
+$conf['memcache_servers'] = array(
+  '127.0.0.1:11211' => 'default',
+  '127.0.0.1:11212' => 'default',
+);
 {% else -%}
 $databases['default']['default'] = array(
   'driver' => 'mysql',
@@ -239,6 +212,9 @@ $conf['drupal_ssl_context_options'] = array(
       'allow_self_signed' => TRUE,
     ),
   ),
+);
+$conf['memcache_servers'] = array(
+  '127.0.0.1:11211' => 'default',
 );
 {%- endif %}
 

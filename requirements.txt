@@ -20,6 +20,8 @@ Fabric==1.13.2
 Flask==0.12
 flower==0.9.1
 Flask-PyMongo==0.4.1
+gitpython==2.1.11
+gitdb2==2.0.4
 itsdangerous==0.24
 Jinja2==2.10
 kombu==3.0.37
@@ -46,6 +48,7 @@ PyYAML==3.12
 requests==2.18.3
 setuptools==18.5
 simplejson==3.16.0
+smmap2==2.0.4
 Sphinx==1.4.6
 sphinx-autobuild==0.6.0
 tornado==4.2

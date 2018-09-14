@@ -3,6 +3,7 @@
     ~~~~~~
     Celery tasks for Atlas.
 """
+import os
 import time
 import json
 
@@ -11,14 +12,17 @@ from collections import Counter
 from bson import json_util
 from random import randint
 import requests
-from celery import Celery
+from celery import Celery, chord
 from celery.utils.log import get_task_logger
 from fabric.api import execute
+from git import GitCommandError
 
 from atlas import fabric_tasks
 from atlas import utilities
 from atlas import config_celery
-from atlas.config import (ENVIRONMENT, WEBSERVER_USER, DESIRED_SITE_COUNT, SSL_VERIFICATION)
+from atlas import code_operations
+from atlas.config import (ENVIRONMENT, WEBSERVER_USER, DESIRED_SITE_COUNT,
+                          SSL_VERIFICATION, LOCAL_CODE_ROOT)
 from atlas.config_servers import (BASE_URLS, API_URLS)
 
 # Setup a sub-logger
@@ -127,16 +131,20 @@ def code_deploy(item):
     :return:
     """
     log.debug('Code deploy | %s', item)
-    code_deploy_fabric_task_result = execute(fabric_tasks.code_deploy, item=item)
-    log.debug('Code Deploy | Deploy Error | %s', code_deploy_fabric_task_result)
+    try:
+        clone = code_operations.repository_clone(item)
+    except GitCommandError:
+        log.error('Code | Clone | Cannot clone repository, check URL.')
+    try:
+        checkout = code_operations.repository_checkout(item)
+    except GitCommandError:
+        log.error('Code | Checkout | Cannot checkout requested tag, check value.')
+    if item['meta']['is_current']:
+        code_operations.update_symlink_current(item)
+        log.debug('Code deploy | Symlink | Is current')
+    sync = code_operations.sync_code()
 
-    # The fabric_result is a dict of {hosts: result} from fabric.
-    # We loop through each row and add it to a new dict if value is not
-    # None.
-    # This uses constructor syntax https://doughellmann.com/blog/2012/11/12/the-performance-impact-of-using-dict-instead-of-in-cpython-2-7-2/.
-    errors = {k: v for k, v in code_deploy_fabric_task_result.iteritems() if v is not None}
-
-    if errors:
+    if clone or sync:
         text = 'Error'
         slack_color = 'danger'
     else:
@@ -174,14 +182,15 @@ def code_deploy(item):
                         "value": item['meta']['version'],
                         "short": True
                     }
+
                 ],
             }
         ],
         "user": item['created_by']
     }
 
-    if errors:
-        error_json = json.dumps(errors)
+    if clone or sync:
+        error_json = json.dumps(clone + sync)
         slack_payload['attachments'].append(
             {
                 "fallback": 'Error message',
@@ -209,51 +218,61 @@ def code_update(updated_item, original_item):
     :param original_item:
     :return:
     """
-    log.debug('Code update | %s', updated_item)
-    fab_task = execute(fabric_tasks.code_update, updated_item=updated_item,
-                       original_item=original_item)
+    log.debug('Code update | Updates - %s', updated_item)
+    # Set up some authoritative values
+    final_item = original_item.copy()
+    # updated_item has the correct meta dict
+    final_item.update(updated_item)
 
-    name = updated_item['meta']['name'] if updated_item['meta']['name'] else original_item['meta']['name']
-    version = updated_item['meta']['version'] if updated_item['meta']['version'] else original_item['meta']['version']
-    created_by = updated_item['created_by'] if updated_item['created_by'] else original_item['created_by']
+    if (updated_item['meta']['name'] != original_item['meta']['name']) or (updated_item['meta']['version'] != original_item['meta']['version']) or (updated_item['meta']['code_type'] != original_item['meta']['code_type']):
+        code_operations.repository_remove(original_item)
+        clone = code_operations.repository_clone(final_item)
+        log.debug('Code Update | Clone | %s', clone)
 
-    if False not in fab_task.values():
-        slack_title = 'Code Update - Success'
-        slack_color = 'good'
+    checkout = code_operations.repository_checkout(final_item)
+    log.debug('Code deploy | Checkout | %s', checkout)
+    if original_item['meta']['is_current']:
+        code_operations.update_symlink_current(original_item)
+        log.debug('Code deploy | Symlink | Is current')
 
-        slack_payload = {
-            "text": slack_title,
-            "username": 'Atlas',
-            "attachments": [
-                {
-                    "fallback": slack_title,
-                    "color": slack_color,
-                    "fields": [
-                        {
-                            "title": "Environment",
-                            "value": ENVIRONMENT,
-                            "short": True
-                        },
-                        {
-                            "title": "User",
-                            "value": created_by,
-                            "short": True
-                        },
-                        {
-                            "title": "Name",
-                            "value": name,
-                            "short": True
-                        },
-                        {
-                            "title": "Version",
-                            "value": version,
-                            "short": True
-                        }
-                    ],
-                }
-            ],
-        }
-        utilities.post_to_slack_payload(slack_payload)
+    sync = code_operations.sync_code()
+
+    slack_title = 'Code Update - Success'
+    slack_color = 'good'
+
+    slack_payload = {
+        "text": slack_title,
+        "username": 'Atlas',
+        "attachments": [
+            {
+                "fallback": slack_title,
+                "color": slack_color,
+                "fields": [
+                    {
+                        "title": "Environment",
+                        "value": ENVIRONMENT,
+                        "short": True
+                    },
+                    {
+                        "title": "User",
+                        "value": final_item['created_by'],
+                        "short": True
+                    },
+                    {
+                        "title": "Name",
+                        "value": final_item['meta']['name'],
+                        "short": True
+                    },
+                    {
+                        "title": "Version",
+                        "value": final_item['meta']['version'],
+                        "short": True
+                    }
+                ],
+            }
+        ],
+    }
+    utilities.post_to_slack_payload(slack_payload)
 
 
 @celery.task
@@ -264,47 +283,88 @@ def code_remove(item):
     :param item: Item to be removed.
     :return:
     """
-    log.debug('Code remove | %s', item)
-    fab_task = execute(fabric_tasks.code_remove, item=item)
+    log.info('Code remove | %s', item)
+    code_operations.repository_remove(item)
+    if item['meta']['is_current']:
+        code_folder_current = '{0}/{1}/{2}/{2}-current'.format(
+            LOCAL_CODE_ROOT,
+            code_operations.code_type_directory_name(item['meta']['code_type']),
+            item['meta']['name'])
+        os.unlink(code_folder_current)
 
-    if False not in fab_task.values():
-        # Slack notification
-        slack_title = 'Code Remove - Success'
-        slack_color = 'good'
+    sync = code_operations.sync_code()
 
-        slack_payload = {
-            "text": slack_title,
-            "username": 'Atlas',
-            "attachments": [
-                {
-                    "fallback": slack_title,
-                    "color": slack_color,
-                    "fields": [
-                        {
-                            "title": "Environment",
-                            "value": ENVIRONMENT,
-                            "short": True
-                        },
-                        {
-                            "title": "User",
-                            "value": item['created_by'],
-                            "short": True
-                        },
-                        {
-                            "title": "Name",
-                            "value": item['meta']['name'],
-                            "short": True
-                        },
-                        {
-                            "title": "Version",
-                            "value": item['meta']['version'],
-                            "short": True
-                        }
-                    ],
-                }
-            ],
-        }
-        utilities.post_to_slack_payload(slack_payload)
+    # Slack notification
+    slack_title = 'Code Remove - Success'
+    slack_color = 'good'
+
+    slack_payload = {
+        "text": slack_title,
+        "username": 'Atlas',
+        "attachments": [
+            {
+                "fallback": slack_title,
+                "color": slack_color,
+                "fields": [
+                    {
+                        "title": "Environment",
+                        "value": ENVIRONMENT,
+                        "short": True
+                    },
+                    {
+                        "title": "User",
+                        "value": item['created_by'],
+                        "short": True
+                    },
+                    {
+                        "title": "Name",
+                        "value": item['meta']['name'],
+                        "short": True
+                    },
+                    {
+                        "title": "Version",
+                        "value": item['meta']['version'],
+                        "short": True
+                    }
+                ],
+            }
+        ],
+    }
+    utilities.post_to_slack_payload(slack_payload)
+
+
+@celery.task
+def code_heal(code_items):
+    """
+    Verify code is correctly deployed.
+    """
+    log.info('Heal | Code | Item - %s', code_items)
+    # Setup a chord. Takes a 'group' (list of tasks that should be applied in parallel) and executes
+    # another task after the group is complete.
+    # In the second task, using .si creates an immutable signature so the return value of the
+    # previous tasks will be ignored.
+    task_group = chord((_code_heal.s(code) for code in code_items['_items']), _code_sync.si())()
+
+
+@celery.task
+def _code_heal(item):
+    """
+    Sub task for code_heal. Perform actual heal operations
+    """
+    if not os.path.isdir(code_operations.code_path(item)):
+        clone = code_operations.repository_clone(item)
+        log.debug('Code heal | Clone | %s', clone)
+
+    checkout = code_operations.repository_checkout(item)
+    log.debug('Code heal | Checkout | %s', checkout)
+
+
+@celery.task
+def _code_sync():
+    """
+    Sub task for code_heal. Sync healed code to server
+    """
+    sync = code_operations.sync_code()
 
 
 @celery.task
@@ -1206,15 +1266,6 @@ def update_homepage_files():
     except Exception as error:
         log.error('Command | Update Homepage files | Error - %s', error)
         raise
-
-
-@celery.task
-def heal_code(item):
-    """
-    Verify code is correctly deployed.
-    """
-    log.info('Heal | Code | Item - %s', item)
-    execute(fabric_tasks.code_heal, item=item)
 
 
 @celery.task

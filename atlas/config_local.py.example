@@ -21,6 +21,7 @@ DESIRED_SITE_COUNT = 2
 # Path should be absolute and should NOT include a trailing slash. We use separate site_web_root and
 # site_code_root to make it easy to switch to the down page.
 CODE_ROOT = '/data/code'
+LOCAL_CODE_ROOT = '/data/code/atlas_repos'
 SITES_WEB_ROOT = '/data/web/express'
 SITES_CODE_ROOT = '/data/atlas/sites'
 SITE_DOWN_PATH = '/data/code/down'

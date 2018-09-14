@@ -22,7 +22,7 @@ from atlas.config import (ATLAS_LOCATION, ENVIRONMENT, SSH_USER, CODE_ROOT, SITE
                           SITES_WEB_ROOT, WEBSERVER_USER, WEBSERVER_USER_GROUP, NFS_MOUNT_FILES_DIR,
                           BACKUP_PATH, SERVICE_ACCOUNT_USERNAME, SERVICE_ACCOUNT_PASSWORD,
                           SITE_DOWN_PATH, VARNISH_CONTROL_KEY, STATIC_WEB_PATH, SSL_VERIFICATION,
-                          DRUPAL_CORE_PATHS, BACKUP_IMPORT_PATH, SAML_AUTH, SMTP_PASSWORD)
+                          CORE_WEB_ROOT_SYMLINKS, BACKUP_IMPORT_PATH, SAML_AUTH, SMTP_PASSWORD)
 from atlas.config_servers import (SERVERDEFS, NFS_MOUNT_LOCATION, API_URLS,
                                   VARNISH_CONTROL_TERMINALS, BASE_URLS, ATLAS_LOGGING_URLS)
 
@@ -195,7 +195,8 @@ def site_launch(site):
                     update_symlink(code_directory_current, site['path'])
         elif site['path'] == 'homepage':
             with cd(SITES_WEB_ROOT):
-                for link in DRUPAL_CORE_PATHS:
+                # TODO Make sure that we are using the correct variable for Web root symlinks vs Instance symlinks
+                for link in CORE_WEB_ROOT_SYMLINKS:
                     source_path = "{0}/{1}".format(code_directory_current, link)
                     target_path = "{0}/{1}".format(SITES_WEB_ROOT, link)
                     update_symlink(source_path, target_path)
@@ -306,7 +307,8 @@ def instance_rebuild_code(item):
     path_list.append('{0}/{1}'.format(SITES_WEB_ROOT, item['sid']))
     # If homepage, add symlinks in webroot
     if item['path'] == 'homepage':
-        for link in DRUPAL_CORE_PATHS:
+        # TODO Make sure that we are using the correct variable for Web root symlinks vs Instance symlinks
+        for link in CORE_WEB_ROOT_SYMLINKS:
             path_list.append('{0}/{1}'.format(SITES_WEB_ROOT, link))
     reprovison = False
     if item['status'] == 'launched':

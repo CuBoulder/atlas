@@ -48,6 +48,11 @@ if TRAILING_SLASH.search(SITES_WEB_ROOT):
 PROTECTED_PATHS = ['opcache', 'static', 'includes', 'misc',
                    'modules', 'profiles', 'scripts', 'sites', 'themes']
 
+# Files that we do not want to link into Instances.
+# Even though the risk is low, including .DS_Store as it may contain sensitive metadata
+# TODO Verify that the regex for robots work with the escaped slash in the regex.
+INSTANCE_CODE_IGNORE_REGEX = ['/^.DS_Store/', '/^.git/', '/(?<!^robots)\\.txt$/', '/(.+).patch$/']
+
 # Drupal core paths to symlink into the WEB_ROOT for the homepage instances. We are not including
 # .htaccess or robots.txt since they are managed seperately for this instance.
 CORE_WEB_ROOT_SYMLINKS = ['authorize.php', 'cron.php', 'includes', 'index.php', 'install.php', 'misc',

@@ -18,7 +18,7 @@ import logging
 import os
 
 from atlas import utilities
-from atlas.config import (ENVIRONMENT, CODE_ROOT, LOCAL_CODE_ROOT, LOCAL_INSTANCE_ROOT, LOCAL_WEB_ROOT)
+from atlas.config import (ENVIRONMENT, CODE_ROOT, LOCAL_CODE_ROOT, LOCAL_INSTANCE_ROOT, LOCAL_WEB_ROOT, CORE_WEB_ROOT_SYMLINKS)
 from atlas.config_servers import (SERVERDEFS)
 
 # Setup a sub-logger. See tasks.py for longer comment.
@@ -41,22 +41,45 @@ def instance_create(instance):
     profile = utilities.get_single_eve('code', instance['code']['profile'])
     core = utilities.get_code_name_version(instance['code']['core'])
     # Setup code paths
-    core_path =
-    profile_path =
+    core_path = utilities.code_path(core)
+    profile_path = utilities.code_path(profile)
 
     # Create structure in LOCAL_INSTANCE_ROOT
     if os.path.exists(instance_code_path_sid):
         raise Exception('Destinaton directory already exists')
     os.makedirs(instance_code_path_sid)
-
-    # Add Drupal core
-    for link in DRUPAL_CORE_PATHS:
-        source_path = "{0}/{1}".format(core_path, link)
-        target_path = "{0}/{1}".format(instance_code_path_sid, link)
-        update_symlink(source_path, target_path)
-    # Add profile
-    # Add packages
-    # Add NFS mount
-    # Create setttings file
-    # Correct file permissions
-    # Create symlinks for current and for LOACL_WEB_ROOT
+    ## Add Core
+    # Get a list of files in the Core source directory
+    core_files = os.listdir(core_path)
+    # Iterate through the source files and symlink when applicable.
+    for core_file in core_files:
+        if core_file in ['sites', 'profiles']:
+            continue
+        if utilities.ignore_code_file(core_file):
+            continue
+        source_path = core_path + '/' + core_file
+        destination_path = instance_code_path_sid + '/' + core_file
+        os.symlink(source_path, destination_path)
+   # Create Instance specific directory structure
+    directories_to_create = ['sites',
+                             'sites/all',
+                             'sites/all/modules',
+                             'sites/all/libraries',
+                             'sites/all/themes',
+                             'sites/default',
+                             'sites/default/files',
+                             'profiles']
+    for directory in directories_to_create:
+        target_dir = instance_code_path_sid + '/' + directory
+        os.mkdir(target_dir)
+    # TODO Do we want to copy over default settings file? I don't really see a reason to
+    # TODO Do we want to include links to the profiles that we are not using?
+    # TODO Will we use core profiles for testing or benchmarking purposes?
+    ## Add profile
+    destination_path = instance_code_path_sid + '/profiles/' + profile['meta']['name']
+    os.symlink(profile_path, destination_path)
+    ## Add packages
+    ## Add NFS mount
+    ## Create setttings file
+    ## Correct file permissions
+    ## Create symlinks for current and for LOACL_WEB_ROOT

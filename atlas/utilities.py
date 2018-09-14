@@ -5,7 +5,7 @@ import sys
 import logging
 import json
 import smtplib
-from re import compile as re_compile
+import re
 from random import choice
 from string import lowercase
 from hashlib import sha1
@@ -25,7 +25,7 @@ from atlas.config import (ATLAS_LOCATION, ALLOWED_USERS, LDAP_SERVER, LDAP_ORG_U
                           SERVICE_ACCOUNT_USERNAME, SERVICE_ACCOUNT_PASSWORD, SSL_VERIFICATION,
                           SLACK_USERNAME, SLACK_URL, SEND_NOTIFICATION_EMAILS,
                           SEND_NOTIFICATION_FROM_EMAIL, EMAIL_HOST, EMAIL_PORT, EMAIL_USERNAME,
-                          EMAIL_PASSWORD, EMAIL_USERS_EXCLUDE, SAML_AUTH)
+                          EMAIL_PASSWORD, EMAIL_USERS_EXCLUDE, SAML_AUTH, LOCAL_CODE_ROOT, INSTANCE_CODE_IGNORE_REGEX)
 from atlas.config_servers import (SERVERDEFS, API_URLS)
 
 # Setup a sub-logger. See tasks.py for longer comment.
@@ -346,6 +346,22 @@ def code_type_directory_name(code_type):
         return 'static'
 
     return code_type + 's'
+
+
+def ignore_code_file(file_to_check):
+    """Check if the file matches one of the INSTANCE_CODE_IGNORE_REGEX regexes
+
+    Arguments:
+        file_to_check {string} -- file name
+    """
+    # Combine all expressions into a single expression
+    # Join item in list with the pipe seperator.
+    # We use '?:' since we don't care which expression matches.
+    regex = '(?:%s)' % '|'.join(INSTANCE_CODE_IGNORE_REGEX)
+    if re.match(regex, file_to_check):
+        return True
+    else:
+        return False
 
 
 def get_code(name, code_type=''):

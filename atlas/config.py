@@ -10,8 +10,9 @@ import os
 from atlas.config_servers import (SERVERDEFS, VARNISH_CONTROL_TERMINALS, NFS_MOUNT_LOCATION,
                                   BASE_URLS, API_URLS)
 from atlas.config_local import (ENVIRONMENT, SSL_KEY_FILE, SSL_CRT_FILE, ALLOWED_USERS,
-                                NFS_MOUNT_FILES_DIR, DESIRED_SITE_COUNT, CODE_ROOT,
-                                SITES_WEB_ROOT, SITES_CODE_ROOT, SITE_DOWN_PATH, DEFAULT_CORE,
+                                NFS_MOUNT_FILES_DIR, DESIRED_SITE_COUNT, CODE_ROOT, SITES_WEB_ROOT,
+                                LOCAL_WEB_ROOT, SITES_CODE_ROOT, LOCAL_INSTANCE_ROOT,
+                                SITE_DOWN_PATH, DEFAULT_CORE,
                                 DEFAULT_PROFILE, ENCRYPTION_KEY, LDAP_SERVER, LDAP_ORG_UNIT,
                                 LDAP_DNS_DOMAIN_NAME, SSH_USER, WEBSERVER_USER,
                                 WEBSERVER_USER_GROUP, DATABASE_USER, DATABASE_PASSWORD,

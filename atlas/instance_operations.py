@@ -18,7 +18,7 @@ import logging
 import os
 
 from atlas import utilities
-from atlas.config import (ENVIRONMENT, CODE_ROOT, LOCAL_CODE_ROOT, LOCAL_INSTANCE_ROOT, LOCAL_WEB_ROOT, CORE_WEB_ROOT_SYMLINKS)
+from atlas.config import (ENVIRONMENT, CODE_ROOT, LOCAL_CODE_ROOT, LOCAL_INSTANCE_ROOT, LOCAL_WEB_ROOT, CORE_WEB_ROOT_SYMLINKS, NFS_MOUNT_FILES_DIR, NFS_MOUNT_LOCATION)
 from atlas.config_servers import (SERVERDEFS)
 
 # Setup a sub-logger. See tasks.py for longer comment.
@@ -43,7 +43,6 @@ def instance_create(instance):
     # Setup code paths
     core_path = utilities.code_path(core)
     profile_path = utilities.code_path(profile)
-
     # Create structure in LOCAL_INSTANCE_ROOT
     if os.path.exists(instance_code_path_sid):
         raise Exception('Destinaton directory already exists')
@@ -79,7 +78,25 @@ def instance_create(instance):
     destination_path = instance_code_path_sid + '/profiles/' + profile['meta']['name']
     os.symlink(profile_path, destination_path)
     ## Add packages
-    ## Add NFS mount
-    ## Create setttings file
-    ## Correct file permissions
-    ## Create symlinks for current and for LOACL_WEB_ROOT
+    if 'package' in instance['code']:
+        for item in instance['code']['package']:
+            package = utilities.get_single_eve('code', item)
+            destination_path = instance_code_path_sid + '/sites/all/' + package['meta']['name']
+            os.symlink(utilities.code_path(package), destination_path)
+    ## Add NFS mounted files directory
+    if NFS_MOUNT_FILES_DIR:
+        # Setup paths
+        nfs_files_dir = NFS_MOUNT_LOCATION[ENVIRONMENT] + '/' + instance['sid']
+        site_files_dir = instance_code_path_sid + '/sites/default/files'
+        nfs_src = nfs_files_dir + '/files'
+        nfs_directories_to_create = ['files', 'tmp']
+        # Make dir on mount
+        for directory in nfs_directories_to_create:
+            os.mkdir(directory)
+        # Replace default files dir with one from NFS mount
+        # Will error if there are files in the directory
+        os.rmdir(site_files_dir)
+        os.symlink(nfs_src, site_files_dir)
+    ## TODO Create setttings file
+    ## TODO Correct file permissions
+    ## TODO Create symlinks for current and for LOACL_WEB_ROOT

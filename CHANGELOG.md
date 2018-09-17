@@ -6,7 +6,7 @@ As part of deployment:
 
 - Delete unused database fields if desired: `verification` dict; `migration`, and `activation` in the `date` dict.
 - Check base URLs in config files.
-- Add `LOCAL_WEB_ROOT` and `LOCAL_CODE_ROOT` to `config_servers.py`
+- Add `LOCAL_WEB_ROOT`, `LOCAL_CODE_ROOT`, and `LOCAL_INSTANCE_ROOT` to `config_servers.py`
 
 Resolves:
 

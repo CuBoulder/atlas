@@ -327,6 +327,7 @@ def code_path(item):
     """
     Determine the path for a code item
     """
+    log.debug('Utilities | Code Path | Item - %s', item)
     code_dir = '{0}/{1}/{2}/{2}-{3}'.format(
         LOCAL_CODE_ROOT,
         code_type_directory_name(item['meta']['code_type']),

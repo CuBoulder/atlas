@@ -17,10 +17,8 @@ from celery.utils.log import get_task_logger
 from fabric.api import execute
 from git import GitCommandError
 
-from atlas import fabric_tasks
-from atlas import utilities
-from atlas import config_celery
-from atlas import code_operations
+from atlas import fabric_tasks, utilities, config_celery
+from atlas import code_operations, instance_operations
 from atlas.config import (ENVIRONMENT, WEBSERVER_USER, DESIRED_SITE_COUNT,
                           SSL_VERIFICATION, LOCAL_CODE_ROOT)
 from atlas.config_servers import (BASE_URLS, API_URLS)
@@ -391,7 +389,7 @@ def site_provision(site):
         raise
 
     try:
-        execute(fabric_tasks.site_provision, site=site)
+       instance_operations.instance_create(site)
     except Exception as error:
         log.error('Site provision failed | Error Message | %s', error)
         raise

@@ -1,9 +1,11 @@
 """
 Utility functions.
 """
+import os
 import sys
 import logging
 import json
+import subprocess
 import smtplib
 import re
 from random import choice
@@ -568,3 +570,36 @@ def delete_saml_database():
     mariadb_connection.commit()
     mariadb_connection.close()
     log.info('Delete Database | saml | Success')
+
+
+def sync(source, hosts, target):
+    """Sync files, symlinks, and directories between servers
+
+    Arguments:
+        source {string} -- source path
+        hosts {list} -- list of hosts to sync to, will be deduped by function
+        target {string} -- destination path
+    """
+
+    log.info('Utilities | Sync')
+    # Use `set` to dedupe the host list, and cast it back into a list
+    hosts = list(set(hosts))
+    # Recreate readme
+    filename = source + "/README.md"
+    # Remove the existing file.
+    if os.access(filename, os.F_OK):
+        os.remove(filename)
+    f = open(filename, "w+")
+    f.write("Directory is synced from Atlas. Any changes will be overwritten.")
+    f.close()
+    for host in hosts:
+        # -a archive mode; equals -rlptgoD
+        # -z compress file data during the transfer
+        # trailing slash on src copies the contents, not the parent dir itself.
+        # --delete delete extraneous files from dest dirs
+        cmd = 'rsync -aqz {0}/ {1}:{2} --delete'.format(source, host, target)
+        log.debug('Utilities | Sync | Command - %s', cmd)
+        output = subprocess.check_output(cmd, shell=True)
+        # TODO Catch exception for file permissions on target
+        if output:
+            log.error('Utilities | Sync | Output - %s', output)

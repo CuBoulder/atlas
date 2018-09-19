@@ -387,13 +387,17 @@ def site_provision(site):
     except Exception as error:
         log.error('Site provision failed | Database creation failed | %s', error)
         raise
-
+    # Create instance with requested core, profile, and packages.
     try:
-       instance_operations.instance_create(site)
+        instance_operations.instance_create(site)
     except Exception as error:
         log.error('Site provision failed | Error Message | %s', error)
         raise
-
+    # Trigger rsync
+    # TODO Is a way to request a sync (w/ install chained)? Want to sync once when 5 instances are deployed
+    log.info('Instance | Provision | Rsync')
+    instance_operations.sync_instances()
+    # TODO Figure out what to do about the lack on a NFS mount on the locals.
     try:
         execute(fabric_tasks.site_install, site=site)
     except Exception as error:

@@ -78,24 +78,8 @@ def update_symlink_current(item):
 
 
 def sync_code():
-    """
-    Use rsync to copy the code to all of the relevant nodes.
+    """Copy the code to all of the relevant nodes.
     """
     log.info('Code | Sync')
-    # Sync code directory
     hosts = SERVERDEFS[ENVIRONMENT]['webservers'] + SERVERDEFS[ENVIRONMENT]['operations_server']
-    # Recreate readme
-    filename = LOCAL_CODE_ROOT + "/README.md"
-    f = open(filename, "w+")
-    f.write("Directory is rsynced from Atlas. Any changes will be overwritten.")
-    f.close()
-    for host in hosts:
-        # -a archive mode; equals -rlptgoD
-        # -z compress file data during the transfer
-        # trailing slash on src copies the contents, not the parent dir itself.
-        # --delete delete extraneous files from dest dirs
-        cmd = 'rsync -aqz {0}/ {1}:{2} --delete'.format(LOCAL_CODE_ROOT, host, CODE_ROOT)
-        log.info('Code | Sync | Command - %s', cmd)
-        output = subprocess.check_output(cmd, shell=True)
-        # TODO Catch exception for file permissions on target
-        log.info('Code | Sync | %s', output)
+    utilities.sync(LOCAL_CODE_ROOT, hosts, CODE_ROOT)

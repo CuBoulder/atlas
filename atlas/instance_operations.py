@@ -222,3 +222,13 @@ def correct_fs_permissions(instance):
             # Octet mode, Python 3 compatible
             # Change file permissions
             os.chmod(file, 0o664)
+
+
+def sync_instances():
+    """Copy the instance files to all of the relevant nodes.
+    """
+    log.info('Instances | Sync')
+    hosts = SERVERDEFS[ENVIRONMENT]['webservers'] + SERVERDEFS[ENVIRONMENT]['operations_server']
+    # Sync INSTANCE_ROOT then WEB_ROOT
+    for root in [tuple([LOCAL_INSTANCE_ROOT, INSTANCE_ROOT]), tuple([LOCAL_WEB_ROOT, WEB_ROOT])]:
+        utilities.sync(root[0], hosts, root[1])

@@ -355,16 +355,20 @@ def ignore_code_file(file_to_check):
     """Check if the file matches one of the INSTANCE_CODE_IGNORE_REGEX regexes
 
     Arguments:
-        file_to_check {string} -- file name
+        file_to_check {string} -- filename to check
+
+    Returns:
+        bool -- TRUE if file should be ignored
     """
-    # Combine all expressions into a single expression
-    # Join item in list with the pipe seperator.
+    # Join all regex expressions into a single expression with the pipe seperator.
     # We use '?:' since we don't care which expression matches.
     regex = '(?:%s)' % '|'.join(INSTANCE_CODE_IGNORE_REGEX)
-    if re.match(regex, file_to_check):
-        return True
-    else:
-        return False
+    log.debug('Utilities | Ignore code file | regex - %s', regex)
+    # Multiline modifier: ^ and $ to match the begin/end of each line (not only begin/end of string)
+    search = re.search(regex, file_to_check, re.MULTILINE)
+    if not search:
+        log.debug('Utilities | Ignore code file | File - %s | result - %s', file_to_check, search)
+    return bool(search)
 
 
 def get_code(name, code_type=''):
@@ -570,6 +574,10 @@ def delete_saml_database():
     mariadb_connection.commit()
     mariadb_connection.close()
     log.info('Delete Database | saml | Success')
+
+
+def relative_symlink(source, destination):
+    os.symlink(os.path.relpath(source, os.path.dirname(destination)), destination)
 
 
 def sync(source, hosts, target):

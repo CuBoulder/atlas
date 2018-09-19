@@ -50,8 +50,10 @@ PROTECTED_PATHS = ['opcache', 'static', 'includes', 'misc',
 
 # Files that we do not want to link into Instances.
 # Even though the risk is low, including .DS_Store as it may contain sensitive metadata
-# TODO Verify that the regex for robots work with the escaped slash in the regex.
-INSTANCE_CODE_IGNORE_REGEX = ['/^.DS_Store/', '/^.git/', '/(?<!^robots)\\.txt$/', '/(.+).patch$/']
+# Intend to match: .DS_Store, .git/, .gitignore, all text files expect robots.txt, all patch files,
+# all markdown files.
+INSTANCE_CODE_IGNORE_REGEX = ['^.DS_Store', '^.git',
+                              '(?<!^robots)\.txt$', '(.+).patch$', '(.+).md$']
 
 # Drupal core paths to symlink into the WEB_ROOT for the homepage instances. We are not including
 # .htaccess or robots.txt since they are managed seperately for this instance.

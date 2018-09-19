@@ -408,19 +408,18 @@ def site_provision(site):
                      'db_key': site['db_key'],
                      'statistics': site['statistics']}
     patch = utilities.patch_eve('sites', site['_id'], patch_payload)
+    log.debug('Site provision | Patch | %s', patch)
 
+    provision_time = time.time() - start_time
+    log.info('Atlas operational statistic | Site Provision | %s', provision_time)
+
+    # Slack notification
     profile = utilities.get_single_eve('code', site['code']['profile'])
     profile_string = profile['meta']['name'] + '-' + profile['meta']['version']
 
     core = utilities.get_single_eve('code', site['code']['core'])
     core_string = core['meta']['name'] + '-' + core['meta']['version']
 
-    provision_time = time.time() - start_time
-    log.info('Atlas operational statistic | Site Provision | %s | %s | %s ',
-             core_string, profile_string, provision_time)
-    log.debug('Site provision | Patch | %s', patch)
-
-    # Slack notification
     slack_title = 'Site provision - Success'
     slack_text = 'Site provision - Success - {0}/sites/{1}'.format(BASE_URLS[ENVIRONMENT], site['path'])
     slack_color = 'good'

@@ -17,13 +17,16 @@
 import logging
 import os
 import stat
+import subprocess
+import re
+
 from grp import getgrnam
 from shutil import copyfile
 
 from jinja2 import Environment, PackageLoader
 
 from atlas import utilities
-from atlas.config import (ENVIRONMENT, CODE_ROOT, LOCAL_CODE_ROOT, LOCAL_INSTANCE_ROOT, LOCAL_WEB_ROOT, CORE_WEB_ROOT_SYMLINKS, NFS_MOUNT_FILES_DIR, NFS_MOUNT_LOCATION, SAML_AUTH, SERVICE_ACCOUNT_USERNAME, SERVICE_ACCOUNT_PASSWORD, VARNISH_CONTROL_KEY, SMTP_PASSWORD, WEBSERVER_USER_GROUP)
+from atlas.config import (ENVIRONMENT, CODE_ROOT, LOCAL_CODE_ROOT, INSTANCE_ROOT, LOCAL_INSTANCE_ROOT, WEB_ROOT, LOCAL_WEB_ROOT, CORE_WEB_ROOT_SYMLINKS, NFS_MOUNT_FILES_DIR, NFS_MOUNT_LOCATION, SAML_AUTH, SERVICE_ACCOUNT_USERNAME, SERVICE_ACCOUNT_PASSWORD, VARNISH_CONTROL_KEY, SMTP_PASSWORD, WEBSERVER_USER_GROUP)
 from atlas.config_servers import (SERVERDEFS, ATLAS_LOGGING_URLS, API_URLS, VARNISH_CONTROL_TERMINALS, BASE_URLS)
 
 # Setup a sub-logger. See tasks.py for longer comment.
@@ -47,53 +50,19 @@ def instance_create(instance):
     # Setup code assets
     profile = utilities.get_single_eve('code', instance['code']['profile'])
     log.debug('Instance | Provision | Profile - %s', profile)
-    core = utilities.get_single_eve('code', instance['code']['core'])
-    # Setup code paths
-    core_path = utilities.code_path(core)
     profile_path = utilities.code_path(profile)
     # Create structure in LOCAL_INSTANCE_ROOT
     if os.path.exists(instance_code_path_sid):
         raise Exception('Destinaton directory already exists')
     os.makedirs(instance_code_path_sid)
     ## Add Core
-    # Get a list of files in the Core source directory
-    core_files = os.listdir(core_path)
-    # Iterate through the source files and symlink when applicable.
-    for core_file in core_files:
-        if core_file in ['sites', 'profiles']:
-            continue
-        if utilities.ignore_code_file(core_file):
-            continue
-        source_path = core_path + '/' + core_file
-        destination_path = instance_code_path_sid + '/' + core_file
-        os.symlink(source_path, destination_path)
-   # Create Instance specific directory structure
-    directories_to_create = ['sites',
-                             'sites/all',
-                             'sites/all/modules',
-                             'sites/all/libraries',
-                             'sites/all/themes',
-                             'sites/default',
-                             'sites/default/files',
-                             'profiles']
-    for directory in directories_to_create:
-        target_dir = instance_code_path_sid + '/' + directory
-        os.mkdir(target_dir)
-    # Copy over default settings file so that this instance is like a default install.
-    source_path = core_path + '/sites/default/default.settings.php'
-    destination_path = instance_code_path_sid + '/sites/default/default.settings.php'
-    copyfile(source_path, destination_path)
-    # Include links to the profiles that we are not using so that the site doesn't white screen if
-    # the deployed profile gets disabled.
-    core_profiles = os.listdir(core_path + '/profiles')
-    for core_profile in core_profiles:
-        source_path = core_path + '/profiles/' + core_profile
-        destination_path = instance_code_path_sid + '/profiles/' + core_profile
-        os.symlink(source_path, destination_path)
+    switch_core(instance)
     ## Add profile
+    # TODO change to a switch_profile function
     destination_path = instance_code_path_sid + '/profiles/' + profile['meta']['name']
     os.symlink(profile_path, destination_path)
     ## Add packages
+    # TODO Change to a switch_package function
     if 'package' in instance['code']:
         for item in instance['code']['package']:
             package = utilities.get_single_eve('code', item)
@@ -118,17 +87,89 @@ def instance_create(instance):
     # Correct file permissions
     correct_fs_permissions(instance)
     # Create symlinks for current in instance root, 'sid' and 'path' (if needed) in web root.
-    os.symlink(instance_code_path_sid, instance_code_path_current)
-    os.symlink(instance_code_path_sid, instance_web_path_sid)
+    log.info('Instance | Provision | Instance ID - %s | Symlink current - %s | Symlink web - %s',
+              instance['_id'], instance_code_path_current, instance_web_path_sid)
+    utilities.relative_symlink(instance_code_path_sid, instance_code_path_current)
+    utilities.relative_symlink(instance_code_path_current, instance_web_path_sid)
     if instance['path'] is not instance['sid']:
-        os.symlink(instance_code_path_sid, instance_web_path_path)
+        utilities.relative_symlink(instance_code_path_current, instance_web_path_path)
+
+
+def switch_core(instance):
+    """Switch Drupal core symlinks, if no core symlinks are present add them.
+
+    Arguments:
+        instance {dict} -- full instance record
+    """
+    # Lookup the core we want to use.
+    core = utilities.get_single_eve('code', instance['code']['core'])
+    # Setup variables
+    core_path = utilities.code_path(core)
+    instance_code_path_sid = '{0}/{1}/{1}'.format(LOCAL_INSTANCE_ROOT, instance['sid'])
+    # Get a list of files in the Core source directory
+    core_files = os.listdir(core_path)
+    # Get a list of files in the Instance target directory
+    instance_files = os.listdir(instance_code_path_sid)
+    # Remove any existing symlinks to a core.
+    for instance_file in instance_files:
+        full_path = instance_code_path_sid + '/' + instance_file
+        # Check if path is a symlink.
+        if os.path.islink(full_path):
+            # Get the target of the symlink.
+            symlink_target = os.readlink(full_path)
+            # Get the name of the directory that contains the symlink target
+            code_dir = os.path.dirname(symlink_target)
+            # Check to see if the directory is a Drupal core, if so remove the symlink.
+            regex = '((drupal)\-([\d\.x]+\-*[dev|alph|beta|rc|pl]*[\d]*))$i'
+            if re.match(regex, code_dir):
+                os.remove(full_path)
+    # Iterate through the source files and symlink when applicable.
+    for core_file in core_files:
+        if core_file in ['sites', 'profiles']:
+            continue
+        if utilities.ignore_code_file(core_file):
+            continue
+        source_path = core_path + '/' + core_file
+        destination_path = instance_code_path_sid + '/' + core_file
+        # Creat symlink
+        utilities.relative_symlink(source_path, destination_path)
+   # Create Instance specific directory structure
+    directories_to_create = ['sites',
+                             'sites/all',
+                             'sites/all/modules',
+                             'sites/all/libraries',
+                             'sites/all/themes',
+                             'sites/default',
+                             'sites/default/files',
+                             'profiles']
+    for directory in directories_to_create:
+        target_dir = instance_code_path_sid + '/' + directory
+        os.mkdir(target_dir)
+    # Copy over default settings file so that this instance is like a default install.
+    source_path = core_path + '/sites/default/default.settings.php'
+    destination_path = instance_code_path_sid + '/sites/default/default.settings.php'
+    if os.access(destination_path, os.F_OK):
+        os.remove(destination_path)
+    copyfile(source_path, destination_path)
+    # Include links to the profiles that we are not using so that the site doesn't white screen if
+    # the deployed profile gets disabled.
+    core_profiles = os.listdir(core_path + '/profiles')
+    for core_profile in core_profiles:
+        source_path = core_path + '/profiles/' + core_profile
+        destination_path = instance_code_path_sid + '/profiles/' + core_profile
+        if os.path.islink(destination_path):
+            os.remove(destination_path)
+            # F_OK to test the existence of path
+        if not os.access(destination_path, os.F_OK):
+            utilities.relative_symlink(source_path, destination_path)
+    # TODO Determine how to queue an UPDB when this is updating core.
 
 
 def create_settings_files(instance):
     """Create settings.php from template and render the resulting file onto the server.
 
     Arguments:
-        instance {dict} -- full site object
+        instance {dict} -- full instance record
     """
     log.info('Instance | Settings file | Instance ID - %s', instance['_id'])
 
@@ -186,14 +227,16 @@ def create_settings_files(instance):
         'smtp_password': SMTP_PASSWORD,
     }
 
-    log.info('fabric_tasks | Render settings file')
+    log.info('Instance | Settings file | Render settings file | Instance ID - %s', instance['_id'])
     # Create a template environment with the default settings and a loader that looks up the
     # templates in the templates folder inside the Atlas python package.
     # We don't do autoescaping, because there is no PHP support.
     jinja_env = Environment(loader=PackageLoader('atlas', 'templates'))
     template = jinja_env.get_template('settings.php')
     render = template.render(settings_variables)
-
+    # Remove the existing file.
+    if os.access(file_destination, os.F_OK):
+        os.remove(file_destination)
     # Write the render to a file.
     with open(file_destination, "wb") as open_file:
         open_file.write(render)
@@ -205,23 +248,26 @@ def correct_fs_permissions(instance):
     Arguments:
         instance {dict} -- instance object
     """
-    log.debug('Instance | Correct FS permissions | Instance - %s', instance)
+    log.info('Instance | Correct FS permissions | Instance - %s', instance['sid'])
     instance_path = "{0}/{1}/{1}".format(LOCAL_INSTANCE_ROOT, instance['sid'])
     # Walk produces 3-tuple for each dir or file, does not follow symlinks.
+    # Lookup gid (Group ID), `chown` uses IDs for user and group
+    group = getgrnam(WEBSERVER_USER_GROUP)
+    log.debug('Instance | Correct FS permissions | Group - %s', group)
     for root, directories, files in os.walk(instance_path, topdown=False):
+        # Change directory permissions.
         for directory in [os.path.join(root, d) for d in directories]:
             # Octet mode, Python 3 compatible
-            # Change directory permissions
             os.chmod(directory, 0o775)
-            # Change group: lookup gid (Group ID), `fchown` uses IDs
-            group = getgrnam(WEBSERVER_USER_GROUP)
-            log.debug('Instance | Correct FS permissions | Group - %s', group)
-            log.debug('Instance | Correct FS permissions | Group ID - %s', group.gr_gid)
-            os.fchown(directory, -1, group.gr_gid)
+            # All the arguments to fchown are integers. Integer 'file descriptor' that is used by
+            # the underlying implementation to request I/O operations from the operating system;
+            # user id (uid), -1 to leave it unchanged; group id (gid).
+            os.chown(directory, -1, group.gr_gid)
+        # Change file permissions.
         for file in [os.path.join(root, f) for f in files]:
             # Octet mode, Python 3 compatible
-            # Change file permissions
             os.chmod(file, 0o664)
+            os.chown(file, -1, group.gr_gid)
 
 
 def sync_instances():

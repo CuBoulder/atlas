@@ -18,8 +18,8 @@ from fabric.api import *
 from fabric.network import disconnect_all
 
 from atlas import utilities
-from atlas.config import (ATLAS_LOCATION, ENVIRONMENT, SSH_USER, CODE_ROOT, SITES_CODE_ROOT,
-                          SITES_WEB_ROOT, WEBSERVER_USER, WEBSERVER_USER_GROUP, NFS_MOUNT_FILES_DIR,
+from atlas.config import (ATLAS_LOCATION, ENVIRONMENT, SSH_USER, CODE_ROOT, INSTANCE_ROOT,
+                          WEB_ROOT, WEBSERVER_USER, WEBSERVER_USER_GROUP, NFS_MOUNT_FILES_DIR,
                           BACKUP_PATH, SERVICE_ACCOUNT_USERNAME, SERVICE_ACCOUNT_PASSWORD,
                           SITE_DOWN_PATH, VARNISH_CONTROL_KEY, STATIC_WEB_PATH, SSL_VERIFICATION,
                           CORE_WEB_ROOT_SYMLINKS, BACKUP_IMPORT_PATH, SAML_AUTH, SMTP_PASSWORD)
@@ -44,7 +44,7 @@ class FabricException(Exception):
 @roles('webservers', 'operations_server')
 def site_package_update(site):
     log.info('Site | Package Update | Site - %s', site['_id'])
-    code_directory_sid = '{0}/{1}/{1}'.format(SITES_CODE_ROOT, site['sid'])
+    code_directory_sid = '{0}/{1}/{1}'.format(INSTANCE_ROOT, site['sid'])
     packages_directory = '{0}/sites/all'.format(code_directory_sid)
 
     package_name_string = ""
@@ -65,7 +65,7 @@ def site_package_update(site):
 @roles('webservers', 'operations_server')
 def site_core_update(site):
     log.info('Site | Core Update | Site - %s', site['_id'])
-    code_directory_sid = '{0}/{1}/{1}'.format(SITES_CODE_ROOT, site['sid'])
+    code_directory_sid = '{0}/{1}/{1}'.format(INSTANCE_ROOT, site['sid'])
     core_string = utilities.get_code_name_version(site['code']['core'])
 
     with cd(code_directory_sid):
@@ -75,7 +75,7 @@ def site_core_update(site):
 @roles('webservers', 'operations_server')
 def site_profile_update(site, original, updates):
     log.info('Site | Profile Update | Site - %s', site['_id'])
-    code_directory_sid = '{0}/{1}/{1}'.format(SITES_CODE_ROOT, site['sid'])
+    code_directory_sid = '{0}/{1}/{1}'.format(INSTANCE_ROOT, site['sid'])
     old_profile = utilities.get_single_eve('code', original['code']['profile'])
     new_profile = utilities.get_single_eve('code', site['code']['profile'])
     new_profile_full_string = utilities.get_code_name_version(site['code']['profile'])
@@ -91,7 +91,7 @@ def site_profile_update(site, original, updates):
 @roles('webservers', 'operations_server')
 def site_profile_swap(site):
     log.info('Site | Profile Swap | Site - %s', site['_id'])
-    code_directory_sid = '{0}/{1}/{1}'.format(SITES_CODE_ROOT, site['sid'])
+    code_directory_sid = '{0}/{1}/{1}'.format(INSTANCE_ROOT, site['sid'])
     profile = utilities.get_single_eve('code', site['code']['profile'])
     new_profile_full_string = utilities.get_code_name_version(site['code']['profile'])
 
@@ -109,13 +109,13 @@ def site_launch(site):
     Create symlinks with new site name.
     """
     log.info('fabric_tasks | Launch subtask | Site - %s', site['_id'])
-    code_directory = '{0}/{1}'.format(SITES_CODE_ROOT, site['sid'])
+    code_directory = '{0}/{1}'.format(INSTANCE_ROOT, site['sid'])
     code_directory_current = '{0}/current'.format(code_directory)
 
     if site['type'] == 'express':
         if site['path'] != 'homepage':
-            web_directory_path = '{0}/{1}'.format(SITES_WEB_ROOT, site['path'])
-            with cd(SITES_WEB_ROOT):
+            web_directory_path = '{0}/{1}'.format(WEB_ROOT, site['path'])
+            with cd(WEB_ROOT):
                 # If the path is nested like 'lab/atlas', make the 'lab' directory
                 if "/" in site['path']:
                     lead_path = "/".join(site['path'].split("/")[:-1])
@@ -124,11 +124,11 @@ def site_launch(site):
                 if not exists(web_directory_path):
                     update_symlink(code_directory_current, site['path'])
         elif site['path'] == 'homepage':
-            with cd(SITES_WEB_ROOT):
+            with cd(WEB_ROOT):
                 # TODO Make sure that we are using the correct variable for Web root symlinks vs Instance symlinks
                 for link in CORE_WEB_ROOT_SYMLINKS:
                     source_path = "{0}/{1}".format(code_directory_current, link)
-                    target_path = "{0}/{1}".format(SITES_WEB_ROOT, link)
+                    target_path = "{0}/{1}".format(WEB_ROOT, link)
                     update_symlink(source_path, target_path)
 
 
@@ -138,7 +138,7 @@ def site_take_down(site):
     Point the site to the 'Down' page.
     """
     log.info('Site | Take down | Site - %s', site['_id'])
-    code_directory_current = '{0}/{1}/current'.format(SITES_CODE_ROOT, site['sid'])
+    code_directory_current = '{0}/{1}/current'.format(INSTANCE_ROOT, site['sid'])
     update_symlink(SITE_DOWN_PATH, code_directory_current)
 
 
@@ -148,8 +148,8 @@ def site_restore(site):
     Point the site to the current release.
     """
     log.info('Site | Restore | Site - %s', site['_id'])
-    code_directory_current = '{0}/{1}/current'.format(SITES_CODE_ROOT, site['sid'])
-    code_directory_sid = '{0}/{1}/{1}'.format(SITES_CODE_ROOT, site['sid'])
+    code_directory_current = '{0}/{1}/current'.format(INSTANCE_ROOT, site['sid'])
+    code_directory_sid = '{0}/{1}/{1}'.format(INSTANCE_ROOT, site['sid'])
     update_symlink(code_directory_sid, code_directory_current)
 
 
@@ -163,12 +163,12 @@ def site_remove(site):
     """
     log.info('Site | Remove | Site - %s', site['_id'])
 
-    code_directory = '{0}/{1}'.format(SITES_CODE_ROOT, site['sid'])
-    web_directory = '{0}/{1}'.format(SITES_WEB_ROOT, site['sid'])
-    web_directory_path = '{0}/{1}'.format(SITES_WEB_ROOT, site['path'])
+    code_directory = '{0}/{1}'.format(INSTANCE_ROOT, site['sid'])
+    web_directory = '{0}/{1}'.format(WEB_ROOT, site['sid'])
+    web_directory_path = '{0}/{1}'.format(WEB_ROOT, site['path'])
 
     # Fix perms to allow settings file to be removed.
-    sites_dir = "{0}/{1}/{1}/sites".format(SITES_CODE_ROOT, site['sid'])
+    sites_dir = "{0}/{1}/{1}/sites".format(INSTANCE_ROOT, site['sid'])
     if exists(sites_dir):
         run("chmod -R u+w {0}".format(sites_dir))
 
@@ -188,17 +188,17 @@ def instance_heal(item):
     log.info('Instance | Heal | Item ID - %s | Item - %s', item['sid'], item)
     path_list = []
     # Check for code root
-    path_list.append('{0}/{1}'.format(SITES_CODE_ROOT, item['sid']))
-    path_list.append('{0}/{1}/{2}'.format(SITES_CODE_ROOT, item['sid'], item['sid']))
-    path_list.append('{0}/{1}/current'.format(SITES_CODE_ROOT, item['sid']))
+    path_list.append('{0}/{1}'.format(INSTANCE_ROOT, item['sid']))
+    path_list.append('{0}/{1}/{2}'.format(INSTANCE_ROOT, item['sid'], item['sid']))
+    path_list.append('{0}/{1}/current'.format(INSTANCE_ROOT, item['sid']))
     # Check for NFS
     path_list.append('{0}/{1}/files'.format(NFS_MOUNT_LOCATION[ENVIRONMENT], item['sid']))
     # Check for web root symlinks
-    path_list.append('{0}/{1}'.format(SITES_WEB_ROOT, item['sid']))
+    path_list.append('{0}/{1}'.format(WEB_ROOT, item['sid']))
     # Build list of paths to check
     reprovison = False
     if item['status'] == 'launched':
-        path_symlink = '{0}/{1}'.format(SITES_WEB_ROOT, item['path'])
+        path_symlink = '{0}/{1}'.format(WEB_ROOT, item['path'])
         path_list.append(path_symlink)
     log.info('Instance | Heal | Item ID - %s | Path list - %s', item['sid'], path_list)
     for path_to_check in path_list:
@@ -228,21 +228,21 @@ def instance_rebuild_code(item):
     # Build list of paths to check
     path_list = []
     # Check for code root
-    path_list.append('{0}/{1}'.format(SITES_CODE_ROOT, item['sid']))
-    path_list.append('{0}/{1}/{2}'.format(SITES_CODE_ROOT, item['sid'], item['sid']))
-    path_list.append('{0}/{1}/current'.format(SITES_CODE_ROOT, item['sid']))
+    path_list.append('{0}/{1}'.format(INSTANCE_ROOT, item['sid']))
+    path_list.append('{0}/{1}/{2}'.format(INSTANCE_ROOT, item['sid'], item['sid']))
+    path_list.append('{0}/{1}/current'.format(INSTANCE_ROOT, item['sid']))
     # Check for NFS
     path_list.append('{0}/{1}/files'.format(NFS_MOUNT_LOCATION[ENVIRONMENT], item['sid']))
     # Check for web root symlinks
-    path_list.append('{0}/{1}'.format(SITES_WEB_ROOT, item['sid']))
+    path_list.append('{0}/{1}'.format(WEB_ROOT, item['sid']))
     # If homepage, add symlinks in webroot
     if item['path'] == 'homepage':
         # TODO Make sure that we are using the correct variable for Web root symlinks vs Instance symlinks
         for link in CORE_WEB_ROOT_SYMLINKS:
-            path_list.append('{0}/{1}'.format(SITES_WEB_ROOT, link))
+            path_list.append('{0}/{1}'.format(WEB_ROOT, link))
     reprovison = False
     if item['status'] == 'launched':
-        path_symlink = '{0}/{1}'.format(SITES_WEB_ROOT, item['path'])
+        path_symlink = '{0}/{1}'.format(WEB_ROOT, item['path'])
         path_list.append(path_symlink)
     log.info('Instance | Heal | Item ID - %s | Path list - %s', item['sid'], path_list)
     for path_to_check in path_list:
@@ -275,12 +275,12 @@ def instance_remove_code(site):
     """
     log.info('Instance | Remove Code | Instance - %s', site['_id'])
 
-    code_directory = '{0}/{1}'.format(SITES_CODE_ROOT, site['sid'])
-    web_directory = '{0}/{1}'.format(SITES_WEB_ROOT, site['sid'])
-    web_directory_path = '{0}/{1}'.format(SITES_WEB_ROOT, site['path'])
+    code_directory = '{0}/{1}'.format(INSTANCE_ROOT, site['sid'])
+    web_directory = '{0}/{1}'.format(WEB_ROOT, site['sid'])
+    web_directory_path = '{0}/{1}'.format(WEB_ROOT, site['path'])
 
     # Fix perms to allow settings file to be removed.
-    sites_dir = "{0}/{1}/{1}/sites".format(SITES_CODE_ROOT, site['sid'])
+    sites_dir = "{0}/{1}/{1}/sites".format(INSTANCE_ROOT, site['sid'])
     if exists(sites_dir):
         run("chmod -R u+w {0}".format(sites_dir))
 
@@ -297,10 +297,10 @@ def instance_add_code(site):
     :return:
     """
     log.info('Site | Add Code | site - %s', site)
-    code_directory = '{0}/{1}'.format(SITES_CODE_ROOT, site['sid'])
+    code_directory = '{0}/{1}'.format(INSTANCE_ROOT, site['sid'])
     code_directory_sid = '{0}/{1}'.format(code_directory, site['sid'])
     code_directory_current = '{0}/current'.format(code_directory)
-    web_directory_sid = '{0}/{1}'.format(SITES_WEB_ROOT, site['sid'])
+    web_directory_sid = '{0}/{1}'.format(WEB_ROOT, site['sid'])
     profile = utilities.get_single_eve('code', site['code']['profile'])
 
     try:
@@ -367,7 +367,7 @@ def update_settings_file(site):
     log.info('fabric_tasks | Update Settings File | Site - %s', site['sid'])
     try:
         # If the settings file exists, change permissions to allow us to update the template.
-        settings_file = "{0}/{1}/{1}/sites/default/settings.php".format(SITES_CODE_ROOT, site['sid'])
+        settings_file = "{0}/{1}/{1}/sites/default/settings.php".format(INSTANCE_ROOT, site['sid'])
         if exists(settings_file):
             run("chmod u+w {0}".format(settings_file))
         execute(create_settings_files, site=site)
@@ -385,12 +385,12 @@ def update_homepage_files():
     """
     send_from_robots = '{0}/files/homepage_robots'.format(ATLAS_LOCATION)
     send_from_htaccess = '{0}/files/homepage_htaccess'.format(ATLAS_LOCATION)
-    run("rm -f {0}/robots.txt".format(SITES_WEB_ROOT))
-    put(send_from_robots, "{0}/robots.txt".format(SITES_WEB_ROOT))
-    run("chmod -R u+w {0}/robots.txt".format(SITES_WEB_ROOT))
-    run("rm -f {0}/.htaccess".format(SITES_WEB_ROOT))
-    put(send_from_htaccess, "{0}/.htaccess".format(SITES_WEB_ROOT))
-    run("chmod -R u+w {0}/.htaccess".format(SITES_WEB_ROOT))
+    run("rm -f {0}/robots.txt".format(WEB_ROOT))
+    put(send_from_robots, "{0}/robots.txt".format(WEB_ROOT))
+    run("chmod -R u+w {0}/robots.txt".format(WEB_ROOT))
+    run("rm -f {0}/.htaccess".format(WEB_ROOT))
+    put(send_from_htaccess, "{0}/.htaccess".format(WEB_ROOT))
+    run("chmod -R u+w {0}/.htaccess".format(WEB_ROOT))
 
 
 @roles('webservers')
@@ -403,7 +403,7 @@ def command_run(site, command):
     :return:
     """
     log.info('Command | Multiple Servers | Site - %s | Command - %s', site['sid'], command)
-    web_directory = '{0}/{1}'.format(SITES_WEB_ROOT, site['sid'])
+    web_directory = '{0}/{1}'.format(WEB_ROOT, site['sid'])
     with cd(web_directory):
         run('{0}'.format(command))
 
@@ -418,7 +418,7 @@ def command_run_single(site, command, warn_only=False):
     :return:
     """
     log.info('Command | Single Server | Site - %s | Command - %s', site['sid'], command)
-    web_directory = '{0}/{1}'.format(SITES_WEB_ROOT, site['sid'])
+    web_directory = '{0}/{1}'.format(WEB_ROOT, site['sid'])
     with settings(warn_only=warn_only):
         with cd(web_directory):
             command_result = run("{0}".format(command), pty=False)
@@ -459,7 +459,7 @@ def update_database(site):
     :return:
     """
     log.info('fabric_tasks | updb | Site - %s', site['sid'])
-    code_directory_sid = '{0}/{1}/{1}'.format(SITES_CODE_ROOT, site['sid'])
+    code_directory_sid = '{0}/{1}/{1}'.format(INSTANCE_ROOT, site['sid'])
     with cd(code_directory_sid):
         run('drush updb -y')
 
@@ -474,7 +474,7 @@ def registry_rebuild(site):
     :return:
     """
     log.info('fabric_tasks | Drush registry rebuild and cache clear | Site - %s', site['sid'])
-    code_directory_sid = '{0}/{1}/{1}'.format(SITES_CODE_ROOT, site['sid'])
+    code_directory_sid = '{0}/{1}/{1}'.format(INSTANCE_ROOT, site['sid'])
     with cd(code_directory_sid):
         run('drush rr; drush cc drush;')
 
@@ -487,7 +487,7 @@ def drush_cache_clear(sid):
     We use a dynamic host list to round-robin, so you need to pass a host list when calling it or
     call it from a parent fabric task that has a role.
     """
-    code_directory_current = '{0}/{1}/current'.format(SITES_CODE_ROOT, sid)
+    code_directory_current = '{0}/{1}/current'.format(INSTANCE_ROOT, sid)
     with cd(code_directory_current):
         run('drush cc all')
 
@@ -499,7 +499,7 @@ def site_install(site):
 
     We use a dynamic host list to round-robin, so you need to pass a host list when calling it.
     """
-    code_directory = '{0}/{1}'.format(SITES_CODE_ROOT, site['sid'])
+    code_directory = '{0}/{1}'.format(INSTANCE_ROOT, site['sid'])
     code_directory_current = '{0}/current'.format(code_directory)
     profile = utilities.get_single_eve('code', site['code']['profile'])
     profile_name = profile['meta']['name']
@@ -575,7 +575,7 @@ def create_settings_files(site):
         google_cse_csx = None
 
     template_dir = '{0}/templates'.format(ATLAS_LOCATION)
-    destination = "{0}/{1}/{1}/sites/default".format(SITES_CODE_ROOT, site['sid'])
+    destination = "{0}/{1}/{1}/sites/default".format(INSTANCE_ROOT, site['sid'])
     tmp_path = '{0}/{1}/tmp'.format(NFS_MOUNT_LOCATION[ENVIRONMENT], site['sid'])
     saml_auth = SAML_AUTH
 
@@ -699,7 +699,7 @@ def backup_create(site, backup_type):
     datetime_string = date.strftime("%Y-%m-%d %H:%M:%S GMT")
 
     # Instance paths
-    web_directory = '{0}/{1}'.format(SITES_WEB_ROOT, site['sid'])
+    web_directory = '{0}/{1}'.format(WEB_ROOT, site['sid'])
     database_result_file = '{0}_{1}.sql'.format(site['sid'], date_time_string)
     database_result_file_path = '{0}/backups/{1}'.format(BACKUP_PATH, database_result_file)
     nfs_files_dir = '{0}/{1}/files'.format(NFS_MOUNT_LOCATION[ENVIRONMENT], site['sid'])
@@ -780,7 +780,7 @@ def backup_restore(backup_record, original_instance, package_list):
 
     log.info('Instance | Restore Backup | New instance is ready for DB and files | %s',
              new_instance['_id'])
-    web_directory = '{0}/{1}'.format(SITES_WEB_ROOT, new_instance['sid'])
+    web_directory = '{0}/{1}'.format(WEB_ROOT, new_instance['sid'])
     nfs_files_dir = '{0}/{1}/files'.format(NFS_MOUNT_LOCATION[ENVIRONMENT], new_instance['sid'])
 
     with cd(nfs_files_dir):
@@ -825,7 +825,7 @@ def import_backup(backup, target_instance, source_env=ENVIRONMENT):
     files_path = '{0}/{1}'.format(backup_tmp_dir, backup_files)
     database_path = '{0}/{1}'.format(backup_tmp_dir, backup_db)
     log.debug('Import backup | File path - %s | DB path - %s', files_path, database_path)
-    web_directory = '{0}/{1}'.format(SITES_WEB_ROOT, target_instance['sid'])
+    web_directory = '{0}/{1}'.format(WEB_ROOT, target_instance['sid'])
     nfs_files_dir = '{0}/{1}/files'.format(
         NFS_MOUNT_LOCATION[ENVIRONMENT], target_instance['sid'])
 

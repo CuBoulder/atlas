@@ -487,17 +487,14 @@ def drush_cache_clear(sid):
     We use a dynamic host list to round-robin, so you need to pass a host list when calling it or
     call it from a parent fabric task that has a role.
     """
-    code_directory_current = '{0}/{1}/current'.format(INSTANCE_ROOT, sid)
+    code_directory_current = '{0}/{1}/{1}'.format(INSTANCE_ROOT, sid)
     with cd(code_directory_current):
         run('drush cc all')
 
 
 @roles('operations_server')
 def site_install(site):
-    """
-    Run Drupal install
-
-    We use a dynamic host list to round-robin, so you need to pass a host list when calling it.
+    """Run Drupal install
     """
     code_directory = '{0}/{1}'.format(INSTANCE_ROOT, site['sid'])
     code_directory_current = '{0}/current'.format(code_directory)
@@ -507,8 +504,6 @@ def site_install(site):
     try:
         with cd(code_directory_current):
             run('drush site-install -y {0}'.format(profile_name))
-            run('chgrp -R {0} sites/default/files/*'.format(WEBSERVER_USER_GROUP))
-            run('drush rr; drush cc drush')
     except FabricException as error:
         log.error('Site | Install | Instance install failed | Error - %s', error)
         return error

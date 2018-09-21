@@ -5,14 +5,14 @@
 
     Instance methods:
     Create - Local - All symlinks are in place, DB exists, NFS mount is attached
-    Install - Remote - Drupal install command runs
-    Update - Local and Remote - Update code or configuration; optionally clear caches, rebuild
+    # TODO Install - Remote - Drupal install command runs
+    # TODO Update - Local and Remote - Update code or configuration; optionally clear caches, rebuild
         registry, and/or run database update script.
-    Repair - Check that only intended code exists in instance, add any missing code. If extra code
+    # TODO Repair - Check that only intended code exists in instance, add any missing code. If extra code
         is found, raise an exception and open a ticket.
-    Delete - Remove instance symlinks, settings file, NFS files, and database.
-    Backup - Create a database and NFS files backup of the instance.
-    Restore - Restore backup to a new `sid`
+    # TODO Delete - Remove instance symlinks, settings file, NFS files, and database.
+    # TODO Backup - Create a database and NFS files backup of the instance.
+    # TODO Restore - Restore backup to a new `sid`
 """
 import logging
 import os
@@ -47,10 +47,6 @@ def instance_create(instance):
     instance_web_path_sid = '{0}/{1}'.format(LOCAL_WEB_ROOT, instance['sid'])
     instance_web_path_path = '{0}/{1}'.format(LOCAL_WEB_ROOT, instance['path'])
     log.debug('Instance | Provision | Instance sid path - %s', instance_code_path_sid)
-    # Setup code assets
-    profile = utilities.get_single_eve('code', instance['code']['profile'])
-    log.debug('Instance | Provision | Profile - %s', profile)
-    profile_path = utilities.code_path(profile)
     # Create structure in LOCAL_INSTANCE_ROOT
     if os.path.exists(instance_code_path_sid):
         raise Exception('Destinaton directory already exists')
@@ -58,16 +54,9 @@ def instance_create(instance):
     ## Add Core
     switch_core(instance)
     ## Add profile
-    # TODO change to a switch_profile function
-    destination_path = instance_code_path_sid + '/profiles/' + profile['meta']['name']
-    os.symlink(profile_path, destination_path)
+    switch_profile(instance)
     ## Add packages
-    # TODO Change to a switch_package function
-    if 'package' in instance['code']:
-        for item in instance['code']['package']:
-            package = utilities.get_single_eve('code', item)
-            destination_path = instance_code_path_sid + '/sites/all/' + package['meta']['name']
-            os.symlink(utilities.code_path(package), destination_path)
+    switch_packages(instance)
     ## Add NFS mounted files directory
     if NFS_MOUNT_FILES_DIR:
         # Setup paths
@@ -80,8 +69,17 @@ def instance_create(instance):
             os.mkdir(directory)
         # Replace default files dir with one from NFS mount
         # Will error if there are files in the directory
-        os.rmdir(site_files_dir)
-        os.symlink(nfs_src, site_files_dir)
+        # Check is path exists, is a directory (matches symlink)
+        if os.path.exists(site_files_dir) and os.path.isdir(site_files_dir):
+            # Check for symlink
+            if not os.path.islink(site_files_dir):
+                # Check if directory is empty and remove it if it is
+                if not os.listdir(site_files_dir):
+                    os.rmdir(site_files_dir)
+            else:
+                # Remove symlink
+                os.remove(site_files_dir)
+            os.symlink(nfs_src, site_files_dir)
     # Create setttings file
     create_settings_files(instance)
     # Correct file permissions
@@ -165,6 +163,54 @@ def switch_core(instance):
     # TODO Determine how to queue an UPDB when this is updating core.
 
 
+def switch_profile(instance):
+    """Switch non-core Profile symlinks, if no appropriate symlinks are present add them.
+
+    Arguments:
+        instance {dict} -- full instance record
+    """
+    log.info('Instance | Switch profile | Instance - %s', instance['sid'])
+    log.debug('Instance | Switch profile | Instance - %s', instance)
+    # Lookup the profile we want to use.
+    profile = utilities.get_single_eve('code', instance['code']['profile'])
+    # Setup variables
+    profile_path = utilities.code_path(profile)
+    instance_code_path_sid = '{0}/{1}/{1}'.format(LOCAL_INSTANCE_ROOT, instance['sid'])
+    destination_path = instance_code_path_sid + '/profiles/' + profile['meta']['name']
+    # Remove old symlink
+    if os.path.islink(destination_path):
+        os.remove(destination_path)
+    # Add new relative symlink
+    if not os.access(destination_path, os.F_OK):
+        utilities.relative_symlink(profile_path, destination_path)
+    # TODO Determine how to queue an UPDB when this is updating profile.
+
+
+def switch_packages(instance):
+    """Switch Package symlinks, if no package symlinks are present add them.
+
+    Arguments:
+        instance {dict} -- full instance record
+    """
+    log.info('Instance | Switch package | Instance - %s', instance['sid'])
+    log.debug('Instance | Switch package | Instance - %s', instance)
+    instance_code_path_sid = '{0}/{1}/{1}'.format(LOCAL_INSTANCE_ROOT, instance['sid'])
+    if 'package' in instance['code']:
+        for item in instance['code']['package']:
+            package = utilities.get_single_eve('code', item)
+            package_path = utilities.code_path(package)
+            package_type_path = utilities.code_type_directory_name(package['meta']['type'])
+            destination_path = instance_code_path_sid + '/sites/all/' + \
+                package_type_path + '/' + package['meta']['name']
+            # Remove old symlink
+            if os.path.islink(destination_path):
+                os.remove(destination_path)
+            # Add new relative symlink
+            if not os.access(destination_path, os.F_OK):
+                utilities.relative_symlink(package_path, destination_path)
+    # TODO Determine how to queue an UPDB when this is updating profile.
+
+
 def create_settings_files(instance):
     """Create settings.php from template and render the resulting file onto the server.
 
@@ -235,6 +281,7 @@ def create_settings_files(instance):
     template = jinja_env.get_template('settings.php')
     render = template.render(settings_variables)
     # Remove the existing file.
+    # TODO See how this works with updating settings files post installation.
     if os.access(file_destination, os.F_OK):
         os.remove(file_destination)
     # Write the render to a file.
@@ -257,12 +304,15 @@ def correct_fs_permissions(instance):
     for root, directories, files in os.walk(instance_path, topdown=False):
         # Change directory permissions.
         for directory in [os.path.join(root, d) for d in directories]:
-            # Octet mode, Python 3 compatible
-            os.chmod(directory, 0o775)
-            # All the arguments to fchown are integers. Integer 'file descriptor' that is used by
-            # the underlying implementation to request I/O operations from the operating system;
-            # user id (uid), -1 to leave it unchanged; group id (gid).
-            os.chown(directory, -1, group.gr_gid)
+            # Do not need to update perms on symlinks
+            if not os.path.islink(directory):
+                # Octet mode, Python 3 compatible
+                os.chmod(directory, 0o775)
+                # All the arguments to fchown are integers. Integer 'file descriptor' that
+                # is used by the underlying implementation to request I/O operations from
+                # the operating system; user id (uid), -1 to leave it unchanged; group id
+                # (gid).
+                os.chown(directory, -1, group.gr_gid)
         # Change file permissions.
         for file in [os.path.join(root, f) for f in files]:
             # Octet mode, Python 3 compatible

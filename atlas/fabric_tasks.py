@@ -278,23 +278,6 @@ def clear_php_cache():
         return error
 
 
-# TODO Refactor
-@roles('webservers', 'operations_server')
-def update_homepage_files():
-    """
-    SCP the homepage files to web heads.
-    :return:
-    """
-    send_from_robots = '{0}/files/homepage_robots'.format(ATLAS_LOCATION)
-    send_from_htaccess = '{0}/files/homepage_htaccess'.format(ATLAS_LOCATION)
-    run("rm -f {0}/robots.txt".format(WEB_ROOT))
-    put(send_from_robots, "{0}/robots.txt".format(WEB_ROOT))
-    run("chmod -R u+w {0}/robots.txt".format(WEB_ROOT))
-    run("rm -f {0}/.htaccess".format(WEB_ROOT))
-    put(send_from_htaccess, "{0}/.htaccess".format(WEB_ROOT))
-    run("chmod -R u+w {0}/.htaccess".format(WEB_ROOT))
-
-
 @roles('webservers')
 def command_run(site, command):
     """
@@ -412,17 +395,6 @@ def site_install(site):
 
 
 # TODO Refactor
-def create_nfs_files_dir(nfs_dir):
-    nfs_files_dir = '{0}/files'.format(nfs_dir)
-    nfs_tmp_dir = '{0}/tmp'.format(nfs_dir)
-    create_directory_structure(nfs_files_dir)
-    create_directory_structure(nfs_tmp_dir)
-    run('chown {0}:{1} {2}'.format(SSH_USER, WEBSERVER_USER_GROUP, nfs_files_dir))
-    run('chown {0}:{1} {2}'.format(SSH_USER, WEBSERVER_USER_GROUP, nfs_tmp_dir))
-    run('chmod 775 {0}'.format(nfs_files_dir))
-    run('chmod 775 {0}'.format(nfs_tmp_dir))
-
-# TODO Refactor
 def create_directory_structure(folder):
     log.info('fabric_tasks | Create directory | Directory - %s', folder)
     run('mkdir -p {0}'.format(folder))
@@ -438,118 +410,6 @@ def remove_directory(folder):
 def remove_symlink(symlink):
     log.info('fabric_tasks | Remove symlink | Symlink - %s', symlink)
     run('rm -f {0}'.format(symlink))
-
-
-# TODO Refactor
-def create_settings_files(site):
-    """
-    Create settings.local_pre.php, settings.php, and settings.local_post.php from templates and and
-    upload the resulting file to the webservers.
-    """
-    sid = site['sid']
-    site_path = site['path']
-    # If the site is launching or launched, we add 'cu_path' and redirect the p1 URL.
-    status = site['status']
-    atlas_id = site['_id']
-    statistics = site['statistics']
-
-    if site['settings'].get('siteimprove_site'):
-        siteimprove_site = site['settings']['siteimprove_site']
-    else:
-        siteimprove_site = None
-    if site['settings'].get('siteimprove_group'):
-        siteimprove_group = site['settings']['siteimprove_group']
-    else:
-        siteimprove_group = None
-
-    page_cache_maximum_age = site['settings']['page_cache_maximum_age']
-    atlas_url = '{0}/'.format(API_URLS[ENVIRONMENT])
-    atlas_logging_url = ATLAS_LOGGING_URLS[ENVIRONMENT]
-    database_password = utilities.decrypt_string(site['db_key'])
-
-    profile = utilities.get_single_eve('code', site['code']['profile'])
-    profile_name = profile['meta']['name']
-
-    if ('cse_creator' in site['settings']) and ('cse_id' in site['settings']):
-        google_cse_csx = site['settings']['cse_creator'] + ':' + site['settings']['cse_id']
-    else:
-        google_cse_csx = None
-
-    template_dir = '{0}/templates'.format(ATLAS_LOCATION)
-    destination = "{0}/{1}/{1}/sites/default".format(INSTANCE_ROOT, site['sid'])
-    tmp_path = '{0}/{1}/tmp'.format(NFS_MOUNT_LOCATION[ENVIRONMENT], site['sid'])
-    saml_auth = SAML_AUTH
-
-    settings_variables = {
-        'profile': profile_name,
-        'sid': sid,
-        'atlas_id': atlas_id,
-        'atlas_url': atlas_url,
-        'atlas_logging_url': atlas_logging_url,
-        'atlas_username': SERVICE_ACCOUNT_USERNAME,
-        'atlas_password': SERVICE_ACCOUNT_PASSWORD,
-        'path': site_path,
-        'status': status,
-        'atlas_statistics_id': statistics,
-        'siteimprove_site': siteimprove_site,
-        'siteimprove_group': siteimprove_group,
-        'google_cse_csx': google_cse_csx,
-        'reverse_proxies': env.roledefs['varnish_servers'],
-        'varnish_control': VARNISH_CONTROL_TERMINALS[ENVIRONMENT],
-        'varnish_control_key': VARNISH_CONTROL_KEY,
-        'pw': database_password,
-        'page_cache_maximum_age': page_cache_maximum_age,
-        'database_servers': env.roledefs['database_servers'],
-        'environment': ENVIRONMENT,
-        'tmp_path': tmp_path,
-        'saml_pw': saml_auth,
-        'smtp_client_hostname': BASE_URLS[ENVIRONMENT],
-        'smtp_password': SMTP_PASSWORD,
-    }
-
-    log.info('fabric_tasks | Create Settings file')
-    upload_template('settings.php',
-                    destination=destination,
-                    context=settings_variables,
-                    use_jinja=True,
-                    template_dir=template_dir,
-                    backup=False,
-                    mode='0444')
-
-# TODO Refactor
-def clone_repo(git_url, checkout_item, destination):
-    with settings(warn_only=True):
-        log.info('fabric_tasks | Clone Repo | Repo - %s | Checkout - %s', git_url, checkout_item)
-        clone_result = run('git clone {0} {1}'.format(git_url, destination), pty=False)
-
-        if clone_result.failed:
-            log.error('fabric_tasks | Clone Failed | Repo - %s | Checkout - %s | Error - %s',
-                      git_url, checkout_item, clone_result)
-            return clone_result
-
-        with cd(destination):
-            checkout_result = run('git checkout {0}'.format(checkout_item), pty=False)
-            if checkout_result.failed:
-                log.error('fabric_tasks | Checkout Failed | Repo - %s | Checkout - %s | Error - %s',
-                          git_url, checkout_item, checkout_result)
-                return checkout_result
-            clean_result = run('git clean -f -f -d', pty=False)
-            if clean_result.failed:
-                log.error('fabric_tasks | Clean Failed | Repo - %s | Checkout - %s | Error - %s',
-                          git_url, checkout_item, clean_result)
-                return clean_result
-            return True
-
-
-# TODO Refactor
-def checkout_repo(checkout_item, destination):
-    log.info('fabric_tasks | Checkout Repo | Destination - %s | Checkout - %s',
-             destination, checkout_item)
-    with cd(destination):
-        run('git reset --hard')
-        run('git fetch --all')
-        run('git checkout {0}'.format(checkout_item))
-        run('git clean -f -f -d')
 
 
 # TODO Refactor

@@ -119,12 +119,14 @@ $conf['cache_default_class'] = 'MemCacheDrupal';
 $conf['cache_class_cache_form'] = 'DrupalDatabaseCache';
 // Memcache lock file location.
 $conf['lock_inc'] = 'profiles/{{profile}}/modules/contrib/memcache/memcache-lock.inc';
-{% if environment != 'local' %}
-// Varnish
 $conf['cache_backends'] = array(
+{% if environment != 'local' %}
   'profiles/{{profile}}/modules/contrib/varnish/varnish.cache.inc',
+{% endif -%}
   'profiles/{{profile}}/modules/contrib/memcache/memcache.inc',
 );
+{% if environment != 'local' %}
+// Varnish
 $conf['reverse_proxy'] = TRUE;
 $conf['reverse_proxy_addresses'] = array({% for ip in reverse_proxies -%}'{{ip}}',{% endfor %});
 // Drupal will look for IP in $_SERVER['X-Forwarded-For']

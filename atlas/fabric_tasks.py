@@ -41,97 +41,7 @@ class FabricException(Exception):
     pass
 
 
-@roles('webservers', 'operations_server')
-def site_package_update(site):
-    log.info('Site | Package Update | Site - %s', site['_id'])
-    code_directory_sid = '{0}/{1}/{1}'.format(INSTANCE_ROOT, site['sid'])
-    packages_directory = '{0}/sites/all'.format(code_directory_sid)
-
-    package_name_string = ""
-    for package in site['code']['package']:
-        # Append the package name and a space.
-        package_name_string += utilities.get_code_name_version(package) + " "
-    # Strip the trailing space off the end.
-    package_name_string = package_name_string.rstrip()
-
-    log.debug('Site | Package Update | Site - %s | Packages - %s', site['_id'], package_name_string)
-
-    with cd(packages_directory):
-        run("drush dslm-remove-all-packages")
-        if len(package_name_string) > 0:
-            run("drush dslm-add-package {0}".format(package_name_string))
-
-
-@roles('webservers', 'operations_server')
-def site_core_update(site):
-    log.info('Site | Core Update | Site - %s', site['_id'])
-    code_directory_sid = '{0}/{1}/{1}'.format(INSTANCE_ROOT, site['sid'])
-    core_string = utilities.get_code_name_version(site['code']['core'])
-
-    with cd(code_directory_sid):
-        run("drush dslm-switch-core {0}".format(core_string))
-
-
-@roles('webservers', 'operations_server')
-def site_profile_update(site, original, updates):
-    log.info('Site | Profile Update | Site - %s', site['_id'])
-    code_directory_sid = '{0}/{1}/{1}'.format(INSTANCE_ROOT, site['sid'])
-    old_profile = utilities.get_single_eve('code', original['code']['profile'])
-    new_profile = utilities.get_single_eve('code', site['code']['profile'])
-    new_profile_full_string = utilities.get_code_name_version(site['code']['profile'])
-
-    with cd(code_directory_sid + '/profiles'):
-        run("rm {0}; ln -s {1}/profiles/{2}/{3} {2}".format(
-            old_profile['meta']['name'],
-            CODE_ROOT,
-            new_profile['meta']['name'],
-            new_profile_full_string))
-
-
-@roles('webservers', 'operations_server')
-def site_profile_swap(site):
-    log.info('Site | Profile Swap | Site - %s', site['_id'])
-    code_directory_sid = '{0}/{1}/{1}'.format(INSTANCE_ROOT, site['sid'])
-    profile = utilities.get_single_eve('code', site['code']['profile'])
-    new_profile_full_string = utilities.get_code_name_version(site['code']['profile'])
-
-    with cd(code_directory_sid + '/profiles'):
-        run("rm {0}; ln -s {1}/profiles/{2}/{3} {2}".format(
-            profile['meta']['name'],
-            CODE_ROOT,
-            profile['meta']['name'],
-            new_profile_full_string))
-
-
-@roles('webservers', 'operations_server')
-def site_launch(site):
-    """
-    Create symlinks with new site name.
-    """
-    log.info('fabric_tasks | Launch subtask | Site - %s', site['_id'])
-    code_directory = '{0}/{1}'.format(INSTANCE_ROOT, site['sid'])
-    code_directory_current = '{0}/current'.format(code_directory)
-
-    if site['type'] == 'express':
-        if site['path'] != 'homepage':
-            web_directory_path = '{0}/{1}'.format(WEB_ROOT, site['path'])
-            with cd(WEB_ROOT):
-                # If the path is nested like 'lab/atlas', make the 'lab' directory
-                if "/" in site['path']:
-                    lead_path = "/".join(site['path'].split("/")[:-1])
-                    create_directory_structure(lead_path)
-                # Create a new symlink using site's updated path
-                if not exists(web_directory_path):
-                    update_symlink(code_directory_current, site['path'])
-        elif site['path'] == 'homepage':
-            with cd(WEB_ROOT):
-                # TODO Make sure that we are using the correct variable for Web root symlinks vs Instance symlinks
-                for link in CORE_WEB_ROOT_SYMLINKS:
-                    source_path = "{0}/{1}".format(code_directory_current, link)
-                    target_path = "{0}/{1}".format(WEB_ROOT, link)
-                    update_symlink(source_path, target_path)
-
-
+# TODO Refactor
 @roles('webservers', 'operations_server')
 def site_take_down(site):
     """
@@ -142,6 +52,7 @@ def site_take_down(site):
     update_symlink(SITE_DOWN_PATH, code_directory_current)
 
 
+# TODO Refactor
 @roles('webservers', 'operations_server')
 def site_restore(site):
     """
@@ -153,6 +64,7 @@ def site_restore(site):
     update_symlink(code_directory_sid, code_directory_current)
 
 
+# TODO Refactor
 @roles('webservers', 'operations_server')
 def site_remove(site):
     """
@@ -183,6 +95,7 @@ def site_remove(site):
     remove_directory(code_directory)
 
 
+# TODO Refactor
 @roles('webservers', 'operations_server')
 def instance_heal(item):
     log.info('Instance | Heal | Item ID - %s | Item - %s', item['sid'], item)
@@ -222,6 +135,7 @@ def instance_heal(item):
         log.info('Instance | Heal | Item ID - %s | Instance okay', item['sid'])
 
 
+# TODO Refactor
 @roles('operations_server')
 def instance_rebuild_code(item):
     log.info('Instance | Rebuild code | Item ID - %s | Item - %s', item['sid'], item)
@@ -266,6 +180,7 @@ def instance_rebuild_code(item):
         log.info('Instance | Heal | Item ID - %s | Instance okay', item['sid'])
 
 
+# TODO Refactor
 def instance_remove_code(site):
     """
     Remove code for instance
@@ -289,6 +204,7 @@ def instance_remove_code(site):
     remove_directory(code_directory)
 
 
+# TODO Refactor
 def instance_add_code(site):
     """
     Add code to instance
@@ -362,21 +278,7 @@ def clear_php_cache():
         return error
 
 
-@roles('webservers', 'operations_server')
-def update_settings_file(site):
-    log.info('fabric_tasks | Update Settings File | Site - %s', site['sid'])
-    try:
-        # If the settings file exists, change permissions to allow us to update the template.
-        settings_file = "{0}/{1}/{1}/sites/default/settings.php".format(INSTANCE_ROOT, site['sid'])
-        if exists(settings_file):
-            run("chmod u+w {0}".format(settings_file))
-        execute(create_settings_files, site=site)
-    except FabricException as error:
-        log.error('fabric_tasks | Update Settings File | Site - %s | Error - %s',
-                  site['sid'], error)
-        return error
-
-
+# TODO Refactor
 @roles('webservers', 'operations_server')
 def update_homepage_files():
     """
@@ -426,7 +328,7 @@ def command_run_single(site, command, warn_only=False):
             if command_result.failed:
                 return command_result
 
-
+# TODO Refactor
 @roles('operations_server')
 def correct_nfs_file_permissions(instance=None):
     """
@@ -509,6 +411,7 @@ def site_install(site):
         return error
 
 
+# TODO Refactor
 def create_nfs_files_dir(nfs_dir):
     nfs_files_dir = '{0}/files'.format(nfs_dir)
     nfs_tmp_dir = '{0}/tmp'.format(nfs_dir)
@@ -519,22 +422,25 @@ def create_nfs_files_dir(nfs_dir):
     run('chmod 775 {0}'.format(nfs_files_dir))
     run('chmod 775 {0}'.format(nfs_tmp_dir))
 
-
+# TODO Refactor
 def create_directory_structure(folder):
     log.info('fabric_tasks | Create directory | Directory - %s', folder)
     run('mkdir -p {0}'.format(folder))
 
 
+# TODO Refactor
 def remove_directory(folder):
     log.info('fabric_tasks | Remove directory | Directory - %s', folder)
     run('rm -rf {0}'.format(folder))
 
 
+# TODO Refactor
 def remove_symlink(symlink):
     log.info('fabric_tasks | Remove symlink | Symlink - %s', symlink)
     run('rm -f {0}'.format(symlink))
 
 
+# TODO Refactor
 def create_settings_files(site):
     """
     Create settings.local_pre.php, settings.php, and settings.local_post.php from templates and and
@@ -610,7 +516,7 @@ def create_settings_files(site):
                     backup=False,
                     mode='0444')
 
-
+# TODO Refactor
 def clone_repo(git_url, checkout_item, destination):
     with settings(warn_only=True):
         log.info('fabric_tasks | Clone Repo | Repo - %s | Checkout - %s', git_url, checkout_item)
@@ -635,6 +541,7 @@ def clone_repo(git_url, checkout_item, destination):
             return True
 
 
+# TODO Refactor
 def checkout_repo(checkout_item, destination):
     log.info('fabric_tasks | Checkout Repo | Destination - %s | Checkout - %s',
              destination, checkout_item)
@@ -645,12 +552,14 @@ def checkout_repo(checkout_item, destination):
         run('git clean -f -f -d')
 
 
+# TODO Refactor
 def replace_files_directory(source, destination):
     if exists(destination):
         run('rm -rf {0}'.format(destination))
     update_symlink(source, destination)
 
 
+# TODO Refactor
 def update_symlink(source, destination):
     log.info('fabric_tasks | Update Symlink | Source - %s | Destination - %s',
              source, destination)

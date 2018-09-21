@@ -26,7 +26,7 @@ from shutil import copyfile
 from jinja2 import Environment, PackageLoader
 
 from atlas import utilities
-from atlas.config import (ENVIRONMENT, CODE_ROOT, LOCAL_CODE_ROOT, INSTANCE_ROOT, LOCAL_INSTANCE_ROOT, WEB_ROOT, LOCAL_WEB_ROOT, CORE_WEB_ROOT_SYMLINKS, NFS_MOUNT_FILES_DIR, NFS_MOUNT_LOCATION, SAML_AUTH, SERVICE_ACCOUNT_USERNAME, SERVICE_ACCOUNT_PASSWORD, VARNISH_CONTROL_KEY, SMTP_PASSWORD, WEBSERVER_USER_GROUP)
+from atlas.config import (ENVIRONMENT, CODE_ROOT, LOCAL_CODE_ROOT, INSTANCE_ROOT, LOCAL_INSTANCE_ROOT, WEB_ROOT, LOCAL_WEB_ROOT, CORE_WEB_ROOT_SYMLINKS, NFS_MOUNT_FILES_DIR, NFS_MOUNT_LOCATION, SAML_AUTH, SERVICE_ACCOUNT_USERNAME, SERVICE_ACCOUNT_PASSWORD, VARNISH_CONTROL_KEY, SMTP_PASSWORD, WEBSERVER_USER_GROUP, ATLAS_LOCATION)
 from atlas.config_servers import (SERVERDEFS, ATLAS_LOGGING_URLS, API_URLS, VARNISH_CONTROL_TERMINALS, BASE_URLS)
 
 # Setup a sub-logger. See tasks.py for longer comment.
@@ -81,7 +81,7 @@ def instance_create(instance):
                 os.remove(site_files_dir)
             os.symlink(nfs_src, site_files_dir)
     # Create setttings file
-    create_settings_files(instance)
+    switch_settings_files(instance)
     # Correct file permissions
     correct_fs_permissions(instance)
     # Create symlinks for current in instance root, 'sid' and 'path' (if needed) in web root.
@@ -89,8 +89,8 @@ def instance_create(instance):
               instance['_id'], instance_code_path_current, instance_web_path_sid)
     utilities.relative_symlink(instance_code_path_sid, instance_code_path_current)
     utilities.relative_symlink(instance_code_path_current, instance_web_path_sid)
-    if instance['path'] is not instance['sid']:
-        utilities.relative_symlink(instance_code_path_current, instance_web_path_path)
+    if instance['status'] in ['launched', 'launching']:
+        switch_web_root_symlinks(instance)
 
 
 def switch_core(instance):
@@ -160,7 +160,6 @@ def switch_core(instance):
             # F_OK to test the existence of path
         if not os.access(destination_path, os.F_OK):
             utilities.relative_symlink(source_path, destination_path)
-    # TODO Determine how to queue an UPDB when this is updating core.
 
 
 def switch_profile(instance):
@@ -183,7 +182,6 @@ def switch_profile(instance):
     # Add new relative symlink
     if not os.access(destination_path, os.F_OK):
         utilities.relative_symlink(profile_path, destination_path)
-    # TODO Determine how to queue an UPDB when this is updating profile.
 
 
 def switch_packages(instance):
@@ -195,23 +193,30 @@ def switch_packages(instance):
     log.info('Instance | Switch package | Instance - %s', instance['sid'])
     log.debug('Instance | Switch package | Instance - %s', instance)
     instance_code_path_sid = '{0}/{1}/{1}'.format(LOCAL_INSTANCE_ROOT, instance['sid'])
+    # Get rid of old symlinks
+    # List sites/all/{modules|themes|libraries} and remove all symlinks
+    for package_type_path in ['modules', 'themes', 'libraries']:
+        package_path = instance_code_path_sid + '/sites/all/' + package_type_path
+        log.debug('Instance | Switch Packages | listdir - %s', os.listdir(package_path))
+        for item in os.listdir(package_path):
+            # Get full path of item
+            path = package_path + '/' + item
+            log.debug('Instance | Switch Packages | Item to unlink - %s', path)
+            if os.path.islink(path):
+                os.remove(path)
     if 'package' in instance['code']:
         for item in instance['code']['package']:
             package = utilities.get_single_eve('code', item)
             package_path = utilities.code_path(package)
-            package_type_path = utilities.code_type_directory_name(package['meta']['type'])
+            package_type_path = utilities.code_type_directory_name(package['meta']['code_type'])
             destination_path = instance_code_path_sid + '/sites/all/' + \
                 package_type_path + '/' + package['meta']['name']
-            # Remove old symlink
-            if os.path.islink(destination_path):
-                os.remove(destination_path)
             # Add new relative symlink
             if not os.access(destination_path, os.F_OK):
                 utilities.relative_symlink(package_path, destination_path)
-    # TODO Determine how to queue an UPDB when this is updating profile.
 
 
-def create_settings_files(instance):
+def switch_settings_files(instance):
     """Create settings.php from template and render the resulting file onto the server.
 
     Arguments:
@@ -328,3 +333,45 @@ def sync_instances():
     # Sync INSTANCE_ROOT then WEB_ROOT
     for root in [tuple([LOCAL_INSTANCE_ROOT, INSTANCE_ROOT]), tuple([LOCAL_WEB_ROOT, WEB_ROOT])]:
         utilities.sync(root[0], hosts, root[1])
+
+
+def switch_web_root_symlinks(instance):
+    """Create symlinks in web root
+
+    Arguments:
+        instance {dict} -- instance object
+    """
+    log.info('Instances | Launch | Instance - %s', instance['_id'])
+    instance_code_path_current = '{0}/{1}/current'.format(LOCAL_INSTANCE_ROOT, instance['sid'])
+
+    if instance['type'] == 'express':
+        if instance['path'] != 'homepage':
+            web_directory_path = '{0}/{1}'.format(LOCAL_WEB_ROOT, instance['path'])
+            # If the instance has a multipart path
+            if "/" in instance['path']:
+                # Setup a base path, all items in 'path' except for the last one
+                base_path = LOCAL_WEB_ROOT + '/' + '/'.join(instance['path'].split('/')[:-1])
+                log.debug('Instance | Web root symlinks | base_path - %s', base_path)
+                os.makedirs(base_path)
+            # Remove symlink if it exists
+            if os.access(web_directory_path, os.F_OK) and os.path.islink(web_directory_path):
+                os.remove(web_directory_path)
+            utilities.relative_symlink(instance_code_path_current, web_directory_path)
+        elif instance['path'] == 'homepage':
+            for link in CORE_WEB_ROOT_SYMLINKS:
+                source_path = "{0}/{1}".format(instance_code_path_current, link)
+                target_path = "{0}/{1}".format(LOCAL_WEB_ROOT, link)
+                if os.access(target_path, os.F_OK) and os.path.islink(target_path):
+                    os.remove(target_path)
+                utilities.relative_symlink(source_path, target_path)
+
+
+def switch_homepage_files():
+    """Replace robots.txt and .htaccess for the homepage
+    """
+    files = [tuple([ATLAS_LOCATION + '/files/homepage_robots', LOCAL_WEB_ROOT + '/robots.txt']),
+             tuple([ATLAS_LOCATION + '/files/homepage_htaccess', LOCAL_WEB_ROOT + '/.htaccess'])]
+    for file in files:
+        if os.access(file[1], os.F_OK):
+            os.remove(file[1])
+        copyfile(file[0], file[1])

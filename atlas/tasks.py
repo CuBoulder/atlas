@@ -397,13 +397,14 @@ def site_provision(site):
     # TODO Is a way to request a sync (w/ install chained)? Want to sync only once when 5 instances are deployed
     log.info('Instance | Provision | Rsync')
     instance_operations.sync_instances()
-    # TODO Figure out what to do about the lack on a NFS mount on the locals.
+    # Run install
     try:
         execute(fabric_tasks.site_install, site=site)
     except Exception as error:
         log.error('Site install failed | Error Message | %s', error)
         raise
 
+    # Update instance record
     patch_payload = {'status': 'available',
                      'db_key': site['db_key'],
                      'statistics': site['statistics']}
@@ -482,22 +483,25 @@ def site_update(site, updates, original):
     deploy_update_database = False
     deploy_drupal_cache_clear = False
     deploy_php_cache_clear = False
+    sync_instances = False
 
     if updates.get('code'):
         log.debug('Site update | ID - %s | Found code changes', site['_id'])
+        # If we are updating code, we will need to sync instances
+        sync_instances = True
         code_to_update = []
         if 'core' in updates['code']:
             log.debug('Site update | ID - %s | Found core change', site['_id'])
-            execute(fabric_tasks.site_core_update, site=site)
+            instance_operations.switch_core(site)
             code_to_update.append(str(updates['code']['core']))
         if 'profile' in updates['code']:
             log.debug('Site update | ID - %s | Found profile change | Profile - %s', site['_id'],
                       str(updates['code']['profile']))
-            execute(fabric_tasks.site_profile_update, site=site, original=original, updates=updates)
+            instance_operations.switch_profile(site)
             code_to_update.append(str(updates['code']['profile']))
         if 'package' in updates['code']:
             log.debug('Site update | ID - %s | Found package changes', site['_id'])
-            execute(fabric_tasks.site_package_update, site=site)
+            instance_operations.switch_packages(site)
             # Get a single string of all packages.
             for code in updates['code']['package']:
                 code_to_update.append(str(code))
@@ -535,20 +539,23 @@ def site_update(site, updates, original):
 
     if updates.get('status'):
         log.debug('Site update | ID - %s | Found status change', site['_id'])
+        # If we are updating status, we will need to sync instances
+        sync_instances = True
         if updates['status'] in ['installing', 'launching', 'locked', 'take_down', 'restore']:
             if updates['status'] == 'installing':
                 log.debug('Site update | ID - %s | Status changed to installing')
                 # Set new status on site record for update to settings files.
                 site['status'] = 'installed'
-                execute(fabric_tasks.update_settings_file, site=site)
+                instance_operations.switch_settings_files(site)
                 deploy_php_cache_clear = True
                 patch_payload = '{"status": "installed"}'
             elif updates['status'] == 'launching':
                 log.debug('Site update | ID - %s | Status changed to launching', site['_id'])
                 site['status'] = 'launched'
-                execute(fabric_tasks.update_settings_file, site=site)
-                execute(fabric_tasks.site_launch, site=site)
+                instance_operations.switch_settings_files(site)
+                instance_operations.switch_web_root_symlinks(site)
                 if site['path'] == 'homepage':
+                    # TODO Refactor
                     execute(fabric_tasks.update_homepage_files)
                 deploy_drupal_cache_clear = True
                 deploy_php_cache_clear = True
@@ -562,12 +569,12 @@ def site_update(site, updates, original):
                 # Let fabric send patch since it is changing update group.
             elif updates['status'] == 'locked':
                 log.debug('Site update | ID - %s | Status changed to locked', site['_id'])
-                execute(fabric_tasks.update_settings_file, site=site)
+                instance_operations.switch_settings_files(site)
                 deploy_php_cache_clear = True
             elif updates['status'] == 'take_down':
                 log.debug('Site update | ID - %s | Status changed to take_down', site['_id'])
                 site['status'] = 'down'
-                execute(fabric_tasks.update_settings_file, site=site)
+                instance_operations.switch_settings_files(site)
                 execute(fabric_tasks.site_take_down, site=site)
                 patch_payload = '{"status": "down"}'
                 # Soft delete stats when we take down an instance.
@@ -581,7 +588,7 @@ def site_update(site, updates, original):
             elif updates['status'] == 'restore':
                 log.debug('Site update | ID - %s | Status changed to restore', site['_id'])
                 site['status'] = 'installed'
-                execute(fabric_tasks.update_settings_file, site=site)
+                instance_operations.switch_settings_files(site)
                 execute(fabric_tasks.site_restore, site=site)
                 deploy_update_database = True
                 patch_payload = '{"status": "installed"}'
@@ -593,12 +600,16 @@ def site_update(site, updates, original):
     # Don't update settings files a second time if status is changing to 'locked'.
     if updates.get('settings'):
         log.info('Found settings change | %s', updates)
+        # If we are updating the settings file, we will need to sync instances
+        sync_instances = True
         if not updates.get('status') or updates['status'] != 'locked':
-            execute(fabric_tasks.update_settings_file, site=site)
+            instance_operations.switch_settings_files(site)
             deploy_php_cache_clear = True
 
     # We want to run these commands in this specific order.
     log.info('Site Update | Closing operations commands | PHP Cache clear - %s | Registry rebuild - %s | Drush updb - %s | Drush cc - %s', deploy_php_cache_clear, deploy_registry_rebuild, deploy_update_database, deploy_drupal_cache_clear)
+    if sync_instances:
+        instance_operations.sync_instances()
     if deploy_php_cache_clear:
         execute(fabric_tasks.clear_php_cache)
     if deploy_registry_rebuild:
@@ -650,6 +661,7 @@ def site_update(site, updates, original):
     utilities.post_to_slack_payload(slack_payload)
 
 
+# TODO Update for rsync
 @celery.task
 def site_remove(site):
     """
@@ -1249,7 +1261,7 @@ def update_settings_file(site, batch_id, count, total):
     log.info('Command | Update Settings file | Batch - %s | %s of %s | Instance - %s',
              batch_id, count, total, site)
     try:
-        execute(fabric_tasks.update_settings_file, site=site)
+        instance_operations.switch_settings_files(site)
         log.info('Command | Update Settings file | Batch - %s | %s of %s | Instance - %s | Complete',
                  batch_id, count, total, site)
     except Exception as error:

@@ -43,29 +43,6 @@ class FabricException(Exception):
 
 # TODO Refactor
 @roles('webservers', 'operations_server')
-def site_take_down(site):
-    """
-    Point the site to the 'Down' page.
-    """
-    log.info('Site | Take down | Site - %s', site['_id'])
-    code_directory_current = '{0}/{1}/current'.format(INSTANCE_ROOT, site['sid'])
-    update_symlink(SITE_DOWN_PATH, code_directory_current)
-
-
-# TODO Refactor
-@roles('webservers', 'operations_server')
-def site_restore(site):
-    """
-    Point the site to the current release.
-    """
-    log.info('Site | Restore | Site - %s', site['_id'])
-    code_directory_current = '{0}/{1}/current'.format(INSTANCE_ROOT, site['sid'])
-    code_directory_sid = '{0}/{1}/{1}'.format(INSTANCE_ROOT, site['sid'])
-    update_symlink(code_directory_sid, code_directory_current)
-
-
-# TODO Refactor
-@roles('webservers', 'operations_server')
 def site_remove(site):
     """
     Responds to DELETEs to remove site from the server.

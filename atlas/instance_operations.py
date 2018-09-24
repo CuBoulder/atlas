@@ -6,13 +6,13 @@
     Instance methods:
     Create - Local - All symlinks are in place, DB exists, NFS mount is attached
     # TODO Install - Remote - Drupal install command runs
-    # TODO Update - Local and Remote - Update code or configuration; optionally clear caches, rebuild
-        registry, and/or run database update script.
-    # TODO Repair - Check that only intended code exists in instance, add any missing code. If extra code
+    Update - Local and Update code or configuration;
+    # TODO Update - Remote - Run optionay clear caches, rebuild registry, and/or run database update script.
+    # TODO Repair - Local - Check that only intended code exists in instance, add any missing code. If extra code
         is found, raise an exception and open a ticket.
-    # TODO Delete - Remove instance symlinks, settings file, NFS files, and database.
-    # TODO Backup - Create a database and NFS files backup of the instance.
-    # TODO Restore - Restore backup to a new `sid`
+    # TODO Delete - Local - Remove instance symlinks, settings file, NFS files, and database.
+    # TODO Backup - Remote - Create a database and NFS files backup of the instance.
+    # TODO Restore - Remote - Restore backup to a new `sid`
 """
 import logging
 import os
@@ -26,7 +26,7 @@ from shutil import copyfile
 from jinja2 import Environment, PackageLoader
 
 from atlas import utilities
-from atlas.config import (ENVIRONMENT, CODE_ROOT, LOCAL_CODE_ROOT, INSTANCE_ROOT, LOCAL_INSTANCE_ROOT, WEB_ROOT, LOCAL_WEB_ROOT, CORE_WEB_ROOT_SYMLINKS, NFS_MOUNT_FILES_DIR, NFS_MOUNT_LOCATION, SAML_AUTH, SERVICE_ACCOUNT_USERNAME, SERVICE_ACCOUNT_PASSWORD, VARNISH_CONTROL_KEY, SMTP_PASSWORD, WEBSERVER_USER_GROUP, ATLAS_LOCATION)
+from atlas.config import (ENVIRONMENT, CODE_ROOT, LOCAL_CODE_ROOT, INSTANCE_ROOT, LOCAL_INSTANCE_ROOT, WEB_ROOT, LOCAL_WEB_ROOT, CORE_WEB_ROOT_SYMLINKS, NFS_MOUNT_FILES_DIR, NFS_MOUNT_LOCATION, SAML_AUTH, SERVICE_ACCOUNT_USERNAME, SERVICE_ACCOUNT_PASSWORD, VARNISH_CONTROL_KEY, SMTP_PASSWORD, WEBSERVER_USER_GROUP, ATLAS_LOCATION, SITE_DOWN_PATH)
 from atlas.config_servers import (SERVERDEFS, ATLAS_LOGGING_URLS, API_URLS, VARNISH_CONTROL_TERMINALS, BASE_URLS)
 
 # Setup a sub-logger. See tasks.py for longer comment.
@@ -356,7 +356,11 @@ def switch_web_root_symlinks(instance):
             # Remove symlink if it exists
             if os.access(web_directory_path, os.F_OK) and os.path.islink(web_directory_path):
                 os.remove(web_directory_path)
-            utilities.relative_symlink(instance_code_path_current, web_directory_path)
+            # If the instance is being taken down, change target for symlink
+            if instance['status'] not in ['take_down', 'down']:
+                utilities.relative_symlink(instance_code_path_current, web_directory_path)
+            elif instance['status'] in ['take_down', 'down']:
+                utilities.relative_symlink(SITE_DOWN_PATH, web_directory_path)
         elif instance['path'] == 'homepage':
             for link in CORE_WEB_ROOT_SYMLINKS:
                 source_path = "{0}/{1}".format(instance_code_path_current, link)

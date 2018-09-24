@@ -575,7 +575,7 @@ def site_update(site, updates, original):
                 log.debug('Site update | ID - %s | Status changed to take_down', site['_id'])
                 site['status'] = 'down'
                 instance_operations.switch_settings_files(site)
-                execute(fabric_tasks.site_take_down, site=site)
+                instance_operations.switch_web_root_symlinks(site)
                 patch_payload = '{"status": "down"}'
                 # Soft delete stats when we take down an instance.
                 statistics_query = 'where={{"site":"{0}"}}'.format(site['_id'])
@@ -589,7 +589,7 @@ def site_update(site, updates, original):
                 log.debug('Site update | ID - %s | Status changed to restore', site['_id'])
                 site['status'] = 'installed'
                 instance_operations.switch_settings_files(site)
-                execute(fabric_tasks.site_restore, site=site)
+                instance_operations.switch_web_root_symlinks(site)
                 deploy_update_database = True
                 patch_payload = '{"status": "installed"}'
                 deploy_drupal_cache_clear = True

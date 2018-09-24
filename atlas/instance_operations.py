@@ -7,9 +7,9 @@
     Create - Local - All symlinks are in place, DB exists, NFS mount is attached
     # TODO Install - Remote - Drupal install command runs
     Update - Local and Update code or configuration;
-    # TODO Update - Remote - Run optionay clear caches, rebuild registry, and/or run database update script.
-    # TODO Repair - Local - Check that only intended code exists in instance, add any missing code. If extra code
-        is found, raise an exception and open a ticket.
+    # TODO Update - Remote - Run optional clear caches, rebuild registry, and/or updb.
+    # TODO Repair - Local - Check that only intended code exists in instance, add any missing code.
+        If extra code is found, raise an exception and open a ticket.
     # TODO Delete - Local - Remove instance symlinks, settings file, NFS files, and database.
     # TODO Backup - Remote - Create a database and NFS files backup of the instance.
     # TODO Restore - Remote - Restore backup to a new `sid`
@@ -55,13 +55,13 @@ def instance_create(instance, nfs_preserve=False):
     if os.path.exists(instance_code_path_sid):
         raise Exception('Destinaton directory already exists')
     os.makedirs(instance_code_path_sid)
-    ## Add Core
+    # Add Core
     switch_core(instance)
-    ## Add profile
+    # Add profile
     switch_profile(instance)
-    ## Add packages
+    # Add packages
     switch_packages(instance)
-    ## Add NFS mounted files directory
+    # Add NFS mounted files directory
     if NFS_MOUNT_FILES_DIR:
         # Setup paths
         nfs_files_dir = NFS_MOUNT_LOCATION[ENVIRONMENT] + '/' + instance['sid']
@@ -69,7 +69,7 @@ def instance_create(instance, nfs_preserve=False):
         nfs_src = nfs_files_dir + '/files'
         # Make dir on mount if we are not preserving a previous mount.
         if not nfs_preserve:
-            nfs_directories_to_create = [ nfs_files_dir, nfs_src, nfs_files_dir + '/tmp']
+            nfs_directories_to_create = [nfs_files_dir, nfs_src, nfs_files_dir + '/tmp']
             for directory in nfs_directories_to_create:
                 os.mkdir(directory)
         # Replace default files dir with one from NFS mount
@@ -91,7 +91,7 @@ def instance_create(instance, nfs_preserve=False):
     correct_fs_permissions(instance)
     # Create symlinks for current in instance root, 'sid' and 'path' (if needed) in web root.
     log.info('Instance | Provision | Instance ID - %s | Symlink current - %s | Symlink web - %s',
-              instance['_id'], instance_code_path_current, instance_web_path_sid)
+             instance['_id'], instance_code_path_current, instance_web_path_sid)
     utilities.relative_symlink(instance_code_path_sid, instance_code_path_current)
     utilities.relative_symlink(instance_code_path_current, instance_web_path_sid)
     if instance['status'] in ['launched', 'launching']:
@@ -179,7 +179,7 @@ def switch_core(instance):
         destination_path = instance_code_path_sid + '/' + core_file
         # Creat symlink
         utilities.relative_symlink(source_path, destination_path)
-   # Create Instance specific directory structure
+    # Create Instance specific directory structure
     directories_to_create = ['sites',
                              'sites/all',
                              'sites/all/modules',

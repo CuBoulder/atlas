@@ -394,7 +394,7 @@ def site_provision(site):
         log.error('Site provision failed | Error Message | %s', error)
         raise
     # Trigger rsync
-    # TODO Is a way to request a sync (w/ install chained)? Want to sync only once when 5 instances are deployed
+    # TODO Is a way to request a sync (w/ install chained)? Sync once when creating 5 instances
     log.info('Instance | Provision | Rsync')
     instance_operations.sync_instances()
     # Run install

@@ -83,6 +83,7 @@ def command_run_single(site, command, warn_only=False):
             if command_result.failed:
                 return command_result
 
+
 # TODO Refactor
 @roles('operations_server')
 def correct_nfs_file_permissions(instance=None):

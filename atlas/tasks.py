@@ -555,8 +555,7 @@ def site_update(site, updates, original):
                 instance_operations.switch_settings_files(site)
                 instance_operations.switch_web_root_symlinks(site)
                 if site['path'] == 'homepage':
-                    # TODO Refactor
-                    execute(fabric_tasks.update_homepage_files)
+                    instance_operations.switch_homepage_files()
                 deploy_drupal_cache_clear = True
                 deploy_php_cache_clear = True
                 # Set update group and status
@@ -1274,7 +1273,7 @@ def update_settings_file(site, batch_id, count, total):
 def update_homepage_files():
     log.info('Command | Update Homepage files')
     try:
-        execute(fabric_tasks.update_homepage_files)
+        instance_operations.switch_homepage_files()
         log.info('Command | Update Homepage files | Complete')
     except Exception as error:
         log.error('Command | Update Homepage files | Error - %s', error)

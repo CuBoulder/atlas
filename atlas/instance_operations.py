@@ -26,8 +26,13 @@ from shutil import copyfile
 from jinja2 import Environment, PackageLoader
 
 from atlas import utilities
-from atlas.config import (ENVIRONMENT, CODE_ROOT, LOCAL_CODE_ROOT, INSTANCE_ROOT, LOCAL_INSTANCE_ROOT, WEB_ROOT, LOCAL_WEB_ROOT, CORE_WEB_ROOT_SYMLINKS, NFS_MOUNT_FILES_DIR, NFS_MOUNT_LOCATION, SAML_AUTH, SERVICE_ACCOUNT_USERNAME, SERVICE_ACCOUNT_PASSWORD, VARNISH_CONTROL_KEY, SMTP_PASSWORD, WEBSERVER_USER_GROUP, ATLAS_LOCATION, SITE_DOWN_PATH)
-from atlas.config_servers import (SERVERDEFS, ATLAS_LOGGING_URLS, API_URLS, VARNISH_CONTROL_TERMINALS, BASE_URLS)
+from atlas.config import (ENVIRONMENT, INSTANCE_ROOT, LOCAL_INSTANCE_ROOT, WEB_ROOT, LOCAL_WEB_ROOT,
+                          CORE_WEB_ROOT_SYMLINKS, NFS_MOUNT_FILES_DIR, NFS_MOUNT_LOCATION,
+                          SAML_AUTH, SERVICE_ACCOUNT_USERNAME, SERVICE_ACCOUNT_PASSWORD,
+                          VARNISH_CONTROL_KEY, SMTP_PASSWORD, WEBSERVER_USER_GROUP, ATLAS_LOCATION,
+                          SITE_DOWN_PATH)
+from atlas.config_servers import (SERVERDEFS, ATLAS_LOGGING_URLS, API_URLS,
+                                  VARNISH_CONTROL_TERMINALS, BASE_URLS)
 
 # Setup a sub-logger. See tasks.py for longer comment.
 log = logging.getLogger('atlas.instance_operations')

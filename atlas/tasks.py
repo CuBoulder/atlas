@@ -1268,6 +1268,7 @@ def update_settings_file(site, batch_id, count, total):
         log.error('Command | Update Settings file | Batch - %s | %s of %s | Instance - %s | Error - %s',
                   batch_id, count, total, site, error)
         raise
+    instance_operations.sync_instances()
 
 
 @celery.task
@@ -1279,6 +1280,7 @@ def update_homepage_files():
     except Exception as error:
         log.error('Command | Update Homepage files | Error - %s', error)
         raise
+    instance_operations.sync_instances()
 
 
 @celery.task
@@ -1290,6 +1292,7 @@ def heal_instance(instance):
     # We are not removing the DB or user uploaded files during heal.
     instance_operations.instance_delete(instance, nfs_preserve=True)
     instance_operations.instance_create(instance, nfs_preserve=True)
+    instance_operations.sync_instances()
 
 
 @celery.task

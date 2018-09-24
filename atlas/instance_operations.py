@@ -6,11 +6,10 @@
     Instance methods:
     Create - Local - All symlinks are in place, DB exists, NFS mount is attached
     Update - Local and Update code or configuration;
-    # TODO Repair - Local - Check that only intended code exists in instance, add any missing code.
-                            If extra code is found, raise an exception and open a ticket.
-    # Delete - Local - Remove instance symlinks, delete settings file, delete NFS files.; Remote - Delete database.
+    Delete - Local - Remove instance symlinks, delete settings file, delete NFS files.; Remote - Delete database.
 
     # TODO After `util` and `ops` servers are combined
+    # Repair - Local - Check that only intended code exists in instance, add any missing code. If extra code is found, raise an exception and open a ticket.
     # Install - Remote - Drupal install command runs
     # Update - Remote - Run optional clear caches, rebuild registry, and/or updb.
     # Backup - Remote - Create a database and NFS files backup of the instance.

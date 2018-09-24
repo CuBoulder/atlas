@@ -1274,14 +1274,34 @@ def update_homepage_files():
 
 
 @celery.task
-def heal_instance(instance):
+def instance_heal(instances):
     """
-    Verify code is correctly deployed.
+    Verify instance is correctly deployed.
+    """
+    log.info('Heal | Instances | Item - %s', instances)
+    # Setup a chord. Takes a 'group' (list of tasks that should be applied in parallel) and executes
+    # another task after the group is complete.
+    # In the second task, using .si creates an immutable signature so the return value of the
+    # previous tasks will be ignored.
+    task_group = chord((_instance_heal.s(instance) for instance in instances['_items']), _instance_sync.si())()
+
+
+@celery.task
+def _instance_heal(item):
+    """
+    Sub task for instance_heal. Perform actual heal operations
     """
     log.info('Heal | Instance | Instance - %s', instance)
     # We are not removing the DB or user uploaded files during heal.
     instance_operations.instance_delete(instance, nfs_preserve=True)
     instance_operations.instance_create(instance, nfs_preserve=True)
+
+
+@celery.task
+def _instance_sync():
+    """
+    Sub task for instance_heal. Sync healed instances to server
+    """
     instance_operations.sync_instances()
 
 

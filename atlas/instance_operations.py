@@ -5,19 +5,19 @@
 
     Instance methods:
     Create - Local - All symlinks are in place, DB exists, NFS mount is attached
-    # TODO Install - Remote - Drupal install command runs
     Update - Local and Update code or configuration;
-    # TODO Update - Remote - Run optional clear caches, rebuild registry, and/or updb.
     # TODO Repair - Local - Check that only intended code exists in instance, add any missing code.
-        If extra code is found, raise an exception and open a ticket.
-    # TODO Delete - Local - Remove instance symlinks, settings file, NFS files, and database.
-    # TODO Backup - Remote - Create a database and NFS files backup of the instance.
-    # TODO Restore - Remote - Restore backup to a new `sid`
+                            If extra code is found, raise an exception and open a ticket.
+    # Delete - Local - Remove instance symlinks, delete settings file, delete NFS files.; Remote - Delete database.
+
+    # TODO After `util` and `ops` servers are combined
+    # Install - Remote - Drupal install command runs
+    # Update - Remote - Run optional clear caches, rebuild registry, and/or updb.
+    # Backup - Remote - Create a database and NFS files backup of the instance.
+    # Restore - Local - Restore files on an new instance; Remote - Restore database on instance.
 """
 import logging
 import os
-import stat
-import subprocess
 import re
 
 from grp import getgrnam
@@ -338,7 +338,6 @@ def switch_settings_files(instance):
     # Set file permissions
     # Octet mode, Python 3 compatible
     os.chmod(file_destination, 0o444)
-
 
 
 def correct_fs_permissions(instance):

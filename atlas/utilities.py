@@ -6,6 +6,7 @@ import sys
 import logging
 import json
 import subprocess
+import stat
 import smtplib
 import re
 from random import choice

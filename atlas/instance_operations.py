@@ -19,6 +19,7 @@
 import logging
 import os
 import re
+import stat
 
 from grp import getgrnam
 from shutil import copyfile
@@ -346,12 +347,13 @@ def correct_fs_permissions(instance):
     Arguments:
         instance {dict} -- instance object
     """
-    log.info('Instance | Correct FS permissions | Instance - %s', instance['sid'])
+    log.info('Instance | Correct File permissions | Instance - %s', instance['sid'])
     instance_path = "{0}/{1}/{1}".format(LOCAL_INSTANCE_ROOT, instance['sid'])
     # Walk produces 3-tuple for each dir or file, does not follow symlinks.
     # Lookup gid (Group ID), `chown` uses IDs for user and group
     group = getgrnam(WEBSERVER_USER_GROUP)
     log.debug('Instance | Correct FS permissions | Group - %s', group)
+    # `os.walk` does not follow symlinks by default.
     for root, directories, files in os.walk(instance_path, topdown=False):
         # Change directory permissions.
         for directory in [os.path.join(root, d) for d in directories]:
@@ -369,6 +371,24 @@ def correct_fs_permissions(instance):
             # Octet mode, Python 3 compatible
             os.chmod(file, 0o664)
             os.chown(file, -1, group.gr_gid)
+    if NFS_MOUNT_FILES_DIR:
+        nfs_files_dir = '{0}/{1}/files'.format(NFS_MOUNT_LOCATION[ENVIRONMENT], instance['sid'])
+        # Files and directories all owned by Apache
+        # Diretories have setgid on them
+        log.debug('Instance | Correct NFS permissions | Group - %s', group)
+        for root, directories, files in os.walk(nfs_files_dir, topdown=False):
+            for directory in [os.path.join(root, d) for d in directories]:
+                # Do not need to update perms on symlinks
+                if not os.path.islink(directory):
+                    # Octet mode, Python 3 compatible
+                    os.chmod(directory, 0o775)
+                    # Add SetGID for directory
+                    os.chmod(directory, stat.S_ISGID)
+                    os.chown(directory, -1, group.gr_gid)
+            for file in [os.path.join(root, f) for f in files]:
+                # Octet mode, Python 3 compatible
+                os.chmod(file, 0o664)
+                os.chown(file, -1, group.gr_gid)
 
 
 def sync_instances():

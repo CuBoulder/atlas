@@ -42,8 +42,8 @@ COMMANDS = [
         'description': u'Check that all intances are present and the directory structure is correct. Fix any instances that are irregular. Do not create databases.',
     },
     {
-        'machine_name': u'correct_nfs_file_permissions',
-        'description': u'Correct the group file and directory permissions for an instance.',
+        'machine_name': u'correct_file_permissions',
+        'description': u'Correct the file and directory permissions for an instance.',
     },
     {
         'machine_name': u'backup_all_instances',

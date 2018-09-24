@@ -163,7 +163,7 @@ def code_deploy(item):
                         "value": ENVIRONMENT,
                         "short": True
                     },
-                     {
+                    {
                         "title": "User",
                         "value": item['created_by'],
                         "short": True
@@ -390,7 +390,7 @@ def site_provision(site):
         log.error('Site provision failed | Error Message | %s', error)
         raise
     # Trigger rsync
-    # TODO Is a way to request a sync (w/ install chained)? Sync once when creating 5 instances
+    # ? Is a way to request a sync (w/ install chained)? Sync once when creating 5 instances
     log.info('Instance | Provision | Rsync')
     instance_operations.sync_instances()
     # Run install
@@ -654,7 +654,6 @@ def site_update(site, updates, original):
     utilities.post_to_slack_payload(slack_payload)
 
 
-# TODO Update for rsync
 @celery.task
 def site_remove(site):
     """
@@ -805,7 +804,7 @@ def cron_run(site):
     command = 'drush elysia-cron run --uri={1}'.format(WEBSERVER_USER, uri)
     try:
         execute(fabric_tasks.command_run_single, site=site, command=command)
-        execute(fabric_tasks.correct_nfs_file_permissions, instance=site)
+        instance_operations.correct_fs_permissions(site)
     except CronException as error:
         log.error('Site - %s | Cron failed | Error - %s', site['sid'], error)
         raise
@@ -1287,15 +1286,15 @@ def heal_instance(instance):
 
 
 @celery.task
-def correct_nfs_file_permissions(instance):
+def correct_file_permissions(instance):
     """
     Verify code is correctly deployed.
     """
-    log.info('Correct NFS file permissions | Instance - %s', instance)
+    log.info('Correct file permissions | Instance - %s', instance)
     try:
-        execute(fabric_tasks.correct_nfs_file_permissions, instance=instance)
+        instance_operations.correct_fs_permissions(instance)
     except Exception as error:
-        log.error('Correct NFS file permissions | Instance - %s | Error', instance['sid'], error)
+        log.error('Correct file permissions | Instance - %s | Error', instance['sid'], error)
         raise
 
 
@@ -1310,14 +1309,13 @@ def import_backup(env, backup_id, target_instance):
         '{0}/backup/{1}'.format(API_URLS[env], backup_id), verify=SSL_VERIFICATION)
     log.info('Import Backup | Backup - %s', backup)
     target = utilities.get_single_eve('sites', target_instance)
-    # Get a host to run this on.
-    # TODO Refactor
     utilities.create_database(target['sid'], target['db_key'])
-    instance_operations.instance_delete(instance)
-    instance_operations.instance_create(instance)
+    instance_operations.instance_delete(target)
+    instance_operations.instance_create(target)
+    instance_operations.instance_sync()
     execute(fabric_tasks.import_backup, backup=backup.json(),
             target_instance=target, source_env=env)
-    execute(fabric_tasks.correct_nfs_file_permissions, instance=target)
+    instance_operations.correct_fs_permissions(target)
 
 
 @celery.task

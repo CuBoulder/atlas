@@ -84,30 +84,6 @@ def command_run_single(site, command, warn_only=False):
                 return command_result
 
 
-# TODO Refactor
-@roles('operations_server')
-def correct_nfs_file_permissions(instance=None):
-    """
-    Correct the nfs mount file permissions for an instance
-    """
-    if instance:
-        log.info('Correct NFS File permissions | Instance - %s | Start', instance['sid'])
-        nfs_files_dir = '{0}/{1}/files'.format(NFS_MOUNT_LOCATION[ENVIRONMENT], instance['sid'])
-    else:
-        log.info('Correct NFS File permissions | All instances | Start')
-        nfs_files_dir = NFS_MOUNT_LOCATION[ENVIRONMENT]
-
-    with settings(warn_only=True):
-        run('find {0} -type f -or -type d -not -group {1} -exec chgrp {1} {{}} \\;'.format(nfs_files_dir, WEBSERVER_USER_GROUP))
-        run('find {0} -type f -user {1} -exec chmod g+rw {{}} \\;'.format(nfs_files_dir, SSH_USER))
-        run('find {0} -type d -user {1} -exec chmod g+rws {{}} \\;'.format(nfs_files_dir, SSH_USER))
-
-    if instance:
-        log.info('Correct NFS File permissions | Instance - %s | Complete', instance['sid'])
-    else:
-        log.info('Correct NFS File permissions | All instances | Complete')
-
-
 @roles('operations_server')
 def update_database(site):
     """

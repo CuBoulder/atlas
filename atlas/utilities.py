@@ -427,7 +427,7 @@ def post_to_slack_payload(payload):
         if ENVIRONMENT == 'local':
             payload['channel'] = '@{0}'.format(SLACK_USERNAME)
         if 'username' not in payload:
-            payload['username'] == 'Atlas'
+            payload['username'] = 'Atlas'
         # Using json=payload instead of data=json.dumps(payload) so that we don't have to encode the
         # dict ourselves. The Requests library will do it for us.
         r = requests.post(SLACK_URL, json=payload)
@@ -590,7 +590,7 @@ def sync(source, hosts, target):
         target {string} -- destination path
     """
 
-    log.info('Utilities | Sync')
+    log.info('Utilities | Sync | Source - %s', source)
     # Use `set` to dedupe the host list, and cast it back into a list
     hosts = list(set(hosts))
     # Recreate readme
@@ -608,10 +608,13 @@ def sync(source, hosts, target):
         # --delete delete extraneous files from dest dirs
         cmd = 'rsync -aqz {0}/ {1}:{2} --delete'.format(source, host, target)
         log.debug('Utilities | Sync | Command - %s', cmd)
-        output = subprocess.check_output(cmd, shell=True)
-        # TODO Catch exception for file permissions on target
-        if output:
-            log.error('Utilities | Sync | Output - %s', output)
+        try:
+            output = subprocess.check_output(cmd, shell=True, stderr=subprocess.STDOUT)
+        except subprocess.CalledProcessError as e:
+            log.error('Utilities | Sync | Failed | Return code - %s | StdErr - %s',
+                      e.returncode, e.output)
+        else:
+            log.info('Utilities | Sync | Success | Output - %s', output)
 
 
 def file_accessable_and_writable(file):

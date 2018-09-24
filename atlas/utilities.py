@@ -425,11 +425,10 @@ def post_to_slack_payload(payload):
     if SLACK_NOTIFICATIONS:
         if ENVIRONMENT == 'local':
             payload['channel'] = '@{0}'.format(SLACK_USERNAME)
-
-        # We need 'json=payload' vs. 'payload' because arguments can be passed
-        # in any order. Using json=payload instead of data=json.dumps(payload)
-        # so that we don't have to encode the dict ourselves. The Requests
-        # library will do it for us.
+        if 'username' not in payload:
+            payload['username'] == 'Atlas'
+        # Using json=payload instead of data=json.dumps(payload) so that we don't have to encode the
+        # dict ourselves. The Requests library will do it for us.
         r = requests.post(SLACK_URL, json=payload)
         if not r.ok:
             print r.text

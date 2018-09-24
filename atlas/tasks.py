@@ -72,7 +72,6 @@ class CronException(Exception):
                 # Channel will be overridden on local ENVIRONMENTs.
                 "channel": slack_channel,
                 "text": text,
-                "username": 'Atlas',
                 "attachments": [
                     {
                         "fallback": slack_fallback,
@@ -154,7 +153,6 @@ def code_deploy(item):
     slack_payload = {
 
         "text": 'Code Deploy',
-        "username": 'Atlas',
         "attachments": [
             {
                 "fallback": slack_fallback,
@@ -240,7 +238,6 @@ def code_update(updated_item, original_item):
 
     slack_payload = {
         "text": slack_title,
-        "username": 'Atlas',
         "attachments": [
             {
                 "fallback": slack_title,
@@ -298,7 +295,6 @@ def code_remove(item):
 
     slack_payload = {
         "text": slack_title,
-        "username": 'Atlas',
         "attachments": [
             {
                 "fallback": slack_title,
@@ -428,7 +424,6 @@ def site_provision(site):
 
     slack_payload = {
         "text": slack_text,
-        "username": 'Atlas',
         "attachments": [
             {
                 "fallback": slack_text,
@@ -627,7 +622,6 @@ def site_update(site, updates, original):
 
     slack_payload = {
         "text": slack_text,
-        "username": 'Atlas',
         "attachments": [
             {
                 "fallback": slack_text,
@@ -985,7 +979,6 @@ def verify_statistics():
             slack_link = '{0}/statistics?{1}'.format(BASE_URLS[ENVIRONMENT], site_query)
             slack_payload = {
                 "text": 'Outdated Statistics',
-                "username": 'Atlas',
                 "attachments": [
                     {
                         "fallback": slack_fallback,
@@ -1042,7 +1035,6 @@ def backup_instances_all(backup_type='routine'):
     slack_color = 'good'
     slack_payload = {
         "text": 'Backups started',
-        "username": 'Atlas',
         "attachments": [
             {
                 "fallback": slack_fallback,
@@ -1159,7 +1151,6 @@ def report_routine_backups():
     slack_color = 'good'
     slack_payload = {
         "text": 'Report - Routine backups in last 24 hours.',
-        "username": 'Atlas',
         "attachments": [
             {
                 "fallback": slack_fallback,

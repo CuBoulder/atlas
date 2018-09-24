@@ -434,7 +434,6 @@ def on_deleted_item_sites(item):
 
     slack_payload = {
         "text": slack_text,
-        "username": 'Atlas',
         "attachments": [
             {
                 "fallback": slack_text,

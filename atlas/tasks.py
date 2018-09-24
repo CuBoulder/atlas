@@ -687,7 +687,8 @@ def site_remove(site):
             # Want to keep trying to remove instances even if DB remove fails.
             pass
 
-        execute(fabric_tasks.site_remove, site=site)
+        instance_operations.instance_delete(site)
+        instance_operations.sync_instances()
 
 
 @celery.task
@@ -1281,18 +1282,14 @@ def update_homepage_files():
 
 
 @celery.task
-def heal_instance(instance, db=True, ops=False):
+def heal_instance(instance):
     """
     Verify code is correctly deployed.
     """
-    # DB create has 'if not exists' included
     log.info('Heal | Instance | Instance - %s', instance)
-    if db:
-        utilities.create_database(instance['sid'], instance['db_key'])
-    if ops:
-        execute(fabric_tasks.instance_rebuild_code, item=instance)
-    else:
-        execute(fabric_tasks.instance_heal, item=instance)
+    # We are not removing the DB or user uploaded files during heal.
+    instance_operations.instance_delete(instance, nfs_preserve=True)
+    instance_operations.instance_create(instance, nfs_preserve=True)
 
 
 @celery.task
@@ -1320,8 +1317,10 @@ def import_backup(env, backup_id, target_instance):
     log.info('Import Backup | Backup - %s', backup)
     target = utilities.get_single_eve('sites', target_instance)
     # Get a host to run this on.
+    # TODO Refactor
     utilities.create_database(target['sid'], target['db_key'])
-    execute(fabric_tasks.instance_heal, item=target)
+    instance_operations.instance_delete(instance)
+    instance_operations.instance_create(instance)
     execute(fabric_tasks.import_backup, backup=backup.json(),
             target_instance=target, source_env=env)
     execute(fabric_tasks.correct_nfs_file_permissions, instance=target)

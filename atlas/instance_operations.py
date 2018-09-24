@@ -33,8 +33,8 @@ from atlas.config_servers import (SERVERDEFS, ATLAS_LOGGING_URLS, API_URLS, VARN
 log = logging.getLogger('atlas.instance_operations')
 
 
-def instance_create(instance):
-    """Create database, symlink structure, settings file, and NFS space for an instance.
+def instance_create(instance, nfs_preserve=False):
+    """Create symlink structure, settings file, and NFS space for an instance.
 
     Arguments:
         instance {dict} -- complete instance dict from POST request
@@ -45,7 +45,6 @@ def instance_create(instance):
     instance_code_path_sid = '{0}/{1}/{1}'.format(LOCAL_INSTANCE_ROOT, instance['sid'])
     instance_code_path_current = '{0}/{1}/current'.format(LOCAL_INSTANCE_ROOT, instance['sid'])
     instance_web_path_sid = '{0}/{1}'.format(LOCAL_WEB_ROOT, instance['sid'])
-    instance_web_path_path = '{0}/{1}'.format(LOCAL_WEB_ROOT, instance['path'])
     log.debug('Instance | Provision | Instance sid path - %s', instance_code_path_sid)
     # Create structure in LOCAL_INSTANCE_ROOT
     if os.path.exists(instance_code_path_sid):
@@ -63,10 +62,11 @@ def instance_create(instance):
         nfs_files_dir = NFS_MOUNT_LOCATION[ENVIRONMENT] + '/' + instance['sid']
         site_files_dir = instance_code_path_sid + '/sites/default/files'
         nfs_src = nfs_files_dir + '/files'
-         # Make dir on mount
-        nfs_directories_to_create = [ nfs_files_dir, nfs_src, nfs_files_dir + '/tmp']
-        for directory in nfs_directories_to_create:
-            os.mkdir(directory)
+        # Make dir on mount if we are not preserving a previous mount.
+        if not nfs_preserve:
+            nfs_directories_to_create = [ nfs_files_dir, nfs_src, nfs_files_dir + '/tmp']
+            for directory in nfs_directories_to_create:
+                os.mkdir(directory)
         # Replace default files dir with one from NFS mount
         # Will error if there are files in the directory
         # Check is path exists, is a directory (matches symlink)
@@ -91,6 +91,49 @@ def instance_create(instance):
     utilities.relative_symlink(instance_code_path_current, instance_web_path_sid)
     if instance['status'] in ['launched', 'launching']:
         switch_web_root_symlinks(instance)
+
+
+def instance_delete(instance, nfs_preserve=False):
+    """Delete symlink structure, settings file, and NFS space for an instance.
+
+    Arguments:
+        instance {dict} -- full instance record
+    """
+    log.info('Instance | Delete | Instance ID - %s', instance['_id'])
+    log.debug('Instance | Delete | Instance ID - %s | Instance - %s', instance['_id'], instance)
+    # Setup path variables
+    instance_code_path = '{0}/{1}'.format(LOCAL_INSTANCE_ROOT, instance['sid'])
+    instance_code_path_current = '{0}/{1}/current'.format(LOCAL_INSTANCE_ROOT, instance['sid'])
+    instance_web_path_sid = '{0}/{1}'.format(LOCAL_WEB_ROOT, instance['sid'])
+    instance_web_path_path = '{0}/{1}'.format(LOCAL_WEB_ROOT, instance['path'])
+    # Remove symlinks and directories
+    symlinks_to_remove = [instance_code_path_current, instance_web_path_sid, instance_web_path_path]
+    # Directories to remove
+    directories_to_remove = [instance_code_path]
+    if NFS_MOUNT_FILES_DIR:
+        # Remove dir on mount unless we are preserving it, like when we 'heal' an instance.
+        if not nfs_preserve:
+            nfs_files_dir = NFS_MOUNT_LOCATION[ENVIRONMENT] + '/' + instance['sid']
+            directories_to_remove.append(nfs_files_dir)
+        # Remove symnlink to files
+        symlinks_to_remove.append(instance_code_path + '/sites/default/files')
+    # If the settings file exists, change permissions to allow us to delete the file.
+    file_destination = "{0}/{1}/{1}/sites/default/settings.php".format(
+        LOCAL_INSTANCE_ROOT, instance['sid'])
+    # Check to see if file exists and is not writable.
+    if os.access(file_destination, os.F_OK) and not os.access(file_destination, os.W_OK):
+        # Make it writeable
+        os.chmod(file_destination, stat.S_IWRITE)
+    # Remove symlinks
+    for symlink in symlinks_to_remove:
+        # Check if it exists and is a symlink
+        if os.access(symlink, os.F_OK) and not os.path.islink(symlink):
+            os.remove(symlink)
+    # Remove directories
+    for directory in directories_to_remove:
+        # Check if it exists
+        if os.access(directory, os.F_OK):
+            os.remove(directory)
 
 
 def switch_core(instance):

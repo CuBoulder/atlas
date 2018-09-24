@@ -101,18 +101,11 @@ def get_command(machine_name):
         elif command == 'heal_code':
             code_items = utilities.get_eve('code')
             tasks.code_heal.delay(code_items)
-
         elif command == 'heal_instances':
             instance_query = 'where={"type":"express"}&max_results=2000'
             instances = utilities.get_eve('sites', instance_query)
             for instance in instances['_items']:
                 tasks.heal_instance.delay(instance)
-                continue
-        elif command == 'heal_instances_no_db':
-            instance_query = 'where={"type":"express"}&max_results=2000'
-            instances = utilities.get_eve('sites', instance_query)
-            for instance in instances['_items']:
-                tasks.heal_instance.delay(instance, db=False, ops=True)
                 continue
         elif command == 'correct_nfs_file_permissions':
             instance_query = 'where={"type":"express"}&max_results=2000'

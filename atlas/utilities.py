@@ -611,3 +611,19 @@ def sync(source, hosts, target):
         # TODO Catch exception for file permissions on target
         if output:
             log.error('Utilities | Sync | Output - %s', output)
+
+
+def file_accessable_and_writable(file):
+    """Verify that a file exists and make it writable if it is not
+
+    Arguments:
+        file {string} -- Path of file to check
+    """
+    if os.access(file, os.F_OK):
+        # Check if file is writable
+        if not os.access(file, os.W_OK):
+            # Make it writable
+            os.chmod(file, stat.S_IWRITE)
+            return True
+        else:
+            return True

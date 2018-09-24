@@ -125,10 +125,8 @@ def instance_delete(instance, nfs_preserve=False):
     # If the settings file exists, change permissions to allow us to delete the file.
     file_destination = "{0}/{1}/{1}/sites/default/settings.php".format(
         LOCAL_INSTANCE_ROOT, instance['sid'])
-    # Check to see if file exists and is not writable.
-    if os.access(file_destination, os.F_OK) and not os.access(file_destination, os.W_OK):
-        # Make it writeable
-        os.chmod(file_destination, stat.S_IWRITE)
+    # Check to see if file exists and is writable.
+    utilities.file_accessable_and_writable(file_destination)
     # Remove symlinks
     for symlink in symlinks_to_remove:
         # Check if it exists and is a symlink
@@ -275,10 +273,8 @@ def switch_settings_files(instance):
     # If the settings file exists, change permissions to allow us to update the template.
     file_destination = "{0}/{1}/{1}/sites/default/settings.php".format(
         LOCAL_INSTANCE_ROOT, instance['sid'])
-    # Check to see if file exists and is not writable.
-    if os.access(file_destination, os.F_OK) and not os.access(file_destination, os.W_OK):
-        # Make it writeable
-        os.chmod(file_destination, stat.S_IWRITE)
+    # Check to see if file exists and is writable.
+    utilities.file_accessable_and_writable(file_destination)
 
     # Setup variables
     if instance['settings'].get('siteimprove_site'):
@@ -334,12 +330,15 @@ def switch_settings_files(instance):
     template = jinja_env.get_template('settings.php')
     render = template.render(settings_variables)
     # Remove the existing file.
-    # TODO See how this works with updating settings files post installation.
     if os.access(file_destination, os.F_OK):
         os.remove(file_destination)
     # Write the render to a file.
     with open(file_destination, "wb") as open_file:
         open_file.write(render)
+    # Set file permissions
+    # Octet mode, Python 3 compatible
+    os.chmod(file_destination, 0o444)
+
 
 
 def correct_fs_permissions(instance):

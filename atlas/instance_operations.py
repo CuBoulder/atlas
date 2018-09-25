@@ -21,7 +21,7 @@ import re
 import stat
 
 from grp import getgrnam
-from shutil import copyfile
+from shutil import copyfile, rmtree
 
 from jinja2 import Environment, PackageLoader
 
@@ -136,7 +136,7 @@ def instance_delete(instance, nfs_preserve=False):
     for directory in directories_to_remove:
         # Check if it exists
         if os.access(directory, os.F_OK):
-            os.remove(directory)
+            rmtree(directory)
 
 
 def switch_core(instance):
@@ -175,8 +175,12 @@ def switch_core(instance):
             continue
         source_path = core_path + '/' + core_file
         destination_path = instance_code_path_sid + '/' + core_file
-        # Creat symlink
-        utilities.relative_symlink(source_path, destination_path)
+        # Remove existing symlink and add new one.
+        if os.path.islink(destination_path):
+            os.remove(destination_path)
+            # F_OK to test the existence of path
+        if not os.access(destination_path, os.F_OK):
+            utilities.relative_symlink(source_path, destination_path)
     # Create Instance specific directory structure
     directories_to_create = ['sites',
                              'sites/all',
@@ -188,7 +192,9 @@ def switch_core(instance):
                              'profiles']
     for directory in directories_to_create:
         target_dir = instance_code_path_sid + '/' + directory
-        os.mkdir(target_dir)
+        # If the directoey does not already exist, create it.
+        if not os.access(target_dir, os.F_OK):
+            os.mkdir(target_dir)
     # Copy over default settings file so that this instance is like a default install.
     source_path = core_path + '/sites/default/default.settings.php'
     destination_path = instance_code_path_sid + '/sites/default/default.settings.php'
@@ -358,8 +364,11 @@ def correct_fs_permissions(instance):
         for directory in [os.path.join(root, d) for d in directories]:
             # Do not need to update perms on symlinks
             if not os.path.islink(directory):
-                # Octet mode, Python 3 compatible
-                os.chmod(directory, 0o775)
+                if re.search('sites\/default$', directory, re.MULTILINE):
+                    # Octet mode, Python 3 compatible
+                    os.chmod(directory, 0o755)
+                else:
+                    os.chmod(directory, 0o775)
                 # All the arguments to fchown are integers. Integer 'file descriptor' that
                 # is used by the underlying implementation to request I/O operations from
                 # the operating system; user id (uid), -1 to leave it unchanged; group id
@@ -367,8 +376,15 @@ def correct_fs_permissions(instance):
                 os.chown(directory, -1, group.gr_gid)
         # Change file permissions.
         for file in [os.path.join(root, f) for f in files]:
-            # Octet mode, Python 3 compatible
-            os.chmod(file, 0o664)
+            log.info('Instance | Correcy FS perms | File | File name - %s', file)
+            # Use search instead of match b/c we want end of string, not exact string, silly dev.
+            if re.search('settings\.php$', file, re.MULTILINE):
+                # Octet mode, Python 3 compatible
+                os.chmod(file, 0o444)
+                log.debug('Instance | Correcy FS perms | File | File name - %s | 444', file)
+            else:
+                os.chmod(file, 0o664)
+                log.debug('Instance | Correcy FS perms | File | File name - %s | 664', file)
             os.chown(file, -1, group.gr_gid)
     if NFS_MOUNT_FILES_DIR:
         nfs_files_dir = '{0}/{1}/files'.format(NFS_MOUNT_LOCATION[ENVIRONMENT], instance['sid'])
@@ -383,11 +399,19 @@ def correct_fs_permissions(instance):
                     os.chmod(directory, 0o775)
                     # Add SetGID for directory
                     os.chmod(directory, stat.S_ISGID)
-                    os.chown(directory, -1, group.gr_gid)
+                    try:
+                        os.chown(file, -1, group.gr_gid)
+                    except OSError, e:
+                        # pass exceptions where we cannot change the group, may only be needed for locals.
+                        pass
             for file in [os.path.join(root, f) for f in files]:
                 # Octet mode, Python 3 compatible
                 os.chmod(file, 0o664)
-                os.chown(file, -1, group.gr_gid)
+                try:
+                    os.chown(file, -1, group.gr_gid)
+                except OSError, e:
+                    # pass exceptions where we cannot change the group, may only be needed for locals.
+                    pass
 
 
 def sync_instances():
@@ -417,7 +441,9 @@ def switch_web_root_symlinks(instance):
                 # Setup a base path, all items in 'path' except for the last one
                 base_path = LOCAL_WEB_ROOT + '/' + '/'.join(instance['path'].split('/')[:-1])
                 log.debug('Instance | Web root symlinks | base_path - %s', base_path)
-                os.makedirs(base_path)
+                # Check to see if directory exists and create it if it does not.
+                if not os.access(base_path, os.F_OK):
+                    os.makedirs(base_path)
             # Remove symlink if it exists
             if os.access(web_directory_path, os.F_OK) and os.path.islink(web_directory_path):
                 os.remove(web_directory_path)

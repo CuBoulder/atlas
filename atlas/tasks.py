@@ -399,6 +399,9 @@ def site_provision(site):
     except Exception as error:
         log.error('Site install failed | Error Message | %s', error)
         raise
+    # Correct file permissions
+    instance_operations.correct_fs_permissions(site)
+    instance_operations.sync_instances()
 
     # Update instance record
     patch_payload = {'status': 'available',
@@ -601,7 +604,7 @@ def site_update(site, updates, original):
             deploy_php_cache_clear = True
 
     # We want to run these commands in this specific order.
-    log.info('Site Update | Closing operations commands | PHP Cache clear - %s | Registry rebuild - %s | Drush updb - %s | Drush cc - %s', deploy_php_cache_clear, deploy_registry_rebuild, deploy_update_database, deploy_drupal_cache_clear)
+    log.info('Site Update | Closing operations commands | Sync - %s | PHP Cache clear - %s | Drush rr - %s; updb - %s ; cc - %s', sync_instances, deploy_php_cache_clear, deploy_registry_rebuild, deploy_update_database, deploy_drupal_cache_clear)
     if sync_instances:
         instance_operations.sync_instances()
     if deploy_php_cache_clear:

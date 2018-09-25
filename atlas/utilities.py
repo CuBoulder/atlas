@@ -614,7 +614,7 @@ def sync(source, hosts, target):
             log.error('Utilities | Sync | Failed | Return code - %s | StdErr - %s',
                       e.returncode, e.output)
         else:
-            log.info('Utilities | Sync | Success | Output - %s', output)
+            log.info('Utilities | Sync | Success')
 
 
 def file_accessable_and_writable(file):

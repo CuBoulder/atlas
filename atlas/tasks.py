@@ -283,7 +283,7 @@ def code_remove(item):
     if item['meta']['is_current']:
         code_folder_current = '{0}/{1}/{2}/{2}-current'.format(
             LOCAL_CODE_ROOT,
-            code_operations.code_type_directory_name(item['meta']['code_type']),
+            utilities.code_type_directory_name(item['meta']['code_type']),
             item['meta']['name'])
         os.unlink(code_folder_current)
 

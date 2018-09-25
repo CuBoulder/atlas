@@ -7,8 +7,7 @@ import logging
 import os
 import shutil
 import subprocess
-
-from git import Repo, Git
+import git
 
 from atlas import utilities
 from atlas.config import (ENVIRONMENT, CODE_ROOT, LOCAL_CODE_ROOT)
@@ -25,13 +24,14 @@ def repository_clone(item):
     :param item:
     :return:
     """
-    log.info('Code | Clone | Item - %s', item)
+    log.info('Code | Clone | URL - %s', item['git_url'])
+    log.debug('Code | Clone | Item - %s', item)
     code_dir = utilities.code_path(item)
     # Clone repo
     if os.path.exists(code_dir):
         raise Exception('Destinaton directory already exists')
     os.makedirs(code_dir)
-    clone = Repo.clone_from(item['git_url'], code_dir)
+    clone = git.Repo.clone_from(item['git_url'], code_dir)
     log.info('Code | Clone | Result - %s', clone)
 
 
@@ -42,13 +42,14 @@ def repository_checkout(item):
     :param item:
     :return:
     """
-    log.info('Code | Checkout | Item - %s', item)
-    # Fetch repo
-    repo = Repo(utilities.code_path(item))
+    log.info('Code | Checkout | Hash - %s', item['commit_hash'])
+    log.debug('Code | Checkout | Item - %s', item)
+    # Inializa and fetch repo
+    repo = git.Repo(utilities.code_path(item))
     repo.remote().fetch()
-    # Checkout commit
-    g = Git(utilities.code_path(item))
-    g.checkout(item['commit_hash'])
+    # Point HEAD to the correct commit and reset
+    repo.head.reference = repo.commit(item['commit_hash'])
+    repo.head.reset(index=True, working_tree=True)
 
 
 def repository_remove(item):
@@ -58,7 +59,8 @@ def repository_remove(item):
     :param item:
     :return:
     """
-    log.info('Code | Remove | Item - %s', item)
+    log.info('Code | Remove | Item - %s', item['_id'])
+    log.debug('Code | Remove | Item - %s', item)
     shutil.rmtree(utilities.code_path(item))
 
 
@@ -71,7 +73,7 @@ def update_symlink_current(item):
         utilities.code_type_directory_name(item['meta']['code_type']),
         item['meta']['name'])
     # Remove symlink if it exists
-    if os.path.exists(code_folder_current):
+    if os.path.islink(code_folder_current):
         os.unlink(code_folder_current)
     os.symlink(utilities.code_path(item), code_folder_current)
     log.debug('Code deploy | Symlink | %s', code_folder_current)

@@ -376,7 +376,7 @@ def correct_fs_permissions(instance):
                 os.chown(directory, -1, group.gr_gid)
         # Change file permissions.
         for file in [os.path.join(root, f) for f in files]:
-            log.info('Instance | Correcy FS perms | File | File name - %s', file)
+            log.debug('Instance | Correcy FS perms | File | File name - %s', file)
             # Use search instead of match b/c we want end of string, not exact string, silly dev.
             if re.search('settings\.php$', file, re.MULTILINE):
                 # Octet mode, Python 3 compatible
@@ -445,7 +445,9 @@ def switch_web_root_symlinks(instance):
                 if not os.access(base_path, os.F_OK):
                     os.makedirs(base_path)
             # Remove symlink if it exists
-            if os.access(web_directory_path, os.F_OK) and os.path.islink(web_directory_path):
+            if os.path.islink(web_directory_path):
+                # TODO Set to debug
+                log.info('Instance | Web root symlinks | Remove old path')
                 os.remove(web_directory_path)
             # If the instance is being taken down, change target for symlink
             if instance['status'] not in ['take_down', 'down']:

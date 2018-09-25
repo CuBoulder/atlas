@@ -345,7 +345,7 @@ def _code_heal(item):
     """
     Sub task for code_heal. Perform actual heal operations
     """
-    if not os.path.isdir(code_operations.code_path(item)):
+    if not os.path.isdir(utilities.code_path(item)):
         clone = code_operations.repository_clone(item)
         log.debug('Code heal | Clone | %s', clone)
 

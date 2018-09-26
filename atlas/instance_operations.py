@@ -446,8 +446,7 @@ def switch_web_root_symlinks(instance):
                     os.makedirs(base_path)
             # Remove symlink if it exists
             if os.path.islink(web_directory_path):
-                # TODO Set to debug
-                log.info('Instance | Web root symlinks | Remove old path')
+                log.debug('Instance | Web root symlinks | Remove old path')
                 os.remove(web_directory_path)
             # If the instance is being taken down, change target for symlink
             if instance['status'] not in ['take_down', 'down']:

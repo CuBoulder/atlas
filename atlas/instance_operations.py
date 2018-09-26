@@ -67,8 +67,8 @@ def instance_create(instance, nfs_preserve=False):
         nfs_files_dir = NFS_MOUNT_LOCATION[ENVIRONMENT] + '/' + instance['sid']
         site_files_dir = instance_code_path_sid + '/sites/default/files'
         nfs_src = nfs_files_dir + '/files'
-        # Make dir on mount if we are not preserving a previous mount.
-        if not nfs_preserve:
+        # Make dir on mount if it does not exist or we are not preserving a previous mount.
+        if not os.access(nfs_src, os.F_OK) or not nfs_preserve:
             nfs_directories_to_create = [nfs_files_dir, nfs_src, nfs_files_dir + '/tmp']
             for directory in nfs_directories_to_create:
                 os.mkdir(directory)
@@ -129,8 +129,8 @@ def instance_delete(instance, nfs_preserve=False):
     utilities.file_accessable_and_writable(file_destination)
     # Remove symlinks
     for symlink in symlinks_to_remove:
-        # Check if it exists and is a symlink
-        if os.access(symlink, os.F_OK) and not os.path.islink(symlink):
+        if os.path.islink(symlink):
+            log.debug('Instance | Delete | Symlink - %s', symlink)
             os.remove(symlink)
     # Remove directories
     for directory in directories_to_remove:

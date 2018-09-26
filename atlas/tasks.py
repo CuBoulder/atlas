@@ -1281,7 +1281,8 @@ def instance_heal(instances):
     """
     Verify instance is correctly deployed.
     """
-    log.info('Heal | Instances | Item - %s', instances)
+    log.info('Heal | Instances')
+    log.debug('Heal | Instances | Item - %s', instances)
     # Setup a chord. Takes a 'group' (list of tasks that should be applied in parallel) and executes
     # another task after the group is complete.
     # In the second task, using .si creates an immutable signature so the return value of the
@@ -1290,11 +1291,12 @@ def instance_heal(instances):
 
 
 @celery.task
-def _instance_heal(item):
+def _instance_heal(instance):
     """
     Sub task for instance_heal. Perform actual heal operations
     """
-    log.info('Heal | Instance | Instance - %s', instance)
+    log.info('Heal | Instance | Instance - %s', instance['_id'])
+    log.debug('Heal | Instance | Instance - %s', instance)
     # We are not removing the DB or user uploaded files during heal.
     instance_operations.instance_delete(instance, nfs_preserve=True)
     instance_operations.instance_create(instance, nfs_preserve=True)

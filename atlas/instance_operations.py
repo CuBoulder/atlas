@@ -374,7 +374,7 @@ def correct_fs_permissions(instance):
                 # is used by the underlying implementation to request I/O operations from
                 # the operating system; user id (uid), -1 to leave it unchanged; group id
                 # (gid).
-                log.info('path %s | gid %s', directory, group.gr_gid)
+                log.debug('path %s | gid %s', directory, group.gr_gid)
                 os.chown(directory, -1, group.gr_gid)
         # Change file permissions.
         for file in [os.path.join(root, f) for f in files]:
@@ -402,22 +402,14 @@ def correct_fs_permissions(instance):
                     # Octet mode, Python 3 compatible
                     # Include SetGID for directory
                     os.chmod(directory, 02775)
-                    try:
-                        os.chown(file, -1, group.gr_gid)
-                    except OSError, e:
-                        # pass exceptions where we cannot change the group, may only be needed for locals.
-                        pass
+                    os.chown(file, -1, group.gr_gid)
             for file in [os.path.join(root, f) for f in files]:
                 # Check if we own the file, don't try to change the perms if we don't
                 # TODO Remove ownsership check when the umask is in place.
                 if getpwuid(os.stat(file).st_uid).pw_name == SSH_USER:
                     # Octet mode, Python 3 compatible
                     os.chmod(file, 0o664)
-                    try:
-                        os.chown(file, -1, group.gr_gid)
-                    except OSError, e:
-                        # pass exceptions where we cannot change the group, may only be needed for locals.
-                        pass
+                    os.chown(file, -1, group.gr_gid)
 
 
 def sync_instances():

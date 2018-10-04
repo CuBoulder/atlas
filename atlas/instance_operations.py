@@ -402,7 +402,7 @@ def correct_fs_permissions(instance):
                     # Octet mode, Python 3 compatible
                     # Include SetGID for directory
                     os.chmod(directory, 02775)
-                    os.chown(file, -1, group.gr_gid)
+                    os.chown(directory, -1, group.gr_gid)
             for file in [os.path.join(root, f) for f in files]:
                 # Check if we own the file, don't try to change the perms if we don't
                 # TODO Remove ownsership check when the umask is in place.

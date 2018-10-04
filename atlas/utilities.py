@@ -626,8 +626,8 @@ def file_accessable_and_writable(file):
     if os.access(file, os.F_OK):
         # Check if file is writable
         if not os.access(file, os.W_OK):
-            # Make it writable
-            os.chmod(file, stat.S_IWRITE)
+            # Make it writable, get the current permissions and OR them together with the write bit.
+            st = os.stat(file)
+            os.chmod(file, st.st_mode | stat.S_IWRITE)
             return True
-        else:
-            return True
+        return True

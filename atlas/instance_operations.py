@@ -365,20 +365,17 @@ def correct_fs_permissions(instance):
         for directory in [os.path.join(root, d) for d in directories]:
             # Do not need to update perms on symlinks
             if not os.path.islink(directory):
-                # Check if we own the file, don't try to change the perms if we don't
-                # TODO Fix this once we have a umask in place.
-                if getpwuid(os.stat(directory).st_uid).pw_name == SSH_USER:
-                    if re.search('sites\/default$', directory, re.MULTILINE):
-                        # Octet mode, Python 3 compatible
-                        os.chmod(directory, 0o755)
-                    else:
-                        os.chmod(directory, 0o775)
-                    # All the arguments to fchown are integers. Integer 'file descriptor' that
-                    # is used by the underlying implementation to request I/O operations from
-                    # the operating system; user id (uid), -1 to leave it unchanged; group id
-                    # (gid).
-                    log.info('path %s | gid %s', directory, group.gr_gid)
-                    os.chown(directory, -1, group.gr_gid)
+                if re.search('sites\/default$', directory, re.MULTILINE):
+                    # Octet mode, Python 3 compatible
+                    os.chmod(directory, 0o755)
+                else:
+                    os.chmod(directory, 0o775)
+                # All the arguments to fchown are integers. Integer 'file descriptor' that
+                # is used by the underlying implementation to request I/O operations from
+                # the operating system; user id (uid), -1 to leave it unchanged; group id
+                # (gid).
+                log.info('path %s | gid %s', directory, group.gr_gid)
+                os.chown(directory, -1, group.gr_gid)
         # Change file permissions.
         for file in [os.path.join(root, f) for f in files]:
             log.debug('Instance | Correcy FS perms | File | File name - %s', file)
@@ -388,11 +385,8 @@ def correct_fs_permissions(instance):
                 os.chmod(file, 0o444)
                 log.debug('Instance | Correcy FS perms | File | File name - %s | 444', file)
             else:
-                # Check if we own the file, don't try to change the perms if we don't
-                # TODO Fix this once we have a umask in place.
-                if getpwuid(os.stat(file).st_uid).pw_name == SSH_USER:
-                    os.chmod(file, 0o664)
-                    log.debug('Instance | Correcy FS perms | File | File name - %s | 664', file)
+                os.chmod(file, 0o664)
+                log.debug('Instance | Correcy FS perms | File | File name - %s | 664', file)
             os.chown(file, -1, group.gr_gid)
     if NFS_MOUNT_FILES_DIR:
         nfs_files_dir = '{0}/{1}/files'.format(NFS_MOUNT_LOCATION[ENVIRONMENT], instance['sid'])
@@ -402,7 +396,9 @@ def correct_fs_permissions(instance):
         for root, directories, files in os.walk(nfs_files_dir, topdown=False):
             for directory in [os.path.join(root, d) for d in directories]:
                 # Do not need to update perms on symlinks
-                if not os.path.islink(directory):
+                # Check if we own the file, don't try to change the perms if we don't
+                # TODO Remove ownsership check when the umask is in place.
+                if not os.path.islink(directory) and getpwuid(os.stat(directory).st_uid).pw_name == SSH_USER:
                     # Octet mode, Python 3 compatible
                     os.chmod(directory, 0o775)
                     # Add SetGID for directory
@@ -413,13 +409,16 @@ def correct_fs_permissions(instance):
                         # pass exceptions where we cannot change the group, may only be needed for locals.
                         pass
             for file in [os.path.join(root, f) for f in files]:
-                # Octet mode, Python 3 compatible
-                os.chmod(file, 0o664)
-                try:
-                    os.chown(file, -1, group.gr_gid)
-                except OSError, e:
-                    # pass exceptions where we cannot change the group, may only be needed for locals.
-                    pass
+                # Check if we own the file, don't try to change the perms if we don't
+                # TODO Remove ownsership check when the umask is in place.
+                if getpwuid(os.stat(file).st_uid).pw_name == SSH_USER:
+                    # Octet mode, Python 3 compatible
+                    os.chmod(file, 0o664)
+                    try:
+                        os.chown(file, -1, group.gr_gid)
+                    except OSError, e:
+                        # pass exceptions where we cannot change the group, may only be needed for locals.
+                        pass
 
 
 def sync_instances():

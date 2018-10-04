@@ -400,6 +400,7 @@ def correct_fs_permissions(instance):
                 # TODO Remove ownsership check when the umask is in place.
                 if not os.path.islink(directory) and getpwuid(os.stat(directory).st_uid).pw_name == SSH_USER:
                     # Octet mode, Python 3 compatible
+                    log.info('Instance | Correcy FS perms | NFS | Directory - %s', directory)
                     os.chmod(directory, 0o775)
                     # Add SetGID for directory
                     os.chmod(directory, stat.S_ISGID)

@@ -31,7 +31,7 @@ from atlas.config import (ENVIRONMENT, INSTANCE_ROOT, LOCAL_INSTANCE_ROOT, WEB_R
                           CORE_WEB_ROOT_SYMLINKS, NFS_MOUNT_FILES_DIR, NFS_MOUNT_LOCATION,
                           SAML_AUTH, SERVICE_ACCOUNT_USERNAME, SERVICE_ACCOUNT_PASSWORD,
                           VARNISH_CONTROL_KEY, SMTP_PASSWORD, WEBSERVER_USER_GROUP, ATLAS_LOCATION,
-                          SITE_DOWN_PATH)
+                          SITE_DOWN_PATH, SSH_USER)
 from atlas.config_servers import (SERVERDEFS, ATLAS_LOGGING_URLS, API_URLS,
                                   VARNISH_CONTROL_TERMINALS, BASE_URLS)
 

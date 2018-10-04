@@ -22,6 +22,7 @@ import stat
 
 from grp import getgrnam
 from shutil import copyfile, rmtree
+from pwd import getpwuid
 
 from jinja2 import Environment, PackageLoader
 
@@ -373,6 +374,7 @@ def correct_fs_permissions(instance):
                 # is used by the underlying implementation to request I/O operations from
                 # the operating system; user id (uid), -1 to leave it unchanged; group id
                 # (gid).
+                log.info('path %s | gid %s', directory, group.gr_gid)
                 os.chown(directory, -1, group.gr_gid)
         # Change file permissions.
         for file in [os.path.join(root, f) for f in files]:
@@ -383,8 +385,11 @@ def correct_fs_permissions(instance):
                 os.chmod(file, 0o444)
                 log.debug('Instance | Correcy FS perms | File | File name - %s | 444', file)
             else:
-                os.chmod(file, 0o664)
-                log.debug('Instance | Correcy FS perms | File | File name - %s | 664', file)
+                # Check if we own the file, don't try to change the perms if we don't
+                # TODO Fix this once we have a umask in place.
+                if getpwuid(os.stat(file).st_uid).pw_name == SSH_USER:
+                    os.chmod(file, 0o664)
+                    log.debug('Instance | Correcy FS perms | File | File name - %s | 664', file)
             os.chown(file, -1, group.gr_gid)
     if NFS_MOUNT_FILES_DIR:
         nfs_files_dir = '{0}/{1}/files'.format(NFS_MOUNT_LOCATION[ENVIRONMENT], instance['sid'])

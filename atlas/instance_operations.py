@@ -389,7 +389,7 @@ def correct_fs_permissions(instance):
                 log.debug('Instance | Correcy FS perms | File | File name - %s | 664', file)
             os.chown(file, -1, group.gr_gid)
     if NFS_MOUNT_FILES_DIR:
-        nfs_files_dir = '{0}/{1}/files'.format(NFS_MOUNT_LOCATION[ENVIRONMENT], instance['sid'])
+        nfs_files_dir = '{0}/{1}'.format(NFS_MOUNT_LOCATION[ENVIRONMENT], instance['sid'])
         # Files and directories all owned by Apache
         # Diretories have setgid on them
         log.debug('Instance | Correct NFS permissions | Group - %s', group)

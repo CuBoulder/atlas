@@ -140,6 +140,7 @@ def code_deploy(item):
         code_operations.update_symlink_current(item)
         log.debug('Code deploy | Symlink | Is current')
     sync = code_operations.sync_code()
+    execute(fabric_tasks.clear_php_cache)
 
     if clone or sync:
         text = 'Error'
@@ -232,6 +233,7 @@ def code_update(updated_item, original_item):
         log.debug('Code deploy | Symlink | Is current')
 
     sync = code_operations.sync_code()
+    execute(fabric_tasks.clear_php_cache)
 
     slack_title = 'Code Update - Success'
     slack_color = 'good'
@@ -288,6 +290,7 @@ def code_remove(item):
         os.unlink(code_folder_current)
 
     sync = code_operations.sync_code()
+    execute(fabric_tasks.clear_php_cache)
 
     # Slack notification
     slack_title = 'Code Remove - Success'
@@ -359,6 +362,7 @@ def _code_sync():
     Sub task for code_heal. Sync healed code to server
     """
     sync = code_operations.sync_code()
+    execute(fabric_tasks.clear_php_cache)
 
 
 @celery.task
@@ -607,6 +611,7 @@ def site_update(site, updates, original):
     log.info('Site Update | Closing operations commands | Sync - %s | PHP Cache clear - %s | Drush rr - %s; updb - %s ; cc - %s', sync_instances, deploy_php_cache_clear, deploy_registry_rebuild, deploy_update_database, deploy_drupal_cache_clear)
     if sync_instances:
         instance_operations.sync_instances()
+        execute(fabric_tasks.clear_php_cache)
     if deploy_php_cache_clear:
         execute(fabric_tasks.clear_php_cache)
     if deploy_registry_rebuild:
@@ -685,6 +690,7 @@ def site_remove(site):
 
         instance_operations.instance_delete(site)
         instance_operations.sync_instances()
+        execute(fabric_tasks.clear_php_cache)
 
 
 @celery.task
@@ -1262,6 +1268,7 @@ def update_settings_file(site, batch_id, count, total):
                   batch_id, count, total, site, error)
         raise
     instance_operations.sync_instances()
+    execute(fabric_tasks.clear_php_cache)
 
 
 @celery.task
@@ -1308,6 +1315,7 @@ def _instance_sync():
     Sub task for instance_heal. Sync healed instances to server
     """
     instance_operations.sync_instances()
+    execute(fabric_tasks.clear_php_cache)
 
 
 @celery.task

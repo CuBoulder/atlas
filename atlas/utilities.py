@@ -581,13 +581,14 @@ def relative_symlink(source, destination):
     os.symlink(os.path.relpath(source, os.path.dirname(destination)), destination)
 
 
-def sync(source, hosts, target):
+def sync(source, hosts, target, exclude=None):
     """Sync files, symlinks, and directories between servers
 
     Arguments:
         source {string} -- source path
         hosts {list} -- list of hosts to sync to, will be deduped by function
         target {string} -- destination path
+        exclude {string} -- directory to exclude from rsync
     """
 
     log.info('Utilities | Sync | Source - %s', source)
@@ -606,7 +607,10 @@ def sync(source, hosts, target):
         # -z compress file data during the transfer
         # trailing slash on src copies the contents, not the parent dir itself.
         # --delete delete extraneous files from dest dirs
-        cmd = 'rsync -aqz {0}/ {1}:{2} --delete'.format(source, host, target)
+        if exclude:
+            cmd = 'rsync -aqz --exclude={0} {1}/ {2}:{3} --delete'.format(exclude, source, host, target)
+        else:
+            cmd = 'rsync -aqz {0}/ {1}:{2} --delete'.format(source, host, target)
         log.debug('Utilities | Sync | Command - %s', cmd)
         try:
             output = subprocess.check_output(cmd, shell=True, stderr=subprocess.STDOUT)

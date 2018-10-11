@@ -419,7 +419,7 @@ def sync_instances():
     hosts = SERVERDEFS[ENVIRONMENT]['webservers'] + SERVERDEFS[ENVIRONMENT]['operations_server']
     # Sync INSTANCE_ROOT then WEB_ROOT
     for root in [tuple([LOCAL_INSTANCE_ROOT, INSTANCE_ROOT]), tuple([LOCAL_WEB_ROOT, WEB_ROOT])]:
-        utilities.sync(root[0], hosts, root[1], 'opcache')
+        utilities.sync(root[0], hosts, root[1], exclude='opcache')
 
 
 def switch_web_root_symlinks(instance):

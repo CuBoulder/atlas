@@ -1314,6 +1314,8 @@ def _instance_sync():
     """
     Sub task for instance_heal. Sync healed instances to server
     """
+    # Update homepage files.
+    instance_operations.switch_homepage_files()
     instance_operations.sync_instances()
     execute(fabric_tasks.clear_php_cache)
 

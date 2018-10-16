@@ -1,11 +1,14 @@
 """
 Utility functions.
 """
+import os
 import sys
 import logging
 import json
+import subprocess
+import stat
 import smtplib
-from re import compile as re_compile
+import re
 from random import choice
 from string import lowercase
 from hashlib import sha1
@@ -25,7 +28,8 @@ from atlas.config import (ATLAS_LOCATION, ALLOWED_USERS, LDAP_SERVER, LDAP_ORG_U
                           SERVICE_ACCOUNT_USERNAME, SERVICE_ACCOUNT_PASSWORD, SSL_VERIFICATION,
                           SLACK_USERNAME, SLACK_URL, SEND_NOTIFICATION_EMAILS,
                           SEND_NOTIFICATION_FROM_EMAIL, EMAIL_HOST, EMAIL_PORT, EMAIL_USERNAME,
-                          EMAIL_PASSWORD, EMAIL_USERS_EXCLUDE, SAML_AUTH)
+                          EMAIL_PASSWORD, EMAIL_USERS_EXCLUDE, SAML_AUTH, LOCAL_CODE_ROOT,
+                          INSTANCE_CODE_IGNORE_REGEX)
 from atlas.config_servers import (SERVERDEFS, API_URLS)
 
 # Setup a sub-logger. See tasks.py for longer comment.
@@ -322,6 +326,53 @@ def get_current_code(name, code_type):
         return False
 
 
+# Code related utility fucntions
+def code_path(item):
+    """
+    Determine the path for a code item
+    """
+    log.debug('Utilities | Code Path | Item - %s', item)
+    code_dir = '{0}/{1}/{2}/{2}-{3}'.format(
+        LOCAL_CODE_ROOT,
+        code_type_directory_name(item['meta']['code_type']),
+        item['meta']['name'],
+        item['meta']['version']
+    )
+    return code_dir
+
+
+def code_type_directory_name(code_type):
+    """
+    Determine the path for a code item
+    """
+    if code_type == 'library':
+        return 'libraries'
+    elif code_type == 'static':
+        return 'static'
+
+    return code_type + 's'
+
+
+def ignore_code_file(file_to_check):
+    """Check if the file matches one of the INSTANCE_CODE_IGNORE_REGEX regexes
+
+    Arguments:
+        file_to_check {string} -- filename to check
+
+    Returns:
+        bool -- TRUE if file should be ignored
+    """
+    # Join all regex expressions into a single expression with the pipe seperator.
+    # We use '?:' since we don't care which expression matches.
+    regex = '(?:%s)' % '|'.join(INSTANCE_CODE_IGNORE_REGEX)
+    log.debug('Utilities | Ignore code file | regex - %s', regex)
+    # Multiline modifier: ^ and $ to match the begin/end of each line (not only begin/end of string)
+    search = re.search(regex, file_to_check, re.MULTILINE)
+    if not search:
+        log.debug('Utilities | Ignore code file | File - %s | result - %s', file_to_check, search)
+    return bool(search)
+
+
 def get_code(name, code_type=''):
     """
     Get the code item(s) for a given name and code_type.
@@ -375,11 +426,10 @@ def post_to_slack_payload(payload):
     if SLACK_NOTIFICATIONS:
         if ENVIRONMENT == 'local':
             payload['channel'] = '@{0}'.format(SLACK_USERNAME)
-
-        # We need 'json=payload' vs. 'payload' because arguments can be passed
-        # in any order. Using json=payload instead of data=json.dumps(payload)
-        # so that we don't have to encode the dict ourselves. The Requests
-        # library will do it for us.
+        if 'username' not in payload:
+            payload['username'] = 'Atlas'
+        # Using json=payload instead of data=json.dumps(payload) so that we don't have to encode the
+        # dict ourselves. The Requests library will do it for us.
         r = requests.post(SLACK_URL, json=payload)
         if not r.ok:
             print r.text
@@ -525,3 +575,63 @@ def delete_saml_database():
     mariadb_connection.commit()
     mariadb_connection.close()
     log.info('Delete Database | saml | Success')
+
+
+def relative_symlink(source, destination):
+    os.symlink(os.path.relpath(source, os.path.dirname(destination)), destination)
+
+
+def sync(source, hosts, target, exclude=None):
+    """Sync files, symlinks, and directories between servers
+
+    Arguments:
+        source {string} -- source path
+        hosts {list} -- list of hosts to sync to, will be deduped by function
+        target {string} -- destination path
+        exclude {string} -- directory to exclude from rsync
+    """
+
+    log.info('Utilities | Sync | Source - %s', source)
+    # Use `set` to dedupe the host list, and cast it back into a list
+    hosts = list(set(hosts))
+    # Recreate readme
+    filename = source + "/README.md"
+    # Remove the existing file.
+    if os.access(filename, os.F_OK):
+        os.remove(filename)
+    f = open(filename, "w+")
+    f.write("Directory is synced from Atlas. Any changes will be overwritten.")
+    f.close()
+    for host in hosts:
+        # -a archive mode; equals -rlptgoD
+        # -z compress file data during the transfer
+        # trailing slash on src copies the contents, not the parent dir itself.
+        # --delete delete extraneous files from dest dirs
+        if exclude:
+            cmd = 'rsync -aqz --exclude={0} {1}/ {2}:{3} --delete'.format(exclude, source, host, target)
+        else:
+            cmd = 'rsync -aqz {0}/ {1}:{2} --delete'.format(source, host, target)
+        log.debug('Utilities | Sync | Command - %s', cmd)
+        try:
+            output = subprocess.check_output(cmd, shell=True, stderr=subprocess.STDOUT)
+        except subprocess.CalledProcessError as e:
+            log.error('Utilities | Sync | Failed | Return code - %s | StdErr - %s',
+                      e.returncode, e.output)
+        else:
+            log.info('Utilities | Sync | Success')
+
+
+def file_accessable_and_writable(file):
+    """Verify that a file exists and make it writable if it is not
+
+    Arguments:
+        file {string} -- Path of file to check
+    """
+    if os.access(file, os.F_OK):
+        # Check if file is writable
+        if not os.access(file, os.W_OK):
+            # Make it writable, get the current permissions and OR them together with the write bit.
+            st = os.stat(file)
+            os.chmod(file, st.st_mode | stat.S_IWRITE)
+            return True
+        return True

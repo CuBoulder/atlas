@@ -6,10 +6,13 @@ As part of deployment:
 
 - Delete unused database fields if desired: `verification` dict; `migration`, and `activation` in the `date` dict.
 - Check base URLs in config files.
+- Add `LOCAL_WEB_ROOT`, `LOCAL_CODE_ROOT`, and `LOCAL_INSTANCE_ROOT` to `config_servers.py`
 
 Resolves:
 
 - &#35;504 - Remove migration code
+- &#35;377 - Change how we deploy code
+- &#35;506 - Switch to using rsync for updating instance code
 
 ## v2.2.2
 

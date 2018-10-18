@@ -1,0 +1,14 @@
+# Back up and restore proccess
+
+```
+# Back up
+sudo cp -a /data/atlas /data/atlas_bak_20181018
+sudo cp -a /data/web/htdocs/express /data/web/htdocs/express_bak_20181018
+# Run deploy process
+
+# Restore
+sudo cp -a /data/atlas_bak_20181018 /data/atlas
+sudo cp -a /data/web/htdocs/express_bak_20181018 /data/web/htdocs/express
+sudo restorecon -r /data/atlas
+sudo restorecon -r /data/web/htdocs/express
+```

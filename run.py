@@ -106,7 +106,7 @@ def get_command(machine_name):
             instances = utilities.get_eve('sites', instance_query)
             tasks.instance_heal.delay(instances)
         elif command == 'sync_instances':
-            tasks._instance_sync.delay()
+            tasks.instance_sync.delay()
         elif command == 'correct_file_permissions':
             instance_query = 'where={"type":"express"}&max_results=2000'
             instances = utilities.get_eve('sites', instance_query)

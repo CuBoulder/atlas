@@ -1310,7 +1310,7 @@ def _instance_heal(instance):
 
 
 @celery.task
-def _instance_sync():
+def instance_sync():
     """
     Sub task for instance_heal. Sync healed instances to server
     """

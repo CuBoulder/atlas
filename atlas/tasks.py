@@ -3,6 +3,7 @@
     ~~~~~~
     Celery tasks for Atlas.
 """
+import os
 import time
 import json
 
@@ -11,14 +12,15 @@ from collections import Counter
 from bson import json_util
 from random import randint
 import requests
-from celery import Celery
+from celery import Celery, chord
 from celery.utils.log import get_task_logger
 from fabric.api import execute
+from git import GitCommandError
 
-from atlas import fabric_tasks
-from atlas import utilities
-from atlas import config_celery
-from atlas.config import (ENVIRONMENT, WEBSERVER_USER, DESIRED_SITE_COUNT, SSL_VERIFICATION)
+from atlas import fabric_tasks, utilities, config_celery
+from atlas import code_operations, instance_operations
+from atlas.config import (ENVIRONMENT, WEBSERVER_USER, DESIRED_SITE_COUNT,
+                          SSL_VERIFICATION, LOCAL_CODE_ROOT)
 from atlas.config_servers import (BASE_URLS, API_URLS)
 
 # Setup a sub-logger
@@ -70,7 +72,6 @@ class CronException(Exception):
                 # Channel will be overridden on local ENVIRONMENTs.
                 "channel": slack_channel,
                 "text": text,
-                "username": 'Atlas',
                 "attachments": [
                     {
                         "fallback": slack_fallback,
@@ -127,16 +128,21 @@ def code_deploy(item):
     :return:
     """
     log.debug('Code deploy | %s', item)
-    code_deploy_fabric_task_result = execute(fabric_tasks.code_deploy, item=item)
-    log.debug('Code Deploy | Deploy Error | %s', code_deploy_fabric_task_result)
+    try:
+        clone = code_operations.repository_clone(item)
+    except GitCommandError:
+        log.error('Code | Clone | Cannot clone repository, check URL.')
+    try:
+        checkout = code_operations.repository_checkout(item)
+    except GitCommandError:
+        log.error('Code | Checkout | Cannot checkout requested tag, check value.')
+    if item['meta']['is_current']:
+        code_operations.update_symlink_current(item)
+        log.debug('Code deploy | Symlink | Is current')
+    sync = code_operations.sync_code()
+    execute(fabric_tasks.clear_php_cache)
 
-    # The fabric_result is a dict of {hosts: result} from fabric.
-    # We loop through each row and add it to a new dict if value is not
-    # None.
-    # This uses constructor syntax https://doughellmann.com/blog/2012/11/12/the-performance-impact-of-using-dict-instead-of-in-cpython-2-7-2/.
-    errors = {k: v for k, v in code_deploy_fabric_task_result.iteritems() if v is not None}
-
-    if errors:
+    if clone or sync:
         text = 'Error'
         slack_color = 'danger'
     else:
@@ -148,7 +154,6 @@ def code_deploy(item):
     slack_payload = {
 
         "text": 'Code Deploy',
-        "username": 'Atlas',
         "attachments": [
             {
                 "fallback": slack_fallback,
@@ -159,7 +164,7 @@ def code_deploy(item):
                         "value": ENVIRONMENT,
                         "short": True
                     },
-                     {
+                    {
                         "title": "User",
                         "value": item['created_by'],
                         "short": True
@@ -174,14 +179,15 @@ def code_deploy(item):
                         "value": item['meta']['version'],
                         "short": True
                     }
+
                 ],
             }
         ],
         "user": item['created_by']
     }
 
-    if errors:
-        error_json = json.dumps(errors)
+    if clone or sync:
+        error_json = json.dumps(clone + sync)
         slack_payload['attachments'].append(
             {
                 "fallback": 'Error message',
@@ -209,51 +215,61 @@ def code_update(updated_item, original_item):
     :param original_item:
     :return:
     """
-    log.debug('Code update | %s', updated_item)
-    fab_task = execute(fabric_tasks.code_update, updated_item=updated_item,
-                       original_item=original_item)
+    log.debug('Code update | Updates - %s', updated_item)
+    # Set up some authoritative values
+    final_item = original_item.copy()
+    # updated_item has the correct meta dict
+    final_item.update(updated_item)
 
-    name = updated_item['meta']['name'] if updated_item['meta']['name'] else original_item['meta']['name']
-    version = updated_item['meta']['version'] if updated_item['meta']['version'] else original_item['meta']['version']
-    created_by = updated_item['created_by'] if updated_item['created_by'] else original_item['created_by']
+    if (updated_item['meta']['name'] != original_item['meta']['name']) or (updated_item['meta']['version'] != original_item['meta']['version']) or (updated_item['meta']['code_type'] != original_item['meta']['code_type']):
+        code_operations.repository_remove(original_item)
+        clone = code_operations.repository_clone(final_item)
+        log.debug('Code Update | Clone | %s', clone)
 
-    if False not in fab_task.values():
-        slack_title = 'Code Update - Success'
-        slack_color = 'good'
+    checkout = code_operations.repository_checkout(final_item)
+    log.debug('Code deploy | Checkout | %s', checkout)
+    if original_item['meta']['is_current']:
+        code_operations.update_symlink_current(original_item)
+        log.debug('Code deploy | Symlink | Is current')
 
-        slack_payload = {
-            "text": slack_title,
-            "username": 'Atlas',
-            "attachments": [
-                {
-                    "fallback": slack_title,
-                    "color": slack_color,
-                    "fields": [
-                        {
-                            "title": "Environment",
-                            "value": ENVIRONMENT,
-                            "short": True
-                        },
-                        {
-                            "title": "User",
-                            "value": created_by,
-                            "short": True
-                        },
-                        {
-                            "title": "Name",
-                            "value": name,
-                            "short": True
-                        },
-                        {
-                            "title": "Version",
-                            "value": version,
-                            "short": True
-                        }
-                    ],
-                }
-            ],
-        }
-        utilities.post_to_slack_payload(slack_payload)
+    sync = code_operations.sync_code()
+    execute(fabric_tasks.clear_php_cache)
+
+    slack_title = 'Code Update - Success'
+    slack_color = 'good'
+
+    slack_payload = {
+        "text": slack_title,
+        "attachments": [
+            {
+                "fallback": slack_title,
+                "color": slack_color,
+                "fields": [
+                    {
+                        "title": "Environment",
+                        "value": ENVIRONMENT,
+                        "short": True
+                    },
+                    {
+                        "title": "User",
+                        "value": final_item['created_by'],
+                        "short": True
+                    },
+                    {
+                        "title": "Name",
+                        "value": final_item['meta']['name'],
+                        "short": True
+                    },
+                    {
+                        "title": "Version",
+                        "value": final_item['meta']['version'],
+                        "short": True
+                    }
+                ],
+            }
+        ],
+    }
+    utilities.post_to_slack_payload(slack_payload)
 
 
 @celery.task
@@ -264,47 +280,89 @@ def code_remove(item):
     :param item: Item to be removed.
     :return:
     """
-    log.debug('Code remove | %s', item)
-    fab_task = execute(fabric_tasks.code_remove, item=item)
+    log.info('Code remove | %s', item)
+    code_operations.repository_remove(item)
+    if item['meta']['is_current']:
+        code_folder_current = '{0}/{1}/{2}/{2}-current'.format(
+            LOCAL_CODE_ROOT,
+            utilities.code_type_directory_name(item['meta']['code_type']),
+            item['meta']['name'])
+        os.unlink(code_folder_current)
 
-    if False not in fab_task.values():
-        # Slack notification
-        slack_title = 'Code Remove - Success'
-        slack_color = 'good'
+    sync = code_operations.sync_code()
+    execute(fabric_tasks.clear_php_cache)
 
-        slack_payload = {
-            "text": slack_title,
-            "username": 'Atlas',
-            "attachments": [
-                {
-                    "fallback": slack_title,
-                    "color": slack_color,
-                    "fields": [
-                        {
-                            "title": "Environment",
-                            "value": ENVIRONMENT,
-                            "short": True
-                        },
-                        {
-                            "title": "User",
-                            "value": item['created_by'],
-                            "short": True
-                        },
-                        {
-                            "title": "Name",
-                            "value": item['meta']['name'],
-                            "short": True
-                        },
-                        {
-                            "title": "Version",
-                            "value": item['meta']['version'],
-                            "short": True
-                        }
-                    ],
-                }
-            ],
-        }
-        utilities.post_to_slack_payload(slack_payload)
+    # Slack notification
+    slack_title = 'Code Remove - Success'
+    slack_color = 'good'
+
+    slack_payload = {
+        "text": slack_title,
+        "attachments": [
+            {
+                "fallback": slack_title,
+                "color": slack_color,
+                "fields": [
+                    {
+                        "title": "Environment",
+                        "value": ENVIRONMENT,
+                        "short": True
+                    },
+                    {
+                        "title": "User",
+                        "value": item['created_by'],
+                        "short": True
+                    },
+                    {
+                        "title": "Name",
+                        "value": item['meta']['name'],
+                        "short": True
+                    },
+                    {
+                        "title": "Version",
+                        "value": item['meta']['version'],
+                        "short": True
+                    }
+                ],
+            }
+        ],
+    }
+    utilities.post_to_slack_payload(slack_payload)
+
+
+@celery.task
+def code_heal(code_items):
+    """
+    Verify code is correctly deployed.
+    """
+    log.info('Heal | Code | Item - %s', code_items)
+    # Setup a chord. Takes a 'group' (list of tasks that should be applied in parallel) and executes
+    # another task after the group is complete.
+    # In the second task, using .si creates an immutable signature so the return value of the
+    # previous tasks will be ignored.
+    task_group = chord((_code_heal.s(code) for code in code_items['_items']), _code_sync.si())()
+
+
+@celery.task
+def _code_heal(item):
+    """
+    Sub task for code_heal. Perform actual heal operations
+    """
+    if not os.path.isdir(utilities.code_path(item)):
+        clone = code_operations.repository_clone(item)
+        log.debug('Code heal | Clone | %s', clone)
+
+    checkout = code_operations.repository_checkout(item)
+    log.debug('Code heal | Checkout | %s', checkout)
+
+
+@celery.task
+def _code_sync():
+    """
+    Sub task for code_heal. Sync healed code to server
+    """
+    sync = code_operations.sync_code()
+    execute(fabric_tasks.clear_php_cache)
 
 
 @celery.task
@@ -329,36 +387,43 @@ def site_provision(site):
     except Exception as error:
         log.error('Site provision failed | Database creation failed | %s', error)
         raise
-
+    # Create instance with requested core, profile, and packages.
     try:
-        execute(fabric_tasks.site_provision, site=site)
+        instance_operations.instance_create(site)
     except Exception as error:
         log.error('Site provision failed | Error Message | %s', error)
         raise
-
+    # Trigger rsync
+    # ? Is a way to request a sync (w/ install chained)? Sync once when creating 5 instances
+    log.info('Instance | Provision | Rsync')
+    instance_operations.sync_instances()
+    # Run install
     try:
         execute(fabric_tasks.site_install, site=site)
     except Exception as error:
         log.error('Site install failed | Error Message | %s', error)
         raise
+    # Correct file permissions
+    instance_operations.correct_fs_permissions(site)
+    instance_operations.sync_instances()
 
+    # Update instance record
     patch_payload = {'status': 'available',
                      'db_key': site['db_key'],
                      'statistics': site['statistics']}
     patch = utilities.patch_eve('sites', site['_id'], patch_payload)
+    log.debug('Site provision | Patch | %s', patch)
 
+    provision_time = time.time() - start_time
+    log.info('Atlas operational statistic | Site Provision | %s', provision_time)
+
+    # Slack notification
     profile = utilities.get_single_eve('code', site['code']['profile'])
     profile_string = profile['meta']['name'] + '-' + profile['meta']['version']
 
     core = utilities.get_single_eve('code', site['code']['core'])
     core_string = core['meta']['name'] + '-' + core['meta']['version']
 
-    provision_time = time.time() - start_time
-    log.info('Atlas operational statistic | Site Provision | %s | %s | %s ',
-             core_string, profile_string, provision_time)
-    log.debug('Site provision | Patch | %s', patch)
-
-    # Slack notification
     slack_title = 'Site provision - Success'
     slack_text = 'Site provision - Success - {0}/sites/{1}'.format(BASE_URLS[ENVIRONMENT], site['path'])
     slack_color = 'good'
@@ -366,7 +431,6 @@ def site_provision(site):
 
     slack_payload = {
         "text": slack_text,
-        "username": 'Atlas',
         "attachments": [
             {
                 "fallback": slack_text,
@@ -421,22 +485,25 @@ def site_update(site, updates, original):
     deploy_update_database = False
     deploy_drupal_cache_clear = False
     deploy_php_cache_clear = False
+    sync_instances = False
 
     if updates.get('code'):
         log.debug('Site update | ID - %s | Found code changes', site['_id'])
+        # If we are updating code, we will need to sync instances
+        sync_instances = True
         code_to_update = []
         if 'core' in updates['code']:
             log.debug('Site update | ID - %s | Found core change', site['_id'])
-            execute(fabric_tasks.site_core_update, site=site)
+            instance_operations.switch_core(site)
             code_to_update.append(str(updates['code']['core']))
         if 'profile' in updates['code']:
             log.debug('Site update | ID - %s | Found profile change | Profile - %s', site['_id'],
                       str(updates['code']['profile']))
-            execute(fabric_tasks.site_profile_update, site=site, original=original, updates=updates)
+            instance_operations.switch_profile(site)
             code_to_update.append(str(updates['code']['profile']))
         if 'package' in updates['code']:
             log.debug('Site update | ID - %s | Found package changes', site['_id'])
-            execute(fabric_tasks.site_package_update, site=site)
+            instance_operations.switch_packages(site)
             # Get a single string of all packages.
             for code in updates['code']['package']:
                 code_to_update.append(str(code))
@@ -472,28 +539,25 @@ def site_update(site, updates, original):
             email_to = ['{0}@colorado.edu'.format(site['modified_by'])]
             utilities.send_email(email_message=message, email_subject=subject, email_to=email_to)
 
-    if updates.get('verification'):
-        if updates.get('verification_status'):
-            if updates['verification']['verification_status'] == 'approved':
-                execute(fabric_tasks.update_settings_file, site=site)
-
     if updates.get('status'):
         log.debug('Site update | ID - %s | Found status change', site['_id'])
+        # If we are updating status, we will need to sync instances
+        sync_instances = True
         if updates['status'] in ['installing', 'launching', 'locked', 'take_down', 'restore']:
             if updates['status'] == 'installing':
                 log.debug('Site update | ID - %s | Status changed to installing')
                 # Set new status on site record for update to settings files.
                 site['status'] = 'installed'
-                execute(fabric_tasks.update_settings_file, site=site)
+                instance_operations.switch_settings_files(site)
                 deploy_php_cache_clear = True
                 patch_payload = '{"status": "installed"}'
             elif updates['status'] == 'launching':
                 log.debug('Site update | ID - %s | Status changed to launching', site['_id'])
                 site['status'] = 'launched'
-                execute(fabric_tasks.update_settings_file, site=site)
-                execute(fabric_tasks.site_launch, site=site)
+                instance_operations.switch_settings_files(site)
+                instance_operations.switch_web_root_symlinks(site)
                 if site['path'] == 'homepage':
-                    execute(fabric_tasks.update_homepage_files)
+                    instance_operations.switch_homepage_files()
                 deploy_drupal_cache_clear = True
                 deploy_php_cache_clear = True
                 # Set update group and status
@@ -506,13 +570,13 @@ def site_update(site, updates, original):
                 # Let fabric send patch since it is changing update group.
             elif updates['status'] == 'locked':
                 log.debug('Site update | ID - %s | Status changed to locked', site['_id'])
-                execute(fabric_tasks.update_settings_file, site=site)
+                instance_operations.switch_settings_files(site)
                 deploy_php_cache_clear = True
             elif updates['status'] == 'take_down':
                 log.debug('Site update | ID - %s | Status changed to take_down', site['_id'])
                 site['status'] = 'down'
-                execute(fabric_tasks.update_settings_file, site=site)
-                execute(fabric_tasks.site_take_down, site=site)
+                instance_operations.switch_settings_files(site)
+                instance_operations.switch_web_root_symlinks(site)
                 patch_payload = '{"status": "down"}'
                 # Soft delete stats when we take down an instance.
                 statistics_query = 'where={{"site":"{0}"}}'.format(site['_id'])
@@ -525,8 +589,8 @@ def site_update(site, updates, original):
             elif updates['status'] == 'restore':
                 log.debug('Site update | ID - %s | Status changed to restore', site['_id'])
                 site['status'] = 'installed'
-                execute(fabric_tasks.update_settings_file, site=site)
-                execute(fabric_tasks.site_restore, site=site)
+                instance_operations.switch_settings_files(site)
+                instance_operations.switch_web_root_symlinks(site)
                 deploy_update_database = True
                 patch_payload = '{"status": "installed"}'
                 deploy_drupal_cache_clear = True
@@ -537,20 +601,17 @@ def site_update(site, updates, original):
     # Don't update settings files a second time if status is changing to 'locked'.
     if updates.get('settings'):
         log.info('Found settings change | %s', updates)
+        # If we are updating the settings file, we will need to sync instances
+        sync_instances = True
         if not updates.get('status') or updates['status'] != 'locked':
-            execute(fabric_tasks.update_settings_file, site=site)
+            instance_operations.switch_settings_files(site)
             deploy_php_cache_clear = True
 
-    # Update settings file when migration is approved
-    if updates.get('verification'):
-        if updates['verification'].get('verification_status'):
-            if updates['verification']['verification_status'] == 'approved':
-                log.info('Verification approved | Instance - %s', site['_id'])
-                execute(fabric_tasks.update_settings_file, site=site)
-                deploy_php_cache_clear = True
-
     # We want to run these commands in this specific order.
-    log.info('Site Update | Closing operations commands | PHP Cache clear - %s | Registry rebuild - %s | Drush updb - %s | Drush cc - %s', deploy_php_cache_clear, deploy_registry_rebuild, deploy_update_database, deploy_drupal_cache_clear)
+    log.info('Site Update | Closing operations commands | Sync - %s | PHP Cache clear - %s | Drush rr - %s; updb - %s ; cc - %s', sync_instances, deploy_php_cache_clear, deploy_registry_rebuild, deploy_update_database, deploy_drupal_cache_clear)
+    if sync_instances:
+        instance_operations.sync_instances()
+        execute(fabric_tasks.clear_php_cache)
     if deploy_php_cache_clear:
         execute(fabric_tasks.clear_php_cache)
     if deploy_registry_rebuild:
@@ -569,7 +630,6 @@ def site_update(site, updates, original):
 
     slack_payload = {
         "text": slack_text,
-        "username": 'Atlas',
         "attachments": [
             {
                 "fallback": slack_text,
@@ -628,7 +688,9 @@ def site_remove(site):
             # Want to keep trying to remove instances even if DB remove fails.
             pass
 
-        execute(fabric_tasks.site_remove, site=site)
+        instance_operations.instance_delete(site)
+        instance_operations.sync_instances()
+        execute(fabric_tasks.clear_php_cache)
 
 
 @celery.task
@@ -679,24 +741,10 @@ def drush_command_run(site, command_list, user=None, batch_id=None, batch_count=
     log.debug('Batch ID - %s | Count - %s | Site - %s | Command - %s', batch_id, batch_count, site['sid'], command_list)
 
     if site['path'] != 'homepage':
-        # Remove this hack after migration is complete.
-        if site.get('verification'):
-            if site['verification'].get('verification_status'):
-                if site['verification']['verification_status'] == 'approved':
-                    base_url = True
-                else:
-                    base_url = False
-            else:
-                base_url = False
-        else:
-            base_url = False
-        if base_url:
-            uri = 'https://www.colorado.edu' + '/' + site['path']
-        else:
-            uri = BASE_URLS[ENVIRONMENT] + '/' + site['path']
+        uri = BASE_URLS[ENVIRONMENT] + '/' + site['path']
     else:
         # Homepage
-        uri = 'https://www.colorado.edu'
+        uri = BASE_URLS[ENVIRONMENT]
     # Use List comprehension to add user prefix and URI suffix, then join the result.
     final_command = ' && '.join([command + ' --uri={0}'.format(uri) for command in command_list])
     log.debug('Batch ID - %s | Count - %s | Final Command - %s', batch_id, batch_count, final_command)
@@ -724,8 +772,6 @@ def cron(status=None):
     log.debug('Prepare Cron | Found argument')
     # Start by eliminating legacy items.
     site_query_string.append('&where={"type":"express",')
-    if ENVIRONMENT not in ['dev', 'test']:
-        site_query_string.append('"verification.verification_status":{"$ne":"not_ready"},')
     if status:
         log.debug('Found status')
         site_query_string.append('"status":"{0}",'.format(status))
@@ -760,30 +806,14 @@ def cron_run(site):
     start_time = time.time()
 
     if site['path'] != 'homepage':
-        # Remove this hack after migration is complete.
-        if site.get('verification'):
-            if site['verification'].get('verification_status'):
-                if site['verification']['verification_status'] == 'approved':
-                    base_url = True
-                else:
-                    base_url = False
-            else:
-                base_url = False
-        else:
-            base_url = False
-
-        if base_url:
-            uri = 'https://www.colorado.edu' + '/' + site['path']
-        else:
-            uri = BASE_URLS[ENVIRONMENT] + '/' + site['path']
+        uri = BASE_URLS[ENVIRONMENT] + '/' + site['path']
     else:
-        # Homepage
-        uri = 'https://www.colorado.edu'
+        uri = BASE_URLS[ENVIRONMENT]
     log.debug('Site - %s | uri - %s', site['sid'], uri)
     command = 'drush elysia-cron run --uri={1}'.format(WEBSERVER_USER, uri)
     try:
         execute(fabric_tasks.command_run_single, site=site, command=command)
-        execute(fabric_tasks.correct_nfs_file_permissions, instance=site)
+        instance_operations.correct_fs_permissions(site)
     except CronException as error:
         log.error('Site - %s | Cron failed | Error - %s', site['sid'], error)
         raise
@@ -957,7 +987,6 @@ def verify_statistics():
             slack_link = '{0}/statistics?{1}'.format(BASE_URLS[ENVIRONMENT], site_query)
             slack_payload = {
                 "text": 'Outdated Statistics',
-                "username": 'Atlas',
                 "attachments": [
                     {
                         "fallback": slack_fallback,
@@ -1005,8 +1034,7 @@ def backup_instances_all(backup_type='routine'):
     if not statistics['_meta']['total'] == 0:
         for statistic in statistics['_items']:
             site = utilities.get_single_eve('sites', statistic['site'])
-            if site['verification']['verification_status'] == 'approved':
-                backup_create.delay(site=site, backup_type=backup_type, batch=batch_id)
+            backup_create.delay(site=site, backup_type=backup_type, batch=batch_id)
     # Report to slack
     log.info('Atlas operational statistic | Batch - %s | Type - %s | Count - %s',
              batch_id, backup_type, statistics['_meta']['total'])
@@ -1015,7 +1043,6 @@ def backup_instances_all(backup_type='routine'):
     slack_color = 'good'
     slack_payload = {
         "text": 'Backups started',
-        "username": 'Atlas',
         "attachments": [
             {
                 "fallback": slack_fallback,
@@ -1132,7 +1159,6 @@ def report_routine_backups():
     slack_color = 'good'
     slack_payload = {
         "text": 'Report - Routine backups in last 24 hours.',
-        "username": 'Atlas',
         "attachments": [
             {
                 "fallback": slack_fallback,
@@ -1234,60 +1260,76 @@ def update_settings_file(site, batch_id, count, total):
     log.info('Command | Update Settings file | Batch - %s | %s of %s | Instance - %s',
              batch_id, count, total, site)
     try:
-        execute(fabric_tasks.update_settings_file, site=site)
+        instance_operations.switch_settings_files(site)
         log.info('Command | Update Settings file | Batch - %s | %s of %s | Instance - %s | Complete',
                  batch_id, count, total, site)
     except Exception as error:
         log.error('Command | Update Settings file | Batch - %s | %s of %s | Instance - %s | Error - %s',
                   batch_id, count, total, site, error)
         raise
+    instance_operations.sync_instances()
+    execute(fabric_tasks.clear_php_cache)
 
 
 @celery.task
 def update_homepage_files():
     log.info('Command | Update Homepage files')
     try:
-        execute(fabric_tasks.update_homepage_files)
+        instance_operations.switch_homepage_files()
         log.info('Command | Update Homepage files | Complete')
     except Exception as error:
         log.error('Command | Update Homepage files | Error - %s', error)
         raise
+    instance_operations.sync_instances()
 
 
 @celery.task
-def heal_code(item):
+def instance_heal(instances):
     """
-    Verify code is correctly deployed.
+    Verify instance is correctly deployed.
     """
-    log.info('Heal | Code | Item - %s', item)
-    execute(fabric_tasks.code_heal, item=item)
+    log.info('Heal | Instances')
+    log.debug('Heal | Instances | Item - %s', instances)
+    # Setup a chord. Takes a 'group' (list of tasks that should be applied in parallel) and executes
+    # another task after the group is complete.
+    # In the second task, using .si creates an immutable signature so the return value of the
+    # previous tasks will be ignored.
+    task_group = chord((_instance_heal.s(instance) for instance in instances['_items']), _instance_sync.si())()
 
 
 @celery.task
-def heal_instance(instance, db=True, ops=False):
+def _instance_heal(instance):
     """
-    Verify code is correctly deployed.
+    Sub task for instance_heal. Perform actual heal operations
     """
-    # DB create has 'if not exists' included
-    log.info('Heal | Instance | Instance - %s', instance)
-    if db:
-        utilities.create_database(instance['sid'], instance['db_key'])
-    if ops:
-        execute(fabric_tasks.instance_rebuild_code, item=instance)
-    else:
-        execute(fabric_tasks.instance_heal, item=instance)
+    log.info('Heal | Instance | Instance - %s', instance['_id'])
+    log.debug('Heal | Instance | Instance - %s', instance)
+    # We are not removing the DB or user uploaded files during heal.
+    instance_operations.instance_delete(instance, nfs_preserve=True)
+    instance_operations.instance_create(instance, nfs_preserve=True)
 
 
 @celery.task
-def correct_nfs_file_permissions(instance):
+def _instance_sync():
+    """
+    Sub task for instance_heal. Sync healed instances to server
+    """
+    # Update homepage files.
+    instance_operations.switch_homepage_files()
+    instance_operations.sync_instances()
+    execute(fabric_tasks.clear_php_cache)
+
+
+@celery.task
+def correct_file_permissions(instance):
     """
     Verify code is correctly deployed.
     """
-    log.info('Correct NFS file permissions | Instance - %s', instance)
+    log.info('Correct file permissions | Instance - %s', instance)
     try:
-        execute(fabric_tasks.correct_nfs_file_permissions, instance=instance)
+        instance_operations.correct_fs_permissions(instance)
     except Exception as error:
-        log.error('Correct NFS file permissions | Instance - %s | Error', instance['sid'], error)
+        log.error('Correct file permissions | Instance - %s | Error', instance['sid'], error)
         raise
 
 
@@ -1302,87 +1344,13 @@ def import_backup(env, backup_id, target_instance):
         '{0}/backup/{1}'.format(API_URLS[env], backup_id), verify=SSL_VERIFICATION)
     log.info('Import Backup | Backup - %s', backup)
     target = utilities.get_single_eve('sites', target_instance)
-    # Get a host to run this on.
     utilities.create_database(target['sid'], target['db_key'])
-    execute(fabric_tasks.instance_heal, item=target)
+    instance_operations.instance_delete(target)
+    instance_operations.instance_create(target)
+    instance_operations.instance_sync()
     execute(fabric_tasks.import_backup, backup=backup.json(),
             target_instance=target, source_env=env)
-    execute(fabric_tasks.correct_nfs_file_permissions, instance=target)
-
-    migration_date = datetime.utcnow().strftime("%Y-%m-%d %H:%M:%S GMT")
-    payload = {
-        'verification': {'verification_status': 'ready'},
-        'dates': {'migration': migration_date}
-    }
-    utilities.patch_eve('sites', target['_id'], payload)
-    # Notify users that site is ready for verification
-    # if target['status'] == 'launched':
-    #     path = '{0}/{1}'.format(BASE_URLS[ENVIRONMENT], target['path'])
-    #     subject = 'Site ready to be reviewed - {0}'.format(path)
-    #     message = "Your site at {0} has been migrated to the new infrastructure and is ready to be verified. Visit https://www.colorado.edu/webcentral/site-verification-steps for details on what you need to do next.\n\nAfter you have verified your site, it will be put in queue to relaunch at your normal URL. Relaunch windows are scheduled for 9am, 11am, 1pm and 3pm. You will be placed in the next time slot based on the time you verify your site.\n\nIf you do not verify the migration within 48 hours, your site will automatically relaunch at the normal URL.\n\n- Web Express Team".format(path)
-    #     statistics = utilities.get_single_eve('statistics', target['statistics'])
-    #     site_owners = statistics['users']['email_address']['site_owner']
-    #     utilities.send_email(email_message=message, email_subject=subject, email_to=site_owners)
-
-
-@celery.task
-def migrate_routing():
-    """
-    Find instances that are verified or outside of the verification window and update the routing.
-    """
-    log.info('Migrate Routing | Start')
-    verified_instances_query = 'where={"verification.verification_status":"approved","dates.activation":{"$exists":false}}'
-    verified_instances = utilities.get_eve('sites', verified_instances_query)
-    log.debug('Migrate routing | verified_instances - %s', verified_instances)
-
-    time_ago = datetime.utcnow() - timedelta(hours=49)
-    timeout_verification_query = 'where={{"verification.verification_status":"ready","dates.migration":{{"$lte":"{0}"}}}}'.format(
-        time_ago.strftime("%Y-%m-%d %H:%M:%S GMT"))
-    timeout_verification_instances = utilities.get_eve('sites', timeout_verification_query)
-    log.debug('Migrate routing | timeout_verification - %s', timeout_verification_instances)
-
-    # Payload vars.
-    old_infra_payload = {'pool': 'pool-varnish-new'}
-    env = 'o-{0}'.format(ENVIRONMENT)
-    date = datetime.utcnow().strftime("%Y-%m-%d %H:%M:%S GMT")
-
-    if verified_instances['_meta']['total'] is not 0:
-        for instance in verified_instances['_items']:
-            statistic = utilities.get_single_eve('statistics', instance['statistics'])
-            # if statistic.get('bundles'):
-            #     if statistic['bundles'].get('cu_seo_bundle'):
-            #         if statistic['bundles']['cu_seo_bundle']['schema_version'] != 0:
-                        # Run the link checker command 10 minutes later.
-                        # Comment out for now
-                        #migration_linkchecker.apply_async([instance], countdown=600)
-            utilities.patch_eve('sites', instance['_id'], old_infra_payload, env=env)
-            new_infra_payload = {'dates':{'activation':date}}
-            utilities.patch_eve('sites', instance['_id'], new_infra_payload)
-
-    if timeout_verification_instances['_meta']['total'] is not 0:
-        for instance in timeout_verification_instances['_items']:
-            statistic = utilities.get_single_eve('statistics', instance['statistics'])
-            # if statistic.get('bundles'):
-            #     if statistic['bundles'].get('cu_seo_bundle'):
-            #         if statistic['bundles']['cu_seo_bundle']['schema_version'] != 0:
-                        # Run the link checker command 10 minutes later.
-                        # Comment out for now
-                        #migration_linkchecker.apply_async([instance], countdown=600)
-            utilities.patch_eve('sites', instance['_id'], old_infra_payload, env=env)
-            new_infra_payload = {
-                'dates':{'activation':date},
-                'verification':{'verification_status':'approved', 'verification_user':'timeout'}
-            }
-            utilities.patch_eve('sites', instance['_id'], new_infra_payload)
-
-
-@celery.task
-def migration_linkchecker(instance):
-    """
-    Run the link checker command for sites that have updated routing.
-    """
-    log.info('Migration linkchecker | Item - %s', instance)
-    execute(fabric_tasks.migration_linkchecker, instance=instance)
+    instance_operations.correct_fs_permissions(target)
 
 
 @celery.task

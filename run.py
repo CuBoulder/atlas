@@ -100,31 +100,19 @@ def get_command(machine_name):
             tasks.clear_php_cache.delay()
         elif command == 'heal_code':
             code_items = utilities.get_eve('code')
-            for code in code_items['_items']:
-                tasks.heal_code.delay(code)
-                continue
+            tasks.code_heal.delay(code_items)
         elif command == 'heal_instances':
             instance_query = 'where={"type":"express"}&max_results=2000'
             instances = utilities.get_eve('sites', instance_query)
-            for instance in instances['_items']:
-                tasks.heal_instance.delay(instance)
-                continue
-        elif command == 'heal_instances_no_db':
+            tasks.instance_heal.delay(instances)
+        elif command == 'correct_file_permissions':
             instance_query = 'where={"type":"express"}&max_results=2000'
             instances = utilities.get_eve('sites', instance_query)
             for instance in instances['_items']:
-                tasks.heal_instance.delay(instance, db=False, ops=True)
-                continue
-        elif command == 'correct_nfs_file_permissions':
-            instance_query = 'where={"type":"express"}&max_results=2000'
-            instances = utilities.get_eve('sites', instance_query)
-            for instance in instances['_items']:
-                tasks.correct_nfs_file_permissions.delay(instance)
+                tasks.correct_file_permissions.delay(instance)
                 continue
         elif command == 'backup_all_instances':
             tasks.backup_instances_all.delay(backup_type='on_demand')
-        elif command == 'migrate_routing':
-            tasks.migrate_routing.delay()
         return make_response('Command "{0}" has been initiated.'.format(command))
 
 
@@ -263,14 +251,14 @@ def heal_instance(site_id):
 @app.route('/sites/<string:site_id>/file_permissions', methods=['POST'])
 # TODO: Test what happens with 404 for site_id
 @requires_auth('sites')
-def correct_nfs_file_permissions(site_id):
+def correct_file_permissions(site_id):
     """
     Correct file permissions for an instance's NFS files.
     :param machine_name: id of instance to fix
     """
     app.logger.debug('Site | Correct file permissions | Site ID - %s', site_id)
     instance = utilities.get_single_eve('sites', site_id)
-    tasks.correct_nfs_file_permissions.delay(instance)
+    tasks.correct_file_permissions.delay(instance)
     return make_response('Fixing permissions for NFS mounted files.')
 
 
@@ -302,7 +290,7 @@ def f5():
         if 'path' in site:
             # In case a path was saved with a leading slash
             path = site["path"] if site["path"][0] == '/' else '/' + site["path"]
-            f5_list.append('"{0}" := "legacy",'.format(path))
+            f5_list.append('"{0}" := "WWWLegacy",'.format(path))
     response = make_response('\n'.join(f5_list))
     return response
 

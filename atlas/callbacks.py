@@ -8,6 +8,7 @@ from hashlib import sha1
 
 from flask import abort, g
 from bson import ObjectId
+from celery import chord
 
 from atlas import tasks
 from atlas import utilities
@@ -280,9 +281,9 @@ def on_update_code(updates, original):
         update_code = False
 
     if update_code:
-
         log.debug('code | on update | Ready to hand to Celery')
-        tasks.code_update.delay(updated_item, original)
+        # chord two tasks
+        chord(tasks.code_update.s(updated_item, original), tasks.clear_php_cache.si())()
 
 
 def on_update_sites(updates, original):
@@ -323,12 +324,6 @@ def on_update_sites(updates, original):
                     date_json = '{{"taken_down":"{0} GMT"}}'.format(updates['_updated'])
 
                 updates['dates'] = json.loads(date_json)
-
-        if updates.get('verification'):
-            if updates['verification'].get('verification_status'):
-                if updates['verification']['verification_status'] == 'approved':
-                    date_json = '{{"verification":"{0} GMT"}}'.format(updates['_updated'])
-                    updates['dates'] = json.loads(date_json)
 
         log.debug('sites | Update | Ready for Celery | Site - %s | Updates - %s', site, updates)
         tasks.site_update.delay(site=site, updates=updates, original=original)
@@ -439,7 +434,6 @@ def on_deleted_item_sites(item):
 
     slack_payload = {
         "text": slack_text,
-        "username": 'Atlas',
         "attachments": [
             {
                 "fallback": slack_text,

@@ -1294,7 +1294,7 @@ def instance_heal(instances):
     # another task after the group is complete.
     # In the second task, using .si creates an immutable signature so the return value of the
     # previous tasks will be ignored.
-    task_group = chord((_instance_heal.s(instance) for instance in instances['_items']), _instance_sync.si())()
+    task_group = chord((_instance_heal.s(instance) for instance in instances['_items']), instance_sync.si())()
 
 
 @celery.task

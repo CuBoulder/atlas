@@ -351,8 +351,9 @@ def _code_heal(item):
     if not os.path.isdir(utilities.code_path(item)):
         clone = code_operations.repository_clone(item)
         log.debug('Code heal | Clone | %s', clone)
-
     checkout = code_operations.repository_checkout(item)
+    if item['meta']['is_current']:
+        code_operations.update_symlink_current(item)
     log.debug('Code heal | Checkout | %s', checkout)
 
 

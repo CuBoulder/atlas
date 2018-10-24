@@ -351,8 +351,9 @@ def _code_heal(item):
     if not os.path.isdir(utilities.code_path(item)):
         clone = code_operations.repository_clone(item)
         log.debug('Code heal | Clone | %s', clone)
-
     checkout = code_operations.repository_checkout(item)
+    if item['meta']['is_current']:
+        code_operations.update_symlink_current(item)
     log.debug('Code heal | Checkout | %s', checkout)
 
 
@@ -1294,7 +1295,7 @@ def instance_heal(instances):
     # another task after the group is complete.
     # In the second task, using .si creates an immutable signature so the return value of the
     # previous tasks will be ignored.
-    task_group = chord((_instance_heal.s(instance) for instance in instances['_items']), _instance_sync.si())()
+    task_group = chord((_instance_heal.s(instance) for instance in instances['_items']), instance_sync.si())()
 
 
 @celery.task
@@ -1310,7 +1311,7 @@ def _instance_heal(instance):
 
 
 @celery.task
-def _instance_sync():
+def instance_sync():
     """
     Sub task for instance_heal. Sync healed instances to server
     """

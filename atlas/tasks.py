@@ -1335,15 +1335,33 @@ def correct_file_permissions(instance):
 
 
 @celery.task(time_limit=2000)
-def import_backup(env, backup_id, target_instance):
+def import_backup(env, backup_id):
+    """Download and import a backup, use the same `sid` if possible
+
+    Arguments:
+        env {string} -- Environment used as key for API_URLS
+        backup_id {string} -- Mongo ObjectID for backup to import
     """
-    Download and import a backup
-    """
-    log.info('Import Backup | Source ENV - %s | Source Backup ID - %s | Target Instance - %s',
-             env, backup_id, target_instance)
+
+    log.info('Import Backup | Source ENV - %s | Source Backup ID - %s', env, backup_id)
     backup = requests.get(
         '{0}/backup/{1}'.format(API_URLS[env], backup_id), verify=SSL_VERIFICATION)
     log.info('Import Backup | Backup - %s', backup)
+    source_instance = requests.get(
+        '{0}/sites/{1}'.format(API_URLS[env], backup['site']), verify=SSL_VERIFICATION)
+    # Check to see if the correct versions of code items exist
+    # Core
+    # Profile
+    # Packages
+
+    # Check to see if the p1 exisits
+    if utilities.get_single_eve('sites', source_instance['sid']):
+        # It does, take an available instance
+        #
+    else:
+        # It does not, provision a new instance at the requested p1. Do not do install in order to save time
+
+
     target = utilities.get_single_eve('sites', target_instance)
     utilities.create_database(target['sid'], target['db_key'])
     instance_operations.instance_delete(target)

@@ -470,7 +470,7 @@ def send_email(email_message, email_subject, email_to):
             s.quit()
 
 
-def package_import(site, env=ENVIRONMENT, metadata_list=False):
+def package_import(site, env=ENVIRONMENT, metadata=False):
     """
     Take a site record, lookup the packages, and return a list of packages to add to the instance.
     :param site: Instance to lookup
@@ -500,7 +500,7 @@ def package_import(site, env=ENVIRONMENT, metadata_list=False):
     else:
         package_list = None
 
-    if metadata_list:
+    if metadata:
         log.debug('Utilities | Package import | Return metadata list')
         return metadata_list
 
@@ -514,7 +514,7 @@ def package_import_cross_env(site, env=ENVIRONMENT):
     :return: List of package IDs
     """
     if 'package' in site['code']:
-        metadata_list = package_import(site, env=env, metadata_list=True)
+        metadata_list = package_import(site, env=env, metadata=True)
         for item in metadata_list:
             package_list = []
             current_package = package_result = get_current_code(item[0], item[1])

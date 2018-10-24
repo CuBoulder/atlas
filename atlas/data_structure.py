@@ -289,6 +289,7 @@ SITES_SCHEMA = {
     },
     'install': {
         'type': 'boolean',
+        'default': True,
         'nullable': True,
     },
 }

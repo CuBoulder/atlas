@@ -134,29 +134,45 @@ def import_backup():
     elif not backup_request.get('id'):
         abort(409, 'Error: Missing id.')
     elif backup_request['env'] not in ['local', 'dev', 'test', 'prod', 'o-dev', 'o-test', 'o-prod']:
-        abort(
-            409, 'Error: Invalid env choose from [local, dev, test, prod, o-dev, o-test, o-prod].')
-    elif not backup_request.get('target_id'):
-        abort(409, 'Error: Missing target_id.')
-    """
-    Taking this part out for now. This is required for cloning between env, not for the migration.
-    """
-    # backup_record = utilities.get_single_eve(
-    #     'backup', backup_request['id'], env=backup_request['env'])
-    # app.logger.debug('Backup | Import | Backup record - %s', backup_record)
-    # site_record = utilities.get_single_eve(
-    #     'sites', backup_record['site'], backup_record['site_version'], env=backup_request['env'])
-    # app.logger.debug('Backup | Import | Site record - %s', site_record)
+        abort(409, 'Error: Invalid env choose from [local, dev, test, prod, o-dev, o-test, o-prod]')
 
-    # try:
-    #     package_list = utilities.package_import(site_record, env=backup_request['env'])
-    # except Exception as error:
-    #     abort(500, error)
+    # We are attempting a clone, we want to clone to the original site if possible
+    # and alert if the instance already exists.
+    clone = True
+    backup_record = utilities.get_single_eve('backup', backup_request['id'], env=backup_request['env'])
+    app.logger.debug('Backup | Import | Backup record - %s', backup_record)
+    remote_site_record = utilities.get_single_eve('sites', backup_record['site'], backup_record['site_version'], env=backup_request['env'])
+    app.logger.debug('Backup | Import | Site record - %s', remote_site_record)
 
-    tasks.import_backup.delay(
-        env=backup_request['env'],
-        backup_id=backup_request['id'],
-        target_instance=backup_request['target_id'])
+    # Get a list of packages to include
+    try:
+        package_list = utilities.package_import_cross_env(remote_site_record, env=backup_request['env'])
+    except Exception as error:
+        abort(500, error)
+
+    app.logger.debug('Backup | Import | Package list - %s', package_list)
+
+    # Try to get the instance record.
+    local_site_record = utilities.get_single_eve('sites', remote_site_record['sid'])
+    app.logger.debug('Backup | Import | Local instance record - %s', local_site_record)
+    if local_site_record == 404:
+        # Create an instance with the same sid
+        payload = {
+            "status": "installed",
+            "sid": remote_site_record['sid'],
+            "code": {
+                "package": package_list
+            },
+            "install": False
+        }
+        new_instance = utilities.post_eve('sites', payload)
+        app.logger.debug('Backup | Import | New instance record - %s', new_instance)
+
+    env = backup_request['env']
+    backup_id = backup_request['id']
+    target_instance = new_instance['_id']
+
+    tasks.import_backup.apply_async([env, backup_id, target_instance, clone], countdown=30)
 
     return make_response('Attempting to import backup')
 

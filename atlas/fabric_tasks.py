@@ -22,7 +22,7 @@ from atlas.config import (ATLAS_LOCATION, ENVIRONMENT, SSH_USER, CODE_ROOT, INST
                           WEB_ROOT, WEBSERVER_USER, WEBSERVER_USER_GROUP, NFS_MOUNT_FILES_DIR,
                           BACKUP_PATH, SERVICE_ACCOUNT_USERNAME, SERVICE_ACCOUNT_PASSWORD,
                           SITE_DOWN_PATH, VARNISH_CONTROL_KEY, STATIC_WEB_PATH, SSL_VERIFICATION,
-                          CORE_WEB_ROOT_SYMLINKS, BACKUP_IMPORT_PATH, SAML_AUTH, SMTP_PASSWORD)
+                          CORE_WEB_ROOT_SYMLINKS, SAML_AUTH, SMTP_PASSWORD)
 from atlas.config_servers import (SERVERDEFS, NFS_MOUNT_LOCATION, API_URLS,
                                   VARNISH_CONTROL_TERMINALS, BASE_URLS, ATLAS_LOGGING_URLS)
 
@@ -294,8 +294,9 @@ def import_backup(backup, target_instance, source_env=ENVIRONMENT):
     site = utilities.get_single_eve('sites', backup['site'], env=source_env)
     backup_db = '{0}_{1}.sql'.format(site['sid'], backup_date)
     backup_files = '{0}_{1}.tar.gz'.format(site['sid'], backup_date)
-    backup_db_path = '{0}/{1}'.format(BACKUP_IMPORT_PATH, backup_db)
-    backup_files_path = '{0}/{1}'.format(BACKUP_IMPORT_PATH, backup_files)
+    backup_source_path = '/nfs/{0}_backups/backups'.format(source_env)
+    backup_db_path = '{0}/{1}'.format(backup_source_path, backup_db)
+    backup_files_path = '{0}/{1}'.format(backup_source_path, backup_files)
 
     put(backup_db_path, backup_tmp_dir)
     put(backup_files_path, backup_tmp_dir)

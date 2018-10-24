@@ -399,11 +399,12 @@ def site_provision(site):
     log.info('Instance | Provision | Rsync')
     instance_operations.sync_instances()
     # Run install
-    try:
-        execute(fabric_tasks.site_install, site=site)
-    except Exception as error:
-        log.error('Site install failed | Error Message | %s', error)
-        raise
+    if site.get('install') and site['install'] is not False:
+        try:
+            execute(fabric_tasks.site_install, site=site)
+        except Exception as error:
+            log.error('Site install failed | Error Message | %s', error)
+            raise
     # Correct file permissions
     instance_operations.correct_fs_permissions(site)
     instance_operations.sync_instances()
@@ -411,7 +412,8 @@ def site_provision(site):
     # Update instance record
     patch_payload = {'status': 'available',
                      'db_key': site['db_key'],
-                     'statistics': site['statistics']}
+                     'statistics': site['statistics'],
+                     'install': None}
     patch = utilities.patch_eve('sites', site['_id'], patch_payload)
     log.debug('Site provision | Patch | %s', patch)
 
@@ -1335,12 +1337,17 @@ def correct_file_permissions(instance):
 
 
 @celery.task(time_limit=2000)
-def import_backup(env, backup_id):
+# TODO: Clone is a hangover from migrations and likely doesn't quite work the way we want
+def import_backup(env, backup_id, target_instance, clone=False):
     """Download and import a backup, use the same `sid` if possible
 
     Arguments:
-        env {string} -- Environment used as key for API_URLS
-        backup_id {string} -- Mongo ObjectID for backup to import
+        env {[type]} -- [description]
+        backup_id {[type]} -- [description]
+        target_instance {[type]} -- [description]
+
+    Keyword Arguments:
+        clone {bool} -- [description] (default: {False})
     """
 
     log.info('Import Backup | Source ENV - %s | Source Backup ID - %s', env, backup_id)
@@ -1363,7 +1370,9 @@ def import_backup(env, backup_id):
 
 
     target = utilities.get_single_eve('sites', target_instance)
-    utilities.create_database(target['sid'], target['db_key'])
+    # TODO: Clone is a hangover from migrations and likely doesn't quite work the way we want
+    if not clone:
+        utilities.create_database(target['sid'], target['db_key'])
     instance_operations.instance_delete(target)
     instance_operations.instance_create(target)
     instance_operations.instance_sync()

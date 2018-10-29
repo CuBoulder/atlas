@@ -300,7 +300,10 @@ def switch_settings_files(instance):
     else:
         google_cse_csx = None
 
-    tmp_path = '{0}/{1}/tmp'.format(NFS_MOUNT_LOCATION[ENVIRONMENT], instance['sid'])
+    if NFS_MOUNT_FILES_DIR:
+        tmp_path = '{0}/{1}/tmp'.format(NFS_MOUNT_LOCATION[ENVIRONMENT], instance['sid'])
+    else:
+        tmp_path = '/tmp'
 
     settings_variables = {
         'profile': profile['meta']['name'],

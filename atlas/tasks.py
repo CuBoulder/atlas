@@ -1337,42 +1337,23 @@ def correct_file_permissions(instance):
 
 
 @celery.task(time_limit=2000)
-# TODO: Clone is a hangover from migrations and likely doesn't quite work the way we want
-def import_backup(env, backup_id, target_instance, clone=False):
-    """Download and import a backup, use the same `sid` if possible
+def import_backup(env, backup_id, target_instance):
+    """Download and import a backup
 
     Arguments:
         env {[type]} -- [description]
         backup_id {[type]} -- [description]
         target_instance {[type]} -- [description]
-
-    Keyword Arguments:
-        clone {bool} -- [description] (default: {False})
     """
 
     log.info('Import Backup | Source ENV - %s | Source Backup ID - %s', env, backup_id)
     backup = requests.get(
         '{0}/backup/{1}'.format(API_URLS[env], backup_id), verify=SSL_VERIFICATION)
     log.info('Import Backup | Backup - %s', backup)
-    source_instance = requests.get(
-        '{0}/sites/{1}'.format(API_URLS[env], backup['site']), verify=SSL_VERIFICATION)
-    # Check to see if the correct versions of code items exist
-    # Core
-    # Profile
-    # Packages
-
-    # Check to see if the p1 exisits
-    if utilities.get_single_eve('sites', source_instance['sid']):
-        # It does, take an available instance
-        #
-    else:
-        # It does not, provision a new instance at the requested p1. Do not do install in order to save time
-
 
     target = utilities.get_single_eve('sites', target_instance)
     # TODO: Clone is a hangover from migrations and likely doesn't quite work the way we want
-    if not clone:
-        utilities.create_database(target['sid'], target['db_key'])
+    utilities.create_database(target['sid'], target['db_key'])
     instance_operations.instance_delete(target)
     instance_operations.instance_create(target)
     instance_operations.instance_sync()

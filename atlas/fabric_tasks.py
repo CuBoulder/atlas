@@ -288,16 +288,13 @@ def import_backup(backup, target_instance, source_env=ENVIRONMENT):
     start_time = time()
 
     # Copy db and files
-    backup_tmp_dir = '{0}/tmp'.format(BACKUP_PATH)
-    file_date = datetime.strptime(backup['backup_date'], "%Y-%m-%d %H:%M:%S %Z")
-    backup_date = file_date.strftime("%Y-%m-%d-%H-%M-%S")
-    site = utilities.get_single_eve('sites', backup['site'], env=source_env)
-    backup_db = '{0}_{1}.sql'.format(site['sid'], backup_date)
-    backup_files = '{0}_{1}.tar.gz'.format(site['sid'], backup_date)
+    backup_db = backup['database']
+    backup_files = backup['files']
     backup_source_path = '/nfs/{0}_backups/backups'.format(source_env)
-    backup_db_path = '{0}/{1}'.format(backup_source_path, backup_db)
-    backup_files_path = '{0}/{1}'.format(backup_source_path, backup_files)
+    backup_db_path = '{0}/{1}'.format(backup_source_path, backup['database'])
+    backup_files_path = '{0}/{1}'.format(backup_source_path, backup['files'])
 
+    backup_tmp_dir = '{0}/tmp'.format(BACKUP_PATH)
     put(backup_db_path, backup_tmp_dir)
     put(backup_files_path, backup_tmp_dir)
 

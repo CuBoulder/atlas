@@ -122,19 +122,21 @@ def get_command(machine_name):
 @requires_auth('backup')
 def import_backup():
     """
-    Import a backup to a new instance.
+    Import a backup to a new instance on the current version of core, profile, and any packages
+    that are present. If a current version of a package is not available, the import will abort.
     """
     backup_request = request.get_json()
     app.logger.debug('Backup | Import | %s', backup_request)
     # Get the backup and then the site records.
+    # TODO Get the list of env from the config files.
     if not (backup_request.get('env') and backup_request.get('id')):
-        abort(409, 'Error: Missing env (local, dev, test, prod, o-dev, o-test, o-prod) and id.')
+        abort(409, 'Error: Missing env (local, dev, test, prod) and id.')
     elif not backup_request.get('env'):
-        abort(409, 'Error: Missing env (local, dev, test, prod, o-dev, o-test, o-prod).')
+        abort(409, 'Error: Missing env (local, dev, test, prod).')
     elif not backup_request.get('id'):
         abort(409, 'Error: Missing id.')
-    elif backup_request['env'] not in ['local', 'dev', 'test', 'prod', 'o-dev', 'o-test', 'o-prod']:
-        abort(409, 'Error: Invalid env choose from [local, dev, test, prod, o-dev, o-test, o-prod]')
+    elif backup_request['env'] not in ['local', 'dev', 'test', 'prod']:
+        abort(409, 'Error: Invalid env choose from [local, dev, test, prod]')
 
     # We are attempting a clone, we want to clone to the original site if possible
     # and alert if the instance already exists.

@@ -35,11 +35,11 @@ COMMANDS = [
     },
     {
         'machine_name': u'heal_instances',
-        'description': u'Check that all intances are present and the directory structure is correct. Fix any instances that are irregular.',
+        'description': u'Check that all instances are present and the directory structure is correct. Fix any instances that are irregular.',
     },
     {
-        'machine_name': u'heal_instances_no_db',
-        'description': u'Check that all intances are present and the directory structure is correct. Fix any instances that are irregular. Do not create databases.',
+        'machine_name': u'sync_instances',
+        'description': u'Sync instances to web servers.',
     },
     {
         'machine_name': u'correct_file_permissions',

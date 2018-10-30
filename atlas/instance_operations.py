@@ -300,7 +300,10 @@ def switch_settings_files(instance):
     else:
         google_cse_csx = None
 
-    tmp_path = '{0}/{1}/tmp'.format(NFS_MOUNT_LOCATION[ENVIRONMENT], instance['sid'])
+    if NFS_MOUNT_FILES_DIR:
+        tmp_path = '{0}/{1}/tmp'.format(NFS_MOUNT_LOCATION[ENVIRONMENT], instance['sid'])
+    else:
+        tmp_path = '/tmp'
 
     settings_variables = {
         'profile': profile['meta']['name'],
@@ -397,18 +400,19 @@ def correct_fs_permissions(instance):
             for directory in [os.path.join(root, d) for d in directories]:
                 # Do not need to update perms on symlinks
                 # Check if we own the file, don't try to change the perms if we don't
-                # TODO Remove ownsership check when the umask is in place.
-                if not os.path.islink(directory) and getpwuid(os.stat(directory).st_uid).pw_name == SSH_USER:
+                # TODO Remove ownership check when the umask is in place.
+                if not os.path.islink(directory):
                     # Octet mode, Python 3 compatible
                     # Include SetGID for directory
                     os.chmod(directory, 02775)
-                    os.chown(directory, -1, group.gr_gid)
+                    if not ENVIRONMENT == 'local' and getpwuid(os.stat(directory).st_uid).pw_name == SSH_USER:
+                        os.chown(directory, -1, group.gr_gid)
             for file in [os.path.join(root, f) for f in files]:
                 # Check if we own the file, don't try to change the perms if we don't
-                # TODO Remove ownsership check when the umask is in place.
-                if getpwuid(os.stat(file).st_uid).pw_name == SSH_USER:
+                # TODO Remove ownership check when the umask is in place.
+                os.chmod(file, 0o664)
+                if not ENVIRONMENT == 'local' and getpwuid(os.stat(file).st_uid).pw_name == SSH_USER:
                     # Octet mode, Python 3 compatible
-                    os.chmod(file, 0o664)
                     os.chown(file, -1, group.gr_gid)
 
 

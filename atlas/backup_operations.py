@@ -35,7 +35,8 @@ def backup_delete(item):
     log.info('Backup | Delete | Item - %s ', item['_id'])
 
     instance = utilities.get_single_eve('sites', item['site'], item['site_version'])
-    pretty_filename = '{0}_{1}'.format(instance['sid'], item['backup_date'].strftime("%Y-%m-%d-%H-%M-%S"))
+    pretty_filename = '{0}_{1}'.format(
+        instance['sid'], item['backup_date'].strftime("%Y-%m-%d-%H-%M-%S"))
     pretty_database_filename = '{0}.sql'.format(pretty_filename)
     database_path = '{0}/backups/{1}'.format(BACKUP_PATH, pretty_database_filename)
     pretty_files_filename = '{0}.tar.gz'.format(pretty_filename)

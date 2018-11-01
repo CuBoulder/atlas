@@ -187,7 +187,7 @@ def import_backup():
     backup_id = backup_request['id']
     target_instance = new_instance['_id']
 
-    tasks.import_backup.apply_async([env, backup_id, target_instance, clone], countdown=30)
+    tasks.import_backup.apply_async([env, backup_id, target_instance], countdown=30)
 
     return make_response('Attempting to import backup to {0} p1'.format(response_string))
 
@@ -267,20 +267,6 @@ def sites_statistics():
     return response
 
 
-@app.route('/sites/<string:site_id>/heal', methods=['POST'])
-# TODO: Test what happens with 404 for site_id
-@requires_auth('sites')
-def heal_instance(site_id):
-    """
-    Create a backup of an instance.
-    :param machine_name: id of instance to restore
-    """
-    app.logger.debug('Site | Heal | Site ID - %s', site_id)
-    instance = utilities.get_single_eve('sites', site_id)
-    tasks.heal_instance.delay(instance)
-    return make_response('Instance heal has been initiated.')
-
-
 @app.route('/sites/<string:site_id>/file_permissions', methods=['POST'])
 # TODO: Test what happens with 404 for site_id
 @requires_auth('sites')
@@ -305,26 +291,6 @@ def execute_drush(drush_id):
     """
     tasks.drush_prepare.delay(drush_id)
     response = make_response('Drush command started, check the logs for outcomes.')
-    return response
-
-
-@app.route('/f5')
-@requires_auth('sites')
-def f5():
-    """
-    Generate output for f5 config.
-    """
-    app.logger.debug('f5 data requested')
-    query = 'where={"type":"legacy"}&max_results=2000'
-    legacy_sites = utilities.get_eve('sites', query)
-    app.logger.debug('f5 | Site Response - %s', legacy_sites)
-    f5_list = []
-    for site in legacy_sites['_items']:
-        if 'path' in site:
-            # In case a path was saved with a leading slash
-            path = site["path"] if site["path"][0] == '/' else '/' + site["path"]
-            f5_list.append('"{0}" := "WWWLegacy",'.format(path))
-    response = make_response('\n'.join(f5_list))
     return response
 
 

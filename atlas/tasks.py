@@ -1360,7 +1360,6 @@ def import_backup(env, backup_id, target_instance):
     log.info('Import Backup | Backup - %s', backup)
 
     target = utilities.get_single_eve('sites', target_instance)
-    # TODO: Clone is a hangover from migrations and likely doesn't quite work the way we want
     utilities.create_database(target['sid'], target['db_key'])
     instance_operations.instance_delete(target)
     instance_operations.instance_create(target)

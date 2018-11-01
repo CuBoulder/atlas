@@ -159,6 +159,7 @@ def import_backup():
     local_p1_instance_record = utilities.get_single_eve('sites', remote_site_record['sid'])
     app.logger.debug('Backup | Import | Local instance record - %s', local_p1_instance_record)
     # Try to get the path record if the site is launched.
+    local_path_instance_record = False
     if remote_site_record['path'] != remote_site_record['sid']:
         query_string = 'where={{"path":"{0}"}}'.format(remote_site_record['path'])
         local_path_instance_records = utilities.get_eve('sites', query_string)

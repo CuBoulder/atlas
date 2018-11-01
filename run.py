@@ -155,14 +155,22 @@ def import_backup():
 
     app.logger.info('Backup | Import | Package list - %s', package_list)
 
-    # Try to get the instance record.
-    local_site_record = utilities.get_single_eve('sites', remote_site_record['sid'])
-    app.logger.debug('Backup | Import | Local instance record - %s', local_site_record)
-    if local_site_record == 404:
+    # Try to get the p1 record.
+    local_p1_instance_record = utilities.get_single_eve('sites', remote_site_record['sid'])
+    app.logger.debug('Backup | Import | Local instance record - %s', local_p1_instance_record)
+    # Try to get the path record if the site is launched.
+    if remote_site_record['path'] != remote_site_record['sid']:
+        query_string = 'where={{"path":"{0}"}}'.format(remote_site_record['path'])
+        local_path_instance_records = utilities.get_eve('sites', query_string)
+        if len(local_path_instance_records['items']) == 1:
+            local_path_instance_record = True
+        app.logger.debug('Backup | Import | Local path instance record - %s', local_path_instance_records)
+    if local_p1_instance_record == 404 and not local_path_instance_record:
         # Create an instance with the same sid
         payload = {
-            "status": "installed",
+            "status": remote_site_record['status'],
             "sid": remote_site_record['sid'],
+            "path": remote_site_record['path'],
             "code": {
                 "package": package_list
             },
@@ -170,7 +178,7 @@ def import_backup():
         }
         response_string = 'the same'
     else:
-        app.logger.info('Backup | Import | Instance exists - %s', local_site_record)
+        app.logger.info('Backup | Import | Instance sid or path exists')
         payload = {
             "status": "installed",
             "code": {
@@ -189,7 +197,7 @@ def import_backup():
 
     tasks.import_backup.apply_async([env, backup_id, target_instance], countdown=30)
 
-    return make_response('Attempting to import backup to {0} p1'.format(response_string))
+    return make_response('Attempting to import backup to {0} sid'.format(response_string))
 
 
 @app.route('/backup/<string:backup_id>/restore', methods=['POST'])

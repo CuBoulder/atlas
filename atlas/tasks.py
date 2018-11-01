@@ -380,7 +380,8 @@ def site_provision(site):
     # works properly.
     site['db_key'] = utilities.encrypt_string(utilities.mysql_password())
     # Set future site status for settings file creation.
-    site['status'] = 'available'
+    if site['status'] == 'pending':
+        site['status'] = 'available'
 
     try:
         log.debug('Site provision | Create database')
@@ -410,7 +411,7 @@ def site_provision(site):
     instance_operations.sync_instances()
 
     # Update instance record
-    patch_payload = {'status': 'available',
+    patch_payload = {'status': site['status'],
                      'db_key': site['db_key'],
                      'statistics': site['statistics'],
                      'install': None}

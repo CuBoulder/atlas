@@ -171,23 +171,21 @@ def import_backup():
         payload = {
             "status": remote_site_record['status'],
             "sid": remote_site_record['sid'],
-            "path": remote_site_record['path'],
-            "code": {
-                "package": package_list
-            },
-            "install": False
+            "path": remote_site_record['path']
         }
         response_string = 'the same'
     else:
         app.logger.info('Backup | Import | Instance sid or path exists')
         payload = {
-            "status": "installed",
-            "code": {
-                "package": package_list
-            },
-            "install": False
+            "status": "installed"
         }
         response_string = 'a new'
+
+    # Add package list to payload if it exists
+    if package_list:
+        payload['code'] = {"package": package_list}
+    # Set install
+    payload['install'] = False
 
     new_instance = utilities.post_eve('sites', payload)
     app.logger.debug('Backup | Import | New instance record - %s', new_instance)

@@ -515,13 +515,13 @@ def package_import_cross_env(site, env=ENVIRONMENT):
     """
     if 'package' in site['code']:
         metadata_list = package_import(site, env=env, metadata=True)
+        package_list = []
         for item in metadata_list:
-            package_list = []
             current_package = get_current_code(item[0], item[1])
             if current_package:
                 package_list.append(current_package)
             else:
-                raise Exception('There is no current version of {0}. This backup cannot be restored.'.format(package_result['meta']['name']))
+                raise Exception('There is no current version of {0}. This backup cannot be restored.'.format(item[0]))
     else:
         package_list = None
     return package_list

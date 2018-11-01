@@ -1363,7 +1363,7 @@ def import_backup(env, backup_id, target_instance):
     utilities.create_database(target['sid'], target['db_key'])
     instance_operations.instance_delete(target)
     instance_operations.instance_create(target)
-    instance_operations.instance_sync()
+    instance_operations.sync_instances()
     execute(fabric_tasks.import_backup, backup=backup.json(),
             target_instance=target, source_env=env)
     instance_operations.correct_fs_permissions(target)

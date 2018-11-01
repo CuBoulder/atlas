@@ -214,7 +214,8 @@ def post_eve(resource, payload):
     url = "{0}/{1}".format(API_URLS[ENVIRONMENT], resource)
     headers = {"content-type": "application/json"}
 
-    r = requests.post(url, auth=(SERVICE_ACCOUNT_USERNAME, SERVICE_ACCOUNT_PASSWORD), headers=headers, verify=SSL_VERIFICATION, data=json.dumps(payload))
+    r = requests.post(url, auth=(SERVICE_ACCOUNT_USERNAME, SERVICE_ACCOUNT_PASSWORD),
+                      headers=headers, verify=SSL_VERIFICATION, data=json.dumps(payload))
 
     try:
         r.raise_for_status()
@@ -452,7 +453,8 @@ def send_email(email_message, email_subject, email_to):
     :param email_subject: content of the subject line
     :param email_to: list of email address(es) the email will be sent to
     """
-    log.debug('Send email | Message - %s | Subject - %s | To - %s', email_message, email_subject, email_to)
+    log.debug('Send email | Message - %s | Subject - %s | To - %s',
+              email_message, email_subject, email_to)
     if SEND_NOTIFICATION_EMAILS:
         # We only send plaintext to prevent abuse.
         msg = MIMEText(email_message, 'plain')
@@ -484,19 +486,23 @@ def package_import(site, env=ENVIRONMENT, metadata=False):
         metadata_list = []
         for package in site['code']['package']:
             package_result = get_single_eve('code', package, env=env)
-            log.debug('Utilities | Package import | Checking for packages | Request result - %s', package_result)
+            log.debug(
+                'Utilities | Package import | Checking for packages | Request result - %s', package_result)
             if package_result['_deleted']:
                 current_package = get_current_code(
                     package_result['meta']['name'], package_result['meta']['code_type'])
-                log.debug('Utilities | Package import | Getting current version of package - %s', current_package)
+                log.debug(
+                    'Utilities | Package import | Getting current version of package - %s', current_package)
                 if current_package:
                     package_list.append(current_package)
                 else:
-                    raise Exception('There is no current version of {0}. This backup cannot be restored.'.format(package_result['meta']['name']))
+                    raise Exception('There is no current version of {0}. This backup cannot be restored.'.format(
+                        package_result['meta']['name']))
             else:
                 package_list.append(package_result['_id'])
             # Add a tuple for the metadata_list
-            metadata_list.append((package_result['meta']['name'], package_result['meta']['code_type']))
+            metadata_list.append(
+                (package_result['meta']['name'], package_result['meta']['code_type']))
     else:
         package_list = None
 
@@ -521,7 +527,8 @@ def package_import_cross_env(site, env=ENVIRONMENT):
             if current_package:
                 package_list.append(current_package)
             else:
-                raise Exception('There is no current version of {0}. This backup cannot be restored.'.format(item[0]))
+                raise Exception(
+                    'There is no current version of {0}. This backup cannot be restored.'.format(item[0]))
     else:
         package_list = None
     return package_list

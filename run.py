@@ -129,6 +129,7 @@ def import_backup():
     app.logger.debug('Backup | Import | %s', backup_request)
     # Get the backup and then the site records.
     # TODO Get the list of env from the config files.
+    # TODO Verify import is from different env, recommend restore if it is the same env.
     if not (backup_request.get('env') and backup_request.get('id')):
         abort(409, 'Error: Missing env (local, dev, test, prod) and id.')
     elif not backup_request.get('env'):
@@ -138,12 +139,11 @@ def import_backup():
     elif backup_request['env'] not in ['local', 'dev', 'test', 'prod']:
         abort(409, 'Error: Invalid env choose from [local, dev, test, prod]')
 
-    # We are attempting a clone, we want to clone to the original site if possible
-    # and alert if the instance already exists.
-    clone = True
-    backup_record = utilities.get_single_eve('backup', backup_request['id'], env=backup_request['env'])
+    backup_record = utilities.get_single_eve(
+        'backup', backup_request['id'], env=backup_request['env'])
     app.logger.debug('Backup | Import | Backup record - %s', backup_record)
-    remote_site_record = utilities.get_single_eve('sites', backup_record['site'], backup_record['site_version'], env=backup_request['env'])
+    remote_site_record = utilities.get_single_eve(
+        'sites', backup_record['site'], backup_record['site_version'], env=backup_request['env'])
     app.logger.debug('Backup | Import | Site record - %s', remote_site_record)
 
     # Get a list of packages to include
@@ -163,7 +163,8 @@ def import_backup():
     if remote_site_record['path'] != remote_site_record['sid']:
         query_string = 'where={{"path":"{0}"}}'.format(remote_site_record['path'])
         local_path_instance_records = utilities.get_eve('sites', query_string)
-        app.logger.info('Backup | Import | Local path instance record - %s', local_path_instance_records)
+        app.logger.info('Backup | Import | Local path instance record - %s',
+                        local_path_instance_records)
         if local_path_instance_records['_meta']['total'] == 1:
             local_path_instance_record = True
     if local_p1_instance_record == 404 and not local_path_instance_record:

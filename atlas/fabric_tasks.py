@@ -283,8 +283,8 @@ def backup_restore(backup_record, original_instance, package_list):
 @roles('operations_server')
 def import_backup(backup, target_instance, source_env=ENVIRONMENT):
     """
-    Connect to a single webserver, copy over the database and file backups, restore them into the
-    Drupal instance, and remove the backup files.
+    Connect to a single applicaiton server, copy over the database and file backups to a temp
+    directory, restore them into the Drupal instance, and remove the backup files.
     """
     log.info('Import Backup | Backup - %s | Target Instance - %s',
              backup, target_instance)

@@ -148,7 +148,8 @@ def import_backup():
 
     # Get a list of packages to include
     try:
-        package_list = utilities.package_import_cross_env(remote_site_record, env=backup_request['env'])
+        package_list = utilities.package_import_cross_env(
+            remote_site_record, env=backup_request['env'])
     except Exception as error:
         abort(500, error)
 
@@ -167,8 +168,20 @@ def import_backup():
             },
             "install": False
         }
-        new_instance = utilities.post_eve('sites', payload)
-        app.logger.debug('Backup | Import | New instance record - %s', new_instance)
+        response_string = 'the same'
+    else:
+        app.logger.info('Backup | Import | Instance exists - %s', local_site_record)
+        payload = {
+            "status": "installed",
+            "code": {
+                "package": package_list
+            },
+            "install": False
+        }
+        response_string = 'a new'
+
+    new_instance = utilities.post_eve('sites', payload)
+    app.logger.debug('Backup | Import | New instance record - %s', new_instance)
 
     env = backup_request['env']
     backup_id = backup_request['id']
@@ -176,7 +189,7 @@ def import_backup():
 
     tasks.import_backup.apply_async([env, backup_id, target_instance, clone], countdown=30)
 
-    return make_response('Attempting to import backup')
+    return make_response('Attempting to import backup to {0} p1'.format(response_string))
 
 
 @app.route('/backup/<string:backup_id>/restore', methods=['POST'])

@@ -18,7 +18,7 @@ from fabric.api import execute
 from git import GitCommandError
 
 from atlas import fabric_tasks, utilities, config_celery
-from atlas import code_operations, instance_operations
+from atlas import code_operations, instance_operations, backup_operations
 from atlas.config import (ENVIRONMENT, WEBSERVER_USER, DESIRED_SITE_COUNT,
                           SSL_VERIFICATION, LOCAL_CODE_ROOT)
 from atlas.config_servers import (BASE_URLS, API_URLS)
@@ -1076,6 +1076,14 @@ def backup_restore(backup_record, original_instance, package_list):
               backup_record, original_instance, package_list)
     execute(fabric_tasks.backup_restore, backup_record=backup_record,
             original_instance=original_instance, package_list=package_list)
+
+
+@celery.task
+def backup_remove(item):
+    log.debug('Backup | Delete | Item - %s', item)
+    log.info('Backup | Delete | Item ID - %s', item['_id'])
+    backup_operations.backup_delete(item)
+    log.info('Backup | Delete | Item - %s | Delete finished', item['_id'])
 
 
 @celery.task

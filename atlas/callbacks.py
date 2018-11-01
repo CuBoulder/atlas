@@ -239,6 +239,16 @@ def on_delete_item_code(item):
     tasks.code_remove.delay(item)
 
 
+def on_delete_item_backup(item):
+    """
+    Remove backup from servers right before the item is removed.
+
+    :param item:
+    """
+    log.debug('Backup | on delete | item - %s', item)
+    tasks.backup_remove.delay(item)
+
+
 def on_update_code(updates, original):
     """
     Update code on the servers as the item is updated.

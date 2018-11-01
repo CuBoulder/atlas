@@ -162,9 +162,9 @@ def import_backup():
     if remote_site_record['path'] != remote_site_record['sid']:
         query_string = 'where={{"path":"{0}"}}'.format(remote_site_record['path'])
         local_path_instance_records = utilities.get_eve('sites', query_string)
-        if len(local_path_instance_records['items']) == 1:
+        app.logger.info('Backup | Import | Local path instance record - %s', local_path_instance_records)
+        if local_path_instance_records['_meta']['total'] == 1:
             local_path_instance_record = True
-        app.logger.debug('Backup | Import | Local path instance record - %s', local_path_instance_records)
     if local_p1_instance_record == 404 and not local_path_instance_record:
         # Create an instance with the same sid
         payload = {

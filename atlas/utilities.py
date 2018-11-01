@@ -517,8 +517,7 @@ def package_import_cross_env(site, env=ENVIRONMENT):
         metadata_list = package_import(site, env=env, metadata=True)
         for item in metadata_list:
             package_list = []
-            current_package = package_result = get_current_code(item[0], item[1])
-            package_list.append(current_package)
+            current_package = get_current_code(item[0], item[1])
             if current_package:
                 package_list.append(current_package)
             else:

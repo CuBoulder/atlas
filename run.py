@@ -153,7 +153,7 @@ def import_backup():
     except Exception as error:
         abort(500, error)
 
-    app.logger.debug('Backup | Import | Package list - %s', package_list)
+    app.logger.info('Backup | Import | Package list - %s', package_list)
 
     # Try to get the instance record.
     local_site_record = utilities.get_single_eve('sites', remote_site_record['sid'])

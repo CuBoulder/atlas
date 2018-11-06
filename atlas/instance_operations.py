@@ -438,6 +438,7 @@ def switch_web_root_symlinks(instance):
     if instance['type'] == 'express':
         if instance['path'] != 'homepage':
             web_directory_path = '{0}/{1}'.format(LOCAL_WEB_ROOT, instance['path'])
+            web_directory_sid = '{0}/{1}'.format(LOCAL_WEB_ROOT, instance['sid'])
             # If the instance has a multipart path
             if "/" in instance['path']:
                 # Setup a base path, all items in 'path' except for the last one
@@ -452,9 +453,15 @@ def switch_web_root_symlinks(instance):
                 os.remove(web_directory_path)
             # If the instance is being taken down, change target for symlink
             if instance['status'] not in ['take_down', 'down']:
-                utilities.relative_symlink(instance_code_path_current, web_directory_path)
+                utilities.relative_symlink(instance_code_path_current, web_directory_sid)
+                if instance['path'] != instance['sid']:
+                    utilities.relative_symlink(
+                        instance_code_path_current, web_directory_path)
             elif instance['status'] in ['take_down', 'down']:
-                utilities.relative_symlink(SITE_DOWN_PATH, web_directory_path)
+                # Don't need to remove path symlink because it's handled above
+                log.debug('Instance | Web root symlinks | Remove symlink for sid after take down')
+                if os.path.islink(web_directory_sid):
+                    os.remove(web_directory_sid)
         elif instance['path'] == 'homepage':
             for link in CORE_WEB_ROOT_SYMLINKS:
                 source_path = "{0}/{1}".format(instance_code_path_current, link)

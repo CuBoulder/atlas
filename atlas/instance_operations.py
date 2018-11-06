@@ -418,7 +418,7 @@ def correct_fs_permissions(instance):
 
 def sync_instances(sid=None):
     """Copy the instance files to all of the relevant nodes.
-    
+
     Keyword Arguments:
         sid {string} -- p1 sid for an instance (default: {None})
     """

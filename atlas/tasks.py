@@ -397,7 +397,7 @@ def site_provision(site):
     # Trigger rsync
     # ? Is a way to request a sync (w/ install chained)? Sync once when creating 5 instances
     log.info('Instance | Provision | Rsync')
-    instance_operations.sync_instances()
+    instance_operations.sync_instances(site['sid'])
     # Run install
     try:
         execute(fabric_tasks.site_install, site=site)
@@ -406,7 +406,7 @@ def site_provision(site):
         raise
     # Correct file permissions
     instance_operations.correct_fs_permissions(site)
-    instance_operations.sync_instances()
+    instance_operations.sync_instances(site['sid'])
 
     # Update instance record
     patch_payload = {'status': 'available',
@@ -611,7 +611,7 @@ def site_update(site, updates, original):
     # We want to run these commands in this specific order.
     log.info('Site Update | Closing operations commands | Sync - %s | PHP Cache clear - %s | Drush rr - %s; updb - %s ; cc - %s', sync_instances, deploy_php_cache_clear, deploy_registry_rebuild, deploy_update_database, deploy_drupal_cache_clear)
     if sync_instances:
-        instance_operations.sync_instances()
+        instance_operations.sync_instances(site['sid'])
         execute(fabric_tasks.clear_php_cache)
     if deploy_php_cache_clear:
         execute(fabric_tasks.clear_php_cache)
@@ -690,7 +690,7 @@ def site_remove(site):
             pass
 
         instance_operations.instance_delete(site)
-        instance_operations.sync_instances()
+        instance_operations.sync_instances(site['sid'])
         execute(fabric_tasks.clear_php_cache)
 
 
@@ -1276,7 +1276,7 @@ def update_settings_file(site, batch_id, count, total):
         log.error('Command | Update Settings file | Batch - %s | %s of %s | Instance - %s | Error - %s',
                   batch_id, count, total, site, error)
         raise
-    instance_operations.sync_instances()
+    instance_operations.sync_instances(site['sid'])
     execute(fabric_tasks.clear_php_cache)
 
 
@@ -1289,7 +1289,7 @@ def update_homepage_files():
     except Exception as error:
         log.error('Command | Update Homepage files | Error - %s', error)
         raise
-    instance_operations.sync_instances()
+    instance_operations.sync_instances(site['sid'])
 
 
 @celery.task

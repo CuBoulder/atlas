@@ -323,7 +323,7 @@ def on_update_sites(updates, original):
             site['settings'] = settings
 
         if updates.get('status'):
-            if updates['status'] in ['installing', 'launching', 'take_down']:
+            if updates['status'] in ['installing', 'launching', 'take_down', 'restore']:
                 if updates['status'] == 'installing':
                     date_json = '{{"assigned":"{0} GMT"}}'.format(updates['_updated'])
                 elif updates['status'] == 'launching':
@@ -332,6 +332,8 @@ def on_update_sites(updates, original):
                     date_json = '{{"locked":""}}'
                 elif updates['status'] == 'take_down':
                     date_json = '{{"taken_down":"{0} GMT"}}'.format(updates['_updated'])
+                elif updates['status'] == 'restore':
+                    date_json = '{{"restored":"{0} GMT"}}'.format(updates['_updated'])
 
                 updates['dates'] = json.loads(date_json)
 

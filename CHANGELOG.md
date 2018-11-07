@@ -6,6 +6,7 @@ Resolves:
 
 - &#35;511 - Restore instance does not restore statistics item
 - &#35;516 - When taking down an instance, remove webroot symlink
+- &#35;523 - Increase deployment speed
 
 ## v2.3.0-alpha2
 

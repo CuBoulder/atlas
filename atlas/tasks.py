@@ -592,6 +592,10 @@ def site_update(site, updates, original):
                 site['status'] = 'installed'
                 instance_operations.switch_settings_files(site)
                 instance_operations.switch_web_root_symlinks(site)
+                statistics = utilities.get_single_eve('statistics', site['statistics'])
+                statistics_patch_payload = '{{"site": "{0}"}}'.format(site['_id'])
+                statistics_patch = utilities.patch_eve(
+                    'statistics', statistics['_id'], statistics_patch_payload)
                 deploy_update_database = True
                 patch_payload = '{"status": "installed"}'
                 deploy_drupal_cache_clear = True

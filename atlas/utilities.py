@@ -658,14 +658,13 @@ def sync(source, hosts, target, exclude=None):
             cmd = 'rsync -aqz --exclude={0} {1}/ {2}:{3} --delete'.format(exclude, source, host, target)
         else:
             cmd = 'rsync -aqz {0}/ {1}:{2} --delete'.format(source, host, target)
-        log.debug('Utilities | Sync | Command - %s', cmd)
+        log.debug('Utilities | Sync | Command - %s | Host - %s', cmd, host)
         try:
             output = subprocess.check_output(cmd, shell=True, stderr=subprocess.STDOUT)
         except subprocess.CalledProcessError as e:
-            log.error('Utilities | Sync | Failed | Return code - %s | StdErr - %s',
-                      e.returncode, e.output)
+            log.error('Utilities | Sync | Failed | Return code - %s | StdErr - %s | Host - %s', e.returncode, e.output, host)
         else:
-            log.info('Utilities | Sync | Success')
+            log.info('Utilities | Sync | Success | Host - %s', host)
 
 
 def file_accessable_and_writable(file):

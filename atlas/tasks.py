@@ -694,7 +694,7 @@ def site_remove(site):
             pass
 
         instance_operations.instance_delete(site)
-        instance_operations.sync_instances(site['sid'])
+        instance_operations.sync_instances()
         execute(fabric_tasks.clear_php_cache)
 
 

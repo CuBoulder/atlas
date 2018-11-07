@@ -416,14 +416,24 @@ def correct_fs_permissions(instance):
                     os.chown(file, -1, group.gr_gid)
 
 
-def sync_instances():
+def sync_instances(sid=None):
     """Copy the instance files to all of the relevant nodes.
+
+    Keyword Arguments:
+        sid {string} -- p1 sid for an instance (default: {None})
     """
-    log.info('Instances | Sync')
+
+    log.info('Instances | Sync | id - %s', sid)
     hosts = SERVERDEFS[ENVIRONMENT]['webservers'] + SERVERDEFS[ENVIRONMENT]['operations_server']
     # Sync INSTANCE_ROOT then WEB_ROOT
-    for root in [tuple([LOCAL_INSTANCE_ROOT, INSTANCE_ROOT]), tuple([LOCAL_WEB_ROOT, WEB_ROOT])]:
-        utilities.sync(root[0], hosts, root[1], exclude='opcache')
+    if sid:
+        sid_local_instance_root = LOCAL_INSTANCE_ROOT + '/' + sid
+        sid_instance_root = INSTANCE_ROOT + '/' + sid
+        utilities.sync(sid_local_instance_root, hosts, sid_instance_root, exclude='opcache')
+    else:
+        utilities.sync(LOCAL_INSTANCE_ROOT, hosts, INSTANCE_ROOT, exclude='opcache')
+
+    utilities.sync(LOCAL_WEB_ROOT, hosts, WEB_ROOT, exclude='opcache')
 
 
 def switch_web_root_symlinks(instance):

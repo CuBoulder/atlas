@@ -213,10 +213,16 @@ def post_eve(resource, payload):
     """
     url = "{0}/{1}".format(API_URLS[ENVIRONMENT], resource)
     headers = {"content-type": "application/json"}
+
+    r = requests.post(url, auth=(SERVICE_ACCOUNT_USERNAME, SERVICE_ACCOUNT_PASSWORD),
+                      headers=headers, verify=SSL_VERIFICATION, data=json.dumps(payload))
+
     try:
-        r = requests.post(url, auth=(SERVICE_ACCOUNT_USERNAME, SERVICE_ACCOUNT_PASSWORD), headers=headers, verify=SSL_VERIFICATION, data=json.dumps(payload))
-    except Exception as error:
-        log.error('POST to Atlas | URL - %s | Error - %s', url, error)
+        r.raise_for_status()
+    except requests.exceptions.HTTPError as e:
+        # Wasn't a 200
+        log.error('POST to Atlas | URL - %s | Error - %s', url, r.json())
+        return r.json()
 
     return r.json()
 
@@ -258,11 +264,15 @@ def get_single_eve(resource, id, version=None, env=ENVIRONMENT):
         url = "{0}/{1}/{2}".format(API_URLS[env], resource, id)
     log.debug('utilities | Get Eve Single | url - %s', url)
 
+    r = requests.get(url, auth=(SERVICE_ACCOUNT_USERNAME,
+                                SERVICE_ACCOUNT_PASSWORD), verify=SSL_VERIFICATION)
+
     try:
-        r = requests.get(url, auth=(SERVICE_ACCOUNT_USERNAME,
-                                    SERVICE_ACCOUNT_PASSWORD), verify=SSL_VERIFICATION)
-    except Exception as error:
-        log.error('GET to Single item in Atlas | URL - %s | Error - %s', url, error)
+        r.raise_for_status()
+    except requests.exceptions.HTTPError as e:
+        log.error('GET to Single item in Atlas | URL - %s | Error - %s', url, e)
+        if r.status_code == 404:
+            return 404
 
     return r.json()
 
@@ -443,7 +453,8 @@ def send_email(email_message, email_subject, email_to):
     :param email_subject: content of the subject line
     :param email_to: list of email address(es) the email will be sent to
     """
-    log.debug('Send email | Message - %s | Subject - %s | To - %s', email_message, email_subject, email_to)
+    log.debug('Send email | Message - %s | Subject - %s | To - %s',
+              email_message, email_subject, email_to)
     if SEND_NOTIFICATION_EMAILS:
         # We only send plaintext to prevent abuse.
         msg = MIMEText(email_message, 'plain')
@@ -461,27 +472,63 @@ def send_email(email_message, email_subject, email_to):
             s.quit()
 
 
-def package_import(site, env=ENVIRONMENT):
+def package_import(site, env=ENVIRONMENT, metadata=False):
     """
     Take a site record, lookup the packages, and return a list of packages to add to the instance.
-    :return: List of package IDs
+    :param site: Instance to lookup
+    :param env: Environment to look in
+    :param metadata_list: If true return a list of metadata instead of _ids
+    :return: List of package IDs or a list of hashes
     """
     if 'package' in site['code']:
         # Start with an empty list
         package_list = []
+        metadata_list = []
         for package in site['code']['package']:
             package_result = get_single_eve('code', package, env=env)
-            log.debug('Utilities | Package import | Checking for packages | Request result - %s', package_result)
+            log.debug(
+                'Utilities | Package import | Checking for packages | Request result - %s', package_result)
             if package_result['_deleted']:
                 current_package = get_current_code(
                     package_result['meta']['name'], package_result['meta']['code_type'])
-                log.debug('Utilities | Package import | Getting current version of package - %s', current_package)
+                log.debug(
+                    'Utilities | Package import | Getting current version of package - %s', current_package)
                 if current_package:
                     package_list.append(current_package)
                 else:
-                    raise Exception('There is no current version of {0}. This backup cannot be restored.'.format(package_result['meta']['name']))
+                    raise Exception('There is no current version of {0}. This backup cannot be restored.'.format(
+                        package_result['meta']['name']))
             else:
                 package_list.append(package_result['_id'])
+            # Add a tuple for the metadata_list
+            metadata_list.append(
+                (package_result['meta']['name'], package_result['meta']['code_type']))
+    else:
+        package_list = None
+
+    if metadata:
+        log.debug('Utilities | Package import | Return metadata list')
+        return metadata_list
+
+    return package_list
+
+
+def package_import_cross_env(site, env=ENVIRONMENT):
+    """
+    Take a site record from another environment, lookup the packages, and return a list of
+    equivelvant packages to add to the new instance.
+    :return: List of package IDs
+    """
+    if 'package' in site['code']:
+        metadata_list = package_import(site, env=env, metadata=True)
+        package_list = []
+        for item in metadata_list:
+            current_package = get_current_code(item[0], item[1])
+            if current_package:
+                package_list.append(current_package)
+            else:
+                raise Exception(
+                    'There is no current version of {0}. This backup cannot be restored.'.format(item[0]))
     else:
         package_list = None
     return package_list

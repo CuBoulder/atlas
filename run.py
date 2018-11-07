@@ -122,43 +122,82 @@ def get_command(machine_name):
 @requires_auth('backup')
 def import_backup():
     """
-    Import a backup to a new instance.
+    Import a backup to a new instance on the current version of core, profile, and any packages
+    that are present. If a current version of a package is not available, the import will abort.
     """
     backup_request = request.get_json()
     app.logger.debug('Backup | Import | %s', backup_request)
     # Get the backup and then the site records.
+    # TODO Get the list of env from the config files.
+    # TODO Verify import is from different env, recommend restore if it is the same env.
     if not (backup_request.get('env') and backup_request.get('id')):
-        abort(409, 'Error: Missing env (local, dev, test, prod, o-dev, o-test, o-prod) and id.')
+        abort(409, 'Error: Missing env (local, dev, test, prod) and id.')
     elif not backup_request.get('env'):
-        abort(409, 'Error: Missing env (local, dev, test, prod, o-dev, o-test, o-prod).')
+        abort(409, 'Error: Missing env (local, dev, test, prod).')
     elif not backup_request.get('id'):
         abort(409, 'Error: Missing id.')
-    elif backup_request['env'] not in ['local', 'dev', 'test', 'prod', 'o-dev', 'o-test', 'o-prod']:
-        abort(
-            409, 'Error: Invalid env choose from [local, dev, test, prod, o-dev, o-test, o-prod].')
-    elif not backup_request.get('target_id'):
-        abort(409, 'Error: Missing target_id.')
-    """
-    Taking this part out for now. This is required for cloning between env, not for the migration.
-    """
-    # backup_record = utilities.get_single_eve(
-    #     'backup', backup_request['id'], env=backup_request['env'])
-    # app.logger.debug('Backup | Import | Backup record - %s', backup_record)
-    # site_record = utilities.get_single_eve(
-    #     'sites', backup_record['site'], backup_record['site_version'], env=backup_request['env'])
-    # app.logger.debug('Backup | Import | Site record - %s', site_record)
+    elif backup_request['env'] not in ['local', 'dev', 'test', 'prod']:
+        abort(409, 'Error: Invalid env choose from [local, dev, test, prod]')
 
-    # try:
-    #     package_list = utilities.package_import(site_record, env=backup_request['env'])
-    # except Exception as error:
-    #     abort(500, error)
+    backup_record = utilities.get_single_eve(
+        'backup', backup_request['id'], env=backup_request['env'])
+    app.logger.debug('Backup | Import | Backup record - %s', backup_record)
+    remote_site_record = utilities.get_single_eve(
+        'sites', backup_record['site'], backup_record['site_version'], env=backup_request['env'])
+    app.logger.debug('Backup | Import | Site record - %s', remote_site_record)
 
-    tasks.import_backup.delay(
-        env=backup_request['env'],
-        backup_id=backup_request['id'],
-        target_instance=backup_request['target_id'])
+    # Get a list of packages to include
+    try:
+        package_list = utilities.package_import_cross_env(
+            remote_site_record, env=backup_request['env'])
+    except Exception as error:
+        abort(500, error)
 
-    return make_response('Attempting to import backup')
+    app.logger.info('Backup | Import | Package list - %s', package_list)
+
+    # Try to get the p1 record.
+    local_p1_instance_record = utilities.get_single_eve('sites', remote_site_record['sid'])
+    app.logger.debug('Backup | Import | Local instance record - %s', local_p1_instance_record)
+    # Try to get the path record if the site is launched.
+    local_path_instance_record = False
+    if remote_site_record['path'] != remote_site_record['sid']:
+        query_string = 'where={{"path":"{0}"}}'.format(remote_site_record['path'])
+        local_path_instance_records = utilities.get_eve('sites', query_string)
+        app.logger.info('Backup | Import | Local path instance record - %s',
+                        local_path_instance_records)
+        if local_path_instance_records['_meta']['total'] == 1:
+            local_path_instance_record = True
+    if local_p1_instance_record == 404 and not local_path_instance_record:
+        # Create an instance with the same sid
+        payload = {
+            "status": remote_site_record['status'],
+            "sid": remote_site_record['sid'],
+            "path": remote_site_record['path']
+        }
+        response_string = 'the same'
+    else:
+        app.logger.info('Backup | Import | Instance sid or path exists')
+        payload = {
+            "status": "installed"
+        }
+        response_string = 'a new'
+
+    # Add package list to payload if it exists
+    if package_list:
+        payload['code'] = {"package": package_list}
+    # Set install
+    payload['install'] = False
+
+    new_instance = utilities.post_eve('sites', payload)
+    app.logger.debug('Backup | Import | New instance record - %s', new_instance)
+
+    env = backup_request['env']
+    backup_id = backup_request['id']
+    target_instance = new_instance['_id']
+
+    tasks.import_backup.apply_async([env, backup_id, target_instance], countdown=30)
+
+    return make_response('Attempting to import backup to {0} sid'.format(response_string))
 
 
 @app.route('/backup/<string:backup_id>/restore', methods=['POST'])
@@ -236,20 +275,6 @@ def sites_statistics():
     return response
 
 
-@app.route('/sites/<string:site_id>/heal', methods=['POST'])
-# TODO: Test what happens with 404 for site_id
-@requires_auth('sites')
-def heal_instance(site_id):
-    """
-    Create a backup of an instance.
-    :param machine_name: id of instance to restore
-    """
-    app.logger.debug('Site | Heal | Site ID - %s', site_id)
-    instance = utilities.get_single_eve('sites', site_id)
-    tasks.heal_instance.delay(instance)
-    return make_response('Instance heal has been initiated.')
-
-
 @app.route('/sites/<string:site_id>/file_permissions', methods=['POST'])
 # TODO: Test what happens with 404 for site_id
 @requires_auth('sites')
@@ -274,26 +299,6 @@ def execute_drush(drush_id):
     """
     tasks.drush_prepare.delay(drush_id)
     response = make_response('Drush command started, check the logs for outcomes.')
-    return response
-
-
-@app.route('/f5')
-@requires_auth('sites')
-def f5():
-    """
-    Generate output for f5 config.
-    """
-    app.logger.debug('f5 data requested')
-    query = 'where={"type":"legacy"}&max_results=2000'
-    legacy_sites = utilities.get_eve('sites', query)
-    app.logger.debug('f5 | Site Response - %s', legacy_sites)
-    f5_list = []
-    for site in legacy_sites['_items']:
-        if 'path' in site:
-            # In case a path was saved with a leading slash
-            path = site["path"] if site["path"][0] == '/' else '/' + site["path"]
-            f5_list.append('"{0}" := "WWWLegacy",'.format(path))
-    response = make_response('\n'.join(f5_list))
     return response
 
 

@@ -1,5 +1,20 @@
 # Change log
 
+## v2.3.0-alpha3
+
+Resolves:
+
+- &#35;147 - Site sync - Started, can import instance to same sid if is not in use, or to new sid if it is in use.
+- &#35;511 - Restore instance does not restore statistics item
+- &#35;516 - When taking down an instance, remove webroot symlink
+- &#35;523 - Increase deployment speed
+
+## v2.3.0-alpha2
+
+Resolves:
+
+- &#35;508 - Backup files are not deleted with Atlas backup item
+
 ## v2.3.0-alpha1
 
 As part of deployment:

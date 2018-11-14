@@ -1296,7 +1296,7 @@ def update_homepage_files():
     except Exception as error:
         log.error('Command | Update Homepage files | Error - %s', error)
         raise
-    instance_operations.sync_instances(site['sid'])
+    instance_operations.sync_web_root()
 
 
 @celery.task

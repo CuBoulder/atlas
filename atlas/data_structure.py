@@ -161,11 +161,6 @@ SITES_SCHEMA = {
         'maxlength': 14,
         'unique': True,
     },
-    'type': {
-        'type': 'string',
-        'allowed':  ['express', 'legacy'],
-        'default': 'express',
-    },
     'status': {
         'type': 'string',
         'allowed': [

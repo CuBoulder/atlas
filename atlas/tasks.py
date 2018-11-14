@@ -679,26 +679,25 @@ def site_remove(site):
     :return:
     """
     log.debug('Site remove | %s', site)
-    if site['type'] == 'express':
-        # Check if stats object exists for the site first.
-        statistics_query = 'where={{"site":"{0}"}}'.format(site['_id'])
-        statistics = utilities.get_eve('statistics', statistics_query)
-        log.debug('Statistics | %s', statistics)
-        if not statistics['_meta']['total'] == 0:
-            for statistic in statistics['_items']:
-                utilities.delete_eve('statistics', statistic['_id'])
+    # Check if stats object exists for the site first.
+    statistics_query = 'where={{"site":"{0}"}}'.format(site['_id'])
+    statistics = utilities.get_eve('statistics', statistics_query)
+    log.debug('Statistics | %s', statistics)
+    if not statistics['_meta']['total'] == 0:
+        for statistic in statistics['_items']:
+            utilities.delete_eve('statistics', statistic['_id'])
 
-        try:
-            log.debug('Site remove | Delete database')
-            utilities.delete_database(site['sid'])
-        except Exception as error:
-            log.error('Site remove failed | Database remove failed | %s', error)
-            # Want to keep trying to remove instances even if DB remove fails.
-            pass
+    try:
+        log.debug('Site remove | Delete database')
+        utilities.delete_database(site['sid'])
+    except Exception as error:
+        log.error('Site remove failed | Database remove failed | %s', error)
+        # Want to keep trying to remove instances even if DB remove fails.
+        pass
 
-        instance_operations.instance_delete(site)
-        instance_operations.sync_instances()
-        execute(fabric_tasks.clear_php_cache)
+    instance_operations.instance_delete(site)
+    instance_operations.sync_instances()
+    execute(fabric_tasks.clear_php_cache)
 
 
 @celery.task
@@ -916,7 +915,7 @@ def remove_orphan_statistics():
     """
     Get a list of statistics and key them against a list of active instances.
     """
-    site_query = 'where={"type":"express"}&max_results=2000'
+    site_query = 'max_results=2000'
     sites = utilities.get_eve('sites', site_query)
     statistics_query = '&max_results=2000'
     statistics = utilities.get_eve('statistics', statistics_query)

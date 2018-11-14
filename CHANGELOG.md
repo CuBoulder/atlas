@@ -1,5 +1,12 @@
 # Change log
 
+## v2.3.0-alpha4
+
+Resolves:
+
+- &#35;533 - Remove `type` field from site schema and rest of atlas code
+
+
 ## v2.3.0-alpha3
 
 Resolves:

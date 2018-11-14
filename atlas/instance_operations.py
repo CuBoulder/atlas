@@ -452,38 +452,37 @@ def switch_web_root_symlinks(instance):
     log.info('Instances | Launch | Instance - %s', instance['_id'])
     instance_code_path_current = '{0}/{1}/current'.format(LOCAL_INSTANCE_ROOT, instance['sid'])
 
-    if instance['type'] == 'express':
-        if instance['path'] != 'homepage':
-            web_directory_path = '{0}/{1}'.format(LOCAL_WEB_ROOT, instance['path'])
-            web_directory_sid = '{0}/{1}'.format(LOCAL_WEB_ROOT, instance['sid'])
-            # If the instance has a multipart path
-            if "/" in instance['path']:
-                # Setup a base path, all items in 'path' except for the last one
-                base_path = LOCAL_WEB_ROOT + '/' + '/'.join(instance['path'].split('/')[:-1])
-                log.debug('Instance | Web root symlinks | base_path - %s', base_path)
-                # Check to see if directory exists and create it if it does not.
-                if not os.access(base_path, os.F_OK):
-                    os.makedirs(base_path)
-            # Remove symlinks if they exists
-            if os.path.islink(web_directory_path):
-                log.debug('Instance | Web root symlinks | Remove old path')
-                os.remove(web_directory_path)
-            if os.path.islink(web_directory_sid):
-                log.debug('Instance | Web root symlinks | Remove old sid')
-                os.remove(web_directory_sid)
-            # If the instance is being taken down, change target for symlink
-            if instance['status'] not in ['take_down', 'down']:
-                utilities.relative_symlink(instance_code_path_current, web_directory_sid)
-                if instance['path'] != instance['sid']:
-                    utilities.relative_symlink(
-                        instance_code_path_current, web_directory_path)
-        elif instance['path'] == 'homepage':
-            for link in CORE_WEB_ROOT_SYMLINKS:
-                source_path = "{0}/{1}".format(instance_code_path_current, link)
-                target_path = "{0}/{1}".format(LOCAL_WEB_ROOT, link)
-                if os.access(target_path, os.F_OK) and os.path.islink(target_path):
-                    os.remove(target_path)
-                utilities.relative_symlink(source_path, target_path)
+    if instance['path'] != 'homepage':
+        web_directory_path = '{0}/{1}'.format(LOCAL_WEB_ROOT, instance['path'])
+        web_directory_sid = '{0}/{1}'.format(LOCAL_WEB_ROOT, instance['sid'])
+        # If the instance has a multipart path
+        if "/" in instance['path']:
+            # Setup a base path, all items in 'path' except for the last one
+            base_path = LOCAL_WEB_ROOT + '/' + '/'.join(instance['path'].split('/')[:-1])
+            log.debug('Instance | Web root symlinks | base_path - %s', base_path)
+            # Check to see if directory exists and create it if it does not.
+            if not os.access(base_path, os.F_OK):
+                os.makedirs(base_path)
+        # Remove symlinks if they exists
+        if os.path.islink(web_directory_path):
+            log.debug('Instance | Web root symlinks | Remove old path')
+            os.remove(web_directory_path)
+        if os.path.islink(web_directory_sid):
+            log.debug('Instance | Web root symlinks | Remove old sid')
+            os.remove(web_directory_sid)
+        # If the instance is being taken down, change target for symlink
+        if instance['status'] not in ['take_down', 'down']:
+            utilities.relative_symlink(instance_code_path_current, web_directory_sid)
+            if instance['path'] != instance['sid']:
+                utilities.relative_symlink(
+                    instance_code_path_current, web_directory_path)
+    elif instance['path'] == 'homepage':
+        for link in CORE_WEB_ROOT_SYMLINKS:
+            source_path = "{0}/{1}".format(instance_code_path_current, link)
+            target_path = "{0}/{1}".format(LOCAL_WEB_ROOT, link)
+            if os.access(target_path, os.F_OK) and os.path.islink(target_path):
+                os.remove(target_path)
+            utilities.relative_symlink(source_path, target_path)
 
 
 def switch_homepage_files():

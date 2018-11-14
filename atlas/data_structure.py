@@ -163,7 +163,7 @@ SITES_SCHEMA = {
     },
     'type': {
         'type': 'string',
-        'allowed':  ['express', 'legacy'],
+        'allowed':  ['express'],
         'default': 'express',
     },
     'status': {

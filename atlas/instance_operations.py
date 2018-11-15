@@ -432,7 +432,14 @@ def sync_instances(sid=None):
         utilities.sync(sid_local_instance_root, hosts, sid_instance_root, exclude='opcache')
     else:
         utilities.sync(LOCAL_INSTANCE_ROOT, hosts, INSTANCE_ROOT, exclude='opcache')
+    sync_web_root()
 
+
+def sync_web_root():
+    """Copy web root symlinks and directories to the relevant nodes.
+    """
+    log.info('Instances | Sync | Web root')
+    hosts = SERVERDEFS[ENVIRONMENT]['webservers'] + SERVERDEFS[ENVIRONMENT]['operations_server']
     utilities.sync(LOCAL_WEB_ROOT, hosts, WEB_ROOT, exclude='opcache')
 
 

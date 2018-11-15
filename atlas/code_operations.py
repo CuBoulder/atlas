@@ -10,7 +10,7 @@ import subprocess
 import git
 
 from atlas import utilities
-from atlas.config import (ENVIRONMENT, CODE_ROOT, LOCAL_CODE_ROOT)
+from atlas.config import (ENVIRONMENT, CODE_ROOT)
 from atlas.config_servers import (SERVERDEFS)
 
 # Setup a sub-logger. See tasks.py for longer comment.
@@ -69,7 +69,7 @@ def update_symlink_current(item):
     Determine the path for a code item
     """
     code_folder_current = '{0}/{1}/{2}/{2}-current'.format(
-        LOCAL_CODE_ROOT,
+        CODE_ROOT,
         utilities.code_type_directory_name(item['meta']['code_type']),
         item['meta']['name'])
     # Remove symlink if it exists
@@ -84,4 +84,4 @@ def sync_code():
     """
     log.info('Code | Sync')
     hosts = SERVERDEFS[ENVIRONMENT]['webservers'] + SERVERDEFS[ENVIRONMENT]['operations_server']
-    utilities.sync(LOCAL_CODE_ROOT, hosts, CODE_ROOT)
+    utilities.sync(CODE_ROOT, hosts, CODE_ROOT)

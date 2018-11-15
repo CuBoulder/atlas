@@ -20,7 +20,7 @@ from git import GitCommandError
 from atlas import fabric_tasks, utilities, config_celery
 from atlas import code_operations, instance_operations, backup_operations
 from atlas.config import (ENVIRONMENT, WEBSERVER_USER, DESIRED_SITE_COUNT,
-                          SSL_VERIFICATION, LOCAL_CODE_ROOT)
+                          SSL_VERIFICATION, CODE_ROOT)
 from atlas.config_servers import (BASE_URLS, API_URLS)
 
 # Setup a sub-logger
@@ -284,7 +284,7 @@ def code_remove(item):
     code_operations.repository_remove(item)
     if item['meta']['is_current']:
         code_folder_current = '{0}/{1}/{2}/{2}-current'.format(
-            LOCAL_CODE_ROOT,
+            CODE_ROOT,
             utilities.code_type_directory_name(item['meta']['code_type']),
             item['meta']['name'])
         os.unlink(code_folder_current)

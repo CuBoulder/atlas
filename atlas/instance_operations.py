@@ -305,6 +305,11 @@ def switch_settings_files(instance):
     else:
         tmp_path = '/tmp'
 
+    if 'google_tag_client_container_id' in instance['settings']:
+        google_tag_client_container_id = instance['settings']['google_tag_client_container_id']
+    else:
+        google_tag_client_container_id = 'tacocat'
+
     settings_variables = {
         'profile': profile['meta']['name'],
         'sid': instance['sid'],
@@ -319,6 +324,7 @@ def switch_settings_files(instance):
         'siteimprove_site': siteimprove_site,
         'siteimprove_group': siteimprove_group,
         'google_cse_csx': google_cse_csx,
+        'google_tag_client_container_id': google_tag_client_container_id,
         'reverse_proxies': SERVERDEFS[ENVIRONMENT]['varnish_servers'],
         'varnish_control': VARNISH_CONTROL_TERMINALS[ENVIRONMENT],
         'varnish_control_key': VARNISH_CONTROL_KEY,

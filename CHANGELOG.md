@@ -1,5 +1,11 @@
 # Change log
 
+## v2.3.0-alpha4
+
+Resolves:
+
+- &#35;520 - Get rid of all references to load balancer or f5
+
 ## v2.3.0-alpha3
 
 Resolves:

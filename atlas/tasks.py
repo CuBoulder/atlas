@@ -776,10 +776,8 @@ def cron(status=None):
     """
     log.info('Status - %s', status)
     # Build query.
-    site_query_string = ['max_results=2000']
+    site_query_string = ['max_results=2000&where={']
     log.debug('Prepare Cron | Found argument')
-    # Start by eliminating legacy items.
-    site_query_string.append('&where={"type":"express",')
     if status:
         log.debug('Found status')
         site_query_string.append('"status":"{0}",'.format(status))

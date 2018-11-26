@@ -10,6 +10,8 @@ LOG_LOCATION = '/data/logs/atlas.log'
 
 # List of usernames that are allowed to interact with the API
 ALLOWED_USERS = ['sample_user', 'other_user']
+TEST_ACCOUNTS = ['', '', '']
+EXPRESS_URL = ''
 
 # Symlink the files directory in from a NFS mount. Mount is set in atlas.config_server.py.
 NFS_MOUNT_FILES_DIR = True
@@ -68,5 +70,6 @@ EMAIL_HOST = ''
 EMAIL_PORT = 587
 EMAIL_USERNAME = ''
 EMAIL_PASSWORD = ''
+EMAIL_SIGNATURE = ''
 # List of users to exlude from any notification emails
 EMAIL_USERS_EXCLUDE = ['test@example.com','osr-test-owner@colorado.edu','osr-test-edit-own@colorado.edu','osr-test-content@colorado.edu']

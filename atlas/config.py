@@ -19,7 +19,8 @@ from atlas.config_local import (ENVIRONMENT, SSL_KEY_FILE, SSL_CRT_FILE, ALLOWED
                                 SLACK_USERNAME, VARNISH_CONTROL_KEY, SEND_NOTIFICATION_EMAILS,
                                 SEND_NOTIFICATION_FROM_EMAIL, EMAIL_HOST, EMAIL_PORT,
                                 EMAIL_USERNAME, EMAIL_PASSWORD, LOG_LOCATION, EMAIL_USERS_EXCLUDE,
-                                STATIC_WEB_PATH, BACKUP_PATH, SMTP_PASSWORD, SAML_AUTH)
+                                STATIC_WEB_PATH, BACKUP_PATH, SMTP_PASSWORD, SAML_AUTH,
+                                EXPRESS_URL, EMAIL_SIGNATURE, TEST_ACCOUNTS)
 
 # Set Atlas location
 ATLAS_LOCATION = os.path.dirname(os.path.realpath(__file__))
@@ -68,5 +69,26 @@ if ENVIRONMENT == 'local':
     # Disable warnings about not being able to verify local certs.
     # https://urllib3.readthedocs.io/en/latest/advanced-usage.html#ssl-warnings
     urllib3.disable_warnings()
+
+# List of statuses to do inactive checks on.
+INACTIVE_STATUS = ['installed']
+# Inactive check timing and messaging.
+INACTIVE_WARNINGS = {
+    "first": {
+        "days": 30,
+        "subject": "Web Express - Inactive Website - 30 day notice",
+        "message": "It's been at least 30 days since you last edited the above Web Express instance. If you don't log in and edit this instance within the next 30 days, this instance will be removed.\n\nIf you no longer want this Web Expres instance website, ignore this message.\n\nSee https://www.colorado.edu/webcentral/inactive-instances for more information.",
+    },
+    "second": {
+        "days": 55,
+        "subject": "Web Express - Inactive Website - 55 day notice",
+        "message": "It's been at least 55 days since you last edited the above Web Express instance. If you don't log in and edit this instance within the next 5 days, this instance will be removed.\n\nIf you no longer want this Web Express website, ignore this message.\n\nSee https://www.colorado.edu/webcentral/support/inactive-web-express-sites for more information.",
+    },
+    "take_down": {
+        "days": 60,
+        "subject": "Web Express - Inactive Website - Take down notice",
+        "message": "The above Web Express instance has been taken down because it has not been edited in 60 days.\n\nSee https://www.colorado.edu/webcentral/support/inactive-web-express-sites for more information.",
+    },
+}
 
 VERSION_NUMBER = '2.3.0-alpha3'

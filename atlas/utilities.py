@@ -472,6 +472,26 @@ def send_email(email_message, email_subject, email_to):
             s.quit()
 
 
+# def send_email(message, subject, to):
+#     """
+#     Sends email. We only send plaintext to prevent abuse.
+#     :param message: content of the email to be sent.
+#     :param subject: content of the subject line
+#     :param to: list of email address(es) the email will be sent to
+#     """
+#     msg = MIMEText(message, 'plain')
+#     msg['Subject'] = subject
+#     msg['From'] = EMAIL_FROM_ADDRESS
+#     msg['To'] = ", ".join(to)
+
+#     s = smtplib.SMTP(EMAIL_HOST, EMAIL_PORT)
+#     s.starttls()
+#     s.login(EMAIL_USERNAME, EMAIL_PASSWORD)
+#     s.sendmail(EMAIL_FROM_ADDRESS, to, msg.as_string())
+#     s.quit()
+#     log.debug('Send email | %s | %s', subject, to)
+
+
 def package_import(site, env=ENVIRONMENT, metadata=False):
     """
     Take a site record, lookup the packages, and return a list of packages to add to the instance.

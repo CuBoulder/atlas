@@ -9,6 +9,7 @@ As part of deployment:
 Resolves:
 
 - &#35;512 - Collapse variables back down
+- &#35;520 - Get rid of all references to load balancer or f5
 
 
 ## v2.3.0-alpha3
@@ -19,6 +20,10 @@ Resolves:
 - &#35;511 - Restore instance does not restore statistics item
 - &#35;516 - When taking down an instance, remove webroot symlink
 - &#35;523 - Increase deployment speed
+  
+### Hotfix
+
+- &#35;529 - Cannot deploy homepage files
 
 ## v2.3.0-alpha2
 

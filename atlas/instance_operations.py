@@ -308,7 +308,7 @@ def switch_settings_files(instance):
     if 'google_tag_client_container_id' in instance['settings']:
         google_tag_client_container_id = instance['settings']['google_tag_client_container_id']
     else:
-        google_tag_client_container_id = 'tacocat'
+        google_tag_client_container_id = None
 
     settings_variables = {
         'profile': profile['meta']['name'],

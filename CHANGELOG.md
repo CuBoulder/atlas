@@ -2,10 +2,16 @@
 
 ## v2.3.0-alpha4
 
+As part of deployment:
+
+- Remove `LOCAL_WEB_ROOT`, `LOCAL_CODE_ROOT`, and `LOCAL_INSTANCE_ROOT` to `config_servers.py`
+
 Resolves:
 
 - &#35;533 - Remove `type` field from site schema and rest of atlas code
+- &#35;512 - Collapse variables back down
 - &#35;520 - Get rid of all references to load balancer or f5
+
 
 ## v2.3.0-alpha3
 

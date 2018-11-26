@@ -28,7 +28,7 @@ from atlas.config import (ATLAS_LOCATION, ALLOWED_USERS, LDAP_SERVER, LDAP_ORG_U
                           SERVICE_ACCOUNT_USERNAME, SERVICE_ACCOUNT_PASSWORD, SSL_VERIFICATION,
                           SLACK_USERNAME, SLACK_URL, SEND_NOTIFICATION_EMAILS,
                           SEND_NOTIFICATION_FROM_EMAIL, EMAIL_HOST, EMAIL_PORT, EMAIL_USERNAME,
-                          EMAIL_PASSWORD, EMAIL_USERS_EXCLUDE, SAML_AUTH, LOCAL_CODE_ROOT,
+                          EMAIL_PASSWORD, EMAIL_USERS_EXCLUDE, SAML_AUTH,
                           INSTANCE_CODE_IGNORE_REGEX)
 from atlas.config_servers import (SERVERDEFS, API_URLS)
 
@@ -343,7 +343,7 @@ def code_path(item):
     """
     log.debug('Utilities | Code Path | Item - %s', item)
     code_dir = '{0}/{1}/{2}/{2}-{3}'.format(
-        LOCAL_CODE_ROOT,
+        CODE_ROOT,
         code_type_directory_name(item['meta']['code_type']),
         item['meta']['name'],
         item['meta']['version']

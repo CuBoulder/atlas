@@ -27,11 +27,11 @@ from pwd import getpwuid
 from jinja2 import Environment, PackageLoader
 
 from atlas import utilities
-from atlas.config import (ENVIRONMENT, INSTANCE_ROOT, LOCAL_INSTANCE_ROOT, WEB_ROOT, LOCAL_WEB_ROOT,
-                          CORE_WEB_ROOT_SYMLINKS, NFS_MOUNT_FILES_DIR, NFS_MOUNT_LOCATION,
-                          SAML_AUTH, SERVICE_ACCOUNT_USERNAME, SERVICE_ACCOUNT_PASSWORD,
-                          VARNISH_CONTROL_KEY, SMTP_PASSWORD, WEBSERVER_USER_GROUP, ATLAS_LOCATION,
-                          SITE_DOWN_PATH, SSH_USER)
+from atlas.config import (ENVIRONMENT, INSTANCE_ROOT, WEB_ROOT, CORE_WEB_ROOT_SYMLINKS,
+                          NFS_MOUNT_FILES_DIR, NFS_MOUNT_LOCATION, SAML_AUTH,
+                          SERVICE_ACCOUNT_USERNAME, SERVICE_ACCOUNT_PASSWORD, VARNISH_CONTROL_KEY,
+                          SMTP_PASSWORD, WEBSERVER_USER_GROUP, ATLAS_LOCATION, SITE_DOWN_PATH,
+                          SSH_USER)
 from atlas.config_servers import (SERVERDEFS, ATLAS_LOGGING_URLS, API_URLS,
                                   VARNISH_CONTROL_TERMINALS, BASE_URLS)
 
@@ -48,11 +48,11 @@ def instance_create(instance, nfs_preserve=False):
     log.info('Instance | Provision | Instance ID - %s', instance['_id'])
     log.debug('Instance | Provision | Instance ID - %s | Instance - %s', instance['_id'], instance)
     # Setup path variables
-    instance_code_path_sid = '{0}/{1}/{1}'.format(LOCAL_INSTANCE_ROOT, instance['sid'])
-    instance_code_path_current = '{0}/{1}/current'.format(LOCAL_INSTANCE_ROOT, instance['sid'])
-    instance_web_path_sid = '{0}/{1}'.format(LOCAL_WEB_ROOT, instance['sid'])
+    instance_code_path_sid = '{0}/{1}/{1}'.format(INSTANCE_ROOT, instance['sid'])
+    instance_code_path_current = '{0}/{1}/current'.format(INSTANCE_ROOT, instance['sid'])
+    instance_web_path_sid = '{0}/{1}'.format(WEB_ROOT, instance['sid'])
     log.debug('Instance | Provision | Instance sid path - %s', instance_code_path_sid)
-    # Create structure in LOCAL_INSTANCE_ROOT
+    # Create structure in INSTANCE_ROOT
     if os.path.exists(instance_code_path_sid):
         raise Exception('Destinaton directory already exists')
     os.makedirs(instance_code_path_sid)
@@ -108,10 +108,10 @@ def instance_delete(instance, nfs_preserve=False):
     log.info('Instance | Delete | Instance ID - %s', instance['_id'])
     log.debug('Instance | Delete | Instance ID - %s | Instance - %s', instance['_id'], instance)
     # Setup path variables
-    instance_code_path = '{0}/{1}'.format(LOCAL_INSTANCE_ROOT, instance['sid'])
-    instance_code_path_current = '{0}/{1}/current'.format(LOCAL_INSTANCE_ROOT, instance['sid'])
-    instance_web_path_sid = '{0}/{1}'.format(LOCAL_WEB_ROOT, instance['sid'])
-    instance_web_path_path = '{0}/{1}'.format(LOCAL_WEB_ROOT, instance['path'])
+    instance_code_path = '{0}/{1}'.format(INSTANCE_ROOT, instance['sid'])
+    instance_code_path_current = '{0}/{1}/current'.format(INSTANCE_ROOT, instance['sid'])
+    instance_web_path_sid = '{0}/{1}'.format(WEB_ROOT, instance['sid'])
+    instance_web_path_path = '{0}/{1}'.format(WEB_ROOT, instance['path'])
     # Remove symlinks and directories
     symlinks_to_remove = [instance_code_path_current, instance_web_path_sid, instance_web_path_path]
     # Directories to remove
@@ -125,7 +125,7 @@ def instance_delete(instance, nfs_preserve=False):
         symlinks_to_remove.append(instance_code_path + '/sites/default/files')
     # If the settings file exists, change permissions to allow us to delete the file.
     file_destination = "{0}/{1}/{1}/sites/default/settings.php".format(
-        LOCAL_INSTANCE_ROOT, instance['sid'])
+        INSTANCE_ROOT, instance['sid'])
     # Check to see if file exists and is writable.
     utilities.file_accessable_and_writable(file_destination)
     # Remove symlinks
@@ -150,7 +150,7 @@ def switch_core(instance):
     core = utilities.get_single_eve('code', instance['code']['core'])
     # Setup variables
     core_path = utilities.code_path(core)
-    instance_code_path_sid = '{0}/{1}/{1}'.format(LOCAL_INSTANCE_ROOT, instance['sid'])
+    instance_code_path_sid = '{0}/{1}/{1}'.format(INSTANCE_ROOT, instance['sid'])
     # Get a list of files in the Core source directory
     core_files = os.listdir(core_path)
     # Get a list of files in the Instance target directory
@@ -227,7 +227,7 @@ def switch_profile(instance):
     profile = utilities.get_single_eve('code', instance['code']['profile'])
     # Setup variables
     profile_path = utilities.code_path(profile)
-    instance_code_path_sid = '{0}/{1}/{1}'.format(LOCAL_INSTANCE_ROOT, instance['sid'])
+    instance_code_path_sid = '{0}/{1}/{1}'.format(INSTANCE_ROOT, instance['sid'])
     destination_path = instance_code_path_sid + '/profiles/' + profile['meta']['name']
     # Remove old symlink
     if os.path.islink(destination_path):
@@ -245,7 +245,7 @@ def switch_packages(instance):
     """
     log.info('Instance | Switch package | Instance - %s', instance['sid'])
     log.debug('Instance | Switch package | Instance - %s', instance)
-    instance_code_path_sid = '{0}/{1}/{1}'.format(LOCAL_INSTANCE_ROOT, instance['sid'])
+    instance_code_path_sid = '{0}/{1}/{1}'.format(INSTANCE_ROOT, instance['sid'])
     # Get rid of old symlinks
     # List sites/all/{modules|themes|libraries} and remove all symlinks
     for package_type_path in ['modules', 'themes', 'libraries']:
@@ -279,7 +279,7 @@ def switch_settings_files(instance):
 
     # If the settings file exists, change permissions to allow us to update the template.
     file_destination = "{0}/{1}/{1}/sites/default/settings.php".format(
-        LOCAL_INSTANCE_ROOT, instance['sid'])
+        INSTANCE_ROOT, instance['sid'])
     # Check to see if file exists and is writable.
     utilities.file_accessable_and_writable(file_destination)
 
@@ -357,7 +357,7 @@ def correct_fs_permissions(instance):
         instance {dict} -- instance object
     """
     log.info('Instance | Correct File permissions | Instance - %s', instance['sid'])
-    instance_path = "{0}/{1}/{1}".format(LOCAL_INSTANCE_ROOT, instance['sid'])
+    instance_path = "{0}/{1}/{1}".format(INSTANCE_ROOT, instance['sid'])
     # Walk produces 3-tuple for each dir or file, does not follow symlinks.
     # Lookup gid (Group ID), `chown` uses IDs for user and group
     group = getgrnam(WEBSERVER_USER_GROUP)
@@ -427,11 +427,11 @@ def sync_instances(sid=None):
     hosts = SERVERDEFS[ENVIRONMENT]['webservers'] + SERVERDEFS[ENVIRONMENT]['operations_server']
     # Sync INSTANCE_ROOT then WEB_ROOT
     if sid:
-        sid_local_instance_root = LOCAL_INSTANCE_ROOT + '/' + sid
+        sid_local_instance_root = INSTANCE_ROOT + '/' + sid
         sid_instance_root = INSTANCE_ROOT + '/' + sid
         utilities.sync(sid_local_instance_root, hosts, sid_instance_root, exclude='opcache')
     else:
-        utilities.sync(LOCAL_INSTANCE_ROOT, hosts, INSTANCE_ROOT, exclude='opcache')
+        utilities.sync(INSTANCE_ROOT, hosts, INSTANCE_ROOT, exclude='opcache')
     sync_web_root()
 
 
@@ -440,7 +440,7 @@ def sync_web_root():
     """
     log.info('Instances | Sync | Web root')
     hosts = SERVERDEFS[ENVIRONMENT]['webservers'] + SERVERDEFS[ENVIRONMENT]['operations_server']
-    utilities.sync(LOCAL_WEB_ROOT, hosts, WEB_ROOT, exclude='opcache')
+    utilities.sync(WEB_ROOT, hosts, WEB_ROOT, exclude='opcache')
 
 
 def switch_web_root_symlinks(instance):
@@ -450,46 +450,47 @@ def switch_web_root_symlinks(instance):
         instance {dict} -- instance object
     """
     log.info('Instances | Launch | Instance - %s', instance['_id'])
-    instance_code_path_current = '{0}/{1}/current'.format(LOCAL_INSTANCE_ROOT, instance['sid'])
+    instance_code_path_current = '{0}/{1}/current'.format(INSTANCE_ROOT, instance['sid'])
 
-    if instance['path'] != 'homepage':
-        web_directory_path = '{0}/{1}'.format(LOCAL_WEB_ROOT, instance['path'])
-        web_directory_sid = '{0}/{1}'.format(LOCAL_WEB_ROOT, instance['sid'])
-        # If the instance has a multipart path
-        if "/" in instance['path']:
-            # Setup a base path, all items in 'path' except for the last one
-            base_path = LOCAL_WEB_ROOT + '/' + '/'.join(instance['path'].split('/')[:-1])
-            log.debug('Instance | Web root symlinks | base_path - %s', base_path)
-            # Check to see if directory exists and create it if it does not.
-            if not os.access(base_path, os.F_OK):
-                os.makedirs(base_path)
-        # Remove symlinks if they exists
-        if os.path.islink(web_directory_path):
-            log.debug('Instance | Web root symlinks | Remove old path')
-            os.remove(web_directory_path)
-        if os.path.islink(web_directory_sid):
-            log.debug('Instance | Web root symlinks | Remove old sid')
-            os.remove(web_directory_sid)
-        # If the instance is being taken down, change target for symlink
-        if instance['status'] not in ['take_down', 'down']:
-            utilities.relative_symlink(instance_code_path_current, web_directory_sid)
-            if instance['path'] != instance['sid']:
-                utilities.relative_symlink(
-                    instance_code_path_current, web_directory_path)
-    elif instance['path'] == 'homepage':
-        for link in CORE_WEB_ROOT_SYMLINKS:
-            source_path = "{0}/{1}".format(instance_code_path_current, link)
-            target_path = "{0}/{1}".format(LOCAL_WEB_ROOT, link)
-            if os.access(target_path, os.F_OK) and os.path.islink(target_path):
-                os.remove(target_path)
-            utilities.relative_symlink(source_path, target_path)
+    if instance['type'] == 'express':
+        if instance['path'] != 'homepage':
+            web_directory_path = '{0}/{1}'.format(WEB_ROOT, instance['path'])
+            web_directory_sid = '{0}/{1}'.format(WEB_ROOT, instance['sid'])
+            # If the instance has a multipart path
+            if "/" in instance['path']:
+                # Setup a base path, all items in 'path' except for the last one
+                base_path = WEB_ROOT + '/' + '/'.join(instance['path'].split('/')[:-1])
+                log.debug('Instance | Web root symlinks | base_path - %s', base_path)
+                # Check to see if directory exists and create it if it does not.
+                if not os.access(base_path, os.F_OK):
+                    os.makedirs(base_path)
+            # Remove symlinks if they exists
+            if os.path.islink(web_directory_path):
+                log.debug('Instance | Web root symlinks | Remove old path')
+                os.remove(web_directory_path)
+            if os.path.islink(web_directory_sid):
+                log.debug('Instance | Web root symlinks | Remove old sid')
+                os.remove(web_directory_sid)
+            # If the instance is being taken down, change target for symlink
+            if instance['status'] not in ['take_down', 'down']:
+                utilities.relative_symlink(instance_code_path_current, web_directory_sid)
+                if instance['path'] != instance['sid']:
+                    utilities.relative_symlink(
+                        instance_code_path_current, web_directory_path)
+        elif instance['path'] == 'homepage':
+            for link in CORE_WEB_ROOT_SYMLINKS:
+                source_path = "{0}/{1}".format(instance_code_path_current, link)
+                target_path = "{0}/{1}".format(WEB_ROOT, link)
+                if os.access(target_path, os.F_OK) and os.path.islink(target_path):
+                    os.remove(target_path)
+                utilities.relative_symlink(source_path, target_path)
 
 
 def switch_homepage_files():
     """Replace robots.txt and .htaccess for the homepage
     """
-    files = [tuple([ATLAS_LOCATION + '/files/homepage_robots', LOCAL_WEB_ROOT + '/robots.txt']),
-             tuple([ATLAS_LOCATION + '/files/homepage_htaccess', LOCAL_WEB_ROOT + '/.htaccess'])]
+    files = [tuple([ATLAS_LOCATION + '/files/homepage_robots', WEB_ROOT + '/robots.txt']),
+             tuple([ATLAS_LOCATION + '/files/homepage_htaccess', WEB_ROOT + '/.htaccess'])]
     for file in files:
         if os.access(file[1], os.F_OK):
             os.remove(file[1])

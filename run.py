@@ -248,8 +248,7 @@ def sites_statistics():
     Give some basic aggregations about site objects
     """
     app.logger.debug('Sites | Aggregations')
-    express_result = utilities.get_eve('sites','max_results=2000')
-    legacy_result = utilities.get_eve('sites','where={"type":"legacy","f5only":false}&max_results=2000')
+    express_result = utilities.get_eve('sites', 'max_results=2000')
     app.logger.debug('Sites | Aggregations | Express Result - %s', express_result)
     # Express sites
     express_sites = express_result['_items']

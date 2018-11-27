@@ -8,6 +8,7 @@ As part of deployment:
 
 Resolves:
 
+- &#35;533 - Remove `type` field from site schema and rest of atlas code
 - &#35;512 - Collapse variables back down
 - &#35;520 - Get rid of all references to load balancer or f5
 

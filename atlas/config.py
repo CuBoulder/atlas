@@ -70,25 +70,4 @@ if ENVIRONMENT == 'local':
     # https://urllib3.readthedocs.io/en/latest/advanced-usage.html#ssl-warnings
     urllib3.disable_warnings()
 
-# List of statuses to do inactive checks on.
-INACTIVE_STATUS = ['installed']
-# Inactive check timing and messaging.
-INACTIVE_WARNINGS = {
-    "first": {
-        "days": 30,
-        "subject": "Web Express - Inactive Website - 30 day notice",
-        "message": "It's been at least 30 days since you last edited the above Web Express instance. If you don't log in and edit this instance within the next 30 days, this instance will be removed.\n\nIf you no longer want this Web Expres instance website, ignore this message.\n\nSee https://www.colorado.edu/webcentral/inactive-instances for more information.",
-    },
-    "second": {
-        "days": 55,
-        "subject": "Web Express - Inactive Website - 55 day notice",
-        "message": "It's been at least 55 days since you last edited the above Web Express instance. If you don't log in and edit this instance within the next 5 days, this instance will be removed.\n\nIf you no longer want this Web Express website, ignore this message.\n\nSee https://www.colorado.edu/webcentral/support/inactive-web-express-sites for more information.",
-    },
-    "take_down": {
-        "days": 60,
-        "subject": "Web Express - Inactive Website - Take down notice",
-        "message": "The above Web Express instance has been taken down because it has not been edited in 60 days.\n\nSee https://www.colorado.edu/webcentral/support/inactive-web-express-sites for more information.",
-    },
-}
-
 VERSION_NUMBER = '2.3.0-alpha3'

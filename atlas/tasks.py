@@ -20,7 +20,7 @@ from git import GitCommandError
 from atlas import fabric_tasks, utilities, config_celery
 from atlas import code_operations, instance_operations, backup_operations
 from atlas.config import (ENVIRONMENT, WEBSERVER_USER, DESIRED_SITE_COUNT,
-                          SSL_VERIFICATION, LOCAL_CODE_ROOT)
+                          SSL_VERIFICATION, CODE_ROOT)
 from atlas.config_servers import (BASE_URLS, API_URLS)
 
 # Setup a sub-logger
@@ -284,7 +284,7 @@ def code_remove(item):
     code_operations.repository_remove(item)
     if item['meta']['is_current']:
         code_folder_current = '{0}/{1}/{2}/{2}-current'.format(
-            LOCAL_CODE_ROOT,
+            CODE_ROOT,
             utilities.code_type_directory_name(item['meta']['code_type']),
             item['meta']['name'])
         os.unlink(code_folder_current)
@@ -679,26 +679,25 @@ def site_remove(site):
     :return:
     """
     log.debug('Site remove | %s', site)
-    if site['type'] == 'express':
-        # Check if stats object exists for the site first.
-        statistics_query = 'where={{"site":"{0}"}}'.format(site['_id'])
-        statistics = utilities.get_eve('statistics', statistics_query)
-        log.debug('Statistics | %s', statistics)
-        if not statistics['_meta']['total'] == 0:
-            for statistic in statistics['_items']:
-                utilities.delete_eve('statistics', statistic['_id'])
+    # Check if stats object exists for the site first.
+    statistics_query = 'where={{"site":"{0}"}}'.format(site['_id'])
+    statistics = utilities.get_eve('statistics', statistics_query)
+    log.debug('Statistics | %s', statistics)
+    if not statistics['_meta']['total'] == 0:
+        for statistic in statistics['_items']:
+            utilities.delete_eve('statistics', statistic['_id'])
 
-        try:
-            log.debug('Site remove | Delete database')
-            utilities.delete_database(site['sid'])
-        except Exception as error:
-            log.error('Site remove failed | Database remove failed | %s', error)
-            # Want to keep trying to remove instances even if DB remove fails.
-            pass
+    try:
+        log.debug('Site remove | Delete database')
+        utilities.delete_database(site['sid'])
+    except Exception as error:
+        log.error('Site remove failed | Database remove failed | %s', error)
+        # Want to keep trying to remove instances even if DB remove fails.
+        pass
 
-        instance_operations.instance_delete(site)
-        instance_operations.sync_instances()
-        execute(fabric_tasks.clear_php_cache)
+    instance_operations.instance_delete(site)
+    instance_operations.sync_instances()
+    execute(fabric_tasks.clear_php_cache)
 
 
 @celery.task
@@ -776,10 +775,8 @@ def cron(status=None):
     """
     log.info('Status - %s', status)
     # Build query.
-    site_query_string = ['max_results=2000']
+    site_query_string = ['max_results=2000&where={']
     log.debug('Prepare Cron | Found argument')
-    # Start by eliminating legacy items.
-    site_query_string.append('&where={"type":"express",')
     if status:
         log.debug('Found status')
         site_query_string.append('"status":"{0}",'.format(status))
@@ -916,7 +913,7 @@ def remove_orphan_statistics():
     """
     Get a list of statistics and key them against a list of active instances.
     """
-    site_query = 'where={"type":"express"}&max_results=2000'
+    site_query = 'max_results=2000'
     sites = utilities.get_eve('sites', site_query)
     statistics_query = '&max_results=2000'
     statistics = utilities.get_eve('statistics', statistics_query)

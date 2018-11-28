@@ -22,16 +22,11 @@ DESIRED_SITE_COUNT = 2
 # site_code_root to make it easy to switch to the down page.
 # TODO Update these variable names here and in CHANGELOG
 CODE_ROOT = '/data/code'
-LOCAL_CODE_ROOT = '/data/code/atlas_repos'
 WEB_ROOT = '/data/web/express'
 INSTANCE_ROOT = '/data/atlas/sites'
 SITE_DOWN_PATH = '/data/code/down'
 STATIC_WEB_PATH = '/data/web/express/static'
-# TODO: See if we can make this the current users run dir `/run/user/<uid>`
-BACKUP_TMP_PATH = '/data/atlas/backup'
-
-# Location to store media uploaded to the API.api
-MEDIA_STORAGE_PATH = '/data/backups'
+BACKUP_PATH = '/data/atlas/backup'
 
 # Default core and profile names for site creation.
 DEFAULT_CORE = 'drupal'
@@ -41,6 +36,9 @@ DEFAULT_PROFILE = 'express'
 # base64-encoded 32-byte key.
 ENCRYPTION_KEY = 'key'
 VARNISH_CONTROL_KEY = 'key'
+
+# SMTP configuration.
+SMTP_PASSWORD = 'password'
 
 # LDAP configuration.
 LDAP_SERVER = 'ldaps://directory.colorado.edu:636'
@@ -55,6 +53,7 @@ DATABASE_USER = 'db_user'
 DATABASE_PASSWORD = 'db_creds'
 SERVICE_ACCOUNT_USERNAME = 'atlas_drupal'
 SERVICE_ACCOUNT_PASSWORD = 'atlas_drupal_creds'
+SAML_AUTH = 'password'
 
 # Slack integration. Enter URL for channel to post DEV, TEST, and PROD messages
 # to. Enter a slack username to have messages from LOCAL go to the specific user.

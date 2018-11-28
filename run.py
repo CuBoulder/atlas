@@ -88,7 +88,7 @@ def get_command(machine_name):
         elif command == 'update_homepage_files':
             tasks.update_homepage_files.delay()
         elif command == 'update_settings_files':
-            query = 'where={"type":"express"}&max_results=2000'
+            query = 'max_results=2000'
             sites = utilities.get_eve('sites', query)
             timestamp = datetime.now()
             count = 0
@@ -102,13 +102,13 @@ def get_command(machine_name):
             code_items = utilities.get_eve('code')
             tasks.code_heal.delay(code_items)
         elif command == 'heal_instances':
-            instance_query = 'where={"type":"express"}&max_results=2000'
+            instance_query = 'max_results=2000'
             instances = utilities.get_eve('sites', instance_query)
             tasks.instance_heal.delay(instances)
         elif command == 'sync_instances':
             tasks.instance_sync.delay()
         elif command == 'correct_file_permissions':
-            instance_query = 'where={"type":"express"}&max_results=2000'
+            instance_query = 'max_results=2000'
             instances = utilities.get_eve('sites', instance_query)
             for instance in instances['_items']:
                 tasks.correct_file_permissions.delay(instance)
@@ -248,16 +248,14 @@ def sites_statistics():
     Give some basic aggregations about site objects
     """
     app.logger.debug('Sites | Aggregations')
-    express_result = utilities.get_eve('sites','where={"type":"express","f5only":false}&max_results=2000')
-    legacy_result = utilities.get_eve('sites','where={"type":"legacy","f5only":false}&max_results=2000')
+    express_result = utilities.get_eve('sites', 'max_results=2000')
     app.logger.debug('Sites | Aggregations | Express Result - %s', express_result)
-    app.logger.debug('Sites | Aggregations | Legacy Result - %s', legacy_result)
     # Express sites
     express_sites = express_result['_items']
     agg = {}
     count = Counter()
     group = Counter()
-    ## Total by state
+    # Total by state
     for site in express_sites:
         count[site['status']] += 1
         group[site['update_group']] += 1
@@ -267,9 +265,6 @@ def sites_statistics():
     }
     # Total
     agg['express']['status']['total'] = express_result['_meta']['total']
-    # Legacy
-    ## Total routes
-    agg['legacy'] = {'total': legacy_result['_meta']['total']}
 
     response = make_response(jsonify(agg))
     return response

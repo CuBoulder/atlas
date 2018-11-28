@@ -2,8 +2,15 @@
 
 ## v2.3.0-alpha4
 
+As part of deployment:
+
+- Remove `LOCAL_WEB_ROOT`, `LOCAL_CODE_ROOT`, and `LOCAL_INSTANCE_ROOT` to `config_servers.py`
+
 Resolves:
 
+- &#35;533 - Remove `type` field from site schema and rest of atlas code
+- &#35;512 - Collapse variables back down
+- &#35;520 - Get rid of all references to load balancer or f5
 - &#35;530 - Add a value to site object and settings.php for Google Tag Manager
 
 ## v2.3.0-alpha3
@@ -14,6 +21,10 @@ Resolves:
 - &#35;511 - Restore instance does not restore statistics item
 - &#35;516 - When taking down an instance, remove webroot symlink
 - &#35;523 - Increase deployment speed
+  
+### Hotfix
+
+- &#35;529 - Cannot deploy homepage files
 
 ## v2.3.0-alpha2
 

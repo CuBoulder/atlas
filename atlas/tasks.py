@@ -1031,10 +1031,26 @@ def verify_statistics():
 
 @celery.task(time_limit=1200)
 def backup_instances_all(backup_type='routine'):
+    """Backup all instance EXCEPT for the ones that we know are too large, currently `today` and
+    `cwa`
+
+    Keyword Arguments:
+        backup_type {str} -- 'routine', 'update', or 'on_demand' (default: {'routine'})
+    """
     log.info('Backup all instances')
+    # Get the instance IDs for excluded paths
+    exclude_instances = utilities.get_eve('sites', 'where={"path":{"$in":["today","cwa"]}')
+    log.debug('Backup all instances | Exclude instances - %s', exclude_instances['_items'])
+    exclude_ids = []
+    for instance in exclude_instances['_items']:
+        exclude_ids.append(instance['_id'])
+    log.debug('Backup all instances | List of IDs to exclude - %s', exclude_ids)
     # TODO: Max results
+    statistics_query = 'where={{"status":{{"$in":["installed","launched"]}},"days_since_last_edit":0,"site":{{"$nin":[{0}]}}}}'.format(
+        json.dumps(exclude_ids))
+    log.debug('Backup all instances | Stats query - %s', statistics_query)
     statistics = utilities.get_eve(
-        'statistics', 'where={"status":{"$in":["installed","launched"]},"days_since_last_edit":0}')
+        'statistics', statistics_query)
     batch_id = time.time()
     if not statistics['_meta']['total'] == 0:
         for statistic in statistics['_items']:
@@ -1115,7 +1131,8 @@ def remove_extra_backups():
     Delete extra backups, we only want to keep 5 per instance.
     """
     # Get all backups
-    backups = utilities.get_eve('backup', 'max_results=10000')
+    # TODO Max Results
+    backups = utilities.get_eve('backup', 'max_results=2000')
     instance_ids = []
     for item in backups['_items']:
         instance_ids.append(item['site'])

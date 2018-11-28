@@ -65,6 +65,9 @@ CELERY_ROUTES = {
     'atlas.tasks.remove_old_backups': {
         'queue': 'atlas_queue'
     },
+    'atlas.tasks.remove_extra_backups': {
+        'queue': 'atlas_queue'
+    },
     'atlas.tasks.remove_failed_backups': {
         'queue': 'atlas_queue'
     },

@@ -1,5 +1,11 @@
 # Change log
 
+## v2.3.0-alpha4
+
+Resolves:
+
+- &#35;530 - Add a value to site object and settings.php for Google Tag Manager
+
 ## v2.3.0-alpha3
 
 Resolves:

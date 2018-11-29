@@ -855,6 +855,43 @@ DRUSH_SCHEMA = {
     },
 }
 
+EVENT_SCHEMA = {
+    'event_type': {
+        'type': 'string',
+        'required': True,
+        'allowed': [
+            'inactive_mail'
+        ],
+    },
+    'inactive_mail': {
+        'type': 'dict',
+        'schema': {
+            'inactive_mail_type': {
+                'type': 'string',
+                'allowed': [
+                    'first',
+                    'second',
+                    'take_down',
+                ],
+            },
+            'inactive_mail_to': {
+                'type': 'string',
+            },
+        },
+    },
+    'atlas': {
+        'type': 'dict',
+        'schema': {
+            'site_id': {
+                'type': 'objectid',
+            },
+            'instance_id': {
+                'type': 'objectid',
+            },
+        },
+    },
+}
+
 """
 Definitions of Resources.
 Tells Eve what methods and schemas apply to a given resource.
@@ -920,6 +957,13 @@ DRUSH = {
     'schema': DRUSH_SCHEMA,
 }
 
+EVENT = {
+    'item_title': 'event',
+    'public_methods': ['GET'],
+    'public_item_methods': ['GET'],
+    'schema': EVENT_SCHEMA,
+}
+
 # Domain definition. Tells Eve what resources are available on this domain.
 DOMAIN = {
     'sites': SITES,
@@ -928,4 +972,5 @@ DOMAIN = {
     'query': QUERY,
     'statistics': STATISTICS,
     'backup': BACKUP,
+    'event': EVENT,
 }

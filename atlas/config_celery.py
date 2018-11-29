@@ -68,6 +68,9 @@ CELERY_ROUTES = {
     'atlas.tasks.remove_failed_backups': {
         'queue': 'atlas_queue'
     },
+    'atlas.tasks.check_instance_inactive': {
+        'queue': 'atlas_queue'
+    },
 }
 
 CELERYBEAT_SCHEDULE = {
@@ -142,5 +145,9 @@ CELERYBEAT_SCHEDULE = {
     'verify_statistics_updating': {
         'task': 'atlas.tasks.verify_statistics',
         'schedule': crontab(minute=0, hour=6),
+    },
+    'check_instance_inactive': {
+        'task': 'atlas.tasks.check_instance_inactive',
+        'schedule': timedelta(hours=24),
     },
 }

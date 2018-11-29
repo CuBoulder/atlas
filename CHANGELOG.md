@@ -8,9 +8,10 @@ As part of deployment:
 
 Resolves:
 
+- &#35;533 - Remove `type` field from site schema and rest of atlas code
 - &#35;512 - Collapse variables back down
 - &#35;520 - Get rid of all references to load balancer or f5
-
+- &#35;530 - Add a value to site object and settings.php for Google Tag Manager
 
 ## v2.3.0-alpha3
 

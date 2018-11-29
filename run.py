@@ -88,7 +88,7 @@ def get_command(machine_name):
         elif command == 'update_homepage_files':
             tasks.update_homepage_files.delay()
         elif command == 'update_settings_files':
-            query = 'where={"type":"express"}&max_results=2000'
+            query = 'max_results=2000'
             sites = utilities.get_eve('sites', query)
             timestamp = datetime.now()
             count = 0
@@ -102,13 +102,13 @@ def get_command(machine_name):
             code_items = utilities.get_eve('code')
             tasks.code_heal.delay(code_items)
         elif command == 'heal_instances':
-            instance_query = 'where={"type":"express"}&max_results=2000'
+            instance_query = 'max_results=2000'
             instances = utilities.get_eve('sites', instance_query)
             tasks.instance_heal.delay(instances)
         elif command == 'sync_instances':
             tasks.instance_sync.delay()
         elif command == 'correct_file_permissions':
-            instance_query = 'where={"type":"express"}&max_results=2000'
+            instance_query = 'max_results=2000'
             instances = utilities.get_eve('sites', instance_query)
             for instance in instances['_items']:
                 tasks.correct_file_permissions.delay(instance)

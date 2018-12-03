@@ -1034,6 +1034,8 @@ def backup_instances_all(backup_type='routine'):
     """Backup all instance EXCEPT for the ones that we know are too large, currently `today` and
     `cwa`
 
+    20 minute time limit
+
     Keyword Arguments:
         backup_type {str} -- 'routine', 'update', or 'on_demand' (default: {'routine'})
     """
@@ -1049,6 +1051,56 @@ def backup_instances_all(backup_type='routine'):
     statistics_query = 'where={{"status":{{"$in":["installed","launched"]}},"days_since_last_edit":0,"site":{{"$nin":[{0}]}}}}'.format(
         json.dumps(exclude_ids))
     log.debug('Backup all instances | Stats query - %s', statistics_query)
+    statistics = utilities.get_eve(
+        'statistics', statistics_query)
+    batch_id = time.time()
+    if not statistics['_meta']['total'] == 0:
+        for statistic in statistics['_items']:
+            site = utilities.get_single_eve('sites', statistic['site'])
+            backup_create.delay(site=site, backup_type=backup_type, batch=batch_id)
+    # Report to slack
+    log.info('Atlas operational statistic | Batch - %s | Type - %s | Count - %s',
+             batch_id, backup_type, statistics['_meta']['total'])
+
+    slack_fallback = '{0} {1} backups started'.format(statistics['_meta']['total'], backup_type)
+    slack_color = 'good'
+    slack_payload = {
+        "text": 'Backups started',
+        "attachments": [
+            {
+                "fallback": slack_fallback,
+                "color": slack_color,
+                "fields": [
+                    {"title": "Environment", "value": ENVIRONMENT, "short": True},
+                    {"title": "Backup Type", "value": backup_type, "short": True},
+                    {"title": "Count", "value": statistics['_meta']['total'], "short": True}
+                ],
+            }
+        ],
+    }
+    utilities.post_to_slack_payload(slack_payload)
+
+
+@celery.task(time_limit=2100)
+def backup_instances_large(backup_type='routine'):
+    """Backup known large instances, currently `today` and `cwa`
+
+    35 minute time limit
+
+    Keyword Arguments:
+        backup_type {str} -- 'routine', 'update', or 'on_demand' (default: {'routine'})
+    """
+    log.info('Backup large instances')
+    # Get the instance IDs for include paths
+    instances = utilities.get_eve('sites', 'where={"path":{"$in":["today","cwa"]}')
+    log.debug('Backup large instances | Include instances - %s', instances['_items'])
+    instances_ids = []
+    for instance in instances_instances['_items']:
+        instances_ids.append(instance['_id'])
+    log.debug('Backup large instances | List of IDs to include - %s', instances_ids)
+    statistics_query = 'where={{"status":{{"$in":["installed","launched"]}},"days_since_last_edit":0,"site":{{"$in":[{0}]}}}}'.format(
+        json.dumps(instances_ids))
+    log.debug('Backup large instances | Stats query - %s', statistics_query)
     statistics = utilities.get_eve(
         'statistics', statistics_query)
     batch_id = time.time()

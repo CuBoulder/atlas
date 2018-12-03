@@ -1041,7 +1041,7 @@ def backup_instances_all(backup_type='routine'):
     """
     log.info('Backup all instances')
     # Get the instance IDs for excluded paths
-    exclude_instances = utilities.get_eve('sites', 'where={"path":{"$in":["today","cwa"]}')
+    exclude_instances = utilities.get_eve('sites', 'where={"path":{"$in":["today","cwa"]}}')
     log.debug('Backup all instances | Exclude instances - %s', exclude_instances['_items'])
     exclude_ids = []
     for instance in exclude_instances['_items']:
@@ -1092,7 +1092,7 @@ def backup_instances_large(backup_type='routine'):
     """
     log.info('Backup large instances')
     # Get the instance IDs for include paths
-    instances = utilities.get_eve('sites', 'where={"path":{"$in":["today","cwa"]}')
+    instances = utilities.get_eve('sites', 'where={"path":{"$in":["today","cwa"]}}')
     log.debug('Backup large instances | Include instances - %s', instances['_items'])
     instances_ids = []
     for instance in instances_instances['_items']:

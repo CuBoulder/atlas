@@ -16,12 +16,13 @@ from celery import Celery, chord
 from celery.utils.log import get_task_logger
 from fabric.api import execute
 from git import GitCommandError
+# from eve.methods.post import post_internal
 
 from atlas import fabric_tasks, utilities, config_celery
 from atlas import code_operations, instance_operations, backup_operations
 from atlas.config import (ENVIRONMENT, WEBSERVER_USER, DESIRED_SITE_COUNT,
                           SSL_VERIFICATION, CODE_ROOT, INACTIVE_WARNINGS, INACTIVE_STATUS,
-                          TEST_ACCOUNTS)
+                          TEST_ACCOUNTS, EXPRESS_URL, EMAIL_SIGNATURE)
 from atlas.config_servers import (BASE_URLS, API_URLS)
 
 # Setup a sub-logger
@@ -1411,6 +1412,7 @@ def check_instance_inactive():
         # Start by calling stats.
         statistics_query = 'where={{"days_since_last_login":{{"$gte":{0}}},"status":{{"$in":{1}}}}}'.format(
             value['days'], json.dumps(INACTIVE_STATUS))
+
         statistics = utilities.get_eve('statistics', statistics_query)
 
         log.debug('Check inactive | %s | %s', key, statistics)
@@ -1488,9 +1490,8 @@ def check_instance_inactive():
                 # If we don't have any mail items, it is okay to send a new one.
                 if events['_meta']['total'] == 0:
                     # Get the 'instance' item from Atlas so that we can use the path in the message.
-                    site = utilities.get_eve('sites', statistic['site'])
+                    site = utilities.get_single_eve('sites', statistic['site'])
                     # TODO: Refactor when we have multiple environments run by a single Atlas.
-
                     # Get message together.
                     instance_url = "{0}/{1}".format(EXPRESS_URL, site['path'])
                     message = '\n\n'.join(
@@ -1500,7 +1501,7 @@ def check_instance_inactive():
 
                     # Remove test accounts.
                     email_to = [x for x in statistic['users']['email_address']
-                                ['site_contact'] if x not in TEST_ACCOUNTS]
+                                ['site_owner'] if x not in TEST_ACCOUNTS]
                     # Send mail
                     utilities.send_email(
                         email_message=message, email_subject=value['subject'], email_to=email_to)
@@ -1510,13 +1511,13 @@ def check_instance_inactive():
                         "event_type": "inactive_mail",
                         "inactive_mail": {
                             "inactive_mail_type": key,
-                            "inactive_mail_to": ', '.join(statistic['users']['email_address']['site_contact'])
+                            "inactive_mail_to": ', '.join(statistic['users']['email_address']['site_owner'])
                         },
                         "atlas": {
                             "instance_id": statistic['site']
                         }
                     }
-                    post_internal(resource='event', payl=event_payload)
+                    # post_internal(resource='event', payl=event_payload)
 
                     # Take down instance if we need to.
                     if key == 'take_down':

@@ -136,7 +136,11 @@ CELERYBEAT_SCHEDULE = {
     },
     'routine_backups': {
         'task': 'atlas.tasks.backup_instances_all',
-        'schedule': crontab(minute=0, hour=20)
+        'schedule': crontab(minute=0, hour=21)
+    },
+    'routine_backups_large': {
+        'task': 'atlas.tasks.backup_instances_large',
+        'schedule': crontab(day_of_week=6, minute=0, hour=22)
     },
     'report_routine_backups': {
         'task': 'atlas.tasks.report_routine_backups',

@@ -248,8 +248,10 @@ def get_eve(resource, query=None):
 
     try:
         # Get json output
-        r_inital = requests.get(url, auth=(SERVICE_ACCOUNT_USERNAME,
-                                           SERVICE_ACCOUNT_PASSWORD), verify=SSL_VERIFICATION).json()
+        r_inital = requests.get(
+            url,
+            auth=(SERVICE_ACCOUNT_USERNAME, SERVICE_ACCOUNT_PASSWORD),
+            verify=SSL_VERIFICATION).json()
     except Exception as error:
         log.error('GET to Atlas | URL - %s | Error - %s', url, error)
 
@@ -265,15 +267,17 @@ def get_eve(resource, query=None):
                 page_url = query_url + '&page={0}&max_results={1}'.format(page, PAGINATION_DEFAULT)
             else:
                 page_url = url + '?page={0}&max_results={1}'.format(page, PAGINATION_DEFAULT)
-            r_page = requests.get(page_url, auth=(SERVICE_ACCOUNT_USERNAME,
-                                                  SERVICE_ACCOUNT_PASSWORD), verify=SSL_VERIFICATION).json()
-            log.info('utilities | Get eve | page request - %s', r_page)
+            r_page = requests.get(
+                page_url,
+                auth=(SERVICE_ACCOUNT_USERNAME, SERVICE_ACCOUNT_PASSWORD),
+                verify=SSL_VERIFICATION).json()
+            log.debug('utilities | Get eve | page request - %s', r_page)
             # Merge lists
             if json_result:
-                log.info('Backup data | Original data - %s', json_result)
-                log.info('Backup data | New data - %s', r_page)
+                log.debug('Backup data | Original data - %s', json_result)
+                log.debug('Backup data | New data - %s', r_page)
                 json_result = json_result + r_page
-                log.info('Backup data | Final data - %s', json_result)
+                log.debug('Backup data | Final data - %s', json_result)
             else:
                 json_result = r_page
     else:

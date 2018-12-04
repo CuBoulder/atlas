@@ -712,7 +712,7 @@ def drush_prepare(drush_id, run=True):
     log.debug('Drush | Prepare | Drush command - %s', drush_id)
     drush_command = utilities.get_single_eve('drush', drush_id)
 
-    site_query = 'where={0}&max_results=2000'.format(drush_command['query'])
+    site_query = 'where={0}'.format(drush_command['query'])
     sites = utilities.get_eve('sites', site_query)
     log.debug('Drush | Prepare | Drush command - %s | Ran query - %s', drush_id, sites)
     if not sites['_meta']['total'] == 0 and run is True:
@@ -776,7 +776,7 @@ def cron(status=None):
     """
     log.info('Status - %s', status)
     # Build query.
-    site_query_string = ['max_results=2000&where={']
+    site_query_string = ['where={']
     log.debug('Prepare Cron | Found argument')
     if status:
         log.debug('Found status')
@@ -914,10 +914,8 @@ def remove_orphan_statistics():
     """
     Get a list of statistics and key them against a list of active instances.
     """
-    site_query = 'max_results=2000'
-    sites = utilities.get_eve('sites', site_query)
-    statistics_query = '&max_results=2000'
-    statistics = utilities.get_eve('statistics', statistics_query)
+    sites = utilities.get_eve('sites')
+    statistics = utilities.get_eve('statistics')
     log.debug('Statistics | %s', statistics)
     log.debug('Sites | %s', sites)
     site_id_list = []
@@ -965,7 +963,7 @@ def verify_statistics():
     Get a list of statistics items that have not been updated in 36 hours and notify users.
     """
     time_ago = datetime.utcnow() - timedelta(hours=36)
-    statistics_query = 'where={{"_updated":{{"$lte":"{0}"}}}}&max_results=2000'.format(
+    statistics_query = 'where={{"_updated":{{"$lte":"{0}"}}}}'.format(
         time_ago.strftime("%Y-%m-%d %H:%M:%S GMT"))
     outdated_statistics = utilities.get_eve('statistics', statistics_query)
     log.debug('Old statistics time - %s', time_ago.strftime("%Y-%m-%d %H:%M:%S GMT"))
@@ -977,7 +975,7 @@ def verify_statistics():
 
         log.debug('statistic_id_list | %s', statistic_id_list)
 
-        site_query = 'where={{"statistics":{{"$in":{0}}}}}&max_results=2000'.format(json.dumps(statistic_id_list))
+        site_query = 'where={{"statistics":{{"$in":{0}}}}}'.format(json.dumps(statistic_id_list))
         log.debug('Site query | %s', site_query)
         sites = utilities.get_eve('sites', site_query)
         sites_id_list = []
@@ -1095,7 +1093,7 @@ def remove_old_backups():
     Delete backups older than 90 days unless it is the only backup.
     """
     time_ago = datetime.utcnow() - timedelta(days=90)
-    backup_query = 'where={{"_created":{{"$lte":"{0}"}}}}&max_results=2000'.format(
+    backup_query = 'where={{"_created":{{"$lte":"{0}"}}}}'.format(
         time_ago.strftime("%Y-%m-%d %H:%M:%S GMT"))
     backups = utilities.get_eve('backup', backup_query)
     # Loop through and remove backups that are old.
@@ -1116,32 +1114,7 @@ def remove_extra_backups():
     """
     Delete extra backups, we only want to keep 5 per instance.
     """
-    # Get all backups
-    intial_query = utilities.get_eve('backup')
-    total_items = intial_query['_meta']['total']
-    # If total is greater than 2k, page. If not set max results to total
-    backup_data = None
-    # TODO Fix max_results demonenator to 2000
-    max_results = 2
-    if total_items > max_results:
-        # Return the ceiling of x as a float, the smallest integer value greater than or equal to x.
-        num_pages = int(ceil(total_items/max_results))
-        # Range - Generate numbers from the first number up to, but not including the second.
-        for page in range(1, num_pages + 1):
-            query = 'page={0}&max_results={1}'.format(page, max_results)
-            backups = utilities.get_eve('backup', query)['_items']
-            log.info('Backup query output | %s', backups)
-            # Merge lists
-            if backup_data:
-                log.info('Backup data | Original data - %s', backup_data)
-                log.info('Backup data | New data - %s', backups)
-                backup_data = backup_data + backups
-                log.info('Backup data | Final data - %s', backup_data)
-            else:
-                backup_data = backups
-    else:
-        query = 'max_results={0}'.format(total_items)
-        backup_data = utilities.get_eve('backup', query)['_items']
+    backup_data = utilities.get_eve('backup')
     instance_ids = []
     for item in backup_data:
         instance_ids.append(item['site'])
@@ -1174,7 +1147,7 @@ def remove_failed_backups():
     """
     # Get all backups
     time_ago = datetime.utcnow() - timedelta(minutes=90)
-    backup_query = 'where={{"state":"pending","_created":{{"$lte":"{0}"}}}}&max_results=2000'.format(
+    backup_query = 'where={{"state":"pending","_created":{{"$lte":"{0}"}}}}'.format(
         time_ago.strftime("%Y-%m-%d %H:%M:%S GMT"))
     backups = utilities.get_eve('backup', backup_query)
     for item in backups['_items']:
@@ -1267,9 +1240,9 @@ def rebalance_update_groups():
     :return:
     """
     log.info
-    installed_query = 'where={"status":"installed"}&max_results=2000'
+    installed_query = 'where={"status":"installed"}'
     installed_sites = utilities.get_eve('sites', installed_query)
-    launched_query = 'where={"status":"launched"}&max_results=2000'
+    launched_query = 'where={"status":"launched"}'
     launched_sites = utilities.get_eve('sites', launched_query)
     installed_update_group = 0
     launched_update_group = 0

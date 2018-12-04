@@ -1393,7 +1393,6 @@ def saml_delete():
 
 # Custom Exception Handling
 
-
 class OutOfDateException(Exception):
     pass
 
@@ -1403,20 +1402,25 @@ def check_instance_inactive():
     """
     Notify owners of inactive instances.
     """
-    # Loop through the warnings.
+    # Loop through the warnings in INACTIVE_WARNINGS 
+    # The three different keys are "first", "second", "take_down", corresponding values are 30, 55, 60
     for key, value in INACTIVE_WARNINGS.iteritems():
         log.info('Check inactive | %s', key)
         # Get a list of sites that are older than the warning.
 
-        # Start by calling stats.
+        # Start by calling stats, we want any records whose days since last login is greater than the corresponding warning value(days) 
+        # Build statistics query
+        # Query example for "first" ?where={"days_since_last_login":{"$gte":30},"status":{"$in":["installed"]}}
         statistics_query = 'where={{"days_since_last_login":{{"$gte":{0}}},"status":{{"$in":{1}}}}}'.format(
             value['days'], json.dumps(INACTIVE_STATUS))
 
+        # Statistics GET request
         statistics = utilities.get_eve('statistics', statistics_query)
 
         log.debug('Check inactive | %s | %s', key, statistics)
-
+        # If statistics records exist
         if not statistics['_meta']['total'] == 0:
+            # Loop through each statistic record
             for statistic in statistics['_items']:
                 # Verify that statistics item has been updated in the last 24 hours.
                 try:
@@ -1431,7 +1435,8 @@ def check_instance_inactive():
                     log.info(
                         'Check inactive | Statistic Out of Date | %s', statistics)
                     continue
-
+                
+                # TODO: maybe timedelta(days=value) ?
                 check_date = datetime.utcnow() - timedelta(days=60)
                 ## Check for same interval messages
                 # Setup query Bondo for Event items that are: 'inactive_mail', related to this
@@ -1459,9 +1464,11 @@ def check_instance_inactive():
                     # Create date bound to make sure a previous message was sent appropriately long ago.
                     # IE don't send 30 day and 55 day on back to back runs if the instance is really old.
                     interval_date = datetime.utcnow() - timedelta(days=25)
-                    # Build the query
+                    # Build the query, check that the email for 'first' warning was sent 
                     eve_lookup_first = 'where={{"event_type":"inactive_mail","atlas.instance_id":"{0}","inactive_mail.inactive_mail_type":"first","_created":{{"$gte":"{1}","$lte":"{2}"}}}}'.format(
                         str(statistic['site']), check_date.strftime("%Y-%m-%d %H:%M:%S GMT"), interval_date.strftime("%Y-%m-%d %H:%M:%S GMT"))
+                    print 'taco_eve_lookup_first'
+                    print eve_lookup_first
                     events_first = utilities.get_eve(
                         'event', query=eve_lookup_first)
                     log.debug('Check inactive | Verify previous mail | %s | %s',
@@ -1516,6 +1523,8 @@ def check_instance_inactive():
                             "instance_id": statistic['site']
                         }
                     }
+                    
+                    # POST event
                     utilities.post_eve('event', event_payload)
 
                     # Take down instance if we need to.
@@ -1523,13 +1532,15 @@ def check_instance_inactive():
                         atlas_payload = {"status": "take_down"}
                         utilities.patch_eve(
                             'sites', statistic['site'], atlas_payload)
+                        log.debug(
+                            'Check inactive | Take Down Instance | %s', statistic['site'])
                 else:
                     # Recent mail event found. Don't send one now.
                     log.debug(
                         'Check inactive | Recent message exists | %s | %s', statistic['site'], events)
 
+        # No site statistics records exist
         else:
-            # No Statistics found.
             log.debug('Check inactive | %s | 0 statistics records found', key)
 
     return True

@@ -16,7 +16,6 @@ from celery import Celery, chord
 from celery.utils.log import get_task_logger
 from fabric.api import execute
 from git import GitCommandError
-# from eve.methods.post import post_internal
 
 from atlas import fabric_tasks, utilities, config_celery
 from atlas import code_operations, instance_operations, backup_operations
@@ -1517,7 +1516,7 @@ def check_instance_inactive():
                             "instance_id": statistic['site']
                         }
                     }
-                    # post_internal(resource='event', payl=event_payload)
+                    utilities.post_eve('event', event_payload)
 
                     # Take down instance if we need to.
                     if key == 'take_down':

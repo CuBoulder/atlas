@@ -49,4 +49,8 @@ COMMANDS = [
         'machine_name': u'backup_all_instances',
         'description': u'Start the process of generating an On Demand backup for all instances.',
     },
+    {
+        'machine_name': u'remove_extra_backups',
+        'description': u'Start the process of removing extra.',
+    },
 ]

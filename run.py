@@ -115,6 +115,8 @@ def get_command(machine_name):
                 continue
         elif command == 'backup_all_instances':
             tasks.backup_instances_all.delay(backup_type='on_demand')
+        elif command == 'remove_extra_backups':
+            tasks.remove_extra_backups.delay()
         return make_response('Command "{0}" has been initiated.'.format(command))
 
 

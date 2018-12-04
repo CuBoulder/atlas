@@ -10,6 +10,7 @@ import json
 from datetime import datetime, timedelta
 from collections import Counter
 from bson import json_util
+from math import ceil
 from random import randint
 import requests
 from celery import Celery, chord
@@ -1100,7 +1101,8 @@ def remove_old_backups():
     # Loop through and remove backups that are old.
     if not backups['_meta']['total'] == 0:
         for backup in backups['_items']:
-            check_for_other = utilities.get_eve('backup', 'where={{"site":"{0}"}}'.format(backup['site']))
+            check_for_other = utilities.get_eve(
+                'backup', 'where={{"site":"{0}"}}'.format(backup['site']))
             if not check_for_other['_meta']['total'] == 1:
                 log.info('Delete old backup | backup - %s', backup)
                 utilities.delete_eve('backup', backup['_id'])
@@ -1115,15 +1117,39 @@ def remove_extra_backups():
     Delete extra backups, we only want to keep 5 per instance.
     """
     # Get all backups
-    backups = utilities.get_eve('backup', 'max_results=10000')
+    intial_query = utilities.get_eve('backup')
+    total_items = intial_query['_meta']['total']
+    # If total is greater than 2k, page. If not set max results to total
+    backup_data = None
+    # TODO Fix max_results demonenator to 2000
+    max_results = 2
+    if total_items > max_results:
+        # Return the ceiling of x as a float, the smallest integer value greater than or equal to x.
+        num_pages = int(ceil(total_items/max_results))
+        # Range - Generate numbers from the first number up to, but not including the second.
+        for page in range(1, num_pages + 1):
+            query = 'page={0}&max_results={1}'.format(page, max_results)
+            backups = utilities.get_eve('backup', query)['_items']
+            log.info('Backup query output | %s', backups)
+            # Merge lists
+            if backup_data:
+                log.info('Backup data | Original data - %s', backup_data)
+                log.info('Backup data | New data - %s', backups)
+                backup_data = backup_data + backups
+                log.info('Backup data | Final data - %s', backup_data)
+            else:
+                backup_data = backups
+    else:
+        query = 'max_results={0}'.format(total_items)
+        backup_data = utilities.get_eve('backup', query)['_items']
     instance_ids = []
-    for item in backups['_items']:
+    for item in backup_data:
         instance_ids.append(item['site'])
     log.debug('Delete extra backups | Instance list - %s', instance_ids)
     counts = Counter(instance_ids)
     log.info('Delete extra backups | counts - %s', counts)
     # Sort out the list for values greater than 5
-    high_count = {k:v for (k, v) in counts.items() if v > 5}
+    high_count = {k: v for (k, v) in counts.items() if v > 5}
     log.info('Delete extra backups | High Count - %s', high_count)
     if high_count:
         for item in high_count:

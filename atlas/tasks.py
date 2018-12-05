@@ -1093,13 +1093,14 @@ def backup_instances_large(backup_type='routine'):
     """
     log.info('Backup large instances')
     # Get the instance IDs for include paths
-    instances = utilities.get_eve('sites', 'where={"path":{"$in":["today","cwa"]}}')
+    instances = utilities.get_eve('sites', 'where={{"path":{{"$in":[{0}]}}}}'.format(
+        json.dumps(BACKUPS_LARGE_INSTANCES)))
     log.debug('Backup large instances | Include instances - %s', instances['_items'])
     instances_ids = []
     for instance in instances_instances['_items']:
         instances_ids.append(instance['_id'])
     log.debug('Backup large instances | List of IDs to include - %s', instances_ids)
-    statistics_query = 'where={{"status":{{"$in":["installed","launched"]}},"days_since_last_edit":0,"site":{{"$in":[{0}]}}}}'.format(
+    statistics_query = 'where={{"status":{{"$in":["installed","launched"]}},"days_since_last_edit":{{"$lte":7}},"site":{{"$in":[{0}]}}}}'.format(
         json.dumps(instances_ids))
     log.debug('Backup large instances | Stats query - %s', statistics_query)
     statistics = utilities.get_eve(

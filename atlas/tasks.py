@@ -1115,8 +1115,9 @@ def remove_extra_backups():
     Delete extra backups, we only want to keep 5 per instance.
     """
     backup_data = utilities.get_eve('backup')
+    log.debug('Delete extra backups | backup_data - %s', backup_data)
     instance_ids = []
-    for item in backup_data:
+    for item in backup_data['_items']:
         instance_ids.append(item['site'])
     log.debug('Delete extra backups | Instance list - %s', instance_ids)
     counts = Counter(instance_ids)

@@ -1400,7 +1400,30 @@ class OutOfDateException(Exception):
 @celery.task
 def check_instance_inactive():
     """
-    Notify owners of inactive instances.
+    Get a list of inactive instances and notify the site owners.
+
+    1. Get a list of instances that are more inactive than `first_inactive_days` and have correct status
+    2. Start loop on list of instances
+        * Check to see if instance has a site owner, if not exit loop
+    3. Check to see if we should send the first message
+        * A first message has not been sent in (today - (`first_inactive_days`))
+        * A second message has not been send in (today - (`last_inactive_days` - `second_inactive_days`))
+    4. If send first message, exit loop
+    5. Check to see if we should send the second message
+        * A second message has not been sent in (today - (`second_inactive_days`))
+        * A first message has been send in (today - (`first_inactive_days` + 1))
+    6. If send second message, exit loop
+    7. Check to see if we should send the final message
+        * A final message has not been sent in (today - (`last_inactive_days`))
+        * A first message has been send in (today - (`last_inactive_days` + 1))
+        * A second message has been send in (today - (`last_inactive_days` - `second_inactive_days` + 1))
+    8. If send final message, exit loop
+    9. If send message, do so
+        * Also send record to Event endpoint
+    10. If take down, do so
+
+    # TODO What if instance doesn't have an owner?
+    # TODO Pull function our into another file
     """
     # Loop through the warnings in INACTIVE_WARNINGS 
     # The three different keys are "first", "second", "take_down", corresponding values are 30, 55, 60

@@ -88,8 +88,7 @@ def get_command(machine_name):
         elif command == 'update_homepage_files':
             tasks.update_homepage_files.delay()
         elif command == 'update_settings_files':
-            query = 'max_results=2000'
-            sites = utilities.get_eve('sites', query)
+            sites = utilities.get_eve('sites')
             timestamp = datetime.now()
             count = 0
             total = sites['_meta']['total']
@@ -102,19 +101,19 @@ def get_command(machine_name):
             code_items = utilities.get_eve('code')
             tasks.code_heal.delay(code_items)
         elif command == 'heal_instances':
-            instance_query = 'max_results=2000'
-            instances = utilities.get_eve('sites', instance_query)
+            instances = utilities.get_eve('sites')
             tasks.instance_heal.delay(instances)
         elif command == 'sync_instances':
             tasks.instance_sync.delay()
         elif command == 'correct_file_permissions':
-            instance_query = 'max_results=2000'
-            instances = utilities.get_eve('sites', instance_query)
+            instances = utilities.get_eve('sites')
             for instance in instances['_items']:
                 tasks.correct_file_permissions.delay(instance)
                 continue
         elif command == 'backup_all_instances':
             tasks.backup_instances_all.delay(backup_type='on_demand')
+        elif command == 'remove_extra_backups':
+            tasks.remove_extra_backups.delay()
         return make_response('Command "{0}" has been initiated.'.format(command))
 
 
@@ -248,7 +247,7 @@ def sites_statistics():
     Give some basic aggregations about site objects
     """
     app.logger.debug('Sites | Aggregations')
-    express_result = utilities.get_eve('sites', 'max_results=2000')
+    express_result = utilities.get_eve('sites')
     app.logger.debug('Sites | Aggregations | Express Result - %s', express_result)
     # Express sites
     express_sites = express_result['_items']

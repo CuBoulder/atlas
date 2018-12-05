@@ -55,6 +55,9 @@ SERVICE_ACCOUNT_USERNAME = 'atlas_drupal'
 SERVICE_ACCOUNT_PASSWORD = 'atlas_drupal_creds'
 SAML_AUTH = 'password'
 
+# Large backups - run on a much slower schedule
+BACKUPS_LARGE_INSTANCES = ['path1', 'path2']
+
 # Slack integration. Enter URL for channel to post DEV, TEST, and PROD messages
 # to. Enter a slack username to have messages from LOCAL go to the specific user.
 SLACK_NOTIFICATIONS = True

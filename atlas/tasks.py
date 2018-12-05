@@ -20,7 +20,7 @@ from git import GitCommandError
 from atlas import fabric_tasks, utilities, config_celery
 from atlas import code_operations, instance_operations, backup_operations
 from atlas.config import (ENVIRONMENT, WEBSERVER_USER, DESIRED_SITE_COUNT,
-                          SSL_VERIFICATION, CODE_ROOT)
+                          SSL_VERIFICATION, CODE_ROOT, BACKUPS_LARGE_INSTANCES)
 from atlas.config_servers import (BASE_URLS, API_URLS)
 
 # Setup a sub-logger
@@ -1041,7 +1041,8 @@ def backup_instances_all(backup_type='routine'):
     """
     log.info('Backup all instances')
     # Get the instance IDs for excluded paths
-    exclude_instances = utilities.get_eve('sites', 'where={"path":{"$in":["today","cwa"]}}')
+    exclude_instances = utilities.get_eve(
+        'sites', 'where={{"path":{{"$in":[{0}]}}}}'.format(json.dumps(BACKUPS_LARGE_INSTANCES)))
     log.debug('Backup all instances | Exclude instances - %s', exclude_instances['_items'])
     exclude_ids = []
     for instance in exclude_instances['_items']:

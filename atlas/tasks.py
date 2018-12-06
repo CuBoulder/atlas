@@ -1041,14 +1041,14 @@ def backup_instances_all(backup_type='routine'):
     log.info('Backup all instances')
     # Get the instance IDs for excluded paths
     exclude_instances = utilities.get_eve(
-        'sites', 'where={{"path":{{"$in":[{0}]}}}}'.format(json.dumps(BACKUPS_LARGE_INSTANCES)))
+        'sites', 'where={{"path":{{"$in":{0}}}}}'.format(json.dumps(BACKUPS_LARGE_INSTANCES)))
     log.debug('Backup all instances | Exclude instances - %s', exclude_instances['_items'])
     exclude_ids = []
     for instance in exclude_instances['_items']:
         exclude_ids.append(instance['_id'])
     log.debug('Backup all instances | List of IDs to exclude - %s', exclude_ids)
     # TODO: Max results
-    statistics_query = 'where={{"status":{{"$in":["installed","launched"]}},"days_since_last_edit":0,"site":{{"$nin":[{0}]}}}}'.format(
+    statistics_query = 'where={{"status":{{"$in":["installed","launched"]}},"days_since_last_edit":0,"site":{{"$nin":{0}}}}}'.format(
         json.dumps(exclude_ids))
     log.debug('Backup all instances | Stats query - %s', statistics_query)
     statistics = utilities.get_eve(

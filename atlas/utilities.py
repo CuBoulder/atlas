@@ -308,13 +308,6 @@ def get_single_eve(resource, id, version=None, env=ENVIRONMENT):
     r = requests.get(url, auth=(SERVICE_ACCOUNT_USERNAME,
                                 SERVICE_ACCOUNT_PASSWORD), verify=SSL_VERIFICATION)
 
-    try:
-        r.raise_for_status()
-    except requests.exceptions.HTTPError as e:
-        log.error('GET to Single item in Atlas | URL - %s | Error - %s', url, e)
-        if r.status_code == 404:
-            return 404
-
     return r.json()
 
 def patch_eve(resource, id, request_payload, env=ENVIRONMENT):

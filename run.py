@@ -166,7 +166,7 @@ def import_backup():
                         local_path_instance_records)
         if local_path_instance_records['_meta']['total'] == 1:
             local_path_instance_record = True
-    if local_p1_instance_record == 404 and not local_path_instance_record:
+    if local_p1_instance_record['_error'] and local_p1_instance_record['_error']['code'] == 404 and not local_path_instance_record:
         # Create an instance with the same sid
         payload = {
             "status": remote_site_record['status'],

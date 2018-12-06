@@ -12,6 +12,8 @@ Resolves:
 - &#35;512 - Collapse variables back down
 - &#35;520 - Get rid of all references to load balancer or f5
 - &#35;530 - Add a value to site object and settings.php for Google Tag Manager
+- &#35;541 - Examine backup totals per instance
+- &#35;407 - Figure out how to handle max_results
 
 ## v2.3.0-alpha3
 

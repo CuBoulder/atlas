@@ -197,6 +197,12 @@ def backup_create(site, backup_type):
         run('tar --exclude "imagecache" --exclude "css" --exclude "js" --exclude "backup_migrate" --exclude "styles" --exclude "xmlsitemap" --exclude "honeypot" -czf {0} *'.format(
             files_result_file_path))
 
+    backup_time = time() - start_time
+
+    # File size with thousand seperator, converted to MB.
+    db_size = '{:,.0f}'.format(os.path.getsize(database_result_file_path)/float(1 << 20))+" MB"
+    file_size = '{:,.0f}'.format(os.path.getsize(files_result_file_path)/float(1 << 20))+" MB"
+
     patch_payload = {
         'site': site['_id'],
         'site_version': site['_version'],
@@ -210,8 +216,8 @@ def backup_create(site, backup_type):
     log.debug('Backup | Create | Ready to update record | Payload - %s', patch_payload)
     utilities.patch_eve('backup', backup_item['_id'], patch_payload)
 
-    backup_time = time() - start_time
-    log.info('Atlas operational statistic | Backup Create | %s', backup_time)
+    log.info('Operational statistic | Backup Create | SID - %s | Time - %s | DB size - %s | File size - %s',
+             site['sid'], backup_time, db_size, file_size)
 
 
 @roles('operations_server')

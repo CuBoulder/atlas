@@ -21,7 +21,7 @@ from git import GitCommandError
 from atlas import fabric_tasks, utilities, config_celery
 from atlas import code_operations, instance_operations, backup_operations
 from atlas.config import (ENVIRONMENT, WEBSERVER_USER, DESIRED_SITE_COUNT,
-                          SSL_VERIFICATION, CODE_ROOT)
+                          SSL_VERIFICATION, CODE_ROOT, BACKUPS_LARGE_INSTANCES)
 from atlas.config_servers import (BASE_URLS, API_URLS)
 
 # Setup a sub-logger
@@ -596,10 +596,9 @@ def site_update(site, updates, original):
                 site['status'] = 'installed'
                 instance_operations.switch_settings_files(site)
                 instance_operations.switch_web_root_symlinks(site)
-                statistics = utilities.get_single_eve('statistics', site['statistics'])
                 statistics_patch_payload = '{{"site": "{0}"}}'.format(site['_id'])
                 statistics_patch = utilities.patch_eve(
-                    'statistics', statistics['_id'], statistics_patch_payload)
+                    'statistics', site['statistics'], statistics_patch_payload)
                 deploy_update_database = True
                 patch_payload = '{"status": "installed"}'
                 deploy_drupal_cache_clear = True
@@ -1030,10 +1029,80 @@ def verify_statistics():
 
 @celery.task(time_limit=1200)
 def backup_instances_all(backup_type='routine'):
+    """Backup all instance EXCEPT for the ones that we know are too large, currently `today` and
+    `cwa`
+
+    20 minute time limit
+
+    Keyword Arguments:
+        backup_type {str} -- 'routine', 'update', or 'on_demand' (default: {'routine'})
+    """
     log.info('Backup all instances')
+    # Get the instance IDs for excluded paths
+    exclude_instances = utilities.get_eve(
+        'sites', 'where={{"path":{{"$in":{0}}}}}'.format(json.dumps(BACKUPS_LARGE_INSTANCES)))
+    log.debug('Backup all instances | Exclude instances - %s', exclude_instances['_items'])
+    exclude_ids = []
+    for instance in exclude_instances['_items']:
+        exclude_ids.append(instance['_id'])
+    log.debug('Backup all instances | List of IDs to exclude - %s', exclude_ids)
     # TODO: Max results
+    statistics_query = 'where={{"status":{{"$in":["installed","launched"]}},"days_since_last_edit":0,"site":{{"$nin":{0}}}}}'.format(
+        json.dumps(exclude_ids))
+    log.debug('Backup all instances | Stats query - %s', statistics_query)
     statistics = utilities.get_eve(
-        'statistics', 'where={"status":{"$in":["installed","launched"]},"days_since_last_edit":0}')
+        'statistics', statistics_query)
+    batch_id = time.time()
+    if not statistics['_meta']['total'] == 0:
+        for statistic in statistics['_items']:
+            site = utilities.get_single_eve('sites', statistic['site'])
+            backup_create.delay(site=site, backup_type=backup_type, batch=batch_id)
+    # Report to slack
+    log.info('Atlas operational statistic | Batch - %s | Type - %s | Count - %s',
+             batch_id, backup_type, statistics['_meta']['total'])
+
+    slack_fallback = '{0} {1} backups started'.format(statistics['_meta']['total'], backup_type)
+    slack_color = 'good'
+    slack_payload = {
+        "text": 'Backups started',
+        "attachments": [
+            {
+                "fallback": slack_fallback,
+                "color": slack_color,
+                "fields": [
+                    {"title": "Environment", "value": ENVIRONMENT, "short": True},
+                    {"title": "Backup Type", "value": backup_type, "short": True},
+                    {"title": "Count", "value": statistics['_meta']['total'], "short": True}
+                ],
+            }
+        ],
+    }
+    utilities.post_to_slack_payload(slack_payload)
+
+
+@celery.task(time_limit=2100)
+def backup_instances_large(backup_type='routine'):
+    """Backup known large instances, currently `today` and `cwa`
+
+    35 minute time limit
+
+    Keyword Arguments:
+        backup_type {str} -- 'routine', 'update', or 'on_demand' (default: {'routine'})
+    """
+    log.info('Backup large instances')
+    # Get the instance IDs for include paths
+    instances = utilities.get_eve('sites', 'where={{"path":{{"$in":[{0}]}}}}'.format(
+        json.dumps(BACKUPS_LARGE_INSTANCES)))
+    log.debug('Backup large instances | Include instances - %s', instances['_items'])
+    instances_ids = []
+    for instance in instances_instances['_items']:
+        instances_ids.append(instance['_id'])
+    log.debug('Backup large instances | List of IDs to include - %s', instances_ids)
+    statistics_query = 'where={{"status":{{"$in":["installed","launched"]}},"days_since_last_edit":{{"$lte":7}},"site":{{"$in":[{0}]}}}}'.format(
+        json.dumps(instances_ids))
+    log.debug('Backup large instances | Stats query - %s', statistics_query)
+    statistics = utilities.get_eve(
+        'statistics', statistics_query)
     batch_id = time.time()
     if not statistics['_meta']['total'] == 0:
         for statistic in statistics['_items']:
@@ -1115,8 +1184,9 @@ def remove_extra_backups():
     Delete extra backups, we only want to keep 5 per instance.
     """
     backup_data = utilities.get_eve('backup')
+    log.debug('Delete extra backups | backup_data - %s', backup_data)
     instance_ids = []
-    for item in backup_data:
+    for item in backup_data['_items']:
         instance_ids.append(item['site'])
     log.debug('Delete extra backups | Instance list - %s', instance_ids)
     counts = Counter(instance_ids)

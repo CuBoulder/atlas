@@ -310,6 +310,8 @@ def switch_settings_files(instance):
     else:
         google_tag_client_container_id = None
 
+    domain = BASE_URLS[ENVIRONMENT].split('://')[1]
+
     settings_variables = {
         'profile': profile['meta']['name'],
         'sid': instance['sid'],
@@ -336,6 +338,8 @@ def switch_settings_files(instance):
         'saml_pw': SAML_AUTH,
         'smtp_client_hostname': BASE_URLS[ENVIRONMENT],
         'smtp_password': SMTP_PASSWORD,
+        'base_url': BASE_URLS[ENVIRONMENT],
+        'domain': domain,
     }
 
     log.info('Instance | Settings file | Render settings file | Instance ID - %s', instance['_id'])

@@ -41,9 +41,9 @@ VARNISH_CONTROL_KEY = 'key'
 SMTP_PASSWORD = 'password'
 
 # LDAP configuration.
-LDAP_SERVER = 'ldaps://directory.colorado.edu:636'
+LDAP_SERVER = 'ldaps://directory.example.com:636'
 LDAP_ORG_UNIT = 'Users'
-LDAP_DNS_DOMAIN_NAME = 'dc=colorado,dc=edu'
+LDAP_DNS_DOMAIN_NAME = 'dc=example,dc=com'
 
 # User information for ssh and file permissions.
 SSH_USER = 'atlas_user'
@@ -72,4 +72,4 @@ EMAIL_PORT = 587
 EMAIL_USERNAME = ''
 EMAIL_PASSWORD = ''
 # List of users to exlude from any notification emails
-EMAIL_USERS_EXCLUDE = ['test@example.com','osr-test-owner@colorado.edu','osr-test-edit-own@colorado.edu','osr-test-content@colorado.edu']
+EMAIL_USERS_EXCLUDE = ['test@example.com','osr-test-owner@example.com','osr-test-edit-own@example.com','osr-test-content@example.com']

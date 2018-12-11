@@ -234,7 +234,15 @@ def on_delete_item_code(item):
     :param item:
     """
     log.debug('code | on delete | item - %s', item)
-    tasks.code_remove.delay(item)
+    other_static_assets = False
+    if item['meta']['code_type'] == 'static':
+        query = 'where={{"meta.name":"{0}","meta.code_type":"static","_id":{{"$ne":"{1}"}}}}'.format(
+            item['meta']['name'], item['_id'])
+        code = utilities.get_eve('code', query)
+        if code['_meta']['total'] != 0:
+            other_static_assets = True
+    log.info('code | on delete | other static assets - %s', other_static_assets)
+    tasks.code_remove.delay(item, other_static_assets)
 
 
 def on_delete_item_backup(item):

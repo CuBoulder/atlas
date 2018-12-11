@@ -140,8 +140,11 @@ def code_deploy(item):
     if item['meta']['is_current']:
         code_operations.update_symlink_current(item)
         log.debug('Code deploy | Symlink | Is current')
+    
+    if item['meta']['code_type'] == 'static':
+        code_operations.deploy_static(item)
+
     sync = code_operations.sync_code()
-    execute(fabric_tasks.clear_php_cache)
 
     if clone or sync:
         text = 'Error'
@@ -233,8 +236,10 @@ def code_update(updated_item, original_item):
         code_operations.update_symlink_current(original_item)
         log.debug('Code deploy | Symlink | Is current')
 
+    if item['meta']['code_type'] == 'static':
+        code_operations.deploy_static(item)
+
     sync = code_operations.sync_code()
-    execute(fabric_tasks.clear_php_cache)
 
     slack_title = 'Code Update - Success'
     slack_color = 'good'
@@ -274,13 +279,17 @@ def code_update(updated_item, original_item):
 
 
 @celery.task
-def code_remove(item):
-    """
-    Remove code from the server.
+def code_remove(item, other_static_assets=True):
+    """Remove code from the server.
 
-    :param item: Item to be removed.
-    :return:
+    Arguments:
+        item {dict} -- Item record for static asset to deploy
+
+    Keyword Arguments:
+        other_static_assets {bool} -- Only applies in cases with static assets. If false, remove
+        directory for static asset name (default: {True})
     """
+
     log.info('Code remove | %s', item)
     code_operations.repository_remove(item)
     if item['meta']['is_current']:
@@ -289,6 +298,9 @@ def code_remove(item):
             utilities.code_type_directory_name(item['meta']['code_type']),
             item['meta']['name'])
         os.unlink(code_folder_current)
+
+    if item['meta']['code_type'] == 'static':
+        code_operations.remove_static(item, other_static_assets)
 
     sync = code_operations.sync_code()
     execute(fabric_tasks.clear_php_cache)

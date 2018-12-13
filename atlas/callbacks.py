@@ -128,27 +128,27 @@ def on_insert_sites(items):
     log.debug(items)
     for item in items:
         log.debug(item)
-        if not item.get('sid'):
+        if 'sid' not in item:
             item['sid'] = 'p1' + sha1(utilities.randomstring()).hexdigest()[0:10]
-        if not item.get('path'):
+        if 'path' not in item:
             item['path'] = item['sid']
-        if not item.get('update_group'):
+        if 'update_group' not in item:
             item['update_group'] = random.randint(0, 2)
         # Add default core and profile if not set.
         # The 'get' method checks if the key exists.
-        if item.get('code'):
-            if not item['code'].get('core'):
-                item['code']['core'] = utilities.get_current_code(
-                    name=DEFAULT_CORE, code_type='core')
-            if not item['code'].get('profile'):
-                item['code']['profile'] = utilities.get_current_code(
-                    name=DEFAULT_PROFILE, code_type='profile')
+        if 'code' in item:
+            if 'core' not in item['code']:
+                item['code']['core'] = ObjectId(utilities.get_current_code(
+                    name=DEFAULT_CORE, code_type='core'))
+            if 'profile' not in item['code']:
+                item['code']['profile'] = ObjectId(utilities.get_current_code(
+                    name=DEFAULT_PROFILE, code_type='profile'))
         else:
             item['code'] = {}
-            item['code']['core'] = utilities.get_current_code(
-                name=DEFAULT_CORE, code_type='core')
-            item['code']['profile'] = utilities.get_current_code(
-                name=DEFAULT_PROFILE, code_type='profile')
+            item['code']['core'] = ObjectId(utilities.get_current_code(
+                name=DEFAULT_CORE, code_type='core'))
+            item['code']['profile'] = ObjectId(utilities.get_current_code(
+                name=DEFAULT_PROFILE, code_type='profile'))
         date_json = '{{"created":"{0} GMT"}}'.format(item['_created'])
         item['dates'] = json.loads(date_json)
 

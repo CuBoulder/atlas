@@ -1,5 +1,11 @@
 # Change log
 
+## v2.3.0-alpha5
+
+Resolves:
+
+- &#35;515 - {"$ne"} query is returning items that match the string that we are trying to exclude
+
 ## v2.3.0-alpha4
 
 As part of deployment:

@@ -236,7 +236,7 @@ def code_update(updated_item, original_item):
         code_operations.update_symlink_current(original_item)
         log.debug('Code deploy | Symlink | Is current')
 
-    if item['meta']['code_type'] == 'static':
+    if updated_item['meta']['code_type'] == 'static':
         code_operations.deploy_static(item)
 
     sync = code_operations.sync_code()

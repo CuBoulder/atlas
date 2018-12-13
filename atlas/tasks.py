@@ -20,7 +20,7 @@ from git import GitCommandError
 
 from atlas import fabric_tasks, utilities, config_celery
 from atlas import code_operations, instance_operations, backup_operations
-from atlas.config import (ENVIRONMENT, WEBSERVER_USER, DESIRED_SITE_COUNT,
+from atlas.config import (ENVIRONMENT, WEBSERVER_USER, DESIRED_SITE_COUNT, EMAIL_HOST,
                           SSL_VERIFICATION, CODE_ROOT, BACKUPS_LARGE_INSTANCES)
 from atlas.config_servers import (BASE_URLS, API_URLS)
 
@@ -553,7 +553,11 @@ def site_update(site, updates, original):
                 subject = 'Packages removed - {0}/{1}'.format(BASE_URLS[ENVIRONMENT], site['path'])
                 message = "We removed all packages from {0}/{1}.\n\n - Web Express Team.".format(
                     BASE_URLS[ENVIRONMENT], site['path'])
-            email_to = ['{0}@colorado.edu'.format(site['modified_by'])]
+            email_domain_parts = EMAIL_HOST.split('.')
+            # Concatenate the 2nd to last and last items from the above split.
+            # We assume that you all email is on a single domain.
+            email_domain = email_domain_parts[-2] + '.' + email_domain_parts[-1]
+            email_to = ['{0}@{1}'.format(site['modified_by'], email_domain)]
             utilities.send_email(email_message=message, email_subject=subject, email_to=email_to)
 
     if updates.get('status'):

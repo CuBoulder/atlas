@@ -163,7 +163,7 @@ SITES_SCHEMA = {
     },
     'type': {
         'type': 'string',
-        'allowed':  ['express', 'legacy'],
+        'allowed':  ['express'],
         'default': 'express',
     },
     'status': {
@@ -211,6 +211,9 @@ SITES_SCHEMA = {
                 'type': 'string',
             },
             'cse_id': {
+                'type': 'string',
+            },
+            'google_tag_client_container_id': {
                 'type': 'string',
             },
         },

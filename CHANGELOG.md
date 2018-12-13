@@ -1,5 +1,21 @@
 # Change log
 
+## v2.3.0-alpha4
+
+As part of deployment:
+
+- Remove `LOCAL_WEB_ROOT`, `LOCAL_CODE_ROOT`, and `LOCAL_INSTANCE_ROOT` to `config_servers.py`
+
+Resolves:
+
+- &#35;533 - Remove `type` field from site schema and rest of atlas code
+- &#35;512 - Collapse variables back down
+- &#35;520 - Get rid of all references to load balancer or f5
+- &#35;530 - Add a value to site object and settings.php for Google Tag Manager
+- &#35;541 - Examine backup totals per instance
+- &#35;407 - Figure out how to handle max_results
+- &#35;515 - {"$ne"} query is returning items that match the string that we are trying to exclude
+
 ## v2.3.0-alpha3
 
 Resolves:

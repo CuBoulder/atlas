@@ -28,9 +28,10 @@ from atlas.config import (ATLAS_LOCATION, ALLOWED_USERS, LDAP_SERVER, LDAP_ORG_U
                           SERVICE_ACCOUNT_USERNAME, SERVICE_ACCOUNT_PASSWORD, SSL_VERIFICATION,
                           SLACK_USERNAME, SLACK_URL, SEND_NOTIFICATION_EMAILS,
                           SEND_NOTIFICATION_FROM_EMAIL, EMAIL_HOST, EMAIL_PORT, EMAIL_USERNAME,
-                          EMAIL_PASSWORD, EMAIL_USERS_EXCLUDE, SAML_AUTH, LOCAL_CODE_ROOT,
+                          EMAIL_PASSWORD, EMAIL_USERS_EXCLUDE, SAML_AUTH, CODE_ROOT,
                           INSTANCE_CODE_IGNORE_REGEX)
 from atlas.config_servers import (SERVERDEFS, API_URLS)
+from atlas.data_structure import PAGINATION_DEFAULT
 
 # Setup a sub-logger. See tasks.py for longer comment.
 log = logging.getLogger('atlas.utilities')
@@ -229,25 +230,65 @@ def post_eve(resource, payload):
 
 def get_eve(resource, query=None):
     """
-    Make calls to the Atlas API.
+    Make calls to the Atlas API. This handles situations where there are many pages of results.
 
     :param resource:
     :param query: argument string
-    :return: dict of items that match the query string.
+    :return: json result of request.
     """
+    url = API_URLS[ENVIRONMENT] + '/' + resource
     if query:
-        url = "{0}/{1}?{2}".format(API_URLS[ENVIRONMENT], resource, query)
+        url = url + '?' + query
+        query_url = url
+        inital_url = url + '&max_results=1'
     else:
-        url = "{0}/{1}".format(API_URLS[ENVIRONMENT], resource)
+        inital_url = url + '?max_results=1'
+        query_url = None
     log.debug('utilities | Get Eve | url - %s', url)
 
     try:
-        r = requests.get(url, auth=(SERVICE_ACCOUNT_USERNAME,
-                                    SERVICE_ACCOUNT_PASSWORD), verify=SSL_VERIFICATION)
+        # Get json output
+        r_inital = requests.get(
+            url,
+            auth=(SERVICE_ACCOUNT_USERNAME, SERVICE_ACCOUNT_PASSWORD),
+            verify=SSL_VERIFICATION).json()
     except Exception as error:
         log.error('GET to Atlas | URL - %s | Error - %s', url, error)
 
-    return r.json()
+    total_items = r_inital['_meta']['total']
+    json_result = None
+
+    if total_items > PAGINATION_DEFAULT:
+        # Return the ceiling of x as a float, the smallest integer value greater than or equal to x.
+        num_pages = int(ceil(total_items/PAGINATION_DEFAULT))
+        # Range - Generate numbers from the first number up to, but not including the second.
+        for page in range(1, num_pages + 1):
+            if query_url:
+                page_url = query_url + '&page={0}&max_results={1}'.format(page, PAGINATION_DEFAULT)
+            else:
+                page_url = url + '?page={0}&max_results={1}'.format(page, PAGINATION_DEFAULT)
+            r_page = requests.get(
+                page_url,
+                auth=(SERVICE_ACCOUNT_USERNAME, SERVICE_ACCOUNT_PASSWORD),
+                verify=SSL_VERIFICATION).json()
+            log.debug('utilities | Get eve | page request - %s', r_page)
+            # Merge lists
+            if json_result:
+                log.debug('Backup data | Original data - %s', json_result)
+                log.debug('Backup data | New data - %s', r_page)
+                json_result = json_result + r_page
+                log.debug('Backup data | Final data - %s', json_result)
+            else:
+                json_result = r_page
+    else:
+        if query_url:
+            total_url = query_url + '&max_results={0}'.format(total_items)
+        else:
+            total_url = url + '?max_results={0}'.format(total_items)
+        json_result = requests.get(total_url, auth=(
+            SERVICE_ACCOUNT_USERNAME,  SERVICE_ACCOUNT_PASSWORD), verify=SSL_VERIFICATION).json()
+
+    return json_result
 
 
 def get_single_eve(resource, id, version=None, env=ENVIRONMENT):
@@ -266,13 +307,6 @@ def get_single_eve(resource, id, version=None, env=ENVIRONMENT):
 
     r = requests.get(url, auth=(SERVICE_ACCOUNT_USERNAME,
                                 SERVICE_ACCOUNT_PASSWORD), verify=SSL_VERIFICATION)
-
-    try:
-        r.raise_for_status()
-    except requests.exceptions.HTTPError as e:
-        log.error('GET to Single item in Atlas | URL - %s | Error - %s', url, e)
-        if r.status_code == 404:
-            return 404
 
     return r.json()
 
@@ -336,14 +370,14 @@ def get_current_code(name, code_type):
         return False
 
 
-# Code related utility fucntions
+# Code related utility functions
 def code_path(item):
     """
     Determine the path for a code item
     """
     log.debug('Utilities | Code Path | Item - %s', item)
     code_dir = '{0}/{1}/{2}/{2}-{3}'.format(
-        LOCAL_CODE_ROOT,
+        CODE_ROOT,
         code_type_directory_name(item['meta']['code_type']),
         item['meta']['name'],
         item['meta']['version']
@@ -658,14 +692,13 @@ def sync(source, hosts, target, exclude=None):
             cmd = 'rsync -aqz --exclude={0} {1}/ {2}:{3} --delete'.format(exclude, source, host, target)
         else:
             cmd = 'rsync -aqz {0}/ {1}:{2} --delete'.format(source, host, target)
-        log.debug('Utilities | Sync | Command - %s', cmd)
+        log.debug('Utilities | Sync | Command - %s | Host - %s', cmd, host)
         try:
             output = subprocess.check_output(cmd, shell=True, stderr=subprocess.STDOUT)
         except subprocess.CalledProcessError as e:
-            log.error('Utilities | Sync | Failed | Return code - %s | StdErr - %s',
-                      e.returncode, e.output)
+            log.error('Utilities | Sync | Failed | Return code - %s | StdErr - %s | Host - %s', e.returncode, e.output, host)
         else:
-            log.info('Utilities | Sync | Success')
+            log.info('Utilities | Sync | Success | Host - %s', host)
 
 
 def file_accessable_and_writable(file):

@@ -128,30 +128,29 @@ def on_insert_sites(items):
     log.debug(items)
     for item in items:
         log.debug(item)
-        if item['type'] == 'express':
-            if not item.get('sid'):
-                item['sid'] = 'p1' + sha1(utilities.randomstring()).hexdigest()[0:10]
-            if not item.get('path'):
-                item['path'] = item['sid']
-            if not item.get('update_group'):
-                item['update_group'] = random.randint(0, 2)
-            # Add default core and profile if not set.
-            # The 'get' method checks if the key exists.
-            if item.get('code'):
-                if not item['code'].get('core'):
-                    item['code']['core'] = utilities.get_current_code(
-                        name=DEFAULT_CORE, code_type='core')
-                if not item['code'].get('profile'):
-                    item['code']['profile'] = utilities.get_current_code(
-                        name=DEFAULT_PROFILE, code_type='profile')
-            else:
-                item['code'] = {}
-                item['code']['core'] = utilities.get_current_code(
-                    name=DEFAULT_CORE, code_type='core')
-                item['code']['profile'] = utilities.get_current_code(
-                    name=DEFAULT_PROFILE, code_type='profile')
-            date_json = '{{"created":"{0} GMT"}}'.format(item['_created'])
-            item['dates'] = json.loads(date_json)
+        if 'sid' not in item:
+            item['sid'] = 'p1' + sha1(utilities.randomstring()).hexdigest()[0:10]
+        if 'path' not in item:
+            item['path'] = item['sid']
+        if 'update_group' not in item:
+            item['update_group'] = random.randint(0, 2)
+        # Add default core and profile if not set.
+        # The 'get' method checks if the key exists.
+        if 'code' in item:
+            if 'core' not in item['code']:
+                item['code']['core'] = ObjectId(utilities.get_current_code(
+                    name=DEFAULT_CORE, code_type='core'))
+            if 'profile' not in item['code']:
+                item['code']['profile'] = ObjectId(utilities.get_current_code(
+                    name=DEFAULT_PROFILE, code_type='profile'))
+        else:
+            item['code'] = {}
+            item['code']['core'] = ObjectId(utilities.get_current_code(
+                name=DEFAULT_CORE, code_type='core'))
+            item['code']['profile'] = ObjectId(utilities.get_current_code(
+                name=DEFAULT_PROFILE, code_type='profile'))
+        date_json = '{{"created":"{0} GMT"}}'.format(item['_created'])
+        item['dates'] = json.loads(date_json)
 
 
 def on_inserted_sites(items):
@@ -164,16 +163,15 @@ def on_inserted_sites(items):
     for item in items:
         log.debug(item)
         log.debug('site | Site object created | site - %s', item)
-        if item['type'] == 'express':
-            # Create statistics item
-            statistics_payload = {}
-            # Need to get the string out of the ObjectID.
-            statistics_payload['site'] = str(item['_id'])
-            log.debug('site | Create Statistics item - %s', statistics_payload)
-            statistics = utilities.post_eve(resource='statistics', payload=statistics_payload)
-            item['statistics'] = str(statistics['_id'])
+        # Create statistics item
+        statistics_payload = {}
+        # Need to get the string out of the ObjectID.
+        statistics_payload['site'] = str(item['_id'])
+        log.debug('site | Create Statistics item - %s', statistics_payload)
+        statistics = utilities.post_eve(resource='statistics', payload=statistics_payload)
+        item['statistics'] = str(statistics['_id'])
 
-            tasks.site_provision.delay(item)
+        tasks.site_provision.delay(item)
 
 
 def on_insert_code(items):
@@ -236,7 +234,15 @@ def on_delete_item_code(item):
     :param item:
     """
     log.debug('code | on delete | item - %s', item)
-    tasks.code_remove.delay(item)
+    other_static_assets = False
+    if item['meta']['code_type'] == 'static':
+        query = 'where={{"meta.name":"{0}","meta.code_type":"static","_id":{{"$ne":"{1}"}}}}'.format(
+            item['meta']['name'], item['_id'])
+        code = utilities.get_eve('code', query)
+        if code['_meta']['total'] != 0:
+            other_static_assets = True
+    log.info('code | on delete | other static assets - %s', other_static_assets)
+    tasks.code_remove.delay(item, other_static_assets)
 
 
 def on_delete_item_backup(item):
@@ -304,41 +310,39 @@ def on_update_sites(updates, original):
     :param original:
     """
     log.debug('sites | Update | Updates - %s | Original - %s', updates, original)
-    site_type = updates['type'] if updates.get('type') else original['type']
-    if site_type in ['express']:
-        site = original.copy()
-        site.update(updates)
-        # Only need to rewrite the nested dicts if they got updated.
-        if updates.get('code'):
-            code = original['code'].copy()
-            code.update(updates['code'])
-            site['code'] = code
-        if updates.get('dates') and original.get('dates'):
-            dates = original['dates'].copy()
-            dates.update(updates['dates'])
-            site['dates'] = dates
-        if updates.get('settings'):
-            settings = original['settings'].copy()
-            settings.update(updates['settings'])
-            site['settings'] = settings
+    site = original.copy()
+    site.update(updates)
+    # Only need to rewrite the nested dicts if they got updated.
+    if updates.get('code'):
+        code = original['code'].copy()
+        code.update(updates['code'])
+        site['code'] = code
+    if updates.get('dates') and original.get('dates'):
+        dates = original['dates'].copy()
+        dates.update(updates['dates'])
+        site['dates'] = dates
+    if updates.get('settings'):
+        settings = original['settings'].copy()
+        settings.update(updates['settings'])
+        site['settings'] = settings
 
-        if updates.get('status'):
-            if updates['status'] in ['installing', 'launching', 'take_down', 'restore']:
-                if updates['status'] == 'installing':
-                    date_json = '{{"assigned":"{0} GMT"}}'.format(updates['_updated'])
-                elif updates['status'] == 'launching':
-                    date_json = '{{"launched":"{0} GMT"}}'.format(updates['_updated'])
-                elif updates['status'] == 'locked':
-                    date_json = '{{"locked":""}}'
-                elif updates['status'] == 'take_down':
-                    date_json = '{{"taken_down":"{0} GMT"}}'.format(updates['_updated'])
-                elif updates['status'] == 'restore':
-                    date_json = '{{"restored":"{0} GMT"}}'.format(updates['_updated'])
+    if updates.get('status'):
+        if updates['status'] in ['installing', 'launching', 'take_down', 'restore']:
+            if updates['status'] == 'installing':
+                date_json = '{{"assigned":"{0} GMT"}}'.format(updates['_updated'])
+            elif updates['status'] == 'launching':
+                date_json = '{{"launched":"{0} GMT"}}'.format(updates['_updated'])
+            elif updates['status'] == 'locked':
+                date_json = '{{"locked":""}}'
+            elif updates['status'] == 'take_down':
+                date_json = '{{"taken_down":"{0} GMT"}}'.format(updates['_updated'])
+            elif updates['status'] == 'restore':
+                date_json = '{{"restored":"{0} GMT"}}'.format(updates['_updated'])
 
-                updates['dates'] = json.loads(date_json)
+            updates['dates'] = json.loads(date_json)
 
-        log.debug('sites | Update | Ready for Celery | Site - %s | Updates - %s', site, updates)
-        tasks.site_update.delay(site=site, updates=updates, original=original)
+    log.debug('sites | Update | Ready for Celery | Site - %s | Updates - %s', site, updates)
+    tasks.site_update.delay(site=site, updates=updates, original=original)
 
 
 def on_updated_code(updates, original):

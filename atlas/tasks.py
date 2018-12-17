@@ -21,7 +21,7 @@ from git import GitCommandError
 from atlas import fabric_tasks, utilities, config_celery
 from atlas import code_operations, instance_operations, backup_operations
 from atlas.config import (ENVIRONMENT, WEBSERVER_USER, DESIRED_SITE_COUNT, EMAIL_HOST,
-                          SSL_VERIFICATION, CODE_ROOT, BACKUPS_LARGE_INSTANCES)
+                          SSL_VERIFICATION, CODE_ROOT, BACKUPS_LARGE_INSTANCES, DEFAULT_PROFILE)
 from atlas.config_servers import (BASE_URLS, API_URLS)
 
 # Setup a sub-logger
@@ -139,8 +139,16 @@ def code_deploy(item):
         log.error('Code | Checkout | Cannot checkout requested tag, check value.')
     if item['meta']['is_current']:
         code_operations.update_symlink_current(item)
+        # Symlink current versions of packages into the default profiles
+        profile_query = 'where={{"meta.name":"{0}","meta.code_type":"profile"}}'.format(
+            DEFAULT_PROFILE)
+        profile_items = utilities.get_eve('code', profile_query)
+        if profile_items:
+            profiles = profile_items['_items']
+            log.info('Code deploy | Profiles - %s', profiles)
+            code_operations.update_symlink_profile(item, profiles)
         log.debug('Code deploy | Symlink | Is current')
-    
+
     if item['meta']['code_type'] == 'static':
         code_operations.deploy_static(item)
 
@@ -235,6 +243,14 @@ def code_update(updated_item, original_item):
     if original_item['meta']['is_current']:
         code_operations.update_symlink_current(original_item)
         log.debug('Code deploy | Symlink | Is current')
+        # Symlink current versions of packages into the default profiles
+        profile_query = 'where={{"meta.name":"{0}","meta.code_type":"profile"}}'.format(
+            DEFAULT_PROFILE)
+        profile_items = utilities.get_eve('code', profile_query)
+        if profile_items:
+            profiles = profile_items['_items']
+            log.info('Code update | Profiles - %s', profiles)
+            code_operations.update_symlink_profile(final_item, profiles)
 
     if final_item['meta']['code_type'] == 'static':
         code_operations.deploy_static(final_item)
@@ -298,6 +314,14 @@ def code_remove(item, other_static_assets=True):
             utilities.code_type_directory_name(item['meta']['code_type']),
             item['meta']['name'])
         os.unlink(code_folder_current)
+        # Remove symlink for versions of package into the default profiles
+        profile_query = 'where={{"meta.name":"{0}","meta.code_type":"profile"}}'.format(
+            DEFAULT_PROFILE)
+        profile_items = utilities.get_eve('code', profile_query)
+        if profile_items:
+            profiles = profile_items['_items']
+            log.info('Code deploy | Profiles - %s', profiles)
+            code_operations.remove_symlink_profile(item, profiles)
 
     if item['meta']['code_type'] == 'static':
         code_operations.remove_static(item, other_static_assets)

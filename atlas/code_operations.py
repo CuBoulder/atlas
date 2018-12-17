@@ -10,7 +10,7 @@ import subprocess
 import git
 
 from atlas import utilities
-from atlas.config import (ENVIRONMENT, CODE_ROOT, WEB_ROOT)
+from atlas.config import (ENVIRONMENT, CODE_ROOT, WEB_ROOT, DEFAULT_PROFILE)
 from atlas.config_servers import (SERVERDEFS)
 
 # Setup a sub-logger. See tasks.py for longer comment.
@@ -66,7 +66,7 @@ def repository_remove(item):
 
 def update_symlink_current(item):
     """
-    Determine the path for a code item
+    Create symlink between version number directory and current
     """
     code_folder_current = '{0}/{1}/{2}/{2}-current'.format(
         CODE_ROOT,
@@ -77,6 +77,50 @@ def update_symlink_current(item):
         os.unlink(code_folder_current)
     os.symlink(utilities.code_path(item), code_folder_current)
     log.debug('Code deploy | Symlink | %s', code_folder_current)
+
+
+def update_symlink_profile(item, profiles):
+    """Symlink code item into all default profiles
+    
+    Arguments:
+        item {dict} -- Complete instance object
+        profiles {list} -- List of profile objects
+    """
+    for profile in profiles:
+        profile_path = utilities.code_path(profile)
+        item_profile_type_bundles_path = '{0}/{1}/bundles'.format(
+            profile_path,
+            item['meta']['code_type'])
+        # Make directory
+        if not os.path.exists(item_profile_type_bundles_path):
+            os.makedirs(item_profile_type_bundles_path)
+        item_profile_path = '{0}/{1}'.format(
+            item_profile_type_bundles_path,
+            item['meta']['name'])
+        # Remove symlink if it exists
+        if os.path.islink(item_profile_path):
+            os.unlink(item_profile_path)
+        os.symlink(utilities.code_path(item), item_profile_path)
+        log.debug('Code deploy | Profile Symlink | %s', item_profile_path)
+
+
+def remove_symlink_profile(item, profiles):
+    """Remove symlink code item into all default profiles
+    
+    Arguments:
+        item {dict} -- Complete instance object
+        profiles {list} -- List of profile objects
+    """
+    for profile in profiles:
+        profile_path = utilities.code_path(profile)
+        item_profile_path = '{0}/{1}/bundles/{2}'.format(
+            profile_path,
+            item['meta']['code_type'],
+            item['meta']['name'])
+        # Remove symlink if it exists
+        if os.path.islink(item_profile_path):
+            os.unlink(item_profile_path)
+        log.debug('Code remove | Remove profile symlink | %s', item_profile_path)
 
 
 def sync_code():

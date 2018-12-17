@@ -15,6 +15,7 @@ global $conf;
 // Atlas information
 $conf["install_profile"] = "{{profile}}";
 $conf["cu_sid"] = "{{sid}}";
+$conf['sn_key'] = "{{ servicenow_key }}";
 
 $conf["atlas_id"] = "{{atlas_id}}";
 $conf["atlas_url"] = "{{atlas_url}}";

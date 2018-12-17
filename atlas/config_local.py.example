@@ -54,6 +54,7 @@ DATABASE_PASSWORD = 'db_creds'
 SERVICE_ACCOUNT_USERNAME = 'atlas_drupal'
 SERVICE_ACCOUNT_PASSWORD = 'atlas_drupal_creds'
 SAML_AUTH = 'password'
+SERVICENOW_KEY = 'atlas_servicenow_key'
 
 # Large backups - run on a much slower schedule
 BACKUPS_LARGE_INSTANCES = ['path1', 'path2']

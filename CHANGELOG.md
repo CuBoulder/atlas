@@ -1,5 +1,16 @@
 # Change log
 
+## v2.3.0-alpha5
+
+
+As part of deployment:
+
+- Add `sn_key` to settings.php
+
+Resolves:
+
+- &#35;559 - Need to add ServiceNow API key to settings.php
+
 ## v2.3.0-alpha4
 
 As part of deployment:

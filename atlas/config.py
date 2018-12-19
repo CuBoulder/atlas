@@ -21,7 +21,8 @@ from atlas.config_local import (ENVIRONMENT, SSL_KEY_FILE, SSL_CRT_FILE, ALLOWED
                                 EMAIL_USERNAME, EMAIL_PASSWORD, LOG_LOCATION, EMAIL_USERS_EXCLUDE,
                                 STATIC_WEB_PATH, BACKUP_PATH, SMTP_PASSWORD, SAML_AUTH,
                                 EXPRESS_URL, EMAIL_SIGNATURE, TEST_ACCOUNTS, INACTIVE_WARNINGS,
-                                INACTIVE_STATUS)
+                                INACTIVE_STATUS, SERVICENOW_KEY, BACKUPS_LARGE_INSTANCES)
+
 
 # Set Atlas location
 ATLAS_LOCATION = os.path.dirname(os.path.realpath(__file__))
@@ -71,4 +72,4 @@ if ENVIRONMENT == 'local':
     # https://urllib3.readthedocs.io/en/latest/advanced-usage.html#ssl-warnings
     urllib3.disable_warnings()
 
-VERSION_NUMBER = '2.3.0-alpha3'
+VERSION_NUMBER = '2.3.0-alpha4'

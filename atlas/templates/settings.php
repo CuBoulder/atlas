@@ -15,6 +15,7 @@ global $conf;
 // Atlas information
 $conf["install_profile"] = "{{profile}}";
 $conf["cu_sid"] = "{{sid}}";
+$conf['sn_key'] = "{{ servicenow_key }}";
 
 $conf["atlas_id"] = "{{atlas_id}}";
 $conf["atlas_url"] = "{{atlas_url}}";
@@ -56,15 +57,7 @@ $conf["smtp_password"] = "{{smtp_password}}";
 if (isset($launched) && $launched && isset($conf["cu_path"])) {
   if (strpos($_SERVER['REQUEST_URI'], $conf['cu_sid']) !== false) {
     header('HTTP/1.0 301 Moved Permanently');
-    {% if environment == 'prod' -%}
-    header('Location: https://www.colorado.edu'. str_replace($conf['cu_sid'], $conf["cu_path"], $_SERVER['REQUEST_URI']));
-    {% elif environment == 'test' -%}
-    header('Location: https://www-test-new.colorado.edu'. str_replace($conf['cu_sid'], $conf["cu_path"], $_SERVER['REQUEST_URI']));
-    {% elif environment == 'dev' -%}
-    header('Location: https://www-dev-new.colorado.edu'. str_replace($conf['cu_sid'], $conf["cu_path"], $_SERVER['REQUEST_URI']));
-    {% elif environment == 'local' -%}
-    header('Location: https://express.local'. str_replace($conf['cu_sid'], $conf["cu_path"], $_SERVER['REQUEST_URI']));
-    {% endif -%}
+    header('Location: {{base_url}}' . str_replace($conf['cu_sid'], $conf["cu_path"], $_SERVER['REQUEST_URI']));
     exit();
   }
 }
@@ -77,18 +70,8 @@ if (isset($launched) && $launched && isset($conf["cu_path"])) {
  * We also set the cookie path so that we don't bypass Varnish for instances we are not logged into.
  */
 global $base_url;
-{% if environment == 'prod' -%}
-$base_url .= 'https://www.colorado.edu';
-$cookie_domain = '.www.colorado.edu';
-{% elif environment == 'test' -%}
-$base_url .= 'https://www-test-new.colorado.edu';
-$cookie_domain = '.www-test-new.colorado.edu';
-{% elif environment == 'dev' -%}
-$base_url .= 'https://www-dev-new.colorado.edu';
-$cookie_domain = '.www-dev-new.colorado.edu';
-{% elif environment == 'local' -%}
-$base_url .= 'https://express.local';
-{% endif -%}
+$base_url .= '{{base_url}}';
+$cookie_domain = '.{{domain}}';
 // We don't need a cookie_domain for locals.
 ini_set('session.cookie_lifetime', 93600);
 {% if path != 'homepage' -%}

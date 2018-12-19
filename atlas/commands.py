@@ -51,4 +51,8 @@ COMMANDS = [
         'machine_name': u'check_instance_inactive',
         'description': u'Check for instances that have not been updated recently and notify Site Owners and/or take down the instance.',
     },
+    {
+        'machine_name': u'remove_extra_backups',
+        'description': u'Start the process of removing extra.',
+    },
 ]

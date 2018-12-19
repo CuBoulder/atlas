@@ -10,6 +10,7 @@ import json
 from datetime import datetime, timedelta
 from collections import Counter
 from bson import json_util
+from math import ceil
 from random import randint
 import requests
 from celery import Celery, chord
@@ -19,9 +20,11 @@ from git import GitCommandError
 
 from atlas import fabric_tasks, utilities, config_celery
 from atlas import code_operations, instance_operations, backup_operations
-from atlas.config import (ENVIRONMENT, WEBSERVER_USER, DESIRED_SITE_COUNT,
+
+from atlas.config import (ENVIRONMENT, WEBSERVER_USER, DESIRED_SITE_COUNT, EMAIL_HOST,
                           SSL_VERIFICATION, CODE_ROOT, INACTIVE_WARNINGS, INACTIVE_STATUS,
-                          TEST_ACCOUNTS, EXPRESS_URL, EMAIL_SIGNATURE)
+                          TEST_ACCOUNTS, EXPRESS_URL, EMAIL_SIGNATURE, BACKUPS_LARGE_INSTANCES)
+
 from atlas.config_servers import (BASE_URLS, API_URLS)
 
 # Setup a sub-logger
@@ -140,8 +143,11 @@ def code_deploy(item):
     if item['meta']['is_current']:
         code_operations.update_symlink_current(item)
         log.debug('Code deploy | Symlink | Is current')
+    
+    if item['meta']['code_type'] == 'static':
+        code_operations.deploy_static(item)
+
     sync = code_operations.sync_code()
-    execute(fabric_tasks.clear_php_cache)
 
     if clone or sync:
         text = 'Error'
@@ -233,8 +239,10 @@ def code_update(updated_item, original_item):
         code_operations.update_symlink_current(original_item)
         log.debug('Code deploy | Symlink | Is current')
 
+    if final_item['meta']['code_type'] == 'static':
+        code_operations.deploy_static(final_item)
+
     sync = code_operations.sync_code()
-    execute(fabric_tasks.clear_php_cache)
 
     slack_title = 'Code Update - Success'
     slack_color = 'good'
@@ -274,13 +282,17 @@ def code_update(updated_item, original_item):
 
 
 @celery.task
-def code_remove(item):
-    """
-    Remove code from the server.
+def code_remove(item, other_static_assets=True):
+    """Remove code from the server.
 
-    :param item: Item to be removed.
-    :return:
+    Arguments:
+        item {dict} -- Item record for static asset to deploy
+
+    Keyword Arguments:
+        other_static_assets {bool} -- Only applies in cases with static assets. If false, remove
+        directory for static asset name (default: {True})
     """
+
     log.info('Code remove | %s', item)
     code_operations.repository_remove(item)
     if item['meta']['is_current']:
@@ -289,6 +301,9 @@ def code_remove(item):
             utilities.code_type_directory_name(item['meta']['code_type']),
             item['meta']['name'])
         os.unlink(code_folder_current)
+
+    if item['meta']['code_type'] == 'static':
+        code_operations.remove_static(item, other_static_assets)
 
     sync = code_operations.sync_code()
     execute(fabric_tasks.clear_php_cache)
@@ -541,7 +556,11 @@ def site_update(site, updates, original):
                 subject = 'Packages removed - {0}/{1}'.format(BASE_URLS[ENVIRONMENT], site['path'])
                 message = "We removed all packages from {0}/{1}.\n\n - Web Express Team.".format(
                     BASE_URLS[ENVIRONMENT], site['path'])
-            email_to = ['{0}@colorado.edu'.format(site['modified_by'])]
+            email_domain_parts = EMAIL_HOST.split('.')
+            # Concatenate the 2nd to last and last items from the above split.
+            # We assume that you all email is on a single domain.
+            email_domain = email_domain_parts[-2] + '.' + email_domain_parts[-1]
+            email_to = ['{0}@{1}'.format(site['modified_by'], email_domain)]
             utilities.send_email(email_message=message, email_subject=subject, email_to=email_to)
 
     if updates.get('status'):
@@ -596,10 +615,9 @@ def site_update(site, updates, original):
                 site['status'] = 'installed'
                 instance_operations.switch_settings_files(site)
                 instance_operations.switch_web_root_symlinks(site)
-                statistics = utilities.get_single_eve('statistics', site['statistics'])
                 statistics_patch_payload = '{{"site": "{0}"}}'.format(site['_id'])
                 statistics_patch = utilities.patch_eve(
-                    'statistics', statistics['_id'], statistics_patch_payload)
+                    'statistics', site['statistics'], statistics_patch_payload)
                 deploy_update_database = True
                 patch_payload = '{"status": "installed"}'
                 deploy_drupal_cache_clear = True
@@ -712,7 +730,7 @@ def drush_prepare(drush_id, run=True):
     log.debug('Drush | Prepare | Drush command - %s', drush_id)
     drush_command = utilities.get_single_eve('drush', drush_id)
 
-    site_query = 'where={0}&max_results=2000'.format(drush_command['query'])
+    site_query = 'where={0}'.format(drush_command['query'])
     sites = utilities.get_eve('sites', site_query)
     log.debug('Drush | Prepare | Drush command - %s | Ran query - %s', drush_id, sites)
     if not sites['_meta']['total'] == 0 and run is True:
@@ -776,7 +794,7 @@ def cron(status=None):
     """
     log.info('Status - %s', status)
     # Build query.
-    site_query_string = ['max_results=2000&where={']
+    site_query_string = ['where={']
     log.debug('Prepare Cron | Found argument')
     if status:
         log.debug('Found status')
@@ -914,10 +932,8 @@ def remove_orphan_statistics():
     """
     Get a list of statistics and key them against a list of active instances.
     """
-    site_query = 'max_results=2000'
-    sites = utilities.get_eve('sites', site_query)
-    statistics_query = '&max_results=2000'
-    statistics = utilities.get_eve('statistics', statistics_query)
+    sites = utilities.get_eve('sites')
+    statistics = utilities.get_eve('statistics')
     log.debug('Statistics | %s', statistics)
     log.debug('Sites | %s', sites)
     site_id_list = []
@@ -965,7 +981,7 @@ def verify_statistics():
     Get a list of statistics items that have not been updated in 36 hours and notify users.
     """
     time_ago = datetime.utcnow() - timedelta(hours=36)
-    statistics_query = 'where={{"_updated":{{"$lte":"{0}"}}}}&max_results=2000'.format(
+    statistics_query = 'where={{"_updated":{{"$lte":"{0}"}}}}'.format(
         time_ago.strftime("%Y-%m-%d %H:%M:%S GMT"))
     outdated_statistics = utilities.get_eve('statistics', statistics_query)
     log.debug('Old statistics time - %s', time_ago.strftime("%Y-%m-%d %H:%M:%S GMT"))
@@ -977,7 +993,7 @@ def verify_statistics():
 
         log.debug('statistic_id_list | %s', statistic_id_list)
 
-        site_query = 'where={{"statistics":{{"$in":{0}}}}}&max_results=2000'.format(json.dumps(statistic_id_list))
+        site_query = 'where={{"statistics":{{"$in":{0}}}}}'.format(json.dumps(statistic_id_list))
         log.debug('Site query | %s', site_query)
         sites = utilities.get_eve('sites', site_query)
         sites_id_list = []
@@ -1032,10 +1048,80 @@ def verify_statistics():
 
 @celery.task(time_limit=1200)
 def backup_instances_all(backup_type='routine'):
+    """Backup all instance EXCEPT for the ones that we know are too large, currently `today` and
+    `cwa`
+
+    20 minute time limit
+
+    Keyword Arguments:
+        backup_type {str} -- 'routine', 'update', or 'on_demand' (default: {'routine'})
+    """
     log.info('Backup all instances')
+    # Get the instance IDs for excluded paths
+    exclude_instances = utilities.get_eve(
+        'sites', 'where={{"path":{{"$in":{0}}}}}'.format(json.dumps(BACKUPS_LARGE_INSTANCES)))
+    log.debug('Backup all instances | Exclude instances - %s', exclude_instances['_items'])
+    exclude_ids = []
+    for instance in exclude_instances['_items']:
+        exclude_ids.append(instance['_id'])
+    log.debug('Backup all instances | List of IDs to exclude - %s', exclude_ids)
     # TODO: Max results
+    statistics_query = 'where={{"status":{{"$in":["installed","launched"]}},"days_since_last_edit":0,"site":{{"$nin":{0}}}}}'.format(
+        json.dumps(exclude_ids))
+    log.debug('Backup all instances | Stats query - %s', statistics_query)
     statistics = utilities.get_eve(
-        'statistics', 'where={"status":{"$in":["installed","launched"]},"days_since_last_edit":0}')
+        'statistics', statistics_query)
+    batch_id = time.time()
+    if not statistics['_meta']['total'] == 0:
+        for statistic in statistics['_items']:
+            site = utilities.get_single_eve('sites', statistic['site'])
+            backup_create.delay(site=site, backup_type=backup_type, batch=batch_id)
+    # Report to slack
+    log.info('Atlas operational statistic | Batch - %s | Type - %s | Count - %s',
+             batch_id, backup_type, statistics['_meta']['total'])
+
+    slack_fallback = '{0} {1} backups started'.format(statistics['_meta']['total'], backup_type)
+    slack_color = 'good'
+    slack_payload = {
+        "text": 'Backups started',
+        "attachments": [
+            {
+                "fallback": slack_fallback,
+                "color": slack_color,
+                "fields": [
+                    {"title": "Environment", "value": ENVIRONMENT, "short": True},
+                    {"title": "Backup Type", "value": backup_type, "short": True},
+                    {"title": "Count", "value": statistics['_meta']['total'], "short": True}
+                ],
+            }
+        ],
+    }
+    utilities.post_to_slack_payload(slack_payload)
+
+
+@celery.task(time_limit=2100)
+def backup_instances_large(backup_type='routine'):
+    """Backup known large instances, currently `today` and `cwa`
+
+    35 minute time limit
+
+    Keyword Arguments:
+        backup_type {str} -- 'routine', 'update', or 'on_demand' (default: {'routine'})
+    """
+    log.info('Backup large instances')
+    # Get the instance IDs for include paths
+    instances = utilities.get_eve('sites', 'where={{"path":{{"$in":[{0}]}}}}'.format(
+        json.dumps(BACKUPS_LARGE_INSTANCES)))
+    log.debug('Backup large instances | Include instances - %s', instances['_items'])
+    instances_ids = []
+    for instance in instances_instances['_items']:
+        instances_ids.append(instance['_id'])
+    log.debug('Backup large instances | List of IDs to include - %s', instances_ids)
+    statistics_query = 'where={{"status":{{"$in":["installed","launched"]}},"days_since_last_edit":{{"$lte":7}},"site":{{"$in":[{0}]}}}}'.format(
+        json.dumps(instances_ids))
+    log.debug('Backup large instances | Stats query - %s', statistics_query)
+    statistics = utilities.get_eve(
+        'statistics', statistics_query)
     batch_id = time.time()
     if not statistics['_meta']['total'] == 0:
         for statistic in statistics['_items']:
@@ -1095,13 +1181,14 @@ def remove_old_backups():
     Delete backups older than 90 days unless it is the only backup.
     """
     time_ago = datetime.utcnow() - timedelta(days=90)
-    backup_query = 'where={{"_created":{{"$lte":"{0}"}}}}&max_results=2000'.format(
+    backup_query = 'where={{"_created":{{"$lte":"{0}"}}}}'.format(
         time_ago.strftime("%Y-%m-%d %H:%M:%S GMT"))
     backups = utilities.get_eve('backup', backup_query)
     # Loop through and remove backups that are old.
     if not backups['_meta']['total'] == 0:
         for backup in backups['_items']:
-            check_for_other = utilities.get_eve('backup', 'where={{"site":"{0}"}}'.format(backup['site']))
+            check_for_other = utilities.get_eve(
+                'backup', 'where={{"site":"{0}"}}'.format(backup['site']))
             if not check_for_other['_meta']['total'] == 1:
                 log.info('Delete old backup | backup - %s', backup)
                 utilities.delete_eve('backup', backup['_id'])
@@ -1115,16 +1202,16 @@ def remove_extra_backups():
     """
     Delete extra backups, we only want to keep 5 per instance.
     """
-    # Get all backups
-    backups = utilities.get_eve('backup', 'max_results=10000')
+    backup_data = utilities.get_eve('backup')
+    log.debug('Delete extra backups | backup_data - %s', backup_data)
     instance_ids = []
-    for item in backups['_items']:
+    for item in backup_data['_items']:
         instance_ids.append(item['site'])
     log.debug('Delete extra backups | Instance list - %s', instance_ids)
     counts = Counter(instance_ids)
     log.info('Delete extra backups | counts - %s', counts)
     # Sort out the list for values greater than 5
-    high_count = {k:v for (k, v) in counts.items() if v > 5}
+    high_count = {k: v for (k, v) in counts.items() if v > 5}
     log.info('Delete extra backups | High Count - %s', high_count)
     if high_count:
         for item in high_count:
@@ -1149,7 +1236,7 @@ def remove_failed_backups():
     """
     # Get all backups
     time_ago = datetime.utcnow() - timedelta(minutes=90)
-    backup_query = 'where={{"state":"pending","_created":{{"$lte":"{0}"}}}}&max_results=2000'.format(
+    backup_query = 'where={{"state":"pending","_created":{{"$lte":"{0}"}}}}'.format(
         time_ago.strftime("%Y-%m-%d %H:%M:%S GMT"))
     backups = utilities.get_eve('backup', backup_query)
     for item in backups['_items']:
@@ -1242,9 +1329,9 @@ def rebalance_update_groups():
     :return:
     """
     log.info
-    installed_query = 'where={"status":"installed"}&max_results=2000'
+    installed_query = 'where={"status":"installed"}'
     installed_sites = utilities.get_eve('sites', installed_query)
-    launched_query = 'where={"status":"launched"}&max_results=2000'
+    launched_query = 'where={"status":"launched"}'
     launched_sites = utilities.get_eve('sites', launched_query)
     installed_update_group = 0
     launched_update_group = 0

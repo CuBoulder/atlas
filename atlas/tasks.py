@@ -1433,16 +1433,14 @@ def check_instance_inactive():
 
         # Start by calling stats, we want any records whose days since last login is greater than the corresponding warning value(days) 
         # Build statistics query
-        # Query example for "first" ?where={"days_since_last_login":{"$gte":30},"status":{"$in":["installed"]}}
         statistics_query = 'where={{"days_since_last_login":{{"$gte":{0}}},"status":{{"$in":{1}}}}}'.format(
             value['days'], json.dumps(INACTIVE_STATUS))
 
         # Statistics GET request
         statistics = utilities.get_eve('statistics', statistics_query)
 
-        log.debug('Check inactive | %s | %s', key, statistics)
-        # If statistics records exist
         if not statistics['_meta']['total'] == 0:
+            log.info('Stats for outdated sites greater than ' + str(value['days']))
             # Loop through each statistic record
             for statistic in statistics['_items']:
                 # Verify that statistics item has been updated in the last 24 hours.
@@ -1459,25 +1457,10 @@ def check_instance_inactive():
                         'Check inactive | Statistic Out of Date | %s', statistics)
                     continue
                 
-                # TODO: maybe timedelta(days=value) ?
                 check_date = datetime.utcnow() - timedelta(days=60)
                 ## Check for same interval messages
-                # Setup query Bondo for Event items that are: 'inactive_mail', related to this
-                # instance, of the same 'inactive_mail' type (first, second, take_down), and created
-                # more recently than the date from above.
-                # eve_lookup = '?where={{"event_type":"inactive_mail","atlas.instance_id":"{0}","inactive_mail":"{1}","_created":{{"$gte":"{2}"}}}}'.format(
-                #     str(statistic['site']), key, date.strftime("%Y-%m-%d %H:%M:%S GMT"))
                 eve_lookup = 'where={{"event_type":"inactive_mail","atlas.instance_id":"{0}","inactive_mail.inactive_mail_type":"{1}","_created":{{"$gte":"{2}"}}}}'.format(
                     str(statistic['site']), key, check_date.strftime("%Y-%m-%d %H:%M:%S GMT"))
-                # Run the query
-                log.debug('Check inactive | Mail check query | %s', eve_lookup)
-                # TODO Fix this
-                # Currently get_internal is getting jacked when Eve parses the lookup in eve/utils.py#L124
-                # The fact that we are POST to 'commands' is getting in the middle.
-                # events = {}
-                # events['response'], events['last_modified'], events['etag'], events['status'], events['headers'] = get_internal(
-                #     'event', lookup=eve_lookup)
-                # WORKAROUND using the requests library.
                 events = utilities.get_eve('event', query=eve_lookup)
                 log.debug(
                     'Check inactive | Mail check results | %s | %s', statistic['site'], events)
@@ -1490,8 +1473,6 @@ def check_instance_inactive():
                     # Build the query, check that the email for 'first' warning was sent 
                     eve_lookup_first = 'where={{"event_type":"inactive_mail","atlas.instance_id":"{0}","inactive_mail.inactive_mail_type":"first","_created":{{"$gte":"{1}","$lte":"{2}"}}}}'.format(
                         str(statistic['site']), check_date.strftime("%Y-%m-%d %H:%M:%S GMT"), interval_date.strftime("%Y-%m-%d %H:%M:%S GMT"))
-                    print 'taco_eve_lookup_first'
-                    print eve_lookup_first
                     events_first = utilities.get_eve(
                         'event', query=eve_lookup_first)
                     log.debug('Check inactive | Verify previous mail | %s | %s',
@@ -1501,6 +1482,8 @@ def check_instance_inactive():
                             'Check inactive | Verify previous mail | %s | No first notice', statistic['site'])
                         # Didn't send a previous notice, on to the next loop
                         continue
+                    else:
+                        log.debug('Check inactive | First Event Exists')
 
                 elif key == 'take_down':
                     # Create date bound to make sure a previous message was sent appropriately long ago.
@@ -1564,6 +1547,6 @@ def check_instance_inactive():
 
         # No site statistics records exist
         else:
-            log.debug('Check inactive | %s | 0 statistics records found', key)
+            log.debug('Check inactive | %s | No statistics records found', key)
 
     return True

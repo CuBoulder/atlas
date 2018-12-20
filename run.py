@@ -229,7 +229,7 @@ def restore_backup(backup_id):
 def create_backup(site_id):
     """
     Create a backup of an instance.
-    :param machine_name: id of instance to restore
+    :param machine_name: id of instance to backup
     """
     app.logger.debug('Backup | Create | Site ID - %s', site_id)
     site = utilities.get_single_eve('sites', site_id)
@@ -289,7 +289,7 @@ def correct_file_permissions(site_id):
 def execute_drush(drush_id):
     """
     Execute a drush command.
-    :param machine_name: id of instance to restore
+    :param machine_name: id of drush command to run
     """
     tasks.drush_prepare.delay(drush_id)
     response = make_response('Drush command started, check the logs for outcomes.')

@@ -23,7 +23,7 @@ from atlas import code_operations, instance_operations, backup_operations
 
 from atlas.config import (ENVIRONMENT, WEBSERVER_USER, DESIRED_SITE_COUNT, EMAIL_HOST,
                           SSL_VERIFICATION, CODE_ROOT, INACTIVE_WARNINGS, INACTIVE_STATUS,
-                          TEST_ACCOUNTS, EXPRESS_URL, EMAIL_SIGNATURE, BACKUPS_LARGE_INSTANCES)
+                          TEST_ACCOUNTS, EMAIL_SIGNATURE, BACKUPS_LARGE_INSTANCES)
 
 from atlas.config_servers import (BASE_URLS, API_URLS)
 
@@ -1592,7 +1592,7 @@ def check_instance_inactive():
                     site = utilities.get_single_eve('sites', statistic['site'])
                     # TODO: Refactor when we have multiple environments run by a single Atlas.
                     # Get message together.
-                    instance_url = "{0}/{1}".format(EXPRESS_URL, site['path'])
+                    instance_url = "{0}/{1}".format(BASE_URLS[ENVIRONMENT], site['path'])
                     message = '\n\n'.join(
                         [instance_url, value['message'], EMAIL_SIGNATURE])
                     log.debug('Check inactive | Message | %s | %s',

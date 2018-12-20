@@ -11,7 +11,6 @@ LOG_LOCATION = '/data/logs/atlas.log'
 # List of usernames that are allowed to interact with the API
 ALLOWED_USERS = ['sample_user', 'other_user']
 TEST_ACCOUNTS = ['', '', '']
-EXPRESS_URL = ''
 
 # Symlink the files directory in from a NFS mount. Mount is set in atlas.config_server.py.
 NFS_MOUNT_FILES_DIR = True

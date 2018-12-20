@@ -240,9 +240,10 @@ def code_update(updated_item, original_item):
 
     checkout = code_operations.repository_checkout(final_item)
     log.debug('Code deploy | Checkout | %s', checkout)
-    if original_item['meta']['is_current']:
+    # TODO does this work when you make an item `not current`?
+    if 'meta' in updated_item and 'is_current' in updated_item['meta']:
         code_operations.update_symlink_current(original_item)
-        log.debug('Code deploy | Symlink | Is current')
+        log.debug('Code deploy | Symlink | Is current changed')
         # Symlink current versions of packages into the default profiles
         profile_query = 'where={{"meta.name":"{0}","meta.code_type":"profile"}}'.format(
             DEFAULT_PROFILE)

@@ -289,7 +289,7 @@ def on_update_code(updates, original):
     if updates.get('meta'):
         updated_item['meta'] = meta
 
-    if updates.has_key('meta') and (updates['meta'].has_key('name') or updates['meta'].has_key('version') or updates['meta'].has_key('code_type')):
+    if updates.has_key('meta') and (updates['meta'].has_key('name') or updates['meta'].has_key('version') or updates['meta'].has_key('code_type') or updates['meta'].has_key('is_current')):
         update_code = True
     elif updates.has_key('commit_hash') or updates.has_key('git_url'):
         update_code = True
@@ -367,7 +367,7 @@ def on_updated_code(updates, original):
             update_sites = True
             log.debug('code | on updated | Found meta data changes | %s', updates['meta'])
         else:
-            log.debug('code | on updated | Found no meta changes that require an update')
+            log.debug('code | on updated | Found no meta changes that require instances to update')
             update_sites = False
     elif updates.has_key('commit_hash') or updates.has_key('git_url'):
         update_sites = True

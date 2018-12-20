@@ -75,8 +75,10 @@ def update_symlink_current(item):
     # Remove symlink if it exists
     if os.path.islink(code_folder_current):
         os.unlink(code_folder_current)
-    os.symlink(utilities.code_path(item), code_folder_current)
-    log.debug('Code deploy | Symlink | %s', code_folder_current)
+    # Only link item if it is current
+    if item['meta']['is_current']:
+        os.symlink(utilities.code_path(item), code_folder_current)
+        log.debug('Code deploy | Symlink | %s', code_folder_current)
 
 
 def update_symlink_profile(item, profiles):
@@ -100,8 +102,10 @@ def update_symlink_profile(item, profiles):
         # Remove symlink if it exists
         if os.path.islink(item_profile_path):
             os.unlink(item_profile_path)
-        os.symlink(utilities.code_path(item), item_profile_path)
-        log.debug('Code deploy | Profile Symlink | %s', item_profile_path)
+        # Only link item if it is current
+        if item['meta']['is_current']:
+            os.symlink(utilities.code_path(item), item_profile_path)
+            log.debug('Code deploy | Profile Symlink | %s', item_profile_path)
 
 
 def remove_symlink_profile(item, profiles):

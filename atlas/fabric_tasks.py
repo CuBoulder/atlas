@@ -18,6 +18,7 @@ from fabric.api import *
 from fabric.network import disconnect_all
 
 from atlas import utilities
+from atlas import instance_operations
 from atlas.config import (ATLAS_LOCATION, ENVIRONMENT, SSH_USER, CODE_ROOT, INSTANCE_ROOT,
                           WEB_ROOT, WEBSERVER_USER, WEBSERVER_USER_GROUP, NFS_MOUNT_FILES_DIR,
                           BACKUP_PATH, SERVICE_ACCOUNT_USERNAME, SERVICE_ACCOUNT_PASSWORD,
@@ -280,6 +281,8 @@ def backup_restore(backup_record, original_instance, package_list):
         run('drush sql-cli < {0}'.format(database_path))
         log.info('Instance | Restore Backup | DB imported')
         run('drush cc all')
+
+    instance_operations.correct_fs_permissions(new_instance)
 
     restore_time = time() - start_time
     log.info('Instance | Restore Backup | Complete | Backup - %s | New Instance - %s (%s) | %s sec',

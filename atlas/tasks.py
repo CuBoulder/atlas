@@ -23,7 +23,7 @@ from atlas import code_operations, instance_operations, backup_operations
 
 from atlas.config import (ENVIRONMENT, WEBSERVER_USER, DESIRED_SITE_COUNT, EMAIL_HOST,
                           SSL_VERIFICATION, CODE_ROOT, INACTIVE_WARNINGS, INACTIVE_STATUS,
-                          TEST_ACCOUNTS, EMAIL_SIGNATURE, BACKUPS_LARGE_INSTANCES)
+                          TEST_ACCOUNTS, EMAIL_SIGNATURE, BACKUPS_LARGE_INSTANCES, SEND_NOTIFICATION_FROM_EMAIL)
 
 from atlas.config_servers import (BASE_URLS, API_URLS)
 
@@ -1598,10 +1598,14 @@ def check_instance_inactive():
                     log.debug('Check inactive | Message | %s | %s',
                               statistic['site'], message)
 
-                    # Remove test accounts.
-                    email_to = [x for x in statistic['users']['email_address']
-                                ['site_owner'] if x not in TEST_ACCOUNTS]
-                    # Send mail
+                    # Get site owner
+                    try:
+                        log.info(statistic['users']['email_address']['site_owner'])
+                        email_to = [x for x in statistic['users']['email_address']['site_owner'] if x not in TEST_ACCOUNTS]
+                    except KeyError:
+                        email_to = [SEND_NOTIFICATION_FROM_EMAIL]
+                        log.info = 'Check inactive | No site owner for inactive site | %s', statistic['site']
+
                     utilities.send_email(
                         email_message=message, email_subject=value['subject'], email_to=email_to)
 
@@ -1610,13 +1614,13 @@ def check_instance_inactive():
                         "event_type": "inactive_mail",
                         "inactive_mail": {
                             "inactive_mail_type": key,
-                            "inactive_mail_to": ', '.join(statistic['users']['email_address']['site_owner'])
+                            "inactive_mail_to": ', '.join(email_to)
                         },
                         "atlas": {
                             "instance_id": statistic['site']
                         }
                     }
-                    
+                        
                     # POST event
                     utilities.post_eve('event', event_payload)
 

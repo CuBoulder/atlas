@@ -1479,6 +1479,7 @@ def saml_delete():
         log.error('SAML Database deletion failed | %s', error)
         raise
 
+
 @celery.task
 def check_instance_inactive():
     

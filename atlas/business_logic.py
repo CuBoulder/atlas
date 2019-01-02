@@ -29,6 +29,7 @@ from atlas.config_servers import (BASE_URLS, API_URLS)
 
 log = get_task_logger(__name__)
 
+
 def check_instance_inactive_logic():
     # Loop through the warnings in INACTIVE_WARNINGS
     # The three different keys are "first", "second", "take_down", corresponding values are 30, 55, 60

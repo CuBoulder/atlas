@@ -18,6 +18,7 @@ from celery.utils.log import get_task_logger
 from fabric.api import execute
 from git import GitCommandError
 
+from atlas import business_logic
 from atlas import fabric_tasks, utilities, config_celery
 from atlas import code_operations, instance_operations, backup_operations
 
@@ -1477,6 +1478,17 @@ def saml_delete():
     except Exception as error:
         log.error('SAML Database deletion failed | %s', error)
         raise
+
+@celery.task
+def check_instance_inactive():
+    
+    try:
+        log.debug('Check for Inactive Sites')
+        business_logic.check_instance_inactive_logic()
+    except Exception as error:
+        log.error('Check for Inactive Sites failed | %s', error)
+        raise
+
 
 # Custom Exception Handling
 

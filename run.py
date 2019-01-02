@@ -19,7 +19,6 @@ from flask import jsonify, make_response, abort, request
 from atlas import callbacks
 from atlas import commands
 from atlas import tasks
-from atlas import business_tasks
 from atlas import utilities
 from atlas.config import (ATLAS_LOCATION, VERSION_NUMBER, SSL_KEY_FILE, SSL_CRT_FILE, LOG_LOCATION,
                           ENVIRONMENT, API_URLS)
@@ -114,7 +113,7 @@ def get_command(machine_name):
         elif command == 'backup_all_instances':
             tasks.backup_instances_all.delay(backup_type='on_demand')
         elif command == 'check_instance_inactive':
-            business_tasks.check_instance_inactive.delay()
+            tasks.check_instance_inactive.delay()
         elif command == 'remove_extra_backups':
             tasks.remove_extra_backups.delay()
         return make_response('Command "{0}" has been initiated.'.format(command))

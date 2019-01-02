@@ -1,5 +1,5 @@
 """
-    atlas.business_tasks
+    atlas.business_logic
     ~~~~~~
     Celery tasks for Atlas.
 """
@@ -27,35 +27,9 @@ from atlas.config import (ENVIRONMENT, WEBSERVER_USER, DESIRED_SITE_COUNT, EMAIL
 
 from atlas.config_servers import (BASE_URLS, API_URLS)
 
+log = get_task_logger(__name__)
 
-@celery.task
-def check_instance_inactive():
-    """
-    Get a list of inactive instances and notify the site owners.
-
-    1. Get a list of instances that are more inactive than `first_inactive_days` and have correct status
-    2. Start loop on list of instances
-        * Check to see if instance has a site owner, if not exit loop
-    3. Check to see if we should send the first message
-        * A first message has not been sent in (today - (`first_inactive_days`))
-        * A second message has not been send in (today - (`last_inactive_days` - `second_inactive_days`))
-    4. If send first message, exit loop
-    5. Check to see if we should send the second message
-        * A second message has not been sent in (today - (`second_inactive_days`))
-        * A first message has been send in (today - (`first_inactive_days` + 1))
-    6. If send second message, exit loop
-    7. Check to see if we should send the final message
-        * A final message has not been sent in (today - (`last_inactive_days`))
-        * A first message has been send in (today - (`last_inactive_days` + 1))
-        * A second message has been send in (today - (`last_inactive_days` - `second_inactive_days` + 1))
-    8. If send final message, exit loop
-    9. If send message, do so
-        * Also send record to Event endpoint
-    10. If take down, do so
-
-    # TODO What if instance doesn't have an owner?
-    # TODO Pull function our into another file
-    """
+def check_instance_inactive_logic():
     # Loop through the warnings in INACTIVE_WARNINGS
     # The three different keys are "first", "second", "take_down", corresponding values are 30, 55, 60
     for key, value in INACTIVE_WARNINGS.iteritems():
@@ -82,22 +56,23 @@ def check_instance_inactive():
                     # Return True if 'now' minus 'updated' is less than 1 day
                     up_to_date = bool((datetime.utcnow() - datetime.strptime(
                         statistic['_updated'], "%Y-%m-%d %H:%M:%S %Z")) < timedelta(days=1))
-                    log.debug(
-                        'Check inactive | Statistic Date Check | Up to date | %s', up_to_date)
-                except OutOfDateException:
-                    log.info(
-                        'Check inactive | Statistic Out of Date | %s', statistics)
-                    continue
+
+                    log.debug('Check inactive | Statistic Date Check | Up to date | %s', up_to_date)
+
+                    if not up_to_date:
+                        log.info(
+                            'Check inactive | Statistic Out of Date | %s', statistics)
+                        continue
 
                 check_date = datetime.utcnow() - timedelta(days=60)
-                ## Check for same interval messages
+                # Check for same interval messages
                 eve_lookup = 'where={{"event_type":"inactive_mail","atlas.instance_id":"{0}","inactive_mail.inactive_mail_type":"{1}","_created":{{"$gte":"{2}"}}}}'.format(
                     str(statistic['site']), key, check_date.strftime("%Y-%m-%d %H:%M:%S GMT"))
                 events = utilities.get_eve('event', query=eve_lookup)
                 log.debug(
                     'Check inactive | Mail check results | %s | %s', statistic['site'], events)
 
-                ## Check that previous messages have been sent and that enough time has passed in between.
+                # Check that previous messages have been sent and that enough time has passed in between.
                 if key == 'second':
                     # Create date bound to make sure a previous message was sent appropriately long ago.
                     # IE don't send 30 day and 55 day on back to back runs if the instance is really old.
@@ -144,7 +119,7 @@ def check_instance_inactive():
                     log.debug('Check inactive | Message | %s | %s',
                               statistic['site'], message)
 
-                    # Get site owner
+                    # Get site owner or send email to web team in no owner present
                     try:
                         log.info(statistic['users']
                                  ['email_address']['site_owner'])

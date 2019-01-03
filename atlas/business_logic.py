@@ -3,44 +3,35 @@
     ~~~~~~
     Celery tasks for Atlas.
 """
-import os
-import time
 import json
 
 from datetime import datetime, timedelta
-from collections import Counter
-from bson import json_util
-from math import ceil
-from random import randint
-import requests
+
 from celery import Celery, chord
 from celery.utils.log import get_task_logger
-from fabric.api import execute
-from git import GitCommandError
 
-from atlas import fabric_tasks, utilities, config_celery
-from atlas import code_operations, instance_operations, backup_operations
-
-from atlas.config import (ENVIRONMENT, WEBSERVER_USER, DESIRED_SITE_COUNT, EMAIL_HOST,
-                          SSL_VERIFICATION, CODE_ROOT, INACTIVE_WARNINGS, INACTIVE_STATUS,
-                          TEST_ACCOUNTS, EMAIL_SIGNATURE, BACKUPS_LARGE_INSTANCES, SEND_NOTIFICATION_FROM_EMAIL)
-
-from atlas.config_servers import (BASE_URLS, API_URLS)
+from atlas import utilities
+from atlas.config import (ENVIRONMENT, INACTIVE_WARNINGS, INACTIVE_STATUS, BASE_URLS,
+                          TEST_ACCOUNTS, EMAIL_SIGNATURE, SEND_NOTIFICATION_FROM_EMAIL)
 
 log = get_task_logger(__name__)
 
 
 def check_instance_inactive_logic():
+    """
+        Called by check_instance_inactive() in tasks.py. Used to find inactive sites
+        and email site owners.
+    """
+
     # Loop through the warnings in INACTIVE_WARNINGS
-    # The three different keys are "first", "second", "take_down", corresponding values are 30, 55, 60
+    # "first", "second", "take_down", corresponding values are 30, 55, 60
     for key, value in INACTIVE_WARNINGS.iteritems():
         log.info('Check inactive | %s', key)
-        # Get a list of sites that are older than the warning.
 
-        # Start by calling stats, we want any records whose days since last login is greater than the corresponding warning value(days)
+        # Start by calling stats, we want any records whose days since last login is greater
+        # than the corresponding warning value(days)
         # Build statistics query
-        statistics_query = 'where={{"days_since_last_login":{{"$gte":{0}}},"status":{{"$in":{1}}}}}'.format(
-            value['days'], json.dumps(INACTIVE_STATUS))
+        statistics_query = ('where={{"days_since_last_login": {{"$gte": {0}}}, "status": {{"$in": {1}}}}}'.format(value['days'], json.dumps(INACTIVE_STATUS)))
 
         # Statistics GET request
         statistics = utilities.get_eve('statistics', statistics_query)
@@ -48,23 +39,19 @@ def check_instance_inactive_logic():
         if not statistics['_meta']['total'] == 0:
             log.info('Stats for outdated sites greater than ' +
                      str(value['days']))
-            
+
             # Loop through each statistic record
             for statistic in statistics['_items']:
                 # Verify that statistics item has been updated in the last 24 hours.
-                try:
-                    log.debug('Check inactive | Statistic Date Check | %s | %s | %s', timedelta(
-                        days=1), datetime.utcnow(), datetime.strptime(statistic['_updated'], "%Y-%m-%d %H:%M:%S %Z"))
-                    # Return True if 'now' minus 'updated' is less than 1 day
-                    up_to_date = bool((datetime.utcnow() - datetime.strptime(
-                        statistic['_updated'], "%Y-%m-%d %H:%M:%S %Z")) < timedelta(days=1))
-
-                    if not up_to_date:
-                        raise Exception
-
-                except:
-                    log.debug('Check inactive | Statistic Out of Date | %s', statistics)
-                    # Move to the next site
+                log.debug('Check inactive | Statistic Date Check | %s | %s | %s', timedelta(
+                    days=1), datetime.utcnow(), datetime.strptime(statistic['_updated'], "%Y-%m-%d %H:%M:%S %Z"))
+                # Return True if 'now' minus 'updated' is less than 1 day
+                up_to_date = bool((datetime.utcnow() - datetime.strptime(
+                    statistic['_updated'], "%Y-%m-%d %H:%M:%S %Z")) < timedelta(days=1))
+                
+                if not up_to_date:
+                    log.info(
+                        'Check debug | Statistic Out of Date | %s', statistics)
                     continue
 
                 log.info(
@@ -78,10 +65,12 @@ def check_instance_inactive_logic():
                 log.debug(
                     'Check inactive | Mail check results | %s | %s', statistic['site'], events)
 
-                # Check that previous messages have been sent and that enough time has passed in between.
+                # Check that previous messages have been sent
+                # and that enough time has passed in between.
                 if key == 'second':
-                    # Create date bound to make sure a previous message was sent appropriately long ago.
-                    # IE don't send 30 day and 55 day on back to back runs if the instance is really old.
+                    # Create date bound to make sure a previous message was sent appropriately long
+                    # ago. IE don't send 30 day and 55 day on back to back runs if the instance is
+                    # really old.
                     interval_date = datetime.utcnow() - timedelta(days=25)
                     # Build the query, check that the email for 'first' warning was sent
                     eve_lookup_first = 'where={{"event_type":"inactive_mail","atlas.instance_id":"{0}","inactive_mail.inactive_mail_type":"first","_created":{{"$gte":"{1}","$lte":"{2}"}}}}'.format(
@@ -116,7 +105,6 @@ def check_instance_inactive_logic():
                 if events['_meta']['total'] == 0:
                     # Get the 'instance' item from Atlas so that we can use the path in the message.
                     site = utilities.get_single_eve('sites', statistic['site'])
-                    # TODO: Refactor when we have multiple environments run by a single Atlas.
                     # Get message together.
                     instance_url = "{0}/{1}".format(
                         BASE_URLS[ENVIRONMENT], site['path'])

@@ -24,7 +24,8 @@ from atlas import code_operations, instance_operations, backup_operations
 
 from atlas.config import (ENVIRONMENT, WEBSERVER_USER, DESIRED_SITE_COUNT, EMAIL_HOST,
                           SSL_VERIFICATION, CODE_ROOT, INACTIVE_WARNINGS, INACTIVE_STATUS,
-                          TEST_ACCOUNTS, EMAIL_SIGNATURE, BACKUPS_LARGE_INSTANCES, SEND_NOTIFICATION_FROM_EMAIL)
+                          TEST_ACCOUNTS, EMAIL_SIGNATURE, BACKUPS_LARGE_INSTANCES,
+                          SEND_NOTIFICATION_FROM_EMAIL)
 
 from atlas.config_servers import (BASE_URLS, API_URLS)
 

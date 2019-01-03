@@ -48,6 +48,7 @@ def check_instance_inactive_logic():
         if not statistics['_meta']['total'] == 0:
             log.info('Stats for outdated sites greater than ' +
                      str(value['days']))
+            
             # Loop through each statistic record
             for statistic in statistics['_items']:
                 # Verify that statistics item has been updated in the last 24 hours.
@@ -58,12 +59,16 @@ def check_instance_inactive_logic():
                     up_to_date = bool((datetime.utcnow() - datetime.strptime(
                         statistic['_updated'], "%Y-%m-%d %H:%M:%S %Z")) < timedelta(days=1))
 
-                    log.debug('Check inactive | Statistic Date Check | Up to date | %s', up_to_date)
-
                     if not up_to_date:
-                        log.info(
-                            'Check inactive | Statistic Out of Date | %s', statistics)
-                        continue
+                        raise Exception
+
+                except:
+                    log.debug('Check inactive | Statistic Out of Date | %s', statistics)
+                    # Move to the next site
+                    continue
+
+                log.info(
+                    'Check inactive | Statistic Date Check | Up to date | %s', up_to_date)
 
                 check_date = datetime.utcnow() - timedelta(days=60)
                 # Check for same interval messages

@@ -810,6 +810,7 @@ def cron(status=None):
     log.debug('Query final | %s', site_query)
 
     sites = utilities.get_eve('sites', site_query)
+    log.info('Cron | Total instance to run cron on - %s', sites['_meta']['total'])
     if not sites['_meta']['total'] == 0:
         for site in sites['_items']:
             cron_run.delay(site)

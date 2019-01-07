@@ -1,5 +1,11 @@
 # Change log
 
+## v2.3.0-alpha7
+
+Resolves:
+
+- &#35;566 - Error on verify statistics
+
 ## v2.3.0-alpha6
 
 

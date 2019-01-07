@@ -1,6 +1,6 @@
 # Change log
 
-## v2.3.0-alpha5
+## v2.3.0-alpha6
 
 
 As part of deployment:

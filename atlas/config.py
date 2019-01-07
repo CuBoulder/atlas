@@ -70,4 +70,4 @@ if ENVIRONMENT == 'local':
     # https://urllib3.readthedocs.io/en/latest/advanced-usage.html#ssl-warnings
     urllib3.disable_warnings()
 
-VERSION_NUMBER = '2.3.0-alpha5'
+VERSION_NUMBER = '2.3.0-alpha6'

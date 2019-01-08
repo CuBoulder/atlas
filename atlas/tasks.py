@@ -988,7 +988,6 @@ def verify_statistics():
     if not outdated_statistics['_meta']['total'] == 0:
         slack_fallback = '{0} statistics items have not been updated in 36 hours.'.format(
                 outdated_statistics['_meta']['total'])
-        slack_link = '{0}/statistics?{1}'.format(BASE_URLS[ENVIRONMENT], site_query)
         slack_payload = {
             "text": 'Outdated Statistics',
             "attachments": [

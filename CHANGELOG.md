@@ -6,6 +6,7 @@ This release reduces the default number of results returned per page from 200 to
 
 Resolves:
 
+- &#35;566 - Error on verify statistics
 - &#35;565 - Error on removing orphan statistics task
 
 ## v2.3.0-alpha6

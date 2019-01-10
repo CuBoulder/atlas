@@ -810,6 +810,7 @@ def cron(status=None):
     log.debug('Query final | %s', site_query)
 
     sites = utilities.get_eve('sites', site_query)
+    log.info('Cron | Total instance to run cron on - %s', sites['_meta']['total'])
     if not sites['_meta']['total'] == 0:
         for site in sites['_items']:
             cron_run.delay(site)
@@ -985,62 +986,37 @@ def verify_statistics():
     log.debug('outdated_statistics items - %s', outdated_statistics)
     statistic_id_list = []
     if not outdated_statistics['_meta']['total'] == 0:
-        for outdated_statistic in outdated_statistics['_items']:
-            statistic_id_list.append(outdated_statistic['_id'])
+        slack_fallback = '{0} statistics items have not been updated in 36 hours.'.format(
+                outdated_statistics['_meta']['total'])
+        slack_payload = {
+            "text": 'Outdated Statistics',
+            "attachments": [
+                {
+                    "fallback": slack_fallback,
+                    "color": 'danger',
+                    "title": 'Some statistics items have not been updated in 36 hours.',
+                    "fields": [
+                        {
+                            "title": "Count",
+                            "value": outdated_statistics['_meta']['total'],
+                            "short": True
+                        },
+                        {
+                            "title": "Environment",
+                            "value": ENVIRONMENT,
+                            "short": True
+                        },
+                        {
+                            "title": "Query",
+                            "value": API_URLS[ENVIRONMENT] + '/statistics?' + statistics_query,
+                            "short": False
+                        },
+                    ],
+                },
+            ],
+        }
 
-        log.debug('statistic_id_list | %s', statistic_id_list)
-
-        site_query = 'where={{"statistics":{{"$in":{0}}}}}'.format(json.dumps(statistic_id_list))
-        log.debug('Site query | %s', site_query)
-        sites = utilities.get_eve('sites', site_query)
-        sites_id_list = []
-        if not sites['_meta']['total'] == 0:
-            log.info('More than 0 sites')
-            for site in sites['_items']:
-                sites_id_list.append(site['sid'])
-
-            log.info('sites_id_list | %s', str(sites_id_list))
-
-            slack_fallback = '{0} statistics items have not been updated in 36 hours.'.format(
-                    len(statistic_id_list))
-            slack_link = '{0}/statistics?{1}'.format(BASE_URLS[ENVIRONMENT], site_query)
-            slack_payload = {
-                "text": 'Outdated Statistics',
-                "attachments": [
-                    {
-                        "fallback": slack_fallback,
-                        "color": 'danger',
-                        "title": 'Some statistics items have not been updated in 36 hours.',
-                        "fields": [
-                            {
-                                "title": "Count",
-                                "value": len(statistic_id_list),
-                                "short": True
-                            },
-                            {
-                                "title": "Environment",
-                                "value": ENVIRONMENT,
-                                "short": True
-                            },
-                        ],
-                    },
-                    {
-                        "fallback": 'Site list',
-                        # A lighter red.
-                        "color": '#ee9999',
-                        "fields": [
-                            {
-                                "title": "Site list",
-                                "value": json.dumps(sites_id_list),
-                                "short": False,
-                                "title_link": slack_link
-                            }
-                        ]
-                    }
-                ],
-            }
-
-            utilities.post_to_slack_payload(slack_payload)
+        utilities.post_to_slack_payload(slack_payload)
 
 
 @celery.task(time_limit=1200)

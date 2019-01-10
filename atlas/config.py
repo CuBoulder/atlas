@@ -54,11 +54,12 @@ PROTECTED_PATHS = ['opcache', 'static', 'includes', 'misc',
 INSTANCE_CODE_IGNORE_REGEX = ['^.DS_Store', '^.git',
                               '(?<!^robots)\.txt$', '(.+).patch$', '(.+).md$']
 
-# Drupal core paths to symlink into the WEB_ROOT for the homepage instances. We are not including
-# .htaccess or robots.txt since they are managed seperately for this instance.
+# Drupal core paths to symlink into the WEB_ROOT for the homepage instances. .htaccess or robots.txt
+# are not included since they are managed seperately for this instance; web.config is not used in
+# linux deployments.
 CORE_WEB_ROOT_SYMLINKS = ['authorize.php', 'cron.php', 'includes', 'index.php', 'install.php',
                           'misc', 'modules', 'profiles', 'scripts', 'sites', 'themes', 'update.php',
-                          'web.config', 'xmlrpc.php']
+                          'xmlrpc.php']
 
 # This allows us to use a self signed cert for local dev.
 SSL_VERIFICATION = True
@@ -70,4 +71,4 @@ if ENVIRONMENT == 'local':
     # https://urllib3.readthedocs.io/en/latest/advanced-usage.html#ssl-warnings
     urllib3.disable_warnings()
 
-VERSION_NUMBER = '2.3.0-alpha6'
+VERSION_NUMBER = '2.3.0-alpha7'

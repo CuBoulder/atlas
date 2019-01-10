@@ -277,7 +277,7 @@ def get_eve(resource, query=None):
             if json_result:
                 log.debug('Backup data | Original data - %s', json_result)
                 log.debug('Backup data | New data - %s', r_page)
-                json_result = json_result + r_page
+                json_result['_items'] = json_result['_items'] + r_page['_items']
                 log.debug('Backup data | Final data - %s', json_result)
             else:
                 json_result = r_page

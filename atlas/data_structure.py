@@ -16,9 +16,9 @@ ITEM_METHODS = ['GET', 'PATCH', 'PUT', 'DELETE']
 # Allow public GET by default can override for a specific resource or item.
 PUBLIC_METHODS = ['GET']
 
-# Default to return 500 results per page. Allow up to 2000.
+# As a default, return 25 results per page. Allow up to 2000.
 PAGINATION_LIMIT = 2000
-PAGINATION_DEFAULT = 500
+PAGINATION_DEFAULT = 25
 
 # Add support for CORS
 X_DOMAINS = '*'

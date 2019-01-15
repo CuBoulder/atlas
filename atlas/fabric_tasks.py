@@ -323,7 +323,8 @@ def import_backup(backup, target_instance, source_env=ENVIRONMENT):
 
     with cd(nfs_files_dir):
         run('tar -xzf {0}'.format(files_path))
-        run('find {0} -type f -or -type d -exec chgrp {1} {{}} \\;'.format(nfs_files_dir, WEBSERVER_USER_GROUP), warn_only=True)
+        run('find {0} -type f -or -type d -exec chgrp {1} {{}} \\;'
+            .format(nfs_files_dir, WEBSERVER_USER_GROUP), warn_only=True)
         run('find {0} -type f -exec chmod g+rw {{}} \\;'.format(nfs_files_dir), warn_only=True)
         run('find {0} -type d -exec chmod g+rws {{}} \\;'.format(nfs_files_dir), warn_only=True)
         log.debug('Instance | Restore Backup | Files replaced')

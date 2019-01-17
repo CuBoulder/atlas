@@ -1,5 +1,11 @@
 # Change log
 
+## v2.3.0-alpha8
+
+Resolves:
+
+- &#35;574 - Increase pager limit
+
 ## v2.3.0-alpha7
 
 This release reduces the default number of results returned per page from 200 to 25.

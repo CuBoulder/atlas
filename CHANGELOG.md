@@ -1,5 +1,11 @@
 # Change log
 
+## v2.3.0-alpha9
+
+Resolves:
+
+- &#35;577 - get_eve() function has an off by one error
+
 ## v2.3.0-alpha8
 
 Resolves:

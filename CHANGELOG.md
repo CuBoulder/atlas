@@ -1,5 +1,36 @@
 # Change log
 
+## v2.3.0-alpha9
+
+Resolves:
+
+- &#35;577 - get_eve() function has an off by one error
+
+## v2.3.0-alpha8
+
+Resolves:
+
+- &#35;574 - Increase pager limit
+
+## v2.3.0-alpha7
+
+This release reduces the default number of results returned per page from 200 to 25.
+
+Resolves:
+
+- &#35;566 - Error on verify statistics
+- &#35;565 - Error on removing orphan statistics task
+
+## v2.3.0-alpha6
+
+As part of deployment:
+
+- Add `sn_key` to settings.php
+
+Resolves:
+
+- &#35;559 - Need to add ServiceNow API key to settings.php
+
 ## v2.3.0-alpha4
 
 As part of deployment:

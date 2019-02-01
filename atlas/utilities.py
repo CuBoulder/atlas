@@ -9,6 +9,7 @@ import subprocess
 import stat
 import smtplib
 import re
+from math import ceil
 from random import choice
 from string import lowercase
 from hashlib import sha1
@@ -260,7 +261,9 @@ def get_eve(resource, query=None):
 
     if total_items > PAGINATION_DEFAULT:
         # Return the ceiling of x as a float, the smallest integer value greater than or equal to x.
-        num_pages = int(ceil(total_items/PAGINATION_DEFAULT))
+        # Need to convert total_items to a float first. If you divide an int by an int, the result
+        # is also an int.
+        num_pages = int(ceil(float(total_items)/PAGINATION_DEFAULT))
         # Range - Generate numbers from the first number up to, but not including the second.
         for page in range(1, num_pages + 1):
             if query_url:
@@ -274,10 +277,10 @@ def get_eve(resource, query=None):
             log.debug('utilities | Get eve | page request - %s', r_page)
             # Merge lists
             if json_result:
-                log.debug('Backup data | Original data - %s', json_result)
-                log.debug('Backup data | New data - %s', r_page)
-                json_result = json_result + r_page
-                log.debug('Backup data | Final data - %s', json_result)
+                log.debug('utilities | Get eve | Original data - %s', json_result)
+                log.debug('utilities | Get eve | New data - %s', r_page)
+                json_result['_items'] = json_result['_items'] + r_page['_items']
+                log.debug('utilities | Get eve | Final data - %s', json_result)
             else:
                 json_result = r_page
     else:

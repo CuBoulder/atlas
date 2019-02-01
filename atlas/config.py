@@ -20,7 +20,7 @@ from atlas.config_local import (ENVIRONMENT, SSL_KEY_FILE, SSL_CRT_FILE, ALLOWED
                                 SEND_NOTIFICATION_FROM_EMAIL, EMAIL_HOST, EMAIL_PORT,
                                 EMAIL_USERNAME, EMAIL_PASSWORD, LOG_LOCATION, EMAIL_USERS_EXCLUDE,
                                 STATIC_WEB_PATH, BACKUP_PATH, SMTP_PASSWORD, SAML_AUTH,
-                                BACKUPS_LARGE_INSTANCES)
+                                SERVICENOW_KEY, BACKUPS_LARGE_INSTANCES)
 
 # Set Atlas location
 ATLAS_LOCATION = os.path.dirname(os.path.realpath(__file__))
@@ -54,11 +54,12 @@ PROTECTED_PATHS = ['opcache', 'static', 'includes', 'misc',
 INSTANCE_CODE_IGNORE_REGEX = ['^.DS_Store', '^.git',
                               '(?<!^robots)\.txt$', '(.+).patch$', '(.+).md$']
 
-# Drupal core paths to symlink into the WEB_ROOT for the homepage instances. We are not including
-# .htaccess or robots.txt since they are managed seperately for this instance.
+# Drupal core paths to symlink into the WEB_ROOT for the homepage instances. .htaccess or robots.txt
+# are not included since they are managed seperately for this instance; web.config is not used in
+# linux deployments.
 CORE_WEB_ROOT_SYMLINKS = ['authorize.php', 'cron.php', 'includes', 'index.php', 'install.php',
                           'misc', 'modules', 'profiles', 'scripts', 'sites', 'themes', 'update.php',
-                          'web.config', 'xmlrpc.php']
+                          'xmlrpc.php']
 
 # This allows us to use a self signed cert for local dev.
 SSL_VERIFICATION = True
@@ -70,4 +71,4 @@ if ENVIRONMENT == 'local':
     # https://urllib3.readthedocs.io/en/latest/advanced-usage.html#ssl-warnings
     urllib3.disable_warnings()
 
-VERSION_NUMBER = '2.3.0-alpha4'
+VERSION_NUMBER = '2.3.0-alpha9'

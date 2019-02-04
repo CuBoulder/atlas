@@ -90,9 +90,10 @@ def update_symlink_profile(item, profiles):
     """
     for profile in profiles:
         profile_path = utilities.code_path(profile)
-        item_profile_type_bundles_path = '{0}/{1}/bundles'.format(
+        # Put symlinks in packages directory
+        item_profile_type_bundles_path = '{0}/{1}/packages'.format(
             profile_path,
-            item['meta']['code_type'])
+            utilities.code_type_directory_name(item['meta']['code_type']))
         # Make directory
         if not os.path.exists(item_profile_type_bundles_path):
             os.makedirs(item_profile_type_bundles_path)

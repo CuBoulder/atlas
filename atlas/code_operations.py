@@ -88,7 +88,10 @@ def update_symlink_profile(item, profiles):
         item {dict} -- Complete instance object
         profiles {list} -- List of profile objects
     """
+    log.debug('taco!')
+    log.debug(profiles)
     for profile in profiles:
+        log.debug(profile)
         profile_path = utilities.code_path(profile)
         # Put symlinks in packages directory
         item_profile_type_bundles_path = '{0}/{1}/packages'.format(

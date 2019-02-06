@@ -138,19 +138,56 @@ def code_deploy(item):
     except GitCommandError:
         log.error('Code | Checkout | Cannot checkout requested tag, check value.')
     if item['meta']['is_current']:
+        # Create 'current' directory for code item
         code_operations.update_symlink_current(item)
-        # Symlink current versions of packages into the default profiles
-        profile_query = 'where={{"meta.name":"{0}","meta.code_type":"profile"}}'.format(
-            DEFAULT_PROFILE)
-        profile_items = utilities.get_eve('code', profile_query)
-        if profile_items:
-            profiles = profile_items['_items']
-            log.info('Code deploy | Profiles - %s', profiles)
-            code_operations.update_symlink_profile(item, profiles)
-        log.debug('Code deploy | Symlink | Is current')
+        # Case for profiles
+        if item['meta']['code_type'] == "profile":
+            # Query for bundles, libaries, themes
+            module_query = 'where={"meta.code_type":"module","meta.is_current":true}'
+            library_query = 'where={"meta.code_type":"library","meta.is_current":true}'
+            theme_query = 'where={"meta.code_type":"theme","meta.is_current":true}'
 
-    if item['meta']['code_type'] == 'static':
-        code_operations.deploy_static(item)
+            module_items = utilities.get_eve('code', module_query)
+            library_items = utilities.get_eve('code', library_query)
+            theme_items = utilities.get_eve('code', theme_query)
+
+            if module_items:
+                modules = module_items['_items']
+                for module in modules:
+                    log.info('Code deploy | Adding module symlinks to profile')
+                    # item is the profile object, modules is a list of current modules
+                    code_operations.update_symlink_profile(module, [item])
+
+            if library_items:
+                libraries = library_items['_items']
+                for library in libraries:
+                    log.info('Code deploy | Adding library symlinks to profile')
+                    # item is the profile object, modules is a list of current modules
+                    code_operations.update_symlink_profile(library, [item])
+
+            if theme_items:
+                themes = theme_items['_items']
+                for theme in themes:
+                    log.info('Code deploy | Adding theme symlinks to profile')
+                    # item is the profile object, modules is a list of current modules
+                    code_operations.update_symlink_profile(theme, [item])
+
+            log.debug('Code deploy | Packages Symlink | Is current')
+
+        elif item['meta']['code_type'] == 'static':
+            code_operations.deploy_static(item)
+
+        else:
+            # Case for modules, themes, libraries
+            # Symlink current versions of packages into the default profiles
+            profile_query = 'where={{"meta.name":"{0}","meta.code_type":"profile"}}'.format(
+                DEFAULT_PROFILE)
+            profile_items = utilities.get_eve('code', profile_query)
+            if profile_items:
+                profiles = profile_items['_items']
+                log.info('Code deploy | Profiles - %s', profiles)
+                code_operations.update_symlink_profile(item, profiles)
+            log.debug('Code deploy | Symlink | Is current')
 
     sync = code_operations.sync_code()
 

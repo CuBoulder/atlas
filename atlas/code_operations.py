@@ -85,7 +85,7 @@ def update_symlink_profile(item, profiles):
     """Symlink code item into profiles that are in the provided list.
     
     Arguments:
-        item {dict} -- Complete instance object
+        item {dict} -- Complete code object
         profiles {list} -- List of profile objects
     """
     log.debug('taco!')

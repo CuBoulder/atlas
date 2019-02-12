@@ -82,7 +82,7 @@ def update_symlink_current(item):
 
 
 def update_symlink_profile(item, profiles):
-    """Symlink code item into all default profiles
+    """Symlink code item into profiles that are in the provided list.
     
     Arguments:
         item {dict} -- Complete instance object

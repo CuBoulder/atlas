@@ -10,7 +10,7 @@ import subprocess
 import git
 
 from atlas import utilities
-from atlas.config import (ENVIRONMENT, CODE_ROOT, WEB_ROOT, DEFAULT_PROFILE)
+from atlas.config import (ENVIRONMENT, CODE_ROOT, WEB_ROOT)
 from atlas.config_servers import (SERVERDEFS)
 
 # Setup a sub-logger. See tasks.py for longer comment.
@@ -88,24 +88,24 @@ def update_symlink_profile(item, profiles):
         item {dict} -- Complete code object
         profiles {list} -- List of profile objects
     """
-    log.debug('taco!')
-    log.debug(profiles)
     for profile in profiles:
-        log.debug(profile)
+        # Define path to profile
         profile_path = utilities.code_path(profile)
-        # Put symlinks in packages directory
+        # Define path to packages directory
         item_profile_type_bundles_path = '{0}/{1}/packages'.format(
-            profile_path,
-            utilities.code_type_directory_name(item['meta']['code_type']))
-        # Make directory
+            profile_path, utilities.code_type_directory_name(item['meta']['code_type']))
+        # Define path to specific code item e.g. ../packages/my_bundle
+        item_profile_path = '{0}/{1}'.format(item_profile_type_bundles_path, item['meta']['name'])
+
+        # Check to see if directory for code item exists in /packages
         if not os.path.exists(item_profile_type_bundles_path):
+            # Make directory for code item
             os.makedirs(item_profile_type_bundles_path)
-        item_profile_path = '{0}/{1}'.format(
-            item_profile_type_bundles_path,
-            item['meta']['name'])
-        # Remove symlink if it exists
+
+        # Remove existing code item symlinks, if any
         if os.path.islink(item_profile_path):
             os.unlink(item_profile_path)
+
         # Only link item if it is current
         if item['meta']['is_current']:
             os.symlink(utilities.code_path(item), item_profile_path)
@@ -121,7 +121,7 @@ def remove_symlink_profile(item, profiles):
     """
     for profile in profiles:
         profile_path = utilities.code_path(profile)
-        item_profile_path = '{0}/{1}/bundles/{2}'.format(
+        item_profile_path = '{0}/{1}/packages/{2}'.format(
             profile_path,
             item['meta']['code_type'],
             item['meta']['name'])

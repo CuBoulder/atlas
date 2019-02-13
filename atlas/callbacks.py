@@ -203,6 +203,9 @@ def on_insert_code(items):
                     request_payload = {'meta.is_current': False}
                     utilities.patch_eve('code', code['_id'], request_payload)
         log.debug('code | Insert | Ready to deploy item - %s', item)
+        taco_deploy = 420
+        log.debug(taco_deploy)
+        log.debug(item)
         tasks.code_deploy.delay(item)
 
 

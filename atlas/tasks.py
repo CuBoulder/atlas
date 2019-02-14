@@ -137,23 +137,25 @@ def code_deploy(item):
         checkout = code_operations.repository_checkout(item)
     except GitCommandError:
         log.error('Code | Checkout | Cannot checkout requested tag, check value.')
-    
+
+    # Case for profiles
     if item['meta']['code_type'] == 'profile' and item['meta']['is_current']:
         # Create 'current' directory for code item
         code_operations.update_symlink_current(item)
         log.debug('Code deploy | Packages Symlink | Is current')
-        # Query for packages
+
+        # Query for existing current modules, libraries and themes
         package_query = 'where={"meta.code_type":{"$in":["module","library","theme"]},"meta.is_current":true}'
         package_items = utilities.get_eve('code', package_query)
 
+        # Create package symlinks in profile
         if package_items:
             for package in package_items['_items']:
-                log.debug(package)
-                log.info('Code deploy | Adding package symlinks to profile')
-                # modules is a list of current packages, item is a list with a single the profile object.
+                log.info('Code deploy | Adding package %s symlinks to profile %s', package['meta']['name'], item['meta']['name'])
+                # Item is a list with a single the profile object.
                 code_operations.update_symlink_profile(package, [item])
-####
-     # Case for new  modules, themes, libraries
+
+    # Case for new  modules, themes, libraries
     elif item['meta']['code_type'] in ["module", "library", "theme"]:
         code_operations.update_symlink_current(item)
         # Query for all profiles
@@ -269,9 +271,7 @@ def code_update(updated_item, original_item):
             DEFAULT_PROFILE)
         profile_items = utilities.get_eve('code', profile_query)
         if profile_items:
-            log.debug('taco')
             profiles = profile_items['_items']
-            log.debug(profiles)
             log.info('Code update | Profiles - %s', profiles)
             code_operations.update_symlink_profile(final_item, profiles)
 

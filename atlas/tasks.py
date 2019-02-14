@@ -139,7 +139,7 @@ def code_deploy(item):
         log.error('Code | Checkout | Cannot checkout requested tag, check value.')
 
     # Case for profiles
-    if item['meta']['code_type'] == 'profile' and item['meta']['is_current']:
+    if item['meta']['code_type'] == 'profile':
         # Create 'current' directory for code item
         code_operations.update_symlink_current(item)
         log.debug('Code deploy | Packages Symlink | Is current')

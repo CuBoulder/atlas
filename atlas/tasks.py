@@ -140,9 +140,10 @@ def code_deploy(item):
 
     # Case for profiles
     if item['meta']['code_type'] == 'profile':
-        # Create 'current' directory for code item
-        code_operations.update_symlink_current(item)
-        log.debug('Code deploy | Packages Symlink | Is current')
+        # Create `profile-current` directory if current
+        if item['meta']['is_current']:
+            code_operations.update_symlink_current(item)
+            log.debug('Code deploy | Packages Symlink | Is current')
 
         # Query for existing current modules, libraries and themes
         package_query = 'where={"meta.code_type":{"$in":["module","library","theme"]},"meta.is_current":true}'
@@ -151,7 +152,7 @@ def code_deploy(item):
         # Create package symlinks in profile
         if package_items:
             for package in package_items['_items']:
-                log.info('Code deploy | Adding package %s symlinks to profile %s', package['meta']['name'], item['meta']['name'])
+                log.info('Code deploy | Adding package %s symlink to profile %s %s', package['meta']['name'], item['meta']['name'], item['meta']['version'])
                 # Item is a list with a single the profile object.
                 code_operations.update_symlink_profile(package, [item])
 

@@ -138,13 +138,12 @@ def code_deploy(item):
     except GitCommandError:
         log.error('Code | Checkout | Cannot checkout requested tag, check value.')
 
+    if item['meta']['is_current']:
+        code_operations.update_symlink_current(item)
+        log.debug('Code deploy | Packages Symlink | Is current')
+
     # Case for profiles
     if item['meta']['code_type'] == 'profile':
-        # Create `profile-current` directory if current
-        if item['meta']['is_current']:
-            code_operations.update_symlink_current(item)
-            log.debug('Code deploy | Packages Symlink | Is current')
-
         # Query for existing current modules, libraries and themes
         package_query = 'where={"meta.code_type":{"$in":["module","library","theme"]},"meta.is_current":true}'
         package_items = utilities.get_eve('code', package_query)
@@ -157,8 +156,7 @@ def code_deploy(item):
                 code_operations.update_symlink_profile(package, [item])
 
     # Case for new  modules, themes, libraries
-    elif item['meta']['code_type'] in ["module", "library", "theme"]:
-        code_operations.update_symlink_current(item)
+    elif item['meta']['code_type'] in ['module', 'library', 'theme']:
         # Query for all profiles
         profile_query = 'where={{"meta.name":"{0}","meta.code_type":"profile"}}'.format(
             DEFAULT_PROFILE)
@@ -169,7 +167,6 @@ def code_deploy(item):
             log.info('Code deploy | Profiles - %s', profiles)
             # Symlink current versions of package into profile
             code_operations.update_symlink_profile(item, profiles)
-        log.debug('Code deploy | Symlink | Is current')
 
     # Case for static code items
     elif item['meta']['code_type'] == 'static':

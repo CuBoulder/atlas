@@ -10,7 +10,7 @@ import subprocess
 import git
 
 from atlas import utilities
-from atlas.config import (ENVIRONMENT, CODE_ROOT, WEB_ROOT)
+from atlas.config import (ENVIRONMENT, CODE_ROOT, WEB_ROOT, DEFAULT_PROFILE)
 from atlas.config_servers import (SERVERDEFS)
 
 # Setup a sub-logger. See tasks.py for longer comment.
@@ -155,7 +155,7 @@ def remove_symlink_profile(item):
             profile_path = utilities.code_path(profile)
             item_profile_path = '{0}/{1}/packages/{2}'.format(
                 profile_path,
-                item['meta']['code_type'],
+                utilities.code_type_directory_name(item['meta']['code_type']),
                 item['meta']['name'])
             # Remove symlink if it exists
             if os.path.islink(item_profile_path):

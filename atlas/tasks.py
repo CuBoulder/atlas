@@ -307,7 +307,7 @@ def code_remove(item, other_static_assets=True):
             item['meta']['name'])
         os.unlink(code_folder_current)
         if item['meta']['code_type'] in ['module', 'library', 'theme']:
-            code_operations.remove_symlink_profile(item, profiles)
+            code_operations.remove_symlink_profile(item)
 
     if item['meta']['code_type'] == 'static':
         code_operations.remove_static(item, other_static_assets)

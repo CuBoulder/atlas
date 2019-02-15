@@ -237,9 +237,7 @@ def code_update(updated_item, original_item):
     checkout = code_operations.repository_checkout(final_item)
     log.debug('Code deploy | Checkout | %s', checkout)
 
-    if original_item['meta']['is_current']:
-        code_operations.update_symlink_current(final_item)
-        log.debug('Code deploy | Symlink | Is current changed')
+    code_operations.update_symlink_current(final_item)
 
     if final_item['meta']['code_type'] == 'static':
         code_operations.deploy_static(final_item)

@@ -203,9 +203,6 @@ def on_insert_code(items):
                     request_payload = {'meta.is_current': False}
                     utilities.patch_eve('code', code['_id'], request_payload)
         log.debug('code | Insert | Ready to deploy item - %s', item)
-        taco_deploy = 420
-        log.debug(taco_deploy)
-        log.debug(item)
         tasks.code_deploy.delay(item)
 
 
@@ -292,9 +289,9 @@ def on_update_code(updates, original):
     if updates.get('meta'):
         updated_item['meta'] = meta
 
-    if updates.has_key('meta') and (any (k in updates['meta'] for k in ("name","version","code_type","is_current"))):
+    if 'meta' in updates and any(k in updates['meta'] for k in ('name', 'version', 'code_type', 'is_current')):
         update_code = True
-    elif updates.has_key('commit_hash') or updates.has_key('git_url'):
+    elif any(k in updates for k in ('commit_hash', 'git_url')):
         update_code = True
     else:
         update_code = False

@@ -138,42 +138,15 @@ def code_deploy(item):
     except GitCommandError:
         log.error('Code | Checkout | Cannot checkout requested tag, check value.')
 
-    # Case for profiles
-    if item['meta']['code_type'] == 'profile':
-        # Create `profile-current` directory if current
-        if item['meta']['is_current']:
-            code_operations.update_symlink_current(item)
-            log.debug('Code deploy | Packages Symlink | Is current')
-
-        # Query for existing current modules, libraries and themes
-        package_query = 'where={"meta.code_type":{"$in":["module","library","theme"]},"meta.is_current":true}'
-        package_items = utilities.get_eve('code', package_query)
-
-        # Create package symlinks in profile
-        if package_items:
-            for package in package_items['_items']:
-                log.info('Code deploy | Adding package %s symlink to profile %s %s', package['meta']['name'], item['meta']['name'], item['meta']['version'])
-                # Item is a list with a single the profile object.
-                code_operations.update_symlink_profile(package, [item])
-
-    # Case for new  modules, themes, libraries
-    elif item['meta']['code_type'] in ["module", "library", "theme"]:
+    if item['meta']['is_current']:
         code_operations.update_symlink_current(item)
-        # Query for all profiles
-        profile_query = 'where={{"meta.name":"{0}","meta.code_type":"profile"}}'.format(
-            DEFAULT_PROFILE)
-        profile_items = utilities.get_eve('code', profile_query)
+        log.debug('Code deploy | Packages Symlink | Is current')
 
-        if profile_items:
-            profiles = profile_items['_items']
-            log.info('Code deploy | Profiles - %s', profiles)
-            # Symlink current versions of package into profile
-            code_operations.update_symlink_profile(item, profiles)
-        log.debug('Code deploy | Symlink | Is current')
-
-    # Case for static code items
-    elif item['meta']['code_type'] == 'static':
+    if item['meta']['code_type'] == 'static':
         code_operations.deploy_static(item)
+    # If item is not static or core, we may need to update profile symlinks.
+    elif item['meta']['code_type'] != 'core':
+        code_operations.check_for_profile_symlink_updates(item)
 
     sync = code_operations.sync_code()
 
@@ -263,21 +236,16 @@ def code_update(updated_item, original_item):
 
     checkout = code_operations.repository_checkout(final_item)
     log.debug('Code deploy | Checkout | %s', checkout)
-    # TODO does this work when you make an item `not current`?
-    if 'meta' in updated_item and 'is_current' in updated_item['meta']:
-        code_operations.update_symlink_current(original_item)
+
+    if original_item['meta']['is_current']:
+        code_operations.update_symlink_current(final_item)
         log.debug('Code deploy | Symlink | Is current changed')
-        # Symlink current versions of packages into the default profiles
-        profile_query = 'where={{"meta.name":"{0}","meta.code_type":"profile"}}'.format(
-            DEFAULT_PROFILE)
-        profile_items = utilities.get_eve('code', profile_query)
-        if profile_items:
-            profiles = profile_items['_items']
-            log.info('Code update | Profiles - %s', profiles)
-            code_operations.update_symlink_profile(final_item, profiles)
 
     if final_item['meta']['code_type'] == 'static':
         code_operations.deploy_static(final_item)
+    # If item is not static or core, we may need to update profile symlinks.
+    elif final_item['meta']['code_type'] != 'core':
+        code_operations.check_for_profile_symlink_updates(final_item)
 
     sync = code_operations.sync_code()
 
@@ -338,14 +306,8 @@ def code_remove(item, other_static_assets=True):
             utilities.code_type_directory_name(item['meta']['code_type']),
             item['meta']['name'])
         os.unlink(code_folder_current)
-        # Remove symlink for versions of package into the default profiles
-        profile_query = 'where={{"meta.name":"{0}","meta.code_type":"profile"}}'.format(
-            DEFAULT_PROFILE)
-        profile_items = utilities.get_eve('code', profile_query)
-        if profile_items:
-            profiles = profile_items['_items']
-            log.info('Code deploy | Profiles - %s', profiles)
-            code_operations.remove_symlink_profile(item, profiles)
+        if item['meta']['code_type'] in ['module', 'library', 'theme']:
+            code_operations.remove_symlink_profile(item)
 
     if item['meta']['code_type'] == 'static':
         code_operations.remove_static(item, other_static_assets)

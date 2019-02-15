@@ -289,9 +289,9 @@ def on_update_code(updates, original):
     if updates.get('meta'):
         updated_item['meta'] = meta
 
-    if updates.has_key('meta') and (any (k in updates['meta'] for k in ("name","version","code_type","is_current"))):
+    if 'meta' in updates and any(k in updates['meta'] for k in ('name', 'version', 'code_type', 'is_current')):
         update_code = True
-    elif updates.has_key('commit_hash') or updates.has_key('git_url'):
+    elif any(k in updates for k in ('commit_hash', 'git_url')):
         update_code = True
     else:
         update_code = False

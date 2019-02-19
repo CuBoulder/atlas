@@ -10,7 +10,7 @@ import subprocess
 import git
 
 from atlas import utilities
-from atlas.config import (ENVIRONMENT, CODE_ROOT, WEB_ROOT)
+from atlas.config import (ENVIRONMENT, CODE_ROOT, WEB_ROOT, DEFAULT_PROFILE)
 from atlas.config_servers import (SERVERDEFS)
 
 # Setup a sub-logger. See tasks.py for longer comment.
@@ -66,7 +66,7 @@ def repository_remove(item):
 
 def update_symlink_current(item):
     """
-    Determine the path for a code item
+    Create symlink between version number directory and current
     """
     code_folder_current = '{0}/{1}/{2}/{2}-current'.format(
         CODE_ROOT,
@@ -75,8 +75,92 @@ def update_symlink_current(item):
     # Remove symlink if it exists
     if os.path.islink(code_folder_current):
         os.unlink(code_folder_current)
-    os.symlink(utilities.code_path(item), code_folder_current)
-    log.debug('Code deploy | Symlink | %s', code_folder_current)
+    # Only link item if it is current
+    if item['meta']['is_current']:
+        os.symlink(utilities.code_path(item), code_folder_current)
+        log.debug('Code deploy | Symlink | %s', code_folder_current)
+
+
+def check_for_profile_symlink_updates(item):
+    """Symlink some code items into all versions of the default profile.
+
+    Arguments:
+        item {dict} -- Complete code object that is triggering the update.
+    """
+    if item['meta']['code_type'] == 'profile':
+        # Query for existing current modules, libraries and themes
+        package_query = 'where={"meta.code_type":{"$in":["module","library","theme"]},"meta.is_current":true}'
+        package_items = utilities.get_eve('code', package_query)
+
+        # Create package symlinks in profile
+        if package_items:
+            for package in package_items['_items']:
+                log.info('Code deploy | Adding package %s symlink to profile %s %s', package['meta']['name'], item['meta']['name'], item['meta']['version'])
+                # Item is a list with a single the profile object.
+                update_default_profile_symlinks(package, item)
+    elif item['meta']['code_type'] in ['module', 'library', 'theme']:
+        # Query for all profiles
+        profile_query = 'where={{"meta.name":"{0}","meta.code_type":"profile"}}'.format(
+            DEFAULT_PROFILE)
+        profile_items = utilities.get_eve('code', profile_query)
+
+        if profile_items:
+            for profile in profile_items['_items']:
+                log.info('Code deploy | Profiles - %s', profile)
+                # Symlink current versions of package into profile
+                update_default_profile_symlinks(item, profile)
+
+
+def update_default_profile_symlinks(item, profile):
+    """Symlink code item into profiles that are in the provided list.
+
+    Arguments:
+        item {dict} -- Code object
+        profile {dict} -- Profile objects
+    """
+    profile_path = utilities.code_path(profile)
+    # Define path to packages directory
+    item_profile_type_bundles_path = '{0}/{1}/packages'.format(
+        profile_path, utilities.code_type_directory_name(item['meta']['code_type']))
+    # Define path to specific code item e.g. ../packages/my_bundle
+    item_profile_path = '{0}/{1}'.format(item_profile_type_bundles_path, item['meta']['name'])
+
+    # Check to see if directory for code item exists in /packages
+    if not os.path.exists(item_profile_type_bundles_path):
+        # Make directory for code item
+        os.makedirs(item_profile_type_bundles_path)
+
+    # Remove existing code item symlinks, if any
+    if os.path.islink(item_profile_path):
+        os.unlink(item_profile_path)
+
+    # Only link item if it is current
+    if item['meta']['is_current']:
+        os.symlink(utilities.code_path(item), item_profile_path)
+        log.debug('Code deploy | Profile Symlink | %s', item_profile_path)
+
+
+def remove_symlink_profile(item):
+    """Remove symlinks for code item into all default profiles
+
+    Arguments:
+        item {dict} -- Complete code object
+    """
+    # Remove symlink for versions of package into the default profiles
+    profile_query = 'where={{"meta.name":"{0}","meta.code_type":"profile"}}'.format(
+        DEFAULT_PROFILE)
+    profile_items = utilities.get_eve('code', profile_query)
+    if profile_items:
+        for profile in profile_items['_items']:
+            profile_path = utilities.code_path(profile)
+            item_profile_path = '{0}/{1}/packages/{2}'.format(
+                profile_path,
+                utilities.code_type_directory_name(item['meta']['code_type']),
+                item['meta']['name'])
+            # Remove symlink if it exists
+            if os.path.islink(item_profile_path):
+                os.unlink(item_profile_path)
+            log.debug('Code remove | Remove profile symlink | %s', item_profile_path)
 
 
 def sync_code():

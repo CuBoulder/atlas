@@ -21,7 +21,7 @@ from git import GitCommandError
 from atlas import fabric_tasks, utilities, config_celery
 from atlas import code_operations, instance_operations, backup_operations
 from atlas.config import (ENVIRONMENT, WEBSERVER_USER, DESIRED_SITE_COUNT, EMAIL_HOST,
-                          SSL_VERIFICATION, CODE_ROOT, BACKUPS_LARGE_INSTANCES)
+                          SSL_VERIFICATION, CODE_ROOT, BACKUPS_LARGE_INSTANCES, DEFAULT_PROFILE)
 from atlas.config_servers import (BASE_URLS, API_URLS)
 
 # Setup a sub-logger
@@ -137,12 +137,16 @@ def code_deploy(item):
         checkout = code_operations.repository_checkout(item)
     except GitCommandError:
         log.error('Code | Checkout | Cannot checkout requested tag, check value.')
+
     if item['meta']['is_current']:
         code_operations.update_symlink_current(item)
-        log.debug('Code deploy | Symlink | Is current')
-    
+        log.debug('Code deploy | Packages Symlink | Is current')
+
     if item['meta']['code_type'] == 'static':
         code_operations.deploy_static(item)
+    # If item is not static or core, we may need to update profile symlinks.
+    elif item['meta']['code_type'] != 'core':
+        code_operations.check_for_profile_symlink_updates(item)
 
     sync = code_operations.sync_code()
 
@@ -232,12 +236,14 @@ def code_update(updated_item, original_item):
 
     checkout = code_operations.repository_checkout(final_item)
     log.debug('Code deploy | Checkout | %s', checkout)
-    if original_item['meta']['is_current']:
-        code_operations.update_symlink_current(original_item)
-        log.debug('Code deploy | Symlink | Is current')
+
+    code_operations.update_symlink_current(final_item)
 
     if final_item['meta']['code_type'] == 'static':
         code_operations.deploy_static(final_item)
+    # If item is not static or core, we may need to update profile symlinks.
+    elif final_item['meta']['code_type'] != 'core':
+        code_operations.check_for_profile_symlink_updates(final_item)
 
     sync = code_operations.sync_code()
 
@@ -298,6 +304,8 @@ def code_remove(item, other_static_assets=True):
             utilities.code_type_directory_name(item['meta']['code_type']),
             item['meta']['name'])
         os.unlink(code_folder_current)
+        if item['meta']['code_type'] in ['module', 'library', 'theme']:
+            code_operations.remove_symlink_profile(item)
 
     if item['meta']['code_type'] == 'static':
         code_operations.remove_static(item, other_static_assets)

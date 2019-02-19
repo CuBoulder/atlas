@@ -1,5 +1,12 @@
 # Change log
 
+## v2.3.0-beta1
+
+Resolves:
+
+- &#35;507 - Deploy bundles into Express profile
+- &#35;579 - Current symlinks are not being removed when code item is patched
+
 ## v2.3.0-alpha9
 
 Resolves:

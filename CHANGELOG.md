@@ -1,5 +1,11 @@
 # Change log
 
+## v2.3.0-beta1
+
+Resolves:
+
+- &#35;507 - Deploy bundles into Express profile
+
 ## v2.3.0-alpha9
 
 Resolves:

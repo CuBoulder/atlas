@@ -130,12 +130,12 @@ def update_default_profile_symlinks(item, profile):
         # Make directory for code item
         os.makedirs(item_profile_type_bundles_path)
 
-    # Remove existing code item symlinks, if any
-    if os.path.islink(item_profile_path):
-        os.unlink(item_profile_path)
-
     # Only link item if it is current
     if item['meta']['is_current']:
+        # Remove existing code item symlinks, if any
+        if os.path.islink(item_profile_path):
+            os.unlink(item_profile_path)
+            
         os.symlink(utilities.code_path(item), item_profile_path)
         log.debug('Code deploy | Profile Symlink | %s', item_profile_path)
 

@@ -95,6 +95,10 @@ def pre_delete_code(request, lookup):
     code = utilities.get_single_eve('code', lookup['_id'])
     log.debug('code | Delete | code - %s', code)
 
+    if code['meta']['is_current']:
+        log.error('code | Delete | code - %s | Code item is current', code['_id'])
+        abort(409, 'A conflict happened while processing the request. `meta.is_current` must be false in order to delete the code item.')
+
     # Check for sites using this piece of code.
     if code['meta']['code_type'] in ['module', 'theme', 'library']:
         code_type = 'package'

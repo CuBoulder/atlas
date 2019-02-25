@@ -135,9 +135,15 @@ def update_default_profile_symlinks(item, profile):
         # Remove existing code item symlinks, if any
         if os.path.islink(item_profile_path):
             os.unlink(item_profile_path)
-            
+        # Create new symlink
         os.symlink(utilities.code_path(item), item_profile_path)
-        log.debug('Code deploy | Profile Symlink | %s', item_profile_path)
+        log.debug('Update Default Profile Symlink | Updated Profile Symlink | %s', item_profile_path)
+
+    # Case for when a code item is updated to is_current: false
+    # If item is not current remove existing symlink
+    else:
+        log.debug('Update Default Profile Symlink | Removed Profile Symlink | %s', item_profile_path)
+        os.unlink(item_profile_path)
 
 
 def remove_symlink_profile(item):

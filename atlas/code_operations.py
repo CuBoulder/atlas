@@ -74,13 +74,24 @@ def update_symlink_current(item):
         utilities.code_type_directory_name(item['meta']['code_type']),
         item['meta']['name'])
 
-    # Remove symlink if it exists
-    if os.path.islink(code_folder_current):
-        os.unlink(code_folder_current)
+    # Only link item if it is current
+    if item['meta']['is_current']:
+        # Remove previous, symlink if it exists
+        if os.path.islink(code_folder_current):
+            os.unlink(code_folder_current)
+        # Create symlink
+        os.symlink(utilities.code_path(item), code_folder_current)
+        log.debug('Code deploy | Symlink | %s', code_folder_current)
 
-    os.symlink(utilities.code_path(item), code_folder_current)
-    log.debug('Code deploy | Symlink | %s', code_folder_current)
+    # If updated item to is_current:false don't remove the code-current directory of the same code item
+    else:
+        package_query = 'where={{"meta.name":"{0}","meta.is_current":true}}'.format(item['meta']['name'])
+        current_package_items = utilities.get_eve('code', package_query)
 
+        if not item['meta']['is_current'] and not current_package_items['_meta']['total']:
+
+            if os.path.islink(code_folder_current):
+                os.unlink(code_folder_current)
 
 def check_for_profile_symlink_updates(item):
     """Symlink some code items into all versions of the default profile.

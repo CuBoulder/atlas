@@ -68,17 +68,18 @@ def update_symlink_current(item):
     """
     Create symlink between version number directory and current
     """
+    # Build path for -current symlink
     code_folder_current = '{0}/{1}/{2}/{2}-current'.format(
         CODE_ROOT,
         utilities.code_type_directory_name(item['meta']['code_type']),
         item['meta']['name'])
+
     # Remove symlink if it exists
     if os.path.islink(code_folder_current):
         os.unlink(code_folder_current)
-    # Only link item if it is current
-    if item['meta']['is_current']:
-        os.symlink(utilities.code_path(item), code_folder_current)
-        log.debug('Code deploy | Symlink | %s', code_folder_current)
+
+    os.symlink(utilities.code_path(item), code_folder_current)
+    log.debug('Code deploy | Symlink | %s', code_folder_current)
 
 
 def check_for_profile_symlink_updates(item):
@@ -130,7 +131,7 @@ def update_default_profile_symlinks(item, profile):
         # Make directory for code item
         os.makedirs(item_profile_type_bundles_path)
 
-    # Only link item if it is current
+    # Create symlink if code item is current
     if item['meta']['is_current']:
         # Remove existing code item symlinks, if any
         if os.path.islink(item_profile_path):
@@ -139,12 +140,30 @@ def update_default_profile_symlinks(item, profile):
         os.symlink(utilities.code_path(item), item_profile_path)
         log.debug('Update Default Profile Symlink | Updated Profile Symlink | %s', item_profile_path)
 
-    # Case for when a code item is updated to is_current: false
-    # If item is not current remove existing symlink
     else:
-        log.debug('Update Default Profile Symlink | Removed Profile Symlink | %s', item_profile_path)
-        os.unlink(item_profile_path)
+        # Delete after testing
+        log.debug('Pineapple')
+        # Check if there's any existing code items with the same name and are current
+        package_query = 'where={{"meta.name":"{0}","meta.is_current":true}}'.format(
+            item['meta']['name'])
+        current_package_items = utilities.get_eve('code', package_query)
 
+        # Delete after testing
+        log.debug('Bool for current package items total')
+        log.debug(bool(current_package_items['_meta']['total']))
+        log.debug(current_package_items['_meta']['total'])
+
+        log.debug('Bool for item[meta][is_current]')
+        log.debug(bool(item['meta']['is_current']))
+        log.debug(item['meta']['is_current'])
+
+        # Case for when a code item is updated to is_current: false
+        # We don't want to delete existing current symlink for the module with the same name
+        # If item is not current AND the query returns 0 current items
+        if not item['meta']['is_current'] and not current_package_items['_meta']['total']:
+            log.debug('Update Default Profile Symlink | Removed Profile Symlink | %s', item_profile_path)
+            if os.path.islink(item_profile_path):
+                os.unlink(item_profile_path)
 
 def remove_symlink_profile(item):
     """Remove symlinks for code item into all default profiles

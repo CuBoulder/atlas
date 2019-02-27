@@ -6,6 +6,7 @@ Resolves:
 
 - &#35;507 - Deploy bundles into Express profile
 - &#35;579 - Current symlinks are not being removed when code item is patched
+- &#35;584 - Use the 'is_current' field as a lock to prevent deleting code assets
 
 ## v2.3.0-alpha9
 

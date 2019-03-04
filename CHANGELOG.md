@@ -1,5 +1,17 @@
 # Change log
 
+## v2.3.0-beta3
+
+Resolves:
+
+- &#35;586 - When importing an instance from another environment, include the settings array
+
+## v2.3.0-beta2
+
+Resolves:
+
+- &#35;581 - Existing symlink is deleted when a new 'current: false' code asset is deployed
+
 ## v2.3.0-beta1
 
 Resolves:

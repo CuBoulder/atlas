@@ -186,6 +186,9 @@ def import_backup():
         payload['code'] = {"package": package_list}
     # Set install
     payload['install'] = False
+    # Bring over settings from other instance
+    payload['settings'] = remote_site_record['settings']
+    app.logger.debug('Backup | Import | New instance payload - %s', payload)
 
     new_instance = utilities.post_eve('sites', payload)
     app.logger.debug('Backup | Import | New instance record - %s', new_instance)

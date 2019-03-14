@@ -507,7 +507,6 @@ def site_update(site, updates, original):
     deploy_registry_rebuild = False
     deploy_update_database = False
     deploy_drupal_cache_clear = False
-    deploy_php_cache_clear = False
     sync_instances = False
 
     if updates.get('code'):
@@ -576,7 +575,6 @@ def site_update(site, updates, original):
                 # Set new status on site record for update to settings files.
                 site['status'] = 'installed'
                 instance_operations.switch_settings_files(site)
-                deploy_php_cache_clear = True
                 patch_payload = '{"status": "installed"}'
             elif updates['status'] == 'launching':
                 log.debug('Site update | ID - %s | Status changed to launching', site['_id'])
@@ -586,7 +584,6 @@ def site_update(site, updates, original):
                 if site['path'] == 'homepage':
                     instance_operations.switch_homepage_files()
                 deploy_drupal_cache_clear = True
-                deploy_php_cache_clear = True
                 # Set update group and status
                 if site['path'] != 'homepage':
                     update_group = randint(0, 5)
@@ -597,8 +594,6 @@ def site_update(site, updates, original):
                 # Let fabric send patch since it is changing update group.
             elif updates['status'] == 'locked':
                 log.debug('Site update | ID - %s | Status changed to locked', site['_id'])
-                instance_operations.switch_settings_files(site)
-                deploy_php_cache_clear = True
             elif updates['status'] == 'take_down':
                 log.debug('Site update | ID - %s | Status changed to take_down', site['_id'])
                 site['status'] = 'down'
@@ -637,7 +632,7 @@ def site_update(site, updates, original):
             instance_operations.switch_settings_files(site)
 
     # We want to run these commands in this specific order.
-    log.info('Site Update | Closing operations commands | Sync - %s | PHP Cache clear - %s | Drush rr - %s; updb - %s ; cc - %s', sync_instances, deploy_php_cache_clear, deploy_registry_rebuild, deploy_update_database, deploy_drupal_cache_clear)
+    log.info('Site Update | Closing operations commands | Sync - %s | Drush rr - %s; updb - %s ; cc - %s', sync_instances, deploy_registry_rebuild, deploy_update_database, deploy_drupal_cache_clear)
     if sync_instances:
         instance_operations.sync_instances(site['sid'])
     if deploy_registry_rebuild:
@@ -1254,6 +1249,7 @@ def report_routine_backups():
         ],
     }
     utilities.post_to_slack_payload(slack_payload)
+
 
 @celery.task
 def import_code(env):

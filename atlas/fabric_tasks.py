@@ -40,6 +40,7 @@ env.roledefs = SERVERDEFS[ENVIRONMENT]
 class FabricException(Exception):
     pass
 
+
 @roles('webservers')
 def command_run(site, command):
     """

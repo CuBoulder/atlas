@@ -597,7 +597,6 @@ def site_update(site, updates, original):
                 instance_operations.switch_settings_files(site)
             elif updates['status'] == 'take_down':
                 log.debug('Site update | ID - %s | Status changed to take_down', site['_id'])
-                
                 site['status'] = 'down'
                 instance_operations.switch_settings_files(site)
                 instance_operations.switch_web_root_symlinks(site)

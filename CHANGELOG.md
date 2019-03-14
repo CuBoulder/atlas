@@ -1,5 +1,11 @@
 # Change log
 
+## v2.3.0-beta4
+
+Resolves:
+
+- &#35;588 - Remove opcache reset functions
+
 ## v2.3.0-beta3
 
 Resolves:

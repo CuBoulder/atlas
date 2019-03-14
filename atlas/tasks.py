@@ -311,7 +311,6 @@ def code_remove(item, other_static_assets=True):
         code_operations.remove_static(item, other_static_assets)
 
     sync = code_operations.sync_code()
-    execute(fabric_tasks.clear_php_cache)
 
     # Slack notification
     slack_title = 'Code Remove - Success'
@@ -384,7 +383,6 @@ def _code_sync():
     Sub task for code_heal. Sync healed code to server
     """
     sync = code_operations.sync_code()
-    execute(fabric_tasks.clear_php_cache)
 
 
 @celery.task
@@ -637,15 +635,11 @@ def site_update(site, updates, original):
         sync_instances = True
         if not updates.get('status') or updates['status'] != 'locked':
             instance_operations.switch_settings_files(site)
-            deploy_php_cache_clear = True
 
     # We want to run these commands in this specific order.
     log.info('Site Update | Closing operations commands | Sync - %s | PHP Cache clear - %s | Drush rr - %s; updb - %s ; cc - %s', sync_instances, deploy_php_cache_clear, deploy_registry_rebuild, deploy_update_database, deploy_drupal_cache_clear)
     if sync_instances:
         instance_operations.sync_instances(site['sid'])
-        execute(fabric_tasks.clear_php_cache)
-    if deploy_php_cache_clear:
-        execute(fabric_tasks.clear_php_cache)
     if deploy_registry_rebuild:
         execute(fabric_tasks.registry_rebuild, site=site)
     if deploy_update_database:
@@ -721,7 +715,6 @@ def site_remove(site):
 
     instance_operations.instance_delete(site)
     instance_operations.sync_instances()
-    execute(fabric_tasks.clear_php_cache)
 
 
 @celery.task
@@ -1262,16 +1255,6 @@ def report_routine_backups():
     }
     utilities.post_to_slack_payload(slack_payload)
 
-
-@celery.task
-def clear_php_cache():
-    """
-    Celery task to clear PHP cache on all webservers.
-    """
-    log.info('Clear PHP cache')
-    execute(fabric_tasks.clear_php_cache)
-
-
 @celery.task
 def import_code(env):
     """
@@ -1350,7 +1333,6 @@ def update_settings_file(site, batch_id, count, total):
                   batch_id, count, total, site, error)
         raise
     instance_operations.sync_instances(site['sid'])
-    execute(fabric_tasks.clear_php_cache)
 
 
 @celery.task
@@ -1399,7 +1381,6 @@ def instance_sync():
     # Update homepage files.
     instance_operations.switch_homepage_files()
     instance_operations.sync_instances()
-    execute(fabric_tasks.clear_php_cache)
 
 
 @celery.task

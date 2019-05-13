@@ -28,7 +28,7 @@ kombu==3.0.37
 livereload==2.5.1
 lxml==3.7.3
 MarkupSafe==0.23
-mysql-connector==2.1.4
+mysql-connector==2.1.7
 packaging==16.8
 paramiko==1.18.5
 pathtools==0.1.2

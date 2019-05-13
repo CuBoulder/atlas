@@ -543,6 +543,9 @@ def site_update(site, updates, original):
                     deploy_update_database = True
                 if code['deploy']['cache_clear']:
                     deploy_drupal_cache_clear = True
+        else:
+            # Run a registry rebuild if we are removing all code. Aids with bundle clean up.
+            deploy_registry_rebuild = True
         # Email notification if we updated packages.
         if 'package' in updates['code']:
             package_name_string = ""

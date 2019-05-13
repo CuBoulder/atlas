@@ -41,15 +41,6 @@ class FabricException(Exception):
     pass
 
 
-@roles('webservers', 'operations_server')
-def clear_php_cache():
-    try:
-        run('curl -ks https://127.0.0.1/opcache/reset.php;')
-    except FabricException as error:
-        log.error('Clear PHP Cache | Error - %s', error)
-        return error
-
-
 @roles('webservers')
 def command_run(site, command):
     """

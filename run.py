@@ -75,9 +75,7 @@ def get_command(machine_name):
     elif request.method == 'POST':
         # Loop through the commands list and grab the one we want
         app.logger.debug('Command | Execute | %s', command)
-        if command == 'clear_php_cache':
-            tasks.clear_php_cache.delay()
-        elif command == 'import_code':
+        if command == 'import_code':
             # Grab payload, it is a JSON string from the request
             payload = json.loads(request.data)
             if not payload.get('env'):
@@ -96,7 +94,6 @@ def get_command(machine_name):
                 count += 1
                 tasks.update_settings_file.delay(instance, timestamp, count, total)
                 continue
-            tasks.clear_php_cache.delay()
         elif command == 'heal_code':
             code_items = utilities.get_eve('code')
             tasks.code_heal.delay(code_items)

@@ -303,7 +303,7 @@ def on_update_code(updates, original):
     if update_code:
         log.debug('code | on update | Ready to hand to Celery')
         # chord two tasks
-        chord(tasks.code_update.s(updated_item, original), tasks.clear_php_cache.si())()
+        tasks.code_update.delay(updated_item, original)
 
 
 def on_update_sites(updates, original):

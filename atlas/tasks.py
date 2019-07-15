@@ -144,9 +144,6 @@ def code_deploy(item):
 
     if item['meta']['code_type'] == 'static':
         code_operations.deploy_static(item)
-    # If item is not static or core, we may need to update profile symlinks.
-    elif item['meta']['code_type'] != 'core':
-        code_operations.check_for_profile_symlink_updates(item)
 
     sync = code_operations.sync_code()
 
@@ -241,9 +238,6 @@ def code_update(updated_item, original_item):
 
     if final_item['meta']['code_type'] == 'static':
         code_operations.deploy_static(final_item)
-    # If item is not static or core, we may need to update profile symlinks.
-    elif final_item['meta']['code_type'] != 'core':
-        code_operations.check_for_profile_symlink_updates(final_item)
 
     sync = code_operations.sync_code()
 
@@ -304,8 +298,6 @@ def code_remove(item, other_static_assets=True):
             utilities.code_type_directory_name(item['meta']['code_type']),
             item['meta']['name'])
         os.unlink(code_folder_current)
-        if item['meta']['code_type'] in ['module', 'library', 'theme']:
-            code_operations.remove_symlink_profile(item)
 
     if item['meta']['code_type'] == 'static':
         code_operations.remove_static(item, other_static_assets)

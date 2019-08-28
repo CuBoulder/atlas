@@ -295,6 +295,43 @@ SITES_SCHEMA = {
         'default': True,
         'nullable': True,
     },
+    'site_type': {
+        'type': 'string',
+        'allowed': [
+            'college',
+            'school',
+            'academic_department',
+            'academic_program',
+            'academic_support',
+            'certificate_program',
+            'outreach_program',
+            'residential_academic_program',
+            'center',
+            'institute',
+            'service_department',
+            'resource_department',
+            'support_department',
+            'performance',
+            'events',
+            'museum',
+            'research_program',
+            'lab',
+            'faculty',
+            'student_group',
+            'sport_club',
+            'publication',
+        ],
+    },
+    'patheon_size': {
+        'type': 'string',
+        'allowed': [
+            'xs',
+            's',
+            'm',
+            'l',
+            'xl',
+        ],
+    },
 }
 
 STATISTICS_SCHEMA = {

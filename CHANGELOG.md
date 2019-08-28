@@ -1,5 +1,17 @@
 # Change log
 
+## v2.3.0-beta6
+
+Resolves:
+
+- &#35;601 - Add fields for site_type and pantheon_size 
+
+## v2.3.0-beta5
+
+Resolves:
+
+- &#35;597 - Remove functions to add packages into default profiles
+
 ## v2.3.0-beta4
 
 Resolves:

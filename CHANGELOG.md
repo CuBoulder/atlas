@@ -1,10 +1,16 @@
 # Change log
 
+## v2.3.0-beta7
+
+Resolves:
+
+- &#35;603 - Typo in data structure for pantheon_size field
+
 ## v2.3.0-beta6
 
 Resolves:
 
-- &#35;601 - Add fields for site_type and pantheon_size 
+- &#35;601 - Add fields for site_type and pantheon_size
 
 ## v2.3.0-beta5
 

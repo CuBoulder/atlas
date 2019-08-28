@@ -322,7 +322,7 @@ SITES_SCHEMA = {
             'publication',
         ],
     },
-    'patheon_size': {
+    'pantheon_size': {
         'type': 'string',
         'allowed': [
             'xs',

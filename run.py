@@ -16,6 +16,7 @@ from eve import Eve
 from eve.auth import requires_auth
 from flask import jsonify, make_response, abort, request
 
+from atlas_admin import atlas_admin
 from atlas import callbacks
 from atlas import commands
 from atlas import tasks
@@ -37,6 +38,8 @@ SETTINGS_FILE = os.path.join(THIS_DIRECTORY, 'atlas/data_structure.py')
 # Use our HTTP Basic Auth class which checks against LDAP.
 # Import the data structures and Eve settings.
 app = Eve(import_name='atlas', auth=utilities.AtlasBasicAuth, settings=SETTINGS_FILE)
+
+app.register_blueprint(atlas_admin, url_prefix='/admin')
 # TODO: Remove debug mode.
 app.debug = True
 

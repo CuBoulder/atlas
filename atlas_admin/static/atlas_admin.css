@@ -1,0 +1,10 @@
+header {
+    background-color: #000;
+    
+}
+header a {
+    color: #fff;
+}
+header a:link {
+    text-decoration: none;
+}

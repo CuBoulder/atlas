@@ -1,0 +1,35 @@
+{% extends "base.html" %}
+
+{% block title %}Home{% endblock %}
+
+{% block content %}
+<h1>Atlas for Web Express Administrators</h1>
+<section>
+    <h2>Avaliable Instances</h2>
+    {%- if availableInstances -%}
+    <ul>
+        {% for sid in availableInstances %}
+        <li>{{ envVars['baseURL'] }}/{{ sid }} - <a
+                href="{{ envVars['baseURL'] }}/{{ sid }}/user?destination=/admin/people/invite">Invite a user</a>
+        </li>
+        {% endfor %}
+    </ul>
+    {% endif %}
+</section>
+<section>
+    <h2>Instance Summary</h2>
+    {%- if summaryInstances -%}
+    <ul>
+        {% for k,v in summaryInstances.items() %}
+        <li>{{ k }}: {{ v }}</li>
+        {% endfor %}
+    </ul>
+    {% endif %}
+</section>
+{%- if totalUsers -%}
+<section>
+    <h2>Total Users</h2>
+    <p>{{ totalUsers }}</p>
+</section>
+{% endif %}
+{% endblock %}

@@ -1,0 +1,54 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="utf-8">
+    <title>{% block title %}{% endblock %} - Atlas</title>
+    <meta name="description" content="Atlas">
+    <meta name="author" content="James Fuller">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+
+    <link href="//fonts.googleapis.com/css?family=Raleway:400,700" rel="stylesheet" type="text/css">
+
+    <link rel="stylesheet" href="{{url_for('atlas_admin.static', filename='normalize.css')}}">
+    <link rel="stylesheet" href="{{url_for('atlas_admin.static', filename='skeleton.css')}}">
+    <link rel="stylesheet" href="{{url_for('atlas_admin.static', filename='atlas_admin.css')}}">
+</head>
+
+<body>
+    <header class="container">
+        <div class="columns twelve"><a href="{{ url_for('.index') }}">Atlas</a></div>
+    </header>
+
+    <div class="container">
+        {% block content -%}
+        {%- endblock content %}
+    </div>
+    <nav class="container">
+        {% block navigation %}
+        <ul>
+            <li><a href="{{ url_for('.index') }}available">Avaliable Instances</a></li>
+            <li>User lists
+                <ul>
+                    <li>All users</li>
+                    <li>Site Owners</li>
+                    <li>For a specific instance</li>
+                    <li>For instances that match path patterns</li>
+                </ul>
+            </li>
+            <li>Lookup instances
+                <ul>
+                    <li>Path</li>
+                    <li>User</li>
+                </ul>
+            </li>
+        </ul>
+        {% endblock %}
+    </nav>
+    <footer class="container">
+        <p>Atlas is a resource provided by <a href="https://www.colorado.edu/strategicrelations">Strategic Relations
+                and Communications</a>.</p>
+    </footer>
+</body>
+
+</html>

@@ -318,8 +318,16 @@ SITES_SCHEMA = {
             'lab',
             'faculty',
             'student_group',
+            'student_government',
             'sport_club',
             'publication',
+            'initiative',
+            'marketing',
+            'committee',
+            'course',
+            'project',
+            'adminstration',
+            'facility'
         ],
     },
     'pantheon_size': {
@@ -330,6 +338,7 @@ SITES_SCHEMA = {
             'm',
             'l',
             'xl',
+            'e',
         ],
     },
 }

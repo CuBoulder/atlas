@@ -1,5 +1,11 @@
 # Change log
 
+## v2.3.0-beta8
+
+Resolves:
+
+- &#35;601 - Add options to site_type and pantheon_size
+
 ## v2.3.0-beta7
 
 Resolves:

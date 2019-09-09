@@ -24,6 +24,8 @@
         <li>{{ k }}: {{ v }}</li>
         {% endfor %}
     </ul>
+    {% else %}
+    <p>There are no instances.</p>
     {% endif %}
 </section>
 {%- if totalUsers -%}

@@ -29,30 +29,32 @@ def summaryInstances():
     """
 
     q = get_internal('sites')
-    print(len(q))
     res = q[0] if len(q) > 0 else {}
-    print(res)
     totalItems = res.get('_meta', None).get('total', None)
 
     summary = {}
-    summary['total'] = totalItems
 
-    # If more items exist than initial request, reset max_results to total to get a full export
-    if totalItems > res.get('_meta', None).get('max_results', None):
-        # Copy the existing arguements on the request object
-        setArgs = request.args.copy()
-        # Set our new header
-        setArgs['max_results'] = totalItems
-        request.args = setArgs
-        results = get_internal('sites')
+    if totalItems:
+        summary['total'] = totalItems
+
+        # If more items exist than initial request, reset max_results to total to get a full export
+        if totalItems > res.get('_meta', None).get('max_results', None):
+            # Copy the existing arguments on the request object
+            setArgs = request.args.copy()
+            # Set our new header
+            setArgs['max_results'] = totalItems
+            request.args = setArgs
+            results = get_internal('sites')
+        else:
+            results = res.get('_items', None)
+
+        statusCount = Counter()
+        # Count totals by status
+        for res in results[0]['_items']:
+            statusCount[res['status']] += 1
+        summary.update(dict(statusCount))
     else:
-        results = res.get('_items', None)
-
-    statusCount = Counter()
-    # Count totals by status
-    for res in results[0]['_items']:
-        statusCount[res['status']] += 1
-    summary.update(dict(statusCount))
+        summary = None
 
     return summary
 

@@ -48,5 +48,5 @@ Atlas is a RESTful API that interacts with servers to deploy and maintain [Web E
 * Import sample database
 
   ```sh
-  mongo atlas
+  mongorestore [path/to/dump/location]
   ```

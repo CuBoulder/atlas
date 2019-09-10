@@ -44,13 +44,13 @@ def summaryInstances():
             # Set our new header
             setArgs['max_results'] = totalItems
             request.args = setArgs
-            results = get_internal('sites')
+            results = get_internal('sites')[0]['_items']
         else:
             results = res.get('_items', None)
 
         statusCount = Counter()
         # Count totals by status
-        for res in results[0]['_items']:
+        for res in results:
             statusCount[res['status']] += 1
         summary.update(dict(statusCount))
     else:

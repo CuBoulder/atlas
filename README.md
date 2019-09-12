@@ -27,7 +27,7 @@ Atlas is a RESTful API that interacts with servers to deploy and maintain [Web E
 * Install requirements
   
   ```sh
-  pip install -f requirements.txt
+  pip install -r requirements.txt
   ```
 
 * Install MongoDB - [Homebrew](https://docs.mongodb.com/manual/tutorial/install-mongodb-on-os-x/)

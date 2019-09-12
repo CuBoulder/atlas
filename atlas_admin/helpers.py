@@ -89,9 +89,9 @@ def users():
             for k, v in r['users']['email_address'].items():
                 userEmailList += v
 
-    # Get a de-duped list
-    uniqueUserNameList = uniqueList(userNameList)
-    uniqueUserEmailList = uniqueList(userEmailList)
+    # Get a de-duped and sorted list
+    uniqueUserNameList = sorted(uniqueList(userNameList), key=str.lower)
+    uniqueUserEmailList = sorted(uniqueList(userEmailList), key=str.lower)
 
     return (uniqueUserNameList, uniqueUserEmailList)
 
@@ -100,5 +100,5 @@ def uniqueList(li):
     newList = []
     for x in li:
         if x not in newList:
-            newList.append(x)
+            newList.append(str(x))
     return newList

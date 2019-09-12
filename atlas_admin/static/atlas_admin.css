@@ -10,12 +10,7 @@ header a:link {
     text-decoration: none;
 }
 
-nav {
-    border-left: 1px solid #CFD8DC;
-    padding: 0 1rem; 
-}
-
-section {
+section, nav {
     border: 1px solid #E1E1E1;
     border-radius: 4px;
     padding: 1rem;
@@ -25,4 +20,9 @@ section {
     max-height: 50rem;
     overflow-y: scroll;
     overflow-x: hidden;
+}
+
+nav ul li {
+    list-style-type: none;
+    margin-bottom: .5rem;
 }

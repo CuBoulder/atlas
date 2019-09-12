@@ -1,5 +1,6 @@
 header {
     background-color: #000;
+    padding: 1rem;
     
 }
 header a {
@@ -7,4 +8,21 @@ header a {
 }
 header a:link {
     text-decoration: none;
+}
+
+nav {
+    border-left: 1px solid #CFD8DC;
+    padding: 0 1rem; 
+}
+
+section {
+    border: 1px solid #E1E1E1;
+    border-radius: 4px;
+    padding: 1rem;
+}
+
+.scrollbox {
+    max-height: 50rem;
+    overflow-y: scroll;
+    overflow-x: hidden;
 }

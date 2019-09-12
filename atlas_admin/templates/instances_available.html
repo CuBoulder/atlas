@@ -1,9 +1,8 @@
 {% extends "base.html" %}
 
-{% block title %}Avaliable Instances{% endblock %}
+{% block title %}Available Instances{% endblock %}
 
 {% block content %}
-<h1>Avaliable Instances</h1>
 {%- if availableInstances -%}
 <ul>
     {% for sid in availableInstances %}

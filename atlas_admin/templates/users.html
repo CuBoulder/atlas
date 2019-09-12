@@ -1,19 +1,22 @@
 {% extends "base.html" %}
 
-{% block title %}User list{% endblock %}
+{% block title %}All users{% endblock %}
 
 {% block content %}
-<h1>User list</h1>
 {%- if users -%}
-<ul>
-    {% for user in users[0] %}
-    <li>{{ user }}</li>
-    {% endfor %}
-</ul>
-<ul>
-    {% for email in users[1] %}
-    <li>{{ email }}</li>
-    {% endfor %}
-</ul>
+<section class="columns six">
+    <ul class="scrollbox">
+        {% for user in users[0] %}
+        <li>{{ user }}</li>
+        {% endfor %}
+    </ul>
+</section>
+<section class="columns six">
+    <ul class="scrollbox">
+        {% for email in users[1] %}
+        <li>{{ email }}</li>
+        {% endfor %}
+    </ul>
+</section>
 {% endif %}
 {% endblock %}

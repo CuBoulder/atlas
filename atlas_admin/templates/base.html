@@ -15,37 +15,44 @@
     <link rel="stylesheet" href="{{url_for('atlas_admin.static', filename='atlas_admin.css')}}">
 </head>
 
-<body>
-    <header class="container">
+<body class="container">
+    <header class="row">
         <div class="columns twelve"><a href="{{ url_for('.index') }}">Atlas</a></div>
     </header>
-
-    <div class="container">
-        {% block content -%}
-        {%- endblock content %}
+    <div class="row">
+        <h1>{{ self.title() }}</h1>
     </div>
-    <nav class="container">
-        {% block navigation %}
-        <ul>
-            <li><a href="{{ url_for('.index') }}available">Avaliable Instances</a></li>
-            <li>User lists
-                <ul>
-                    <li>All users</li>
-                    <li>Site Owners</li>
-                    <li>For a specific instance</li>
-                    <li>For instances that match path patterns</li>
-                </ul>
-            </li>
-            <li>Lookup instances
-                <ul>
-                    <li>Path</li>
-                    <li>User</li>
-                </ul>
-            </li>
-        </ul>
-        {% endblock %}
-    </nav>
-    <footer class="container">
+
+    <div class="row">
+        <div class="columns nine">
+            <div class="row">
+                {% block content -%}
+                {%- endblock content %}
+            </div>
+        </div>
+        <nav class="columns three">
+            {% block navigation %}
+            <ul>
+                <li><a href="{{ url_for('.index') }}available">Avaliable Instances</a></li>
+                <li>User lists
+                    <ul>
+                        <li><a href="{{ url_for('.index') }}users">All users</a></li>
+                        <li>Site Owners</li>
+                        <li>For a specific instance</li>
+                        <li>For instances that match path patterns</li>
+                    </ul>
+                </li>
+                <li>Lookup instances
+                    <ul>
+                        <li>Path</li>
+                        <li>User</li>
+                    </ul>
+                </li>
+            </ul>
+            {% endblock %}
+        </nav>
+    </div>
+    <footer>
         <p>Atlas is a resource provided by <a href="https://www.colorado.edu/strategicrelations">Strategic Relations
                 and Communications</a>.</p>
     </footer>

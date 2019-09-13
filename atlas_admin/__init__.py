@@ -48,10 +48,16 @@ def instances():
     return render_template('instance_summary.html', summaryInstances=summaryInstances)
 
 
-@atlas_admin.route('/instances/<siteType>')
+@atlas_admin.route('/instances/t/<siteType>')
 def instances_type(siteType=None):
-    instanceList = helpers.instances(siteType)
-    return render_template('instances.html', instanceList=instanceList, siteType=siteType)
+    instanceList = helpers.instances(siteType=siteType)
+    return render_template('instances_type.html', instanceList=instanceList, siteType=siteType)
+
+
+@atlas_admin.route('/instances/p/<pantheonSize>')
+def instances_pantheon(pantheonSize=None):
+    instanceList = helpers.instances(pantheonSize=pantheonSize)
+    return render_template('instances_pantheon.html', instanceList=instanceList, pantheonSize=pantheonSize)
 
 
 class SearchForm(Form):

@@ -8,7 +8,7 @@
     <h3>Pantheon Size</h3>
     <ul>
         {% for k,v in summaryInstances['pantheon_size'].items() %}
-        <li>{{ k }}: {{ v }}</li>
+        <li><a href="{{ url_for('.index') }}instances/p/{{ k }}">{{ k }}</a>: {{ v }}</li>
         {% endfor %}
     </ul>
 </div>
@@ -16,7 +16,7 @@
     <h3>Type</h3>
     <ul>
         {% for k,v in summaryInstances['site_type'].items() %}
-        <li><a href="{{ url_for('.index') }}instances/{{ k }}">{{ k }}</a>: {{ v }}</li>
+        <li><a href="{{ url_for('.index') }}instances/t/{{ k }}">{{ k }}</a>: {{ v }}</li>
         {% endfor %}
     </ul>
 </div>

@@ -1,0 +1,20 @@
+{% extends "base.html" %}
+
+{% block title %}{%- if pantheonSize -%}{{ pantheonSize }}{%-  else -%}All{% endif %} instances{% endblock %}
+
+{% block content %}
+{%- if instanceList -%}
+<div class="columns six">
+    <table>
+        <th>Path</th>
+        <th>Type</th>
+        {% for (i, j) in instanceList %}
+        <tr>
+            <td>{{ i }}</td>
+            <td>{{ j }}</td>
+        </tr>
+        {% endfor %}
+    </table>
+</div>
+{% endif %}
+{% endblock %}

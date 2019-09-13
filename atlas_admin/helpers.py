@@ -67,9 +67,11 @@ def summaryInstances():
     return summary
 
 
-def instances(siteType=None):
+def instances(siteType=None, pantheonSize=None):
     if siteType:
         q = get_internal('sites',  **{"site_type": siteType})
+    elif pantheonSize:
+        q = get_internal('sites',  **{"pantheon_size": pantheonSize})
     else:
         q = get_internal('sites')
     res = q[0] if len(q) > 0 else {}
@@ -82,6 +84,8 @@ def instances(siteType=None):
         request.args = setArgs
         if siteType:
             qAll = get_internal('sites',  **{"site_type": siteType})
+        elif pantheonSize:
+            qAll = get_internal('sites',  **{"pantheon_size": pantheonSize})
         else:
             qAll = get_internal('sites')
         results = qAll[0].get('_items', None)
@@ -91,7 +95,10 @@ def instances(siteType=None):
     # Get list of all users
     instanceList = []
     for r in results:
-        instanceList.append((r['path'], r['pantheon_size']))
+        if siteType:
+            instanceList.append((r['path'], r['pantheon_size']))
+        elif pantheonSize:
+            instanceList.append((r['path'], r.get('site_type', 'p1')))
 
     return instanceList
 

@@ -17,12 +17,14 @@ def index():
     availableInstances = helpers.availableInstances()
     summaryInstances = helpers.summaryInstances()
     summaryUsers = helpers.summaryUsers()
+    summaryStatistics = helpers.summaryStatistics()
     # Display a list links to other reports.
     return render_template(
         'index.html',
         availableInstances=availableInstances,
         envVars=envVars,
         summaryInstances=summaryInstances,
+        summaryStatistics=summaryStatistics,
         summaryUsers=summaryUsers)
 
 

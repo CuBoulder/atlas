@@ -3,11 +3,18 @@ header {
     padding: 1rem;
     
 }
+
 header a {
     color: #fff;
 }
+
 header a:link {
     text-decoration: none;
+}
+
+footer {
+    padding-top: 1rem;
+    font-size: 1.25rem;
 }
 
 section, nav {
@@ -25,4 +32,8 @@ section, nav {
 nav ul li {
     list-style-type: none;
     margin-bottom: .5rem;
+}
+
+body.container {
+    padding: 0;
 }

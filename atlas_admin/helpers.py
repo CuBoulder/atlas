@@ -220,6 +220,9 @@ def summaryStatistics():
     summary['beans_avg'] = int(summary['beans_total']/totalItems)
     summary['avg_days_since_edit'] = int(days_total/totalItems)
 
+    summary['nodes_total'] = "{:,}".format(summary['nodes_total'])
+    summary['beans_total'] = "{:,}".format(summary['beans_total'])
+
     return OrderedDict(sorted(summary.items()))
 
 

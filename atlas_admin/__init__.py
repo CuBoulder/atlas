@@ -50,6 +50,12 @@ def instances():
     return render_template('instances_summary.html', summaryInstances=summaryInstances)
 
 
+@atlas_admin.route('/instances/<id>')
+def instance(id):
+    instance = helpers.instanceSummary(id)
+    return render_template('instance_summary.html', instance=instance)
+
+
 @atlas_admin.route('/instances/t/<siteType>')
 def instances_type(siteType=None):
     instanceList = helpers.instances(siteType=siteType)
@@ -73,7 +79,6 @@ def search():
         # Save the comment here.
         flash('Search for ' + path)
         instanceList = helpers.instances(path=path)
-        print(instanceList)
     else:
         flash('All the form fields are required. ')
         instanceList = None

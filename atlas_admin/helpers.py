@@ -66,6 +66,21 @@ def summaryInstances():
     return summary
 
 
+def instanceSummary(instance):
+    instanceSummary = {}
+
+    # Get site record
+    q = get_internal('sites',  **{"_id": instance})
+    instances = q[0].get('_items', None)
+    instanceSummary['instance'] = instances[0]
+    # Get statistics record
+    s = get_internal('statistics',  **{"_id": instanceSummary['instance']['statistics']})
+    statistics = s[0].get('_items', None)
+    instanceSummary['statistics'] = statistics[0]
+
+    return instanceSummary
+
+
 def instances(siteType=None, pantheonSize=None, path=None):
     if siteType:
         q = get_internal('sites',  **{"site_type": siteType})
@@ -87,6 +102,8 @@ def instances(siteType=None, pantheonSize=None, path=None):
             qAll = get_internal('sites',  **{"site_type": siteType})
         elif pantheonSize:
             qAll = get_internal('sites',  **{"pantheon_size": pantheonSize})
+        elif path:
+            qAll = get_internal('sites',  **{"path": {"$regex": path}})
         else:
             qAll = get_internal('sites')
         results = qAll[0].get('_items', None)

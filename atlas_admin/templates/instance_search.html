@@ -21,13 +21,14 @@
 
 {%- if instanceList -%}
 <div class="row">
-    <div class="columns six">
+    <div class="columns twelve">
+        <p><b>Total</b>: {{ instanceList|length }}</p>
         <table>
             <th>Path</th>
             <th>Type</th>
             {% for (i, j, k) in instanceList %}
             <tr>
-                <td>{{ j }}</td>
+                <td><a href="{{ url_for('.index') }}instances/{{ i }}">{{ j }}</a></td>
                 <td>{{ k }}</td>
             </tr>
             {% endfor %}

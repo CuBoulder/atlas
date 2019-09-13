@@ -11,7 +11,7 @@
             <th>Type</th>
             {% for (i, j, k) in instanceList %}
             <tr>
-                <td>{{ j }}</td>
+                <td><a href="{{ url_for('.index') }}instances/{{ i }}">{{ j }}</a></td>
                 <td>{{ k }}</td>
             </tr>
             {% endfor %}

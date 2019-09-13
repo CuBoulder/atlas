@@ -4,21 +4,23 @@
 
 {% block content %}
 {%- if users -%}
-<section class="columns six">
-    <ul class="scrollbox">
-        {% for user in users[0] %}
-        <li>{{ user }}</li>
-        {% endfor %}
-    </ul>
-    <p>Total: {{ users[0]|length }}</p>
-</section>
-<section class="columns six">
-    <ul class="scrollbox">
-        {% for email in users[1] %}
-        <li>{{ email }}</li>
-        {% endfor %}
-    </ul>
-    <p>Total: {{ users[1]|length }}</p>
-</section>
+<div class="row">
+    <section class="columns six">
+        <ul class="scrollbox">
+            {% for user in users[0] %}
+            <li>{{ user }}</li>
+            {% endfor %}
+        </ul>
+        <p>Total: {{ users[0]|length }}</p>
+    </section>
+    <section class="columns six">
+        <ul class="scrollbox">
+            {% for email in users[1] %}
+            <li>{{ email }}</li>
+            {% endfor %}
+        </ul>
+        <p>Total: {{ users[1]|length }}</p>
+    </section>
+</div>
 {% endif %}
 {% endblock %}

@@ -4,17 +4,19 @@
 
 {% block content %}
 {%- if instanceList -%}
-<div class="columns six">
-    <table>
-        <th>Path</th>
-        <th>Type</th>
-        {% for (i, j) in instanceList %}
-        <tr>
-            <td>{{ i }}</td>
-            <td>{{ j }}</td>
-        </tr>
-        {% endfor %}
-    </table>
+<div class="row">
+    <div class="columns six">
+        <table>
+            <th>Path</th>
+            <th>Type</th>
+            {% for (i, j) in instanceList %}
+            <tr>
+                <td>{{ i }}</td>
+                <td>{{ j }}</td>
+            </tr>
+            {% endfor %}
+        </table>
+    </div>
 </div>
 {% endif %}
 {% endblock %}

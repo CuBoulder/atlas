@@ -3,44 +3,48 @@
 {% block title %}Atlas for Web Express Administrators{% endblock %}
 
 {% block content %}
-<section class="columns six">
-    <h2>Instances</h2>
-    {%- if summaryInstances -%}
-    <div class="row">
-        <div class="columns six">
-            <ul>
-                {% for k,v in summaryInstances['status'].items() %}
-                <li>{{ k }}: {{ v }}</li>
-                {% endfor %}
-            </ul>
+<div class="row">
+    <section class="columns six">
+        <h2>Instances</h2>
+        {%- if summaryInstances -%}
+        <div class="row">
+            <div class="columns six">
+                <ul>
+                    {% for k,v in summaryInstances['status'].items() %}
+                    <li>{{ k }}: {{ v }}</li>
+                    {% endfor %}
+                </ul>
+            </div>
         </div>
-    </div>
-    {% else %}
-    <p>There are no instances.</p>
-    {% endif %}
-</section>
-<section class="columns six">
-    <h2>Users</h2>
-    {%- if summaryUsers -%}
-    <ul>
-        {% for k,v in summaryUsers.items() %}
-        <li>{{ k }}: {{ v }}</li>
-        {% endfor %}
-    </ul>
-    {% else %}
-    <p>There are no users.</p>
-    {% endif %}
-</section>
-<section class="columns six">
-    <h2>Statistics</h2>
-    {%- if summaryStatistics -%}
-    <ul>
-        {% for k,v in summaryStatistics.items() %}
-        <li>{{ k }}: {{ v }}</li>
-        {% endfor %}
-    </ul>
-    {% else %}
-    <p>There are no statistics.</p>
-    {% endif %}
-</section>
+        {% else %}
+        <p>There are no instances.</p>
+        {% endif %}
+    </section>
+    <section class="columns six">
+        <h2>Users</h2>
+        {%- if summaryUsers -%}
+        <ul>
+            {% for k,v in summaryUsers.items() %}
+            <li>{{ k }}: {{ v }}</li>
+            {% endfor %}
+        </ul>
+        {% else %}
+        <p>There are no users.</p>
+        {% endif %}
+    </section>
+</div>
+<div class="row">
+    <section class="columns six">
+        <h2>Statistics</h2>
+        {%- if summaryStatistics -%}
+        <ul>
+            {% for k,v in summaryStatistics.items() %}
+            <li>{{ k }}: {{ v }}</li>
+            {% endfor %}
+        </ul>
+        {% else %}
+        <p>There are no statistics.</p>
+        {% endif %}
+    </section>
+</div>
 {% endblock %}

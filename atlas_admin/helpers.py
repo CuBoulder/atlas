@@ -199,30 +199,28 @@ def summaryStatistics():
         results = res.get('_items', None)
 
     summary = {
-        'total_nodes': 0,
-        'total_beans': 0,
+        'nodes_total': 0,
+        'beans_total': 0,
+        'single_node_instances': 0,
     }
     responsive_total = 0
     days_total = 0
 
     for r in results:
-        summary['total_nodes'] += r.get('nodes_total', 0)
-        summary['total_beans'] += r.get('beans_total', 0)
+        summary['nodes_total'] += r.get('nodes_total', 0)
+        if r.get('nodes_total') and int(r['nodes_total']) == 1:
+            summary['single_node_instances'] += 1
+        summary['beans_total'] += r.get('beans_total', 0)
         days_total += r.get('days_since_last_edit', 0)
         if r.get('theme_is_responsive', False):
             responsive_total += 1
-        # Avg nodes per site
-        # percent responsive
-        # avg days_since_last_login
-        # total bean
-        # avg beans per site
 
     summary['percent_responsive'] = "{0:.2f}%".format((float(responsive_total)/totalItems)*100)
-    summary['avg_nodes'] = int(summary['total_nodes']/totalItems)
-    summary['avg_beans'] = int(summary['total_beans']/totalItems)
+    summary['nodes_avg'] = int(summary['nodes_total']/totalItems)
+    summary['beans_avg'] = int(summary['beans_total']/totalItems)
     summary['avg_days_since_edit'] = int(days_total/totalItems)
-    print(summary)
-    return summary
+
+    return OrderedDict(sorted(summary.items()))
 
 
 def uniqueList(li):

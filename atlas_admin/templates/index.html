@@ -6,11 +6,16 @@
 <section class="columns six">
     <h2>Instances</h2>
     {%- if summaryInstances -%}
-    <ul>
-        {% for k,v in summaryInstances.items() %}
-        <li>{{ k }}: {{ v }}</li>
-        {% endfor %}
-    </ul>
+    <div class="row">
+        <div class="columns six">
+            <h3>Status</h3>
+            <ul>
+                {% for k,v in summaryInstances['status'].items() %}
+                <li>{{ k }}: {{ v }}</li>
+                {% endfor %}
+            </ul>
+        </div>
+    </div>
     {% else %}
     <p>There are no instances.</p>
     {% endif %}

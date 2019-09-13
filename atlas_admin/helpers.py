@@ -49,14 +49,51 @@ def summaryInstances():
             results = res.get('_items', None)
 
         statusCount = Counter()
+        typeCount = Counter()
+        pantheonCount = Counter()
         # Count totals by status
         for res in results:
             statusCount[res['status']] += 1
-        summary.update(dict(statusCount))
+            if 'site_type' in res:
+                typeCount[res['site_type']] += 1
+            if 'pantheon_size' in res:
+                pantheonCount[res['pantheon_size']] += 1
+        summary['status'] = OrderedDict(sorted(dict(statusCount).items()))
+        summary['site_type'] = OrderedDict(sorted(dict(typeCount).items()))
+        summary['pantheon_size'] = OrderedDict(sorted(dict(pantheonCount).items()))
     else:
         summary = None
 
-    return OrderedDict(sorted(summary.items()))
+    return summary
+
+
+def instances(siteType=None):
+    if siteType:
+        q = get_internal('sites',  **{"site_type": siteType})
+    else:
+        q = get_internal('sites')
+    res = q[0] if len(q) > 0 else {}
+    totalItems = res.get('_meta', None).get('total', None)
+
+    # If more items exist than initial request, reset max_results to total to get a full export
+    if totalItems > res.get('_meta', None).get('max_results', None):
+        setArgs = request.args.copy()
+        setArgs['max_results'] = totalItems
+        request.args = setArgs
+        if siteType:
+            qAll = get_internal('sites',  **{"site_type": siteType})
+        else:
+            qAll = get_internal('sites')
+        results = qAll[0].get('_items', None)
+    else:
+        results = res.get('_items', None)
+
+    # Get list of all users
+    instanceList = []
+    for r in results:
+        instanceList.append((r['path'], r['pantheon_size']))
+
+    return instanceList
 
 
 def summaryUsers():

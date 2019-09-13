@@ -42,6 +42,18 @@ def users(role=None):
     return render_template('users.html', users=users, role=role, envVars=envVars)
 
 
+@atlas_admin.route('/instances')
+def instances():
+    summaryInstances = helpers.summaryInstances()
+    return render_template('instance_summary.html', summaryInstances=summaryInstances)
+
+
+@atlas_admin.route('/instances/<siteType>')
+def instances_type(siteType=None):
+    instanceList = helpers.instances(siteType)
+    return render_template('instances.html', instanceList=instanceList, siteType=siteType)
+
+
 class SearchForm(Form):
     name = TextField('Path')
 

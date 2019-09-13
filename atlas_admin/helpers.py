@@ -56,7 +56,7 @@ def summaryInstances():
     else:
         summary = None
 
-    return summary
+    return OrderedDict(sorted(summary.items()))
 
 
 def summaryUsers():

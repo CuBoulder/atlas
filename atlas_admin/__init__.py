@@ -5,7 +5,7 @@ from eve.methods.get import getitem_internal, get_internal
 from wtforms import Form, TextField, validators
 
 from atlas.config import BASE_URLS, ENVIRONMENT
-from atlas_admin import helpers
+from atlas_admin import helpers, forms
 
 atlas_admin = Blueprint('atlas_admin', __name__,
                         template_folder='templates', static_folder='static')
@@ -47,7 +47,7 @@ def users(role=None):
 @atlas_admin.route('/instances')
 def instances():
     summaryInstances = helpers.summaryInstances()
-    return render_template('instance_summary.html', summaryInstances=summaryInstances)
+    return render_template('instances_summary.html', summaryInstances=summaryInstances)
 
 
 @atlas_admin.route('/instances/t/<siteType>')
@@ -62,22 +62,20 @@ def instances_pantheon(pantheonSize=None):
     return render_template('instances_pantheon.html', instanceList=instanceList, pantheonSize=pantheonSize)
 
 
-class SearchForm(Form):
-    name = TextField('Path')
+@atlas_admin.route('/search', methods=['GET', 'POST'])
+def search():
+    form = forms.instanceSearchForm(request.form)
+    print form.errors
+    if request.method == 'POST':
+        path = request.form['path']
 
-    @atlas_admin.route('/search', methods=['GET', 'POST'])
-    def hello():
-        form = SearchForm(request.form)
+    if form.validate():
+        # Save the comment here.
+        flash('Search for ' + path)
+        instanceList = helpers.instances(path=path)
+        print(instanceList)
+    else:
+        flash('All the form fields are required. ')
+        instanceList = None
 
-        print form.errors
-        if request.method == 'POST':
-            name = request.form['path']
-            print path
-
-        if form.validate():
-            # Save the comment here.
-            flash('Search for ' + path)
-        else:
-            flash('All the form fields are required. ')
-
-        return render_template('search.html', form=form)
+    return render_template('instance_search.html', form=form, instanceList=instanceList)

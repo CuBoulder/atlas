@@ -1,0 +1,26 @@
+{% extends "base.html" %}
+
+{% block title %}All Instances{% endblock %}
+
+{% block content %}
+{%- if summaryInstances -%}
+<div class="row">
+    <div class="columns six">
+        <h3>Pantheon Size</h3>
+        <ul>
+            {% for k,v in summaryInstances['pantheon_size'].items() %}
+            <li><a href="{{ url_for('.index') }}instances/p/{{ k }}">{{ k }}</a>: {{ v }}</li>
+            {% endfor %}
+        </ul>
+    </div>
+    <div class="columns six">
+        <h3>Type</h3>
+        <ul>
+            {% for k,v in summaryInstances['site_type'].items() %}
+            <li><a href="{{ url_for('.index') }}instances/t/{{ k }}">{{ k }}</a>: {{ v }}</li>
+            {% endfor %}
+        </ul>
+    </div>
+</div>
+{% endif %}
+{% endblock %}

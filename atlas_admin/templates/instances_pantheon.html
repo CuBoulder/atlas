@@ -9,10 +9,10 @@
         <table>
             <th>Path</th>
             <th>Type</th>
-            {% for (i, j) in instanceList %}
+            {% for (i, j, k) in instanceList %}
             <tr>
-                <td>{{ i }}</td>
                 <td>{{ j }}</td>
+                <td>{{ k }}</td>
             </tr>
             {% endfor %}
         </table>

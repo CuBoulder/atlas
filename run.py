@@ -325,6 +325,10 @@ app.on_delete_item += callbacks.on_delete_item
 app.on_deleted_sites += callbacks.on_deleted_item_sites
 app.on_delete_item_backup += callbacks.on_delete_item_backup
 
+# Allows us to use WTForms
+app.secret_key = 'super secret key'
+app.config['SESSION_TYPE'] = 'filesystem'
+
 
 @app.errorhandler(409)
 def custom409(error):

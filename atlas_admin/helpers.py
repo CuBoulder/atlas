@@ -25,7 +25,6 @@ def summaryInstances():
           Total - Done
           by state - Done
           with bundles - To Do
-        Path summaries - To Do
     """
 
     q = get_internal('sites')
@@ -67,11 +66,13 @@ def summaryInstances():
     return summary
 
 
-def instances(siteType=None, pantheonSize=None):
+def instances(siteType=None, pantheonSize=None, path=None):
     if siteType:
         q = get_internal('sites',  **{"site_type": siteType})
     elif pantheonSize:
         q = get_internal('sites',  **{"pantheon_size": pantheonSize})
+    elif path:
+        q = get_internal('sites',  **{"path": {"$regex": path}})
     else:
         q = get_internal('sites')
     res = q[0] if len(q) > 0 else {}
@@ -91,14 +92,13 @@ def instances(siteType=None, pantheonSize=None):
         results = qAll[0].get('_items', None)
     else:
         results = res.get('_items', None)
-
     # Get list of all users
     instanceList = []
     for r in results:
         if siteType:
-            instanceList.append((r['path'], r['pantheon_size']))
-        elif pantheonSize:
-            instanceList.append((r['path'], r.get('site_type', 'p1')))
+            instanceList.append((r['_id'], r['path'], r['pantheon_size']))
+        elif pantheonSize or path:
+            instanceList.append((r['_id'], r['path'], r.get('site_type', 'p1')))
 
     return instanceList
 

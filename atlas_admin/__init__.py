@@ -71,7 +71,6 @@ def instances_pantheon(pantheonSize=None):
 @atlas_admin.route('/search', methods=['GET', 'POST'])
 def search():
     form = forms.instanceSearchForm(request.form)
-    print form.errors
     if request.method == 'POST':
         path = request.form['path']
 

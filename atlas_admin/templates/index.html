@@ -3,8 +3,8 @@
 {% block title %}Atlas for Web Express Administrators{% endblock %}
 
 {% block content %}
-<section class="columns seven">
-    <h2>Instance Summary</h2>
+<section class="columns six">
+    <h2>Instances</h2>
     {%- if summaryInstances -%}
     <ul>
         {% for k,v in summaryInstances.items() %}
@@ -15,10 +15,16 @@
     <p>There are no instances.</p>
     {% endif %}
 </section>
-{%- if totalUsers -%}
-<section class="columns five">
-    <h2>Total Users</h2>
-    <p>{{ totalUsers }}</p>
+<section class="columns six">
+    <h2>Users</h2>
+    {%- if summaryUsers -%}
+    <ul>
+        {% for k,v in summaryUsers.items() %}
+        <li>{{ k }}: {{ v }}</li>
+        {% endfor %}
+    </ul>
+    {% else %}
+    <p>There are no users.</p>
+    {% endif %}
 </section>
-{% endif %}
 {% endblock %}

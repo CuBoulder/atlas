@@ -16,15 +16,14 @@ envVars = {'baseURL': BASE_URLS[ENVIRONMENT]}
 def index():
     availableInstances = helpers.availableInstances()
     summaryInstances = helpers.summaryInstances()
-    users = helpers.users()
-    totalUsers = len(users[0])
+    summaryUsers = helpers.summaryUsers()
     # Display a list links to other reports.
     return render_template(
         'index.html',
         availableInstances=availableInstances,
         envVars=envVars,
         summaryInstances=summaryInstances,
-        totalUsers=totalUsers)
+        summaryUsers=summaryUsers)
 
 
 @atlas_admin.route('/available')
@@ -37,9 +36,10 @@ def available():
 
 
 @atlas_admin.route('/users')
-def users():
-    allUsers = helpers.users()
-    return render_template('users.html', users=allUsers, envVars=envVars)
+@atlas_admin.route('/users/<role>')
+def users(role=None):
+    users = helpers.users(role)
+    return render_template('users.html', users=users, role=role, envVars=envVars)
 
 
 class SearchForm(Form):

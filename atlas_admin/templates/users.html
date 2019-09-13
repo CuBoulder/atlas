@@ -1,6 +1,6 @@
 {% extends "base.html" %}
 
-{% block title %}All users{% endblock %}
+{% block title %}{%- if role -%}{{ role }}{%-  else -%}All{% endif %} users{% endblock %}
 
 {% block content %}
 {%- if users -%}
@@ -10,6 +10,7 @@
         <li>{{ user }}</li>
         {% endfor %}
     </ul>
+    <p>Total: {{ users[0]|length }}</p>
 </section>
 <section class="columns six">
     <ul class="scrollbox">
@@ -17,6 +18,7 @@
         <li>{{ email }}</li>
         {% endfor %}
     </ul>
+    <p>Total: {{ users[1]|length }}</p>
 </section>
 {% endif %}
 {% endblock %}

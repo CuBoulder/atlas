@@ -1,4 +1,4 @@
-from collections import Counter
+from collections import Counter, OrderedDict
 from flask import request
 from eve.methods.get import getitem_internal, get_internal
 
@@ -59,15 +59,49 @@ def summaryInstances():
     return summary
 
 
-def users():
-    """Return a list of user names and email addresses
+def summaryUsers():
+    """Return a list of summary statistics about users
     """
-    q = get_internal('statistics')
 
+    q = get_internal('statistics')
     res = q[0] if len(q) > 0 else {}
     totalItems = res.get('_meta', None).get('total', None)
 
-    results = []
+    summary = {}
+
+    if totalItems:
+        # If more items exist than initial request, reset max_results to total to get a full export
+        if totalItems > res.get('_meta', None).get('max_results', None):
+            # Copy the existing arguments on the request object
+            setArgs = request.args.copy()
+            # Set our new header
+            setArgs['max_results'] = totalItems
+            request.args = setArgs
+            results = get_internal('statistics')[0]['_items']
+        else:
+            results = res.get('_items', None)
+
+        # Sum totals by role
+        for res in results:
+            if 'users' in res:
+                for k, v in res['users']['counts'].iteritems():
+                    if k in summary:
+                        summary[k] += v
+                    else:
+                        summary[k] = v
+        summary['total'] = len(users()[0])
+    else:
+        summary = None
+
+    return OrderedDict(sorted(summary.items()))
+
+
+def users(role=None):
+    """Return a list of user names and email addresses
+    """
+    q = get_internal('statistics')
+    res = q[0] if len(q) > 0 else {}
+    totalItems = res.get('_meta', None).get('total', None)
 
     # If more items exist than initial request, reset max_results to total to get a full export
     if totalItems > res.get('_meta', None).get('max_results', None):
@@ -85,11 +119,19 @@ def users():
     for r in results:
         if r.get('users'):
             for k, v in r['users']['username'].items():
-                userNameList += v
+                if role:
+                    if k == role:
+                        userNameList += v
+                else:
+                    userNameList += v
             for k, v in r['users']['email_address'].items():
-                userEmailList += v
+                if role:
+                    if k == role:
+                        userEmailList += v
+                else:
+                    userEmailList += v
 
-    # Get a de-duped and sorted list
+    # Get de-duped and sorted lists
     uniqueUserNameList = sorted(uniqueList(userNameList), key=str.lower)
     uniqueUserEmailList = sorted(uniqueList(userEmailList), key=str.lower)
 

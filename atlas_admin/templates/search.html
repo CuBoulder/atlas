@@ -3,6 +3,15 @@
 {% block title %}Search{% endblock %}
 
 {% block content %}
+<form action="" method="post">
+    {{ form.csrf }}
+    <div class="input select">
+        {{ form.query_type.label }} {{ form.query_type }}</div>
+    <div class="input text">
+        {{ form.query.label }} {{ form.query }}</div>
+    <div class="input submit">
+        <input type="submit" value="Submit"></div>
+</form>
 {% with messages = get_flashed_messages(with_categories=true) %}
 {% if messages %}
 <ul>
@@ -15,17 +24,8 @@
     {% endfor %}</ul>
 {% endif %}
 {% endwith %}
-<form action="" method="post">
-    {{ form.csrf }}
-    <div class="input select">
-        {{ form.query_type.label }} {{ form.query_type }}</div>
-    <div class="input text">
-        {{ form.query.label }} {{ form.query }}</div>
-    <div class="input submit">
-        <input type="submit" value="Submit"></div>
-</form>
-
 {%- if instanceList -%}
+<hr>
 <div class="row">
     <div class="columns twelve">
         <p><b>Total</b>: {{ instanceList|length }}</p>

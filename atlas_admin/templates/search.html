@@ -7,14 +7,20 @@
 {% if messages %}
 <ul>
     {% for message in messages %}
-    <li>{{ message[1] }}</li>
+    {% if "Error" not in message[1]: %}
+    <li class="alert alert-info">{{ message[1] }}</li>
+    {% elif "Error" in message[1]: %}
+    <li class="alert alert-danger">{{ message[1] }}</li>
+    {% endif %}
     {% endfor %}</ul>
 {% endif %}
 {% endwith %}
 <form action="" method="post">
     {{ form.csrf }}
+    <div class="input select">
+        {{ form.query_type.label }} {{ form.query_type }}</div>
     <div class="input text">
-        {{ form.path.label }} {{ form.path }}</div>
+        {{ form.query.label }} {{ form.query }}</div>
     <div class="input submit">
         <input type="submit" value="Submit"></div>
 </form>
@@ -25,7 +31,7 @@
         <p><b>Total</b>: {{ instanceList|length }}</p>
         <table>
             <th>Path</th>
-            <th>Type</th>
+            <th>{% if query_type == 'path' %}Type{% else %}Role{% endif %}</th>
             {% for (i, j, k) in instanceList %}
             <tr>
                 <td><a href="{{ url_for('.index') }}instances/{{ i }}">{{ j }}</a></td>

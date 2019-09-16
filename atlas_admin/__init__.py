@@ -70,16 +70,21 @@ def instances_pantheon(pantheonSize=None):
 
 @atlas_admin.route('/search', methods=['GET', 'POST'])
 def search():
-    form = forms.instanceSearchForm(request.form)
+    instanceList = None
+    instanceUserList = None
+
+    form = forms.searchForm(request.form)
     if request.method == 'POST':
-        path = request.form['path']
+        query = request.form['query']
+        query_type = request.form['query_type']
 
-    if form.validate():
-        # Save the comment here.
-        flash('Search for ' + path)
-        instanceList = helpers.instances(path=path)
-    else:
-        flash('All the form fields are required. ')
-        instanceList = None
+        if form.validate():
+            flash('Search for "' + query + '"')
+            if query_type == 'path':
+                instanceList = helpers.instances(path=query)
+            elif query_type in ['username', 'email_address']:
+                instanceList = helpers.instancesUserLookup(query=query, query_type=query_type)
+        elif not form.validate():
+            flash('Error: Form failed validation.')
 
-    return render_template('instance_search.html', form=form, instanceList=instanceList)
+    return render_template('search.html', form=form, instanceList=instanceList, query_type=query_type)

@@ -1,3 +1,5 @@
+import re
+
 from collections import Counter, OrderedDict
 from flask import request
 from eve.methods.get import getitem_internal, get_internal
@@ -109,13 +111,47 @@ def instances(siteType=None, pantheonSize=None, path=None):
         results = qAll[0].get('_items', None)
     else:
         results = res.get('_items', None)
-    # Get list of all users
+    # Get list of all instances
     instanceList = []
     for r in results:
         if siteType:
             instanceList.append((r['_id'], r['path'], r['pantheon_size']))
         elif pantheonSize or path:
             instanceList.append((r['_id'], r['path'], r.get('site_type', 'p1')))
+
+    return instanceList
+
+
+def instancesUserLookup(query=None, query_type=None):
+    if query_type == 'username':
+        kwargs = {"$or": [{"users.username.site_owner": {"$regex": query, "$options": "i"}}, {"users.username.site_editor": {"$regex": query, "$options": "i"}}, {"users.username.form_manager": {"$regex": query, "$options": "i"}}, {"users.username.edit_my_content": {"$regex": query, "$options": "i"}}, {
+            "users.username.content_editor": {"$regex": query, "$options": "i"}}, {"users.username.configuration_manager": {"$regex": query, "$options": "i"}}, {"users.username.campaign_manager": {"$regex": query, "$options": "i"}}, {"users.username.access_manager": {"$regex": query, "$options": "i"}}]}
+    elif query_type == 'email_address':
+        # Handle mixed case in email addresses
+        kwargs = {"$or": [{"users.email_address.site_owner": {"$regex": query, "$options": "i"}}, {"users.email_address.site_editor": {"$regex": query, "$options": "i"}}, {"users.email_address.form_manager": {"$regex": query, "$options": "i"}}, {"users.email_address.edit_my_content": {"$regex": query, "$options": "i"}}, {
+            "users.email_address.content_editor": {"$regex": query, "$options": "i"}}, {"users.email_address.configuration_manager": {"$regex": query, "$options": "i"}}, {"users.email_address.campaign_manager": {"$regex": query, "$options": "i"}}, {"users.email_address.access_manager": {"$regex": query, "$options": "i"}}]}
+    q = get_internal('statistics', **kwargs)
+    res = q[0] if len(q) > 0 else {}
+    totalItems = res.get('_meta', None).get('total', None)
+
+    # If more items exist than initial request, reset max_results to total to get a full export
+    if totalItems > res.get('_meta', None).get('max_results', None):
+        setArgs = request.args.copy()
+        setArgs['max_results'] = totalItems
+        request.args = setArgs
+        qAll = get_internal('statistics', **kwargs)
+        results = qAll[0].get('_items', None)
+    else:
+        results = res.get('_items', None)
+    # Get list of all instances
+    instanceList = []
+    for r in results:
+        instance = get_internal(
+            'sites', **{"_id": r['site']})[0]['_items'][0]
+        for role, user in r['users'][query_type].iteritems():
+            # Handle mixed case in email addresses
+            if query.lower() in lowerList(user):
+                instanceList.append((instance['_id'], instance['path'], role))
 
     return instanceList
 
@@ -249,3 +285,7 @@ def uniqueList(li):
         if x not in newList:
             newList.append(str(x))
     return newList
+
+
+def lowerList(mixedList):
+    return [x.lower() for x in mixedList]

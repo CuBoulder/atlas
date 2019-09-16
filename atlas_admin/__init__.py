@@ -72,6 +72,7 @@ def instances_pantheon(pantheonSize=None):
 def search():
     instanceList = None
     instanceUserList = None
+    query_type = None
 
     form = forms.searchForm(request.form)
     if request.method == 'POST':

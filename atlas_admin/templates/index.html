@@ -25,7 +25,11 @@
         {%- if summaryUsers -%}
         <ul>
             {% for k,v in summaryUsers.items() %}
-            <li>{{ k }}: {{ v }}</li>
+            {%- if k != 'total' -%}
+            <li><a href="{{ url_for('.index') }}users/{{ k }}">{{ k }}</a>: {{ v }}</li>
+            {% else %}
+            <li>{{ k }}</a>: {{ v }}</li>
+            {% endif %}
             {% endfor %}
         </ul>
         {% else %}

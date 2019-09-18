@@ -12,11 +12,24 @@
             <li><a href="{{ url_for('.index') }}instances/p/{{ k }}">{{ k }}</a>: {{ v }}</li>
             {% endfor %}
         </ul>
-        <p>Total estimated cost
-            <b>{{ "${:,.2f}".format(summaryInstances['cost'] * summaryInstances['cost_multiplier']) }}</b> per year</p>
-        <p>Without multiplier of <i>{{ "{0:.2f}%".format(summaryInstances['cost_multiplier'] * 100) }}</i>, cost
-            would be
-            <b>{{ "${:,.2f}".format(summaryInstances['cost']) }}</b> per year</p>
+        <h4>Total cost</h4>
+        <table>
+            <tbody>
+                <tr>
+                    <td>CU
+                        pricing<br /><small><i>{{ "{0:.2f}%".format((1 - summaryInstances['cost_multiplier']) * 100) }}
+                                discount</i></small>
+                    </td>
+                    <td>
+                        {{ "${:,.2f}".format(summaryInstances['cost'] * summaryInstances['cost_multiplier']) }}
+                    </td>
+                </tr>
+                <tr>
+                    <td>Bulk pricing</td>
+                    <td>{{ "${:,.2f}".format(summaryInstances['cost'] )}}</td>
+                </tr>
+            </tbody>
+        </table>
     </div>
     <div class="columns six">
         <h3>Type</h3>

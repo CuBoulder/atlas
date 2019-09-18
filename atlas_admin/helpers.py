@@ -119,7 +119,7 @@ def instances(siteType=None, pantheonSize=None, path=None, siteStatus=None):
     instanceList = []
     for r in results:
         if siteType or siteStatus:
-            instanceList.append((r['_id'], r['path'], r['pantheon_size']))
+            instanceList.append((r['_id'], r['path'], r.get('pantheon_size', 'no size')))
         elif pantheonSize or path:
             instanceList.append((r['_id'], r['path'], r.get('site_type', 'no type')))
 

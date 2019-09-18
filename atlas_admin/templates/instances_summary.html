@@ -12,6 +12,7 @@
             <li><a href="{{ url_for('.index') }}instances/p/{{ k }}">{{ k }}</a>: {{ v }}</li>
             {% endfor %}
         </ul>
+        <p>Total estimated cost <b>{{ "${:,.2f}".format(summaryInstances['cost']) }}</b> per year</p>
     </div>
     <div class="columns six">
         <h3>Type</h3>

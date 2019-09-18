@@ -47,6 +47,16 @@ def users(role=None):
 @atlas_admin.route('/instances')
 def instances():
     summaryInstances = helpers.summaryInstances()
+    # Tuples of number and cost
+    xs = (int(summaryInstances['pantheon_size'].get('xs', 0)), 350)
+    s = (int(summaryInstances['pantheon_size'].get('s', 0)), 1375)
+    m = (int(summaryInstances['pantheon_size'].get('m', 0)), 2475)
+    l = (int(summaryInstances['pantheon_size'].get('l', 0)), 4950)
+    xl = (int(summaryInstances['pantheon_size'].get('xl', 0)), 8250)
+    e = (int(summaryInstances['pantheon_size'].get('e', 0)), 20000)
+    cost_multiplier = 1
+    summaryInstances['cost'] = ((xs[0] * xs[1]) + (s[0] * s[1]) + (m[0] * m[1]) +
+                                (l[0] * l[1]) + (xl[0] * xl[1]) + (e[0] * e[1])) * cost_multiplier
     return render_template('instances_summary.html', summaryInstances=summaryInstances)
 
 

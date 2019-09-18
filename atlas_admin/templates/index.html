@@ -11,7 +11,7 @@
             <div class="columns six">
                 <ul>
                     {% for k,v in summaryInstances['status'].items() %}
-                    <li>{{ k }}: {{ v }}</li>
+                    <li><a href="{{ url_for('.index') }}instances/s/{{ k }}">{{ k }}</a>: {{ v }}</li>
                     {% endfor %}
                 </ul>
             </div>

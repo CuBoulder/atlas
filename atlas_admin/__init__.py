@@ -79,6 +79,12 @@ def instances_pantheon(pantheonSize=None):
     return render_template('instances_pantheon.html', instanceList=instanceList, pantheonSize=pantheonSize)
 
 
+@atlas_admin.route('/instances/s/<siteStatus>')
+def instances_status(siteStatus=None):
+    instanceList = helpers.instances(siteStatus=siteStatus)
+    return render_template('instances_type.html', instanceList=instanceList, siteStatus=siteStatus)
+
+
 @atlas_admin.route('/search', methods=['GET', 'POST'])
 def search():
     instanceList = None

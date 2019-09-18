@@ -83,11 +83,13 @@ def instanceSummary(instance):
     return instanceSummary
 
 
-def instances(siteType=None, pantheonSize=None, path=None):
+def instances(siteType=None, pantheonSize=None, path=None, siteStatus=None):
     if siteType:
         q = get_internal('sites',  **{"site_type": siteType})
     elif pantheonSize:
         q = get_internal('sites',  **{"pantheon_size": pantheonSize})
+    elif siteStatus:
+        q = get_internal('sites',  **{"status": siteStatus})
     elif path:
         q = get_internal('sites',  **{"path": {"$regex": path}})
     else:
@@ -104,6 +106,8 @@ def instances(siteType=None, pantheonSize=None, path=None):
             qAll = get_internal('sites',  **{"site_type": siteType})
         elif pantheonSize:
             qAll = get_internal('sites',  **{"pantheon_size": pantheonSize})
+        elif siteStatus:
+            qAll = get_internal('sites',  **{"status": siteStatus})
         elif path:
             qAll = get_internal('sites',  **{"path": {"$regex": path}})
         else:
@@ -114,10 +118,10 @@ def instances(siteType=None, pantheonSize=None, path=None):
     # Get list of all instances
     instanceList = []
     for r in results:
-        if siteType:
+        if siteType or siteStatus:
             instanceList.append((r['_id'], r['path'], r['pantheon_size']))
         elif pantheonSize or path:
-            instanceList.append((r['_id'], r['path'], r.get('site_type', 'p1')))
+            instanceList.append((r['_id'], r['path'], r.get('site_type', 'no type')))
 
     return instanceList
 

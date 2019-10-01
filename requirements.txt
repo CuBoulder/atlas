@@ -23,7 +23,7 @@ Flask-PyMongo==0.4.1
 gitpython==2.1.11
 gitdb2==2.0.4
 itsdangerous==0.24
-Jinja2==2.10
+Jinja2==2.10.1
 kombu==3.0.37
 livereload==2.5.1
 lxml==3.7.3

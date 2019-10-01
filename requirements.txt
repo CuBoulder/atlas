@@ -45,7 +45,7 @@ python-dateutil==2.6.0
 python-ldap==2.4.28
 pytz==2016.4
 PyYAML==3.12
-requests==2.18.3
+requests==2.20.0
 setuptools==18.5
 simplejson==3.16.0
 smmap2==2.0.4

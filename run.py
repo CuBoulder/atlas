@@ -75,9 +75,7 @@ def get_command(machine_name):
     elif request.method == 'POST':
         # Loop through the commands list and grab the one we want
         app.logger.debug('Command | Execute | %s', command)
-        if command == 'clear_php_cache':
-            tasks.clear_php_cache.delay()
-        elif command == 'import_code':
+        if command == 'import_code':
             # Grab payload, it is a JSON string from the request
             payload = json.loads(request.data)
             if not payload.get('env'):
@@ -96,7 +94,6 @@ def get_command(machine_name):
                 count += 1
                 tasks.update_settings_file.delay(instance, timestamp, count, total)
                 continue
-            tasks.clear_php_cache.delay()
         elif command == 'heal_code':
             code_items = utilities.get_eve('code')
             tasks.code_heal.delay(code_items)
@@ -186,6 +183,9 @@ def import_backup():
         payload['code'] = {"package": package_list}
     # Set install
     payload['install'] = False
+    # Bring over settings from other instance
+    payload['settings'] = remote_site_record['settings']
+    app.logger.debug('Backup | Import | New instance payload - %s', payload)
 
     new_instance = utilities.post_eve('sites', payload)
     app.logger.debug('Backup | Import | New instance record - %s', new_instance)

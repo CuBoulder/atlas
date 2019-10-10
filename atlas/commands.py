@@ -10,10 +10,6 @@ log = logging.getLogger('atlas.commands')
 
 COMMANDS = [
     {
-        'machine_name': u'clear_php_cache',
-        'description': u'Clear the PHP script cache on all webservers.',
-    },
-    {
         'machine_name': u'import_code',
         'description': u'Import code from another Atlas instance. When running the command include the target environment (dev, test, prod) as a payload in the format `{"env":"dev"}`.',
     },

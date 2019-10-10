@@ -1,5 +1,67 @@
 # Change log
 
+## v2.3.0-beta8
+
+Resolves:
+
+- &#35;601 - Add options to site_type and pantheon_size
+
+## v2.3.0-beta7
+
+Resolves:
+
+- &#35;603 - Typo in data structure for pantheon_size field
+
+## v2.3.0-beta6
+
+Resolves:
+
+- &#35;601 - Add fields for site_type and pantheon_size
+
+## v2.3.0-beta5
+
+Resolves:
+
+- &#35;597 - Remove functions to add packages into default profiles
+
+## v2.3.0-beta4
+
+Resolves:
+
+- &#35;588 - Remove opcache reset functions
+
+## v2.3.0-beta3
+
+Resolves:
+
+- &#35;586 - When importing an instance from another environment, include the settings array
+
+## v2.3.0-beta2
+
+Resolves:
+
+- &#35;581 - Existing symlink is deleted when a new 'current: false' code asset is deployed
+
+## v2.3.0-beta1
+
+Resolves:
+
+- &#35;507 - Deploy bundles into Express profile
+- &#35;579 - Current symlinks are not being removed when code item is patched
+- &#35;584 - Use the 'is_current' field as a lock to prevent deleting code assets
+
+## v2.3.0-alpha9
+
+Resolves:
+
+- &#35;577 - get_eve() function has an off by one error
+
+## v2.3.0-alpha8
+
+Resolves:
+
+- &#35;574 - Increase pager limit
+
 ## v2.3.0-alpha7
 
 This release reduces the default number of results returned per page from 200 to 25.

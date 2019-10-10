@@ -41,15 +41,6 @@ class FabricException(Exception):
     pass
 
 
-@roles('webservers', 'operations_server')
-def clear_php_cache():
-    try:
-        run('curl -ks https://127.0.0.1/opcache/reset.php;')
-    except FabricException as error:
-        log.error('Clear PHP Cache | Error - %s', error)
-        return error
-
-
 @roles('webservers')
 def command_run(site, command):
     """
@@ -137,7 +128,12 @@ def site_install(site):
 
     try:
         with cd(code_directory_current):
-            run('drush site-install -y {0}'.format(profile_name))
+            """
+            Run drush site-install with alternate primary group to avoid
+            NFS file permission issues on file creation after drush drops
+            the setgid group on the files directory
+            """
+            run('sg {1} -c "drush site-install -y {0}"'.format(profile_name, WEBSERVER_USER_GROUP),)
     except FabricException as error:
         log.error('Site | Install | Instance install failed | Error - %s', error)
         return error
@@ -318,7 +314,8 @@ def import_backup(backup, target_instance, source_env=ENVIRONMENT):
 
     with cd(nfs_files_dir):
         run('tar -xzf {0}'.format(files_path))
-        run('find {0} -type f -or -type d -exec chgrp apache {{}} \\;'.format(nfs_files_dir), warn_only=True)
+        run('find {0} -type f -or -type d -exec chgrp {1} {{}} \\;'
+            .format(nfs_files_dir, WEBSERVER_USER_GROUP), warn_only=True)
         run('find {0} -type f -exec chmod g+rw {{}} \\;'.format(nfs_files_dir), warn_only=True)
         run('find {0} -type d -exec chmod g+rws {{}} \\;'.format(nfs_files_dir), warn_only=True)
         log.debug('Instance | Restore Backup | Files replaced')

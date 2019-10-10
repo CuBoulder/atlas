@@ -16,9 +16,9 @@ ITEM_METHODS = ['GET', 'PATCH', 'PUT', 'DELETE']
 # Allow public GET by default can override for a specific resource or item.
 PUBLIC_METHODS = ['GET']
 
-# As a default, return 25 results per page. Allow up to 2000.
+# Return 100 results per page. Allow up to 2000.
 PAGINATION_LIMIT = 2000
-PAGINATION_DEFAULT = 25
+PAGINATION_DEFAULT = 100
 
 # Add support for CORS
 X_DOMAINS = '*'
@@ -294,6 +294,52 @@ SITES_SCHEMA = {
         'type': 'boolean',
         'default': True,
         'nullable': True,
+    },
+    'site_type': {
+        'type': 'string',
+        'allowed': [
+            'college',
+            'school',
+            'academic_department',
+            'academic_program',
+            'academic_support',
+            'certificate_program',
+            'outreach_program',
+            'residential_academic_program',
+            'center',
+            'institute',
+            'service_department',
+            'resource_department',
+            'support_department',
+            'performance',
+            'events',
+            'museum',
+            'research_program',
+            'lab',
+            'faculty',
+            'student_group',
+            'student_government',
+            'sport_club',
+            'publication',
+            'initiative',
+            'marketing',
+            'committee',
+            'course',
+            'project',
+            'adminstration',
+            'facility'
+        ],
+    },
+    'pantheon_size': {
+        'type': 'string',
+        'allowed': [
+            'xs',
+            's',
+            'm',
+            'l',
+            'xl',
+            'e',
+        ],
     },
 }
 

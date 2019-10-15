@@ -37,6 +37,7 @@
     </div>
 </div>
 {% endif %}
+{% if instance.statistics.users %}
 <div class="row">
     <div class="columns twelve">
         <h2>Users</h2>
@@ -68,5 +69,6 @@
         </ul>
     </div>
 </div>
+{% endif %}
 {% endif %}
 {% endblock %}

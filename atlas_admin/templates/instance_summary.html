@@ -4,6 +4,13 @@
 
 {% block content %}
 {%- if instance -%}
+{%- if instance.instance.status == 'available' -%}
+<div class="row">
+    <div class="columns twelve">
+        <p>The site has not been installed yet.</p>
+    </div>
+</div>
+{% else %}
 <div class="row">
     <div class="columns four">
         <p><b>Name</b>: {{ instance.statistics.name }}</p>
@@ -69,6 +76,7 @@
         </ul>
     </div>
 </div>
+{% endif %}
 {% endif %}
 {% endif %}
 {% endblock %}

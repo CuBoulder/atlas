@@ -1,0 +1,58 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="utf-8">
+    <title>{% block title %}{% endblock %} - Atlas</title>
+    <meta name="description" content="Atlas">
+    <meta name="author" content="James Fuller">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+
+    <link href="//fonts.googleapis.com/css?family=Raleway:400,700" rel="stylesheet" type="text/css">
+
+    <link rel="stylesheet" href="{{url_for('atlas_admin.static', filename='normalize.css')}}">
+    <link rel="stylesheet" href="{{url_for('atlas_admin.static', filename='skeleton.css')}}">
+    <link rel="stylesheet" href="{{url_for('atlas_admin.static', filename='atlas_admin.css')}}">
+</head>
+
+<body class="container">
+    <header class="row">
+        <div class="columns twelve"><a href="{{ url_for('.index') }}">Atlas</a></div>
+    </header>
+    <div class="row">
+        <h1>{{ self.title() }}</h1>
+    </div>
+
+    <div class="row">
+        <div class="columns nine">
+            {% block content -%}
+            {%- endblock content %}
+        </div>
+        <nav class="columns three">
+            {% block navigation %}
+            <ul>
+                <li><a href="{{ url_for('.index') }}available">Available Instances</a></li>
+                <li>User lists
+                    <ul>
+                        <li><a href="{{ url_for('.index') }}users">All users</a></li>
+                        <li><a href="{{ url_for('.index') }}users/site_owner">Site Owners</a></li>
+                        <li><a href="{{ url_for('.index') }}users/content_editor">Content Editors</a></li>
+                        <li>For a specific instance</li>
+                        <li>For instances that match path patterns</li>
+                    </ul>
+                </li>
+                <li><a href="{{ url_for('.index') }}instances">Instance summary</a></li>
+                <li><a href="{{ url_for('.index') }}search">Lookup instances</a></li>
+            </ul>
+            {% endblock %}
+        </nav>
+    </div>
+    <footer class="row">
+        <div class="columns twelve">
+            <p>Atlas is a resource provided by <a href="https://www.colorado.edu/strategicrelations">Strategic Relations
+                    and Communications</a>.</p>
+        </div>
+    </footer>
+</body>
+
+</html>

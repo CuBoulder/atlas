@@ -18,7 +18,6 @@ from email.mime.text import MIMEText
 from cryptography.fernet import Fernet
 from eve.auth import BasicAuth
 from flask import g
-import OpenSSL
 import mysql.connector as mariadb
 import requests
 import ldap

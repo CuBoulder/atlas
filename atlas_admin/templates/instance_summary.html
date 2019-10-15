@@ -1,32 +1,32 @@
 {% extends "base.html" %}
 
-{% block title %}{{ instance['instance']['path'] }}{% endblock %}
+{% block title %}{{ instance.instance.path }}{% endblock %}
 
 {% block content %}
 {%- if instance -%}
 <div class="row">
     <div class="columns four">
-        <p><b>Name</b>: {{ instance['statistics']['name'] }}</p>
+        <p><b>Name</b>: {{ instance.statistics.name }}</p>
     </div>
     <div class="columns four">
         <ul>
-            <li><b>Days Since Last Edit</b>: {{ instance['statistics']['days_since_last_edit'] }}</li>
-            <li><b>Days Since Last Login</b>: {{ instance['statistics']['days_since_last_login'] }}</li>
+            <li><b>Days Since Last Edit</b>: {{ instance.statistics.days_since_last_edit }}</li>
+            <li><b>Days Since Last Login</b>: {{ instance.statistics.days_since_last_login }}</li>
         </ul>
     </div>
     <div class="columns four">
         <ul>
-            <li><b>Total Nodes</b>: {{ instance['statistics']['nodes_total'] }}</li>
-            <li><b>Total Beans</b>: {{ instance['statistics']['beans_total'] }}</li>
+            <li><b>Total Nodes</b>: {{ instance.statistics.nodes_total }}</li>
+            <li><b>Total Beans</b>: {{ instance.statistics.beans_total }}</li>
         </ul>
     </div>
 </div>
-{% if instance['statistics']['bundles'] %}
+{% if instance.statistics.bundles %}
 <div class="row">
     <div class="columns twelve">
         <h2>Bundles</h2>
         <ul>
-            {% for k,v in instance['statistics']['bundles'].items() %}
+            {% for k,v in instance.statistics.bundles.items() %}
             {% if k == 'other' %}
             {% if v %}<li>{{ v }}</li>{% endif %}
             {% else %}
@@ -46,7 +46,7 @@
     <div class="columns six">
         <h3>Site Owners</h3>
         <ul>
-            {% for k,v in instance['statistics']['users']['email_address'].items() %}
+            {% for k,v in instance.statistics.users.email_address.items() %}
             {% if k == 'site_owner' %}
             {% for i in v %}
             <li><a href="mailto:{{ i }}">{{ i }}</a></li>
@@ -58,7 +58,7 @@
     <div class="columns six">
         <h3>Content Editors</h3>
         <ul>
-            {% for k,v in instance['statistics']['users']['email_address'].items() %}
+            {% for k,v in instance.statistics.users.email_address.items() %}
             {% if k == 'content_editor' %}
             {% for i in v %}
             <li><a href="mailto:{{ i }}">{{ i }}</a></li>

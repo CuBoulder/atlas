@@ -8,7 +8,7 @@
     <div class="columns six">
         <h3>Pantheon Size</h3>
         <ul>
-            {% for k,v in summaryInstances['pantheon_size'].items() %}
+            {% for k,v in summaryInstances.pantheon_size.items() %}
             <li><a href="{{ url_for('.index') }}instances/p/{{ k }}">{{ k }}</a>: {{ v }}</li>
             {% endfor %}
         </ul>
@@ -17,16 +17,16 @@
             <tbody>
                 <tr>
                     <td>CU
-                        pricing<br /><small><i>{{ "{0:.2f}%".format((1 - summaryInstances['cost_multiplier']) * 100) }}
+                        pricing<br /><small><i>{{ "{0:.2f}%".format((1 - summaryInstances.cost_multiplier) * 100) }}
                                 discount</i></small>
                     </td>
                     <td>
-                        {{ "${:,.2f}".format(summaryInstances['cost'] * summaryInstances['cost_multiplier']) }}
+                        {{ "${:,.2f}".format(summaryInstances.cost * summaryInstances.cost_multiplier) }}
                     </td>
                 </tr>
                 <tr>
                     <td>Bulk pricing</td>
-                    <td>{{ "${:,.2f}".format(summaryInstances['cost'] )}}</td>
+                    <td>{{ "${:,.2f}".format(summaryInstances.cost )}}</td>
                 </tr>
             </tbody>
         </table>
@@ -34,7 +34,7 @@
     <div class="columns six">
         <h3>Type</h3>
         <ul>
-            {% for k,v in summaryInstances['site_type'].items() %}
+            {% for k,v in summaryInstances.site_type.items() %}
             <li><a href="{{ url_for('.index') }}instances/t/{{ k }}">{{ k }}</a>: {{ v }}</li>
             {% endfor %}
         </ul>

@@ -106,3 +106,9 @@ def search():
             flash('Error: Form failed validation.')
 
     return render_template('search.html', form=form, instanceList=instanceList, query_type=query_type)
+
+
+@atlas_admin.route('/instances/cse')
+def instances_cse():
+    instance_list = helpers.instances(cse=True)
+    return render_template('instances/cse.html', instanceList=instance_list)

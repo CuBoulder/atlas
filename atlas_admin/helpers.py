@@ -83,7 +83,7 @@ def instanceSummary(instance):
     return instanceSummary
 
 
-def instances(siteType=None, pantheonSize=None, path=None, siteStatus=None):
+def instances(siteType=None, pantheonSize=None, path=None, siteStatus=None, cse=False):
     if siteType:
         q = get_internal('sites',  **{"site_type": siteType})
     elif pantheonSize:
@@ -92,6 +92,8 @@ def instances(siteType=None, pantheonSize=None, path=None, siteStatus=None):
         q = get_internal('sites',  **{"status": siteStatus})
     elif path:
         q = get_internal('sites',  **{"path": {"$regex": path}})
+    elif cse:
+        q = get_internal('sites',  **{"settings.cse_id": {"$exists": True}})
     else:
         q = get_internal('sites')
     res = q[0] if len(q) > 0 else {}
@@ -110,6 +112,8 @@ def instances(siteType=None, pantheonSize=None, path=None, siteStatus=None):
             qAll = get_internal('sites',  **{"status": siteStatus})
         elif path:
             qAll = get_internal('sites',  **{"path": {"$regex": path}})
+        elif cse:
+            qAll = get_internal('sites',  **{"settings.cse_id": {"$exists": 1}})
         else:
             qAll = get_internal('sites')
         results = qAll[0].get('_items', None)
@@ -122,6 +126,9 @@ def instances(siteType=None, pantheonSize=None, path=None, siteStatus=None):
             instanceList.append((r['_id'], r['path'], r.get('pantheon_size', 'no size')))
         elif pantheonSize or path:
             instanceList.append((r['_id'], r['path'], r.get('site_type', 'no type')))
+        elif cse:
+            instanceList.append(
+                (r['_id'], r['path'], r['settings']['cse_id'], r['settings']['cse_creator']))
 
     return instanceList
 

@@ -10,7 +10,7 @@ click==6.7
 cryptography==2.3
 cssselect==1.0.1
 cssutils==1.0.2
-ecdsa==0.13
+ecdsa==0.13.3
 emails==0.5.15
 enum34==1.1.6
 Eve==0.7.10

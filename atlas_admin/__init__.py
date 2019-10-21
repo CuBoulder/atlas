@@ -63,8 +63,8 @@ def instances():
 
 @atlas_admin.route('/instances/<id>')
 def instance(id):
-    instance = helpers.instanceSummary(id)
-    return render_template('instance_summary.html', instance=instance)
+    instanceRecord = helpers.instanceSummary(id)
+    return render_template('instance_summary.html', instance=instanceRecord, envVars=envVars)
 
 
 @atlas_admin.route('/instances/t/<siteType>')

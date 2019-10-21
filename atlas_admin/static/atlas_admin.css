@@ -54,3 +54,7 @@ body.container {
     background-color: #d1ecf1;
     border: 2px solid #bee5eb;
 }
+
+.row:not(:first-child) {
+    padding-top: 1rem;
+}

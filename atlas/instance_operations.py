@@ -88,8 +88,6 @@ def instance_create(instance, nfs_preserve=False):
             os.symlink(nfs_src, site_files_dir)
     # Create setttings file
     switch_settings_files(instance)
-    # Correct file permissions
-    correct_fs_permissions(instance)
     # Create symlinks for current in instance root, 'sid' and 'path' (if needed) in web root.
     log.info('Instance | Provision | Instance ID - %s | Symlink current - %s | Symlink web - %s',
              instance['_id'], instance_code_path_current, instance_web_path_sid)
@@ -97,6 +95,8 @@ def instance_create(instance, nfs_preserve=False):
     utilities.relative_symlink(instance_code_path_current, instance_web_path_sid)
     if instance['status'] in ['launched', 'launching']:
         switch_web_root_symlinks(instance)
+    # Correct file permissions
+    correct_fs_permissions(instance)
 
 
 def instance_delete(instance, nfs_preserve=False):

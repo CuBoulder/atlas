@@ -58,7 +58,7 @@ def instances():
     summaryInstances['cost_multiplier'] = cost_multiplier
     summaryInstances['cost'] = ((xs[0] * xs[1]) + (s[0] * s[1]) + (m[0] * m[1]) +
                                 (l[0] * l[1]) + (xl[0] * xl[1]) + (e[0] * e[1]))
-    return render_template('instances_summary.html', summaryInstances=summaryInstances)
+    return render_template('instances/summary.html', summaryInstances=summaryInstances)
 
 
 @atlas_admin.route('/instances/<id>')
@@ -70,19 +70,19 @@ def instance(id):
 @atlas_admin.route('/instances/t/<siteType>')
 def instances_type(siteType=None):
     instanceList = helpers.instances(siteType=siteType)
-    return render_template('instances_type.html', instanceList=instanceList, siteType=siteType)
+    return render_template('instances/type.html', instanceList=instanceList, siteType=siteType)
 
 
 @atlas_admin.route('/instances/p/<pantheonSize>')
 def instances_pantheon(pantheonSize=None):
     instanceList = helpers.instances(pantheonSize=pantheonSize)
-    return render_template('instances_pantheon.html', instanceList=instanceList, pantheonSize=pantheonSize)
+    return render_template('instances/pantheon.html', instanceList=instanceList, pantheonSize=pantheonSize)
 
 
 @atlas_admin.route('/instances/s/<siteStatus>')
 def instances_status(siteStatus=None):
     instanceList = helpers.instances(siteStatus=siteStatus)
-    return render_template('instances_type.html', instanceList=instanceList, siteStatus=siteStatus)
+    return render_template('instances/type.html', instanceList=instanceList, siteStatus=siteStatus)
 
 
 @atlas_admin.route('/search', methods=['GET', 'POST'])
@@ -106,3 +106,9 @@ def search():
             flash('Error: Form failed validation.')
 
     return render_template('search.html', form=form, instanceList=instanceList, query_type=query_type)
+
+
+@atlas_admin.route('/instances/cse')
+def instances_cse():
+    instance_list = helpers.instances(cse=True)
+    return render_template('instances/cse.html', instanceList=instance_list)

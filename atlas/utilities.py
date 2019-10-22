@@ -679,14 +679,6 @@ def sync(source, hosts, target, exclude=None):
     log.info('Utilities | Sync | Source - %s', source)
     # Use `set` to dedupe the host list, and cast it back into a list
     hosts = list(set(hosts))
-    # Recreate readme
-    filename = source + "/README.md"
-    # Remove the existing file.
-    if os.access(filename, os.F_OK):
-        os.remove(filename)
-    f = open(filename, "w+")
-    f.write("Directory is synced from Atlas. Any changes will be overwritten.")
-    f.close()
     for host in hosts:
         # -a archive mode; equals -rlptgoD
         # -z compress file data during the transfer

@@ -3,8 +3,8 @@
 {% block title %}Available Instances{% endblock %}
 
 {% block content %}
-{%- if availableInstances -%}
 <div class="row">
+    {%- if availableInstances -%}
     <ul>
         {% for sid in availableInstances %}
         <li>{{ envVars['baseURL'] }}/{{ sid }} - <a
@@ -12,6 +12,8 @@
         </li>
         {% endfor %}
     </ul>
+    {%- else -%}
+    <p>There are no available instances.</p>
+    {% endif %}
 </div>
-{% endif %}
 {% endblock %}

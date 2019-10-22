@@ -192,9 +192,11 @@ def summaryUsers():
                         summary[k] = v
         summary['total'] = len(users()[0])
     else:
-        summary = None
+        summary = {}
 
-    return OrderedDict(sorted(summary.items()))
+    sortedUsers = OrderedDict(sorted(summary.items())) if summary.get('items') else None
+
+    return sortedUsers
 
 
 def users(role=None):
@@ -272,10 +274,13 @@ def summaryStatistics():
         if r.get('theme_is_responsive', False):
             responsive_total += 1
 
-    summary['percent_responsive'] = "{0:.2f}%".format((float(responsive_total)/totalItems)*100)
-    summary['nodes_avg'] = int(summary['nodes_total']/totalItems)
-    summary['beans_avg'] = int(summary['beans_total']/totalItems)
-    summary['avg_days_since_edit'] = int(days_total/totalItems)
+    summary['percent_responsive'] = "{0:.2f}%".format(
+        (float(responsive_total)/totalItems)*100) if responsive_total is not 0 else "N/A"
+    summary['nodes_avg'] = int(summary['nodes_total'] /
+                               totalItems) if summary['nodes_total'] is not 0 else "N/A"
+    summary['beans_avg'] = int(summary['beans_total'] /
+                               totalItems) if summary['beans_total'] is not 0 else "N/A"
+    summary['avg_days_since_edit'] = int(days_total/totalItems) if days_total is not 0 else "N/A"
 
     summary['nodes_total'] = "{:,}".format(summary['nodes_total'])
     summary['beans_total'] = "{:,}".format(summary['beans_total'])

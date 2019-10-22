@@ -1,0 +1,27 @@
+{% extends "base.html" %}
+
+{% block title %}Custom Search Engines{% endblock %}
+
+{% block content %}
+{%- if instanceList -%}
+<div class="row">
+    <div class="columns twelve">
+        {% for group in instanceList|groupby(3) %}
+        <h2>Creator - {{ group.grouper }}</h2>
+        <table>
+            <th>Path</th>
+            <th>CSE ID</th>
+            {% for (i, j, k, l) in group.list|sort(attribute=2) %}
+            <tr>
+                <td><a href="{{ url_for('.index') }}instances/{{ i }}">{{ j }}</a></td>
+                <td>{{ k }}</td>
+            </tr>
+            {% endfor %}
+        </table>
+        {% endfor %}
+    </div>
+</div>
+{%- else -%}
+<p>There are no CSEs.</p>
+{% endif %}
+{% endblock %}

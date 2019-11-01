@@ -1,5 +1,6 @@
 import re
 
+from operator import itemgetter
 from collections import Counter, OrderedDict
 from flask import request
 from eve.methods.get import getitem_internal, get_internal
@@ -248,6 +249,37 @@ def users(role=None):
     return (uniqueUserNameList, uniqueUserEmailList)
 
 
+def userInstanceLookup(instanceList):
+    """Get a list of users and roles given a list of instances
+
+    Arguments:
+        instanceList {list}
+    """
+    q = get_internal('statistics', **{"site": {"$in": instanceList}})
+    res = q[0] if len(q) > 0 else {}
+    totalItems = res.get('_meta', None).get('total', None)
+
+    # If more items exist than initial request, reset max_results to total to get a full export
+    if totalItems > res.get('_meta', None).get('max_results', None):
+        setArgs = request.args.copy()
+        setArgs['max_results'] = totalItems
+        request.args = setArgs
+        qAll = get_internal('statistics', **{"site": {"$in": instanceList}})
+        results = qAll[0].get('_items', None)
+    else:
+        results = res.get('_items', None)
+    userNameList = []
+    for r in results:
+        if r.get('users'):
+            for k, v in r['users']['username'].items():
+                for username in v:
+                    userNameList.append((username, k))
+    # Sort the list of tuples by role
+    uniqueUserNameList = sorted(uniqueTupleList(userNameList), key=itemgetter(1))
+
+    return uniqueUserNameList
+
+
 def summaryStatistics():
     # TODO drupal_system_status
     q = get_internal('statistics')
@@ -300,6 +332,14 @@ def uniqueList(li):
     for x in li:
         if x not in newList:
             newList.append(str(x))
+    return newList
+
+
+def uniqueTupleList(li):
+    newList = []
+    for x in li:
+        if x not in newList:
+            newList.append(x)
     return newList
 
 

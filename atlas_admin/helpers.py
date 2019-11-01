@@ -201,7 +201,7 @@ def summaryUsers():
     else:
         summary = {}
 
-    sortedUsers = OrderedDict(sorted(summary.items())) if summary.get('items') else None
+    sortedUsers = OrderedDict(sorted(summary.items())) if summary else None
 
     return sortedUsers
 

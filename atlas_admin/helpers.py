@@ -8,7 +8,7 @@ from eve.methods.get import getitem_internal, get_internal
 def availableInstances():
     """Get a list of available instances and display them with links to invitation pages
     """
-    availableInstances = get_internal('sites',  **{"status": "available"})
+    availableInstances = get_internal('sites', **{"status": "available"})
     availableInstancesSidList = []
     if availableInstances and availableInstances[4]:
         for header in availableInstances[4]:
@@ -72,11 +72,11 @@ def instanceSummary(instance):
     instanceSummary = {}
 
     # Get site record
-    q = get_internal('sites',  **{"_id": instance})
+    q = get_internal('sites', **{"_id": instance})
     instances = q[0].get('_items', None)
     instanceSummary['instance'] = instances[0]
     # Get statistics record
-    s = get_internal('statistics',  **{"_id": instanceSummary['instance']['statistics']})
+    s = get_internal('statistics', **{"_id": instanceSummary['instance']['statistics']})
     statistics = s[0].get('_items', None)
     instanceSummary['statistics'] = statistics[0]
 
@@ -85,15 +85,15 @@ def instanceSummary(instance):
 
 def instances(siteType=None, pantheonSize=None, path=None, siteStatus=None, cse=False):
     if siteType:
-        q = get_internal('sites',  **{"site_type": siteType})
+        q = get_internal('sites', **{"site_type": siteType})
     elif pantheonSize:
-        q = get_internal('sites',  **{"pantheon_size": pantheonSize})
+        q = get_internal('sites', **{"pantheon_size": pantheonSize})
     elif siteStatus:
-        q = get_internal('sites',  **{"status": siteStatus})
+        q = get_internal('sites', **{"status": siteStatus})
     elif path:
-        q = get_internal('sites',  **{"path": {"$regex": path}})
+        q = get_internal('sites', **{"path": {"$regex": path}})
     elif cse:
-        q = get_internal('sites',  **{"settings.cse_id": {"$exists": True}})
+        q = get_internal('sites', **{"settings.cse_id": {"$exists": True}})
     else:
         q = get_internal('sites')
     res = q[0] if len(q) > 0 else {}
@@ -105,15 +105,15 @@ def instances(siteType=None, pantheonSize=None, path=None, siteStatus=None, cse=
         setArgs['max_results'] = totalItems
         request.args = setArgs
         if siteType:
-            qAll = get_internal('sites',  **{"site_type": siteType})
+            qAll = get_internal('sites', **{"site_type": siteType})
         elif pantheonSize:
-            qAll = get_internal('sites',  **{"pantheon_size": pantheonSize})
+            qAll = get_internal('sites', **{"pantheon_size": pantheonSize})
         elif siteStatus:
-            qAll = get_internal('sites',  **{"status": siteStatus})
+            qAll = get_internal('sites', **{"status": siteStatus})
         elif path:
-            qAll = get_internal('sites',  **{"path": {"$regex": path}})
+            qAll = get_internal('sites', **{"path": {"$regex": path}})
         elif cse:
-            qAll = get_internal('sites',  **{"settings.cse_id": {"$exists": 1}})
+            qAll = get_internal('sites', **{"settings.cse_id": {"$exists": 1}})
         else:
             qAll = get_internal('sites')
         results = qAll[0].get('_items', None)

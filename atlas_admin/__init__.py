@@ -123,12 +123,12 @@ def userSearch():
             if query_type == 'path':
                 instanceList = helpers.instances(path=query)
             elif query_type == 'path_exact':
+                query = '^' + query + '$'
                 instanceList = helpers.instances(path=query)
             instanceIdList = []
             for (j, k, l) in instanceList:
                 instanceIdList.append(j)
             user_list = helpers.userInstanceLookup(instanceIdList)
-            print user_list
         elif not form.validate():
             flash('Error: Form failed validation.')
 

@@ -61,6 +61,11 @@ def instances():
                                     (l[0] * l[1]) + (xl[0] * xl[1]) + (e[0] * e[1]))
     return render_template('instances/summary.html', summaryInstances=summaryInstances)
 
+@atlas_admin.route('/themes')
+def theme_instances():
+    summaryInstances = helpers.summaryThemes()
+    return render_template('themes.html', summaryInstances=summaryInstances)
+       
 
 @atlas_admin.route('/instances/<id>')
 def instance(id):
@@ -113,8 +118,3 @@ def search():
 def instances_cse():
     instance_list = helpers.instances(cse=True)
     return render_template('instances/cse.html', instanceList=instance_list)
-
-@atlas_admin.route('/themes')
-def themes():
-    instance_list = helpers.instances(cse=True)
-    return render_template('themes.html', instanceList=instance_list)

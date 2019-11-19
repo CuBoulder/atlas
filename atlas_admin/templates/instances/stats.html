@@ -5,7 +5,6 @@ instances{% endblock %}
 
 {% block content %}
 {%- if instanceList -%}
-<p>Yay there's an instance list!<p>
 <div class="row">
     <div class="columns twelve">
         <table>
@@ -13,8 +12,9 @@ instances{% endblock %}
             <th>Name</th>
             {% for (i, j) in instanceList %}
             <tr>
+
                 <td>{{ i }}</td>
-                <td>{{ j }}</td>
+                <td><a href="{{ url_for('.index') }}instances/{{ i }}">{{ j }}</a></td>
             </tr>
             {% endfor %}
         </table>

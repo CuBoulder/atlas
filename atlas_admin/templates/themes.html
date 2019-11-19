@@ -1,19 +1,23 @@
 {% extends "base.html" %}
 
-{% block title %}Themes{% endblock %}
+{% block title %}Instances by Theme{% endblock %}
 
 {% block content %}
+{%- if summaryInstances -%}
 <div class="row">
-    {%- if availableInstances -%}
-    <ul>
-        {% for sid in availableInstances %}
-        <li>{{ envVars['baseURL'] }}/{{ sid }} - <a
-                href="{{ envVars['baseURL'] }}/{{ sid }}/user?destination=/admin/people/invite">THIS IS GONNA BE THEMES</a>
-        </li>
-        {% endfor %}
-    </ul>
-    {%- else -%}
-    <p>There are no available instances.</p>
+
+    {%- if summaryInstances.variable_theme_default -%}
+    <div class="columns twelve">
+        <h3>Themes</h3>
+        <ul>
+            {% for k,v in summaryInstances.variable_theme_default.items() %}
+            <li><a href="{{ url_for('.index') }}themes/th/{{ k }}">{{ k }}</a>: {{ v }}</li>
+            {% endfor %}
+        </ul>
+    </div>
     {% endif %}
 </div>
+{%- else -%}
+<p>There are no instances.</p>
+{% endif %}
 {% endblock %}

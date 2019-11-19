@@ -61,12 +61,12 @@ def instances():
                                     (l[0] * l[1]) + (xl[0] * xl[1]) + (e[0] * e[1]))
     return render_template('instances/summary.html', summaryInstances=summaryInstances)
 
-@atlas_admin.route('/themes')
+@atlas_admin.route('/instances/themes')
 def theme_summary():
     summaryInstances = helpers.summaryThemes()
-    return render_template('themes.html', summaryInstances=summaryInstances)
+    return render_template('instances/themes.html', summaryInstances=summaryInstances)
 
-@atlas_admin.route('/themes/th/<themeName>')
+@atlas_admin.route('/instances/th/<themeName>')
 def theme_instances(themeName=None):
     instanceList = helpers.siteStats(themeName=themeName)
     return render_template('instances/stats.html', instanceList=instanceList, themeName=themeName)

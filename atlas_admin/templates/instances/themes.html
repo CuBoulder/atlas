@@ -11,7 +11,7 @@
         <h3>Themes</h3>
         <ul>
             {% for k,v in summaryInstances.variable_theme_default.items() %}
-            <li><a href="{{ url_for('.index') }}themes/th/{{ k }}">{{ k }}</a>: {{ v }}</li>
+            <li><a href="{{ url_for('.index') }}instances/th/{{ k }}">{{ k }}</a>: {{ v }}</li>
             {% endfor %}
         </ul>
     </div>

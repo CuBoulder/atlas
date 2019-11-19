@@ -113,3 +113,8 @@ def search():
 def instances_cse():
     instance_list = helpers.instances(cse=True)
     return render_template('instances/cse.html', instanceList=instance_list)
+
+@atlas_admin.route('/themes')
+def themes():
+    instance_list = helpers.instances(cse=True)
+    return render_template('themes.html', instanceList=instance_list)

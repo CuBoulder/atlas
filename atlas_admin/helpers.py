@@ -305,3 +305,38 @@ def uniqueList(li):
 
 def lowerList(mixedList):
     return [x.lower() for x in mixedList]
+
+
+def summaryThemes():
+    """
+    Return a list of theme statistics
+    """
+
+    q = get_internal('statistics')
+    res = q[0] if len(q) > 0 else {}
+    totalItems = res.get('_meta', None).get('total', None)
+
+    summary = {}
+
+    if totalItems:
+
+        # If more items exist than initial request, reset max_results to total to get a full export
+        if totalItems > res.get('_meta', None).get('max_results', None):
+            # Copy the existing arguments on the request object
+            setArgs = request.args.copy()
+            # Set our new header
+            setArgs['max_results'] = totalItems
+            request.args = setArgs
+            results = get_internal('statistics')[0]['_items']
+        else:
+            results = res.get('_items', None)
+
+        themeCount = Counter()
+        for res in results:
+            if 'variable_theme_default' in res:
+                themeCount[res['variable_theme_default']] += 1
+        summary['variable_theme_default'] = OrderedDict(sorted(dict(themeCount).items()))
+    else:
+        summary = None
+
+    return summary

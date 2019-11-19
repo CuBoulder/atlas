@@ -340,3 +340,37 @@ def summaryThemes():
         summary = None
 
     return summary
+
+def siteStats(themeName=None, nodeCount=None):
+    if themeName:
+        q = get_internal('statistics',  **{"variable_theme_default": themeName})
+    elif nodeCount:
+        q = get_internal('statistics',  **{"nodes_total": nodeCount})
+    else:
+        q = get_internal('statistics')
+    res = q[0] if len(q) > 0 else {}
+    totalItems = res.get('_meta', None).get('total', None)
+
+    # If more items exist than initial request, reset max_results to total to get a full export
+    if totalItems > res.get('_meta', None).get('max_results', None):
+        setArgs = request.args.copy()
+        setArgs['max_results'] = totalItems
+        request.args = setArgs
+        if themeName:
+            qAll = get_internal('statistics',  **{"variable_theme_default": themeName})
+        elif nodeCount:
+            qAll = get_internal('statistics',  **{"nodes_total": nodeCount})
+        else:
+            qAll = get_internal('statistics')
+        results = qAll[0].get('_items', None)
+    else:
+        results = res.get('_items', None)
+    # Get list of all instances
+    instanceList = []
+    for r in results:
+        if themeName:
+            instanceList.append((r['_id'], r['name']))
+        elif pantheonSize:
+            instanceList.append((r['_id'], r['name']))
+
+    return instanceList

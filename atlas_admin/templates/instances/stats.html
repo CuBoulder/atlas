@@ -1,0 +1,24 @@
+{% extends "base.html" %}
+
+{% block title %}{%- if themeName -%}{{ themeName }}{%- elif nodeCount -%}{{ nodeCount }}{%-  else -%}All{% endif %}
+instances{% endblock %}
+
+{% block content %}
+{%- if instanceList -%}
+<p>Yay there's an instance list!<p>
+<div class="row">
+    <div class="columns twelve">
+        <table>
+            <th>ID</th>
+            <th>Name</th>
+            {% for (i, j) in instanceList %}
+            <tr>
+                <td>{{ i }}</td>
+                <td>{{ j }}</td>
+            </tr>
+            {% endfor %}
+        </table>
+    </div>
+</div>
+{% endif %}
+{% endblock %}

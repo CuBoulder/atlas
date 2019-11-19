@@ -62,10 +62,14 @@ def instances():
     return render_template('instances/summary.html', summaryInstances=summaryInstances)
 
 @atlas_admin.route('/themes')
-def theme_instances():
+def theme_summary():
     summaryInstances = helpers.summaryThemes()
     return render_template('themes.html', summaryInstances=summaryInstances)
-       
+
+@atlas_admin.route('/themes/th/<themeName>')
+def theme_instances(themeName=None):
+    instanceList = helpers.siteStats(themeName=themeName)
+    return render_template('instances/stats.html', instanceList=instanceList, themeName=themeName)
 
 @atlas_admin.route('/instances/<id>')
 def instance(id):

@@ -368,6 +368,7 @@ SITES_SCHEMA = {
     },
     'pantheon_size': {
         'type': 'string',
+        'default': 'xs',
         'allowed': [
             'xs',
             's',

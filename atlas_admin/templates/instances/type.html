@@ -1,0 +1,23 @@
+{% extends "base.html" %}
+
+{% block title %}{%- if siteType -%}{{ siteType }}{%- elif siteStatus -%}{{ siteStatus }}{%-  else -%}All{% endif %}
+instances{% endblock %}
+
+{% block content %}
+{%- if instanceList -%}
+<div class="row">
+    <div class="columns six">
+        <table>
+            <th>Path</th>
+            <th>Pantheon size</th>
+            {% for (i, j, k) in instanceList %}
+            <tr>
+                <td><a href="{{ url_for('.index') }}instances/{{ i }}">{{ j }}</a></td>
+                <td>{{ k }}</td>
+            </tr>
+            {% endfor %}
+        </table>
+    </div>
+</div>
+{% endif %}
+{% endblock %}

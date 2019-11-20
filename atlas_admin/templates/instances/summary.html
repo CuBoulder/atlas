@@ -1,0 +1,50 @@
+{% extends "base.html" %}
+
+{% block title %}All Instances{% endblock %}
+
+{% block content %}
+{%- if summaryInstances -%}
+<div class="row">
+    {%- if summaryInstances.pantheon_size -%}
+    <div class="columns six">
+        <h3>Pantheon Size</h3>
+        <ul>
+            {% for k,v in summaryInstances.pantheon_size.items() %}
+            <li><a href="{{ url_for('.index') }}instances/p/{{ k }}">{{ k }}</a>: {{ v }}</li>
+            {% endfor %}
+        </ul>
+        <h4>Total cost</h4>
+        <table>
+            <tbody>
+                <tr>
+                    <td>CU
+                        pricing<br /><small><i>{{ "{0:.2f}%".format((1 - summaryInstances.cost_multiplier) * 100) }}
+                                discount</i></small>
+                    </td>
+                    <td>
+                        {{ "${:,.2f}".format(summaryInstances.cost * summaryInstances.cost_multiplier) }}
+                    </td>
+                </tr>
+                <tr>
+                    <td>Bulk pricing</td>
+                    <td>{{ "${:,.2f}".format(summaryInstances.cost )}}</td>
+                </tr>
+            </tbody>
+        </table>
+    </div>
+    {% endif %}
+    {%- if summaryInstances.site_type -%}
+    <div class="columns six">
+        <h3>Type</h3>
+        <ul>
+            {% for k,v in summaryInstances.site_type.items() %}
+            <li><a href="{{ url_for('.index') }}instances/t/{{ k }}">{{ k }}</a>: {{ v }}</li>
+            {% endfor %}
+        </ul>
+    </div>
+    {% endif %}
+</div>
+{%- else -%}
+<p>There are no instances.</p>
+{% endif %}
+{% endblock %}

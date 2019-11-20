@@ -1,0 +1,19 @@
+{% extends "base.html" %}
+
+{% block title %}Available Instances{% endblock %}
+
+{% block content %}
+<div class="row">
+    {%- if availableInstances -%}
+    <ul>
+        {% for sid in availableInstances %}
+        <li>{{ envVars['baseURL'] }}/{{ sid }} - <a
+                href="{{ envVars['baseURL'] }}/{{ sid }}/user?destination=/admin/people/invite">Invite a user</a>
+        </li>
+        {% endfor %}
+    </ul>
+    {%- else -%}
+    <p>There are no available instances.</p>
+    {% endif %}
+</div>
+{% endblock %}

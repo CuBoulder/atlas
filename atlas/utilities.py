@@ -18,7 +18,6 @@ from email.mime.text import MIMEText
 from cryptography.fernet import Fernet
 from eve.auth import BasicAuth
 from flask import g
-import OpenSSL
 import mysql.connector as mariadb
 import requests
 import ldap
@@ -46,6 +45,7 @@ class AtlasBasicAuth(BasicAuth):
     """
     Basic Authentication
     """
+
     def check_auth(self, username, password, allowed_roles=['default'], resource='default', method='default'):
         """
         Check user supplied credentials against LDAP.
@@ -312,6 +312,7 @@ def get_single_eve(resource, id, version=None, env=ENVIRONMENT):
                                 SERVICE_ACCOUNT_PASSWORD), verify=SSL_VERIFICATION)
 
     return r.json()
+
 
 def patch_eve(resource, id, request_payload, env=ENVIRONMENT):
     """
@@ -678,28 +679,22 @@ def sync(source, hosts, target, exclude=None):
     log.info('Utilities | Sync | Source - %s', source)
     # Use `set` to dedupe the host list, and cast it back into a list
     hosts = list(set(hosts))
-    # Recreate readme
-    filename = source + "/README.md"
-    # Remove the existing file.
-    if os.access(filename, os.F_OK):
-        os.remove(filename)
-    f = open(filename, "w+")
-    f.write("Directory is synced from Atlas. Any changes will be overwritten.")
-    f.close()
     for host in hosts:
         # -a archive mode; equals -rlptgoD
         # -z compress file data during the transfer
         # trailing slash on src copies the contents, not the parent dir itself.
         # --delete delete extraneous files from dest dirs
         if exclude:
-            cmd = 'rsync -aqz --exclude={0} {1}/ {2}:{3} --delete'.format(exclude, source, host, target)
+            cmd = 'rsync -aqz --exclude={0} {1}/ {2}:{3} --delete'.format(
+                exclude, source, host, target)
         else:
             cmd = 'rsync -aqz {0}/ {1}:{2} --delete'.format(source, host, target)
         log.debug('Utilities | Sync | Command - %s | Host - %s', cmd, host)
         try:
             output = subprocess.check_output(cmd, shell=True, stderr=subprocess.STDOUT)
         except subprocess.CalledProcessError as e:
-            log.error('Utilities | Sync | Failed | Return code - %s | StdErr - %s | Host - %s', e.returncode, e.output, host)
+            log.error('Utilities | Sync | Failed | Return code - %s | StdErr - %s | Host - %s',
+                      e.returncode, e.output, host)
         else:
             log.info('Utilities | Sync | Success | Host - %s', host)
 

@@ -65,6 +65,32 @@ def summaryInstances():
     else:
         summary = None
 
+
+    qq = get_internal('statistics')
+    resStat = qq[0] if len(qq) > 0 else {}
+    totalStatItems = resStat.get('_meta', None).get('total', None)
+
+    if totalStatItems:
+
+        # If more items exist than initial request, reset max_results to total to get a full export
+        if totalStatItems > resStat.get('_meta', None).get('max_results', None):
+            # Copy the existing arguments on the request object
+            setStatArgs = request2.args.copy()
+            # Set our new header
+            setStatArgs['max_results'] = totalItems
+            request2.args = setStatArgs
+            results2 = get_internal('statistics')[0]['_items']
+        else:
+            results2 = resStat.get('_items', None)
+
+        themeCount = Counter()
+        for res in results2:
+            if 'variable_theme_default' in res:
+                themeCount[res['variable_theme_default']] += 1
+        summary['variable_theme_default'] = OrderedDict(sorted(dict(themeCount).items()))
+    else:
+        summary = None
+
     return summary
 
 

@@ -115,7 +115,33 @@ def search():
         elif not form.validate():
             flash('Error: Form failed validation.')
 
-    return render_template('search.html', form=form, instanceList=instanceList, query_type=query_type)
+    return render_template('instances/search.html', form=form, instanceList=instanceList, query_type=query_type)
+
+
+@atlas_admin.route('/user/search', methods=['GET', 'POST'])
+def userSearch():
+    user_list = None
+
+    form = forms.userSearchForm(request.form)
+    if request.method == 'POST':
+        query = request.form['query']
+        query_type = request.form['query_type']
+
+        if form.validate():
+            flash('Search for "' + query + '"')
+            if query_type == 'path':
+                instanceList = helpers.instances(path=query)
+            elif query_type == 'path_exact':
+                query = '^' + query + '$'
+                instanceList = helpers.instances(path=query)
+            instanceIdList = []
+            for (j, k, l) in instanceList:
+                instanceIdList.append(j)
+            user_list = helpers.userInstanceLookup(instanceIdList)
+        elif not form.validate():
+            flash('Error: Form failed validation.')
+
+    return render_template('users/search.html', form=form, userList=user_list)
 
 
 @atlas_admin.route('/instances/cse')

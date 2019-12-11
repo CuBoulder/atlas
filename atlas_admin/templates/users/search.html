@@ -1,0 +1,45 @@
+{% extends "base.html" %}
+
+{% block title %}User Search{% endblock %}
+
+{% block content %}
+<form action="" method="post">
+    {{ form.csrf }}
+    <div class="input select">
+        {{ form.query_type.label }} {{ form.query_type }}</div>
+    <div class="input text">
+        {{ form.query.label }} {{ form.query }}</div>
+    <div class="input submit">
+        <input type="submit" value="Submit"></div>
+</form>
+{% with messages = get_flashed_messages(with_categories=true) %}
+{% if messages %}
+<ul>
+    {% for message in messages %}
+    {% if "Error" not in message[1]: %}
+    <li class="alert alert-info">{{ message[1] }}</li>
+    {% elif "Error" in message[1]: %}
+    <li class="alert alert-danger">{{ message[1] }}</li>
+    {% endif %}
+    {% endfor %}</ul>
+{% endif %}
+{% endwith %}
+{%- if userList -%}
+<hr>
+<div class="row">
+    <div class="columns twelve">
+        <p><b>Total</b>: {{ userList|length }}</p>
+        <table>
+            <th>Username</th>
+            <th>Role</th>
+            {% for (i, j) in userList %}
+            <tr>
+                <td>{{ i | lower}}</td>
+                <td>{{ j }}</td>
+            </tr>
+            {% endfor %}
+        </table>
+    </div>
+</div>
+{% endif %}
+{% endblock %}

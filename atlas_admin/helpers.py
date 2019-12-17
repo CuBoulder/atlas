@@ -402,7 +402,7 @@ def summaryThemes():
         for res in results:
             if 'variable_theme_default' in res:
                 themeCount[res['variable_theme_default']] += 1
-        summary['variable_theme_default'] = OrderedDict(sorted(dict(themeCount).items(), key=lambda x:x[1]))
+        summary['variable_theme_default'] = OrderedDict(sorted(dict(themeCount).items(), key=lambda x: x[1]))
     else:
         summary = None
 

@@ -83,11 +83,11 @@ def summaryInstances():
         else:
             results2 = resStat.get('_items', None)
 
-        themeCount = Counter()
-        for res2 in results2:
-            if 'variable_theme_default' in res2:
-                themeCount[res2['variable_theme_default']] += 1
-        themeList = dict(themeCount)
+        themeCounter = Counter()
+        for k in results2:
+            if 'variable_theme_default' in k:
+                themeCounter[k['variable_theme_default']] += 1
+        themeList = dict(themeCounter)
         sortedThemeList = sorted(themeList.items(), key=lambda x: x[1])
         summary['variable_theme_default'] = OrderedDict(sortedThemeList)
     else:

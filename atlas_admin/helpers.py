@@ -91,7 +91,6 @@ def summaryInstances():
         themeList = dict(themeCount)
         sortedThemeList = sorted(themeList.items(), key=lambda x:x[1])
         summary['variable_theme_default'] = OrderedDict(sortedThemeList)
-        #summary['variable_theme_default'] = OrderedDict(sorted(dict(themeCount).items()))
     else:
         summary = None
 

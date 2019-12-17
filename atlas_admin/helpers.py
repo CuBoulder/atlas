@@ -408,11 +408,9 @@ def summaryThemes():
 
     return summary
 
-def siteStats(themeName=None, nodeCount=None):
+def siteStats(themeName=None):
     if themeName:
         q = get_internal('statistics',  **{"variable_theme_default": themeName})
-    elif nodeCount:
-        q = get_internal('statistics',  **{"nodes_total": nodeCount})
     else:
         q = get_internal('statistics')
     res = q[0] if len(q) > 0 else {}
@@ -425,8 +423,6 @@ def siteStats(themeName=None, nodeCount=None):
         request.args = setArgs
         if themeName:
             qAll = get_internal('statistics',  **{"variable_theme_default": themeName})
-        elif nodeCount:
-            qAll = get_internal('statistics',  **{"nodes_total": nodeCount})
         else:
             qAll = get_internal('statistics')
         results = qAll[0].get('_items', None)
@@ -437,7 +433,4 @@ def siteStats(themeName=None, nodeCount=None):
     for r in results:
         if themeName:
             instanceList.append((r['site'], r['name']))
-        elif pantheonSize:
-            instanceList.append((r['site'], r['name']))
-
     return instanceList

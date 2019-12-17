@@ -88,7 +88,7 @@ def summaryInstances():
             if 'variable_theme_default' in res2:
                 themeCount[res2['variable_theme_default']] += 1
         themeList = dict(themeCount)
-        sortedThemeList = sorted(themeList.items(), key=lambda x:x[1])
+        sortedThemeList = sorted(themeList.items(), key=lambda x: x[1])
         summary['variable_theme_default'] = OrderedDict(sortedThemeList)
     else:
         summary = None
@@ -403,7 +403,7 @@ def summaryThemes():
             if 'variable_theme_default' in res:
                 themeCount[res['variable_theme_default']] += 1
         themeList = dict(themeCount)
-        sortedThemeList = sorted(themeList.items(), key=lambda x:x[1])
+        sortedThemeList = sorted(themeList.items(), key=lambda x: x[1])
         summary['variable_theme_default'] = OrderedDict(sortedThemeList)
     else:
         summary = None

@@ -66,7 +66,6 @@ def summaryInstances():
     else:
         summary = None
 
-
     qq = get_internal('statistics')
     resStat = qq[0] if len(qq) > 0 else {}
     totalStatItems = resStat.get('_meta', None).get('total', None)

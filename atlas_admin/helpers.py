@@ -89,6 +89,7 @@ def summaryInstances():
             if 'variable_theme_default' in res2:
                 themeCount[res2['variable_theme_default']] += 1
         summary['variable_theme_default'] = OrderedDict(sorted(dict(themeCount).items()))
+        #summary['variable_theme_default'] = OrderedDict(sorted(dict(themeCount).items(), key=lambda x:x[1]))
     else:
         summary = None
 
@@ -401,7 +402,7 @@ def summaryThemes():
         for res in results:
             if 'variable_theme_default' in res:
                 themeCount[res['variable_theme_default']] += 1
-        summary['variable_theme_default'] = OrderedDict(sorted(dict(themeCount).items()))
+        summary['variable_theme_default'] = OrderedDict(sorted(dict(themeCount).items(), key=lambda x:x[1]))
     else:
         summary = None
 
@@ -435,8 +436,8 @@ def siteStats(themeName=None, nodeCount=None):
     instanceList = []
     for r in results:
         if themeName:
-            instanceList.append((r['_id'], r['name']))
+            instanceList.append((r['site'], r['name']))
         elif pantheonSize:
-            instanceList.append((r['_id'], r['name']))
+            instanceList.append((r['site'], r['name']))
 
     return instanceList

@@ -73,9 +73,9 @@ def theme_summary():
 
 
 @atlas_admin.route('/instances/th/<themeName>')
-def theme_instances(themeName=None):
+def stat_instances(themeName=None):
     instanceList = helpers.sitesByStat(themeName=themeName)
-    return render_template('instances/stats.html', instanceList=instanceList, themeName=themeName)
+    return render_template('instances/sitestats.html', instanceList=instanceList, themeName=themeName)
 
 
 @atlas_admin.route('/instances/<id>')

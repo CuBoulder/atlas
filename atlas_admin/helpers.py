@@ -374,9 +374,9 @@ def lowerList(mixedList):
     return [x.lower() for x in mixedList]
 
 
-def summaryThemes():
+def statBreakdown():
     """
-    Return a list of theme statistics
+    Returns a summary breakdown of statistics
     """
 
     q = get_internal('statistics')
@@ -411,6 +411,9 @@ def summaryThemes():
     return summary
 
 def sitesByStat(themeName=None):
+    """
+    Return a list of sites with the requested statistic
+    """
     if themeName:
         q = get_internal('statistics',  **{"variable_theme_default": themeName})
     else:

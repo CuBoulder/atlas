@@ -70,7 +70,7 @@ def theme_summary():
 
 @atlas_admin.route('/instances/th/<themeName>')
 def theme_instances(themeName=None):
-    instanceList = helpers.siteStats(themeName=themeName)
+    instanceList = helpers.siteStatList(themeName=themeName)
     return render_template('instances/stats.html', instanceList=instanceList, themeName=themeName)
 
 

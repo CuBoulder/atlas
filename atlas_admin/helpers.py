@@ -410,7 +410,7 @@ def summaryThemes():
 
     return summary
 
-def siteStats(themeName=None):
+def sitesByStat(themeName=None):
     if themeName:
         q = get_internal('statistics',  **{"variable_theme_default": themeName})
     else:

@@ -383,6 +383,7 @@ def statBreakdown():
 
     return summary
 
+
 def sitesByStat(themeName=None):
     """
     Return a list of sites with the requested statistic

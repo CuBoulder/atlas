@@ -67,13 +67,13 @@ def instances():
 
 
 @atlas_admin.route('/instances/stats')
-def theme_summary():
-    summaryInstances = helpers.statBreakdown()
-    return render_template('instances/statlist.html', summaryInstances=summaryInstances)
+def stat_summary():
+    statBreakdown = helpers.statBreakdown()
+    return render_template('instances/statlist.html', statBreakdown=statBreakdown)
 
 
 @atlas_admin.route('/instances/th/<themeName>')
-def stat_instances(themeName=None):
+def theme_instances(themeName=None):
     instanceList = helpers.sitesByStat(themeName=themeName)
     return render_template(
         'instances/sitestats.html',

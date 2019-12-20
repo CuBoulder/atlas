@@ -33,7 +33,7 @@
          <h3>Other Node Types</h3>
          <ul>
              {% for k,v in statBreakdown.nodes_other.items() %}
-           <li><a href="{{ url_for('.index') }}instances/nt/{{ k }}">{{ k }}</a>: {{ v }}</li>
+           <li><a href="{{ url_for('.index') }}instances/ont/{{ k }}">{{ k }}</a>: {{ v }}</li>
              {% endfor %}
          </ul>
           {% endif %}

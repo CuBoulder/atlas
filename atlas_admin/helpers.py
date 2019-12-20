@@ -371,18 +371,25 @@ def statBreakdown():
         else:
             results = res.get('_items', None)
 
+        otherNodeTypes = ["collection_item", "class_note", "homepage_callout", "issue", "newsletter", "people_list_page", "section_page"]
         themeCount = Counter()
         nodeCount = Counter()
+        otherNodesCount = Counter()
         for res in results:
             if 'variable_theme_default' in res:
                 themeCount[res['variable_theme_default']] += 1
             if 'nodes_by_type' in res:
                 for k, v in res["nodes_by_type"].items():
                     nodeCount[k] += v
+            if "nodes_other" in res:
+                for nodeType in otherNodeTypes:
+                    if nodeType in res["nodes_other"]:
+                        otherNodesCount[nodeType] += 1
         themeList = dict(themeCount)
         sortedThemeList = sorted(themeList.items(), key=lambda x: x[1])
         summary['variable_theme_default'] = OrderedDict(sortedThemeList)
         summary['nodes_by_type'] = OrderedDict(sorted(dict(nodeCount).items()))
+        summary['nodes_other'] = OrderedDict(sorted(dict(otherNodesCount).items()))
     else:
         summary = None
 

@@ -395,8 +395,6 @@ def sitesByStat(themeName=None):
     """
     if themeName:
         q = get_internal('statistics',  **{"variable_theme_default": themeName})
-    elif nodeType:
-        q = get_internal('statistics',  **{"nodes_by_type": nodeType})
     else:
         q = get_internal('statistics')
     res = q[0] if len(q) > 0 else {}
@@ -409,8 +407,6 @@ def sitesByStat(themeName=None):
         request.args = setArgs
         if themeName:
             qAll = get_internal('statistics',  **{"variable_theme_default": themeName})
-        elif nodeType:
-            qAll = get_internal('statistics',  **{"nodes_by_type": nodeType})
         else:
             qAll = get_internal('statistics')
         results = qAll[0].get('_items', None)
@@ -421,8 +417,7 @@ def sitesByStat(themeName=None):
     for r in results:
         if themeName:
             instanceList.append((r['site'], r['name']))
-        if nodeType:
-            instanceList.append((r['site'], r['name']))
+
     return instanceList
 
 

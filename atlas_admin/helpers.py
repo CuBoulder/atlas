@@ -372,12 +372,17 @@ def statBreakdown():
             results = res.get('_items', None)
 
         themeCount = Counter()
+        nodeCount = Counter()
         for res in results:
             if 'variable_theme_default' in res:
                 themeCount[res['variable_theme_default']] += 1
+            if 'nodes_by_type' in res:
+                for k, v in res["nodes_by_type"].items():
+                    nodeCount[k] += v
         themeList = dict(themeCount)
         sortedThemeList = sorted(themeList.items(), key=lambda x: x[1])
         summary['variable_theme_default'] = OrderedDict(sortedThemeList)
+        summary['nodes_by_type'] = OrderedDict(sorted(dict(nodeCount).items()))
     else:
         summary = None
 
@@ -390,6 +395,8 @@ def sitesByStat(themeName=None):
     """
     if themeName:
         q = get_internal('statistics',  **{"variable_theme_default": themeName})
+    elif nodeType:
+        q = get_internal('statistics',  **{"nodes_by_type": nodeType})
     else:
         q = get_internal('statistics')
     res = q[0] if len(q) > 0 else {}
@@ -402,6 +409,8 @@ def sitesByStat(themeName=None):
         request.args = setArgs
         if themeName:
             qAll = get_internal('statistics',  **{"variable_theme_default": themeName})
+        elif nodeType:
+            qAll = get_internal('statistics',  **{"nodes_by_type": nodeType})
         else:
             qAll = get_internal('statistics')
         results = qAll[0].get('_items', None)
@@ -411,6 +420,8 @@ def sitesByStat(themeName=None):
     instanceList = []
     for r in results:
         if themeName:
+            instanceList.append((r['site'], r['name']))
+        if nodeType:
             instanceList.append((r['site'], r['name']))
     return instanceList
 

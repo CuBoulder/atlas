@@ -412,6 +412,6 @@ def sitesByStat(themeName=None):
     instanceList = []
     for r in results:
         if themeName:
-            myList.append((r['site'], r['name'], r['users']['email_address']['site_owner'], r['days_since_last_edit']))
+            myList.append((r['site'], r['name'], r['users']['username']['site_owner'], r['days_since_last_edit']))
             instanceList = sorted(myList, key=lambda x : x[1])
     return instanceList

@@ -12,10 +12,8 @@ instances{% endblock %}
             {% for (i, j, k, l) in instanceList %}
             <tr>
                 <td><a href="{{ url_for('.index') }}instances/{{ i }}">{{ j }}</a>
-                  {% if j == 'University of Colorado Boulder' %}
                   <br />Site Owners: {{ k }}
-                  <br />{{ l }} Days since last edit
-                  {% endif %}
+                  <br />{{ l }} days since last edit
                 </td>
             </tr>
             {% endfor %}

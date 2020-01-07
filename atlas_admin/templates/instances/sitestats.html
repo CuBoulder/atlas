@@ -1,19 +1,17 @@
 {% extends "base.html" %}
 
-{% block title %}{%- if siteType -%}{{ siteType }}{%- elif siteStatus -%}{{ siteStatus }}{%-  else -%}All{% endif %}
+{% block title %}{%- if themeName -%}{{ themeName }}{%- elif nodeCount -%}{{ nodeCount }}{%-  else -%}All{% endif %}
 instances{% endblock %}
 
 {% block content %}
 {%- if instanceList -%}
 <div class="row">
-    <div class="columns six">
+    <div class="columns twelve">
         <table>
-            <th>Path</th>
-            <th>Pantheon size</th>
-            {% for (i, j, k) in instanceList %}
+            <th>Name</th>
+            {% for (i, j) in instanceList %}
             <tr>
                 <td><a href="{{ url_for('.index') }}instances/{{ i }}">{{ j }}</a></td>
-                <td>{{ k }}</td>
             </tr>
             {% endfor %}
         </table>

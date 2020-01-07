@@ -1,0 +1,23 @@
+{% extends "base.html" %}
+
+{% block title %}Instances by Theme{% endblock %}
+
+{% block content %}
+{%- if summaryInstances -%}
+<div class="row">
+
+    {%- if summaryInstances.variable_theme_default -%}
+    <div class="columns twelve">
+        <h3>Themes</h3>
+        <ul>
+            {% for k,v in summaryInstances.variable_theme_default.items() %}
+            <li><a href="{{ url_for('.index') }}instances/th/{{ k }}">{{ k }}</a>: {{ v }}</li>
+            {% endfor %}
+        </ul>
+    </div>
+    {% endif %}
+</div>
+{%- else -%}
+<p>There are no instances.</p>
+{% endif %}
+{% endblock %}

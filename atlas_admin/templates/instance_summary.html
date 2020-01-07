@@ -1,6 +1,6 @@
 {% extends "base.html" %}
 
-{% block title %}{{ instance.instance.path }}{% endblock %}
+{% block title %}{{ instance.statistics.name }}{% endblock %}
 
 {% block content %}
 {%- if instance -%}
@@ -9,6 +9,10 @@
     <div class="columns twelve">
         <a href="{{ envVars['baseURL'] }}/{{ instance.instance.path }}"
             target="_blank">{{ envVars['baseURL'] }}/{{ instance.instance.path }}</a>
+    </div>
+    <div class="columns twelve">
+      Prod: <a href="https://www.colorado.edu/{{ instance.instance.path }}"
+            target="_blank">https://www.colorado.edu/{{ instance.instance.path }}</a>
     </div>
 </div>
 {% endif %}
@@ -21,7 +25,10 @@
 {% else %}
 <div class="row">
     <div class="columns four">
-        <p><b>Name</b>: {{ instance.statistics.name }}</p>
+      <ul>
+        <li><b>Name</b>: {{ instance.statistics.name }}</li>
+        <li><b>Theme</b>: {{ instance.statistics.variable_theme_default }}</li>
+      </ul>
     </div>
     <div class="columns four">
         <ul>

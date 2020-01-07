@@ -9,9 +9,9 @@ instances{% endblock %}
     <div class="columns twelve">
         <table>
             <th>Name</th>
-            {% for (i, j) in instanceList %}
+            {% for (i, j, k) in instanceList %}
             <tr>
-                <td><a href="{{ url_for('.index') }}instances/{{ i }}">{{ j }}</a></td>
+                <td><a href="{{ url_for('.index') }}instances/{{ i }}">{{ j }}</a> <br />Site Owners: {{ k }}</td>
             </tr>
             {% endfor %}
         </table>

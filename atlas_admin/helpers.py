@@ -408,8 +408,10 @@ def sitesByStat(themeName=None):
     else:
         results = res.get('_items', None)
     # Get list of all instances
+    myList = []
     instanceList = []
     for r in results:
         if themeName:
-            instanceList.append((r['site'], r['name']))
+            myList.append((r['site'], r['name'], r['users']['email_address']['site_owner']))
+            instanceList = sorted(myList, key=lambda x : x[1])
     return instanceList

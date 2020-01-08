@@ -280,6 +280,31 @@ def userInstanceLookup(instanceList):
     return uniqueUserNameList
 
 
+def getStats():
+    """
+    Returns a complete list of site statistics
+    """
+
+    results = []
+
+    q = get_internal('statistics')
+    res = q[0] if len(q) > 0 else {}
+    totalItems = res.get('_meta', None).get('total', None)
+    if totalItems:
+        # If more items exist than initial request, reset max_results to total to get a full export
+        if totalItems > res.get('_meta', None).get('max_results', None):
+            # Copy the existing arguments on the request object
+            setArgs = request.args.copy()
+            # Set our new header
+            setArgs['max_results'] = totalItems
+            request.args = setArgs
+            results = get_internal('statistics')[0]['_items']
+        else:
+            results = res.get('_items', None)
+
+    return results
+
+
 def summaryStatistics():
     # TODO drupal_system_status
     q = get_internal('statistics')
@@ -349,28 +374,13 @@ def lowerList(mixedList):
 
 def statBreakdown():
     """
-    Returns a summary breakdown of statistics
+    Returns a list of sites with the specified statistic
     """
 
-    q = get_internal('statistics')
-    res = q[0] if len(q) > 0 else {}
-    totalItems = res.get('_meta', None).get('total', None)
-
     summary = {}
+    results = getStats()
 
-    if totalItems:
-
-        # If more items exist than initial request, reset max_results to total to get a full export
-        if totalItems > res.get('_meta', None).get('max_results', None):
-            # Copy the existing arguments on the request object
-            setArgs = request.args.copy()
-            # Set our new header
-            setArgs['max_results'] = totalItems
-            request.args = setArgs
-            results = get_internal('statistics')[0]['_items']
-        else:
-            results = res.get('_items', None)
-
+    if results:
         themeCount = Counter()
         for res in results:
             if 'variable_theme_default' in res:

@@ -280,22 +280,33 @@ def userInstanceLookup(instanceList):
     return uniqueUserNameList
 
 
-def summaryStatistics():
-    # TODO drupal_system_status
+def getAllResults():
+    """
+    Returns a complete list of site statistics
+    """
+
+    results = []
+
     q = get_internal('statistics')
     res = q[0] if len(q) > 0 else {}
     totalItems = res.get('_meta', None).get('total', None)
+    if totalItems:
+        # If more items exist than initial request, reset max_results to total to get a full export
+        if totalItems > res.get('_meta', None).get('max_results', None):
+            # Copy the existing arguments on the request object
+            setArgs = request.args.copy()
+            # Set our new header
+            setArgs['max_results'] = totalItems
+            request.args = setArgs
+            results = get_internal('statistics')[0]['_items']
+        else:
+            results = res.get('_items', None)
 
-    # If more items exist than initial request, reset max_results to total to get a full export
-    if totalItems > res.get('_meta', None).get('max_results', None):
-        setArgs = request.args.copy()
-        setArgs['max_results'] = totalItems
-        request.args = setArgs
-        qAll = get_internal('statistics')
-        results = qAll[0].get('_items', None)
-    else:
-        results = res.get('_items', None)
+    return results, totalItems
 
+
+def summaryStatistics():
+    # TODO drupal_system_status
     summary = {
         'nodes_total': 0,
         'beans_total': 0,
@@ -303,6 +314,8 @@ def summaryStatistics():
     }
     responsive_total = 0
     days_total = 0
+
+    results, totalItems = getAllResults()
 
     for r in results:
         summary['nodes_total'] += r.get('nodes_total', 0)
@@ -347,38 +360,13 @@ def lowerList(mixedList):
     return [x.lower() for x in mixedList]
 
 
-def getAllResults():
-    """
-    Returns a complete list of site statistics
-    """
-
-    results = []
-
-    q = get_internal('statistics')
-    res = q[0] if len(q) > 0 else {}
-    totalItems = res.get('_meta', None).get('total', None)
-    if totalItems:
-        # If more items exist than initial request, reset max_results to total to get a full export
-        if totalItems > res.get('_meta', None).get('max_results', None):
-            # Copy the existing arguments on the request object
-            setArgs = request.args.copy()
-            # Set our new header
-            setArgs['max_results'] = totalItems
-            request.args = setArgs
-            results = get_internal('statistics')[0]['_items']
-        else:
-            results = res.get('_items', None)
-
-    return results
-
-
 def statBreakdown():
     """
     Returns a list of sites with the specified statistic
     """
 
     summary = {}
-    results = getAllResults()
+    results, totalItems = getAllResults()
 
     if results:
         themeCount = Counter()

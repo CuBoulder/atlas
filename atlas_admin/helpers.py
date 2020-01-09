@@ -280,31 +280,6 @@ def userInstanceLookup(instanceList):
     return uniqueUserNameList
 
 
-def getStats():
-    """
-    Returns a complete list of site statistics
-    """
-
-    results = []
-
-    q = get_internal('statistics')
-    res = q[0] if len(q) > 0 else {}
-    totalItems = res.get('_meta', None).get('total', None)
-    if totalItems:
-        # If more items exist than initial request, reset max_results to total to get a full export
-        if totalItems > res.get('_meta', None).get('max_results', None):
-            # Copy the existing arguments on the request object
-            setArgs = request.args.copy()
-            # Set our new header
-            setArgs['max_results'] = totalItems
-            request.args = setArgs
-            results = get_internal('statistics')[0]['_items']
-        else:
-            results = res.get('_items', None)
-
-    return results
-
-
 def summaryStatistics():
     # TODO drupal_system_status
     q = get_internal('statistics')
@@ -372,13 +347,38 @@ def lowerList(mixedList):
     return [x.lower() for x in mixedList]
 
 
+def getAllResults():
+    """
+    Returns a complete list of site statistics
+    """
+
+    results = []
+
+    q = get_internal('statistics')
+    res = q[0] if len(q) > 0 else {}
+    totalItems = res.get('_meta', None).get('total', None)
+    if totalItems:
+        # If more items exist than initial request, reset max_results to total to get a full export
+        if totalItems > res.get('_meta', None).get('max_results', None):
+            # Copy the existing arguments on the request object
+            setArgs = request.args.copy()
+            # Set our new header
+            setArgs['max_results'] = totalItems
+            request.args = setArgs
+            results = get_internal('statistics')[0]['_items']
+        else:
+            results = res.get('_items', None)
+
+    return results
+
+
 def statBreakdown():
     """
     Returns a list of sites with the specified statistic
     """
 
     summary = {}
-    results = getStats()
+    results = getAllResults()
 
     if results:
         themeCount = Counter()

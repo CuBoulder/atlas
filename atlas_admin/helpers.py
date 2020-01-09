@@ -280,14 +280,14 @@ def userInstanceLookup(instanceList):
     return uniqueUserNameList
 
 
-def getAllResults():
+def getAllResults(atlasType):
     """
     Returns a complete list of site statistics
     """
 
     results = []
 
-    q = get_internal('statistics')
+    q = get_internal(atlasType)
     res = q[0] if len(q) > 0 else {}
     totalItems = res.get('_meta', None).get('total', None)
     if totalItems:
@@ -298,7 +298,7 @@ def getAllResults():
             # Set our new header
             setArgs['max_results'] = totalItems
             request.args = setArgs
-            results = get_internal('statistics')[0]['_items']
+            results = get_internal(atlasType)[0]['_items']
         else:
             results = res.get('_items', None)
 
@@ -315,7 +315,7 @@ def summaryStatistics():
     responsive_total = 0
     days_total = 0
 
-    results, totalItems = getAllResults()
+    results, totalItems = getAllResults('statistics')
 
     for r in results:
         summary['nodes_total'] += r.get('nodes_total', 0)
@@ -362,11 +362,12 @@ def lowerList(mixedList):
 
 def statBreakdown():
     """
-    Returns a list of sites with the specified statistic
+    Returns all site statistics
+    Displays on /instances using instances/summary.html
     """
 
     summary = {}
-    results, totalItems = getAllResults()
+    results, totalItems = getAllResults('statistics')
 
     if results:
         themeCount = Counter()
@@ -385,6 +386,7 @@ def statBreakdown():
 def sitesByStat(themeName=None):
     """
     Return a list of sites with the requested statistic
+    Displays on individual Stat List page /instances/th/<themeName> using instances/sitestats.html
     """
     if themeName:
         q = get_internal('statistics',  **{"variable_theme_default": themeName})

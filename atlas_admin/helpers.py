@@ -280,14 +280,14 @@ def userInstanceLookup(instanceList):
     return uniqueUserNameList
 
 
-def getAllResults(atlasType):
+def getAllResults(atlasType, **findThisElement):
     """
     Returns a complete list of site statistics
     """
 
     results = []
 
-    q = get_internal(atlasType)
+    q = get_internal(atlasType, **findThisElement)
     res = q[0] if len(q) > 0 else {}
     totalItems = res.get('_meta', None).get('total', None)
     if totalItems:
@@ -298,7 +298,7 @@ def getAllResults(atlasType):
             # Set our new header
             setArgs['max_results'] = totalItems
             request.args = setArgs
-            results = get_internal(atlasType)[0]['_items']
+            results = get_internal(atlasType, **findThisElement)[0]['_items']
         else:
             results = res.get('_items', None)
 
@@ -315,7 +315,7 @@ def summaryStatistics():
     responsive_total = 0
     days_total = 0
 
-    results, totalItems = getAllResults('statistics')
+    results, totalItems = getAllResults(atlasType='statistics')
 
     for r in results:
         summary['nodes_total'] += r.get('nodes_total', 0)
@@ -367,7 +367,7 @@ def statBreakdown():
     """
 
     summary = {}
-    results, totalItems = getAllResults('statistics')
+    results, totalItems = getAllResults(atlasType='statistics')
 
     if results:
         themeCount = Counter()
@@ -389,29 +389,14 @@ def sitesByStat(themeName=None):
     Displays on individual Stat List page /instances/th/<themeName> using instances/sitestats.html
     """
     if themeName:
-        q = get_internal('statistics',  **{"variable_theme_default": themeName})
-    else:
-        q = get_internal('statistics')
-    res = q[0] if len(q) > 0 else {}
-    totalItems = res.get('_meta', None).get('total', None)
+        findThisElement = {"variable_theme_default": themeName}
 
-    # If more items exist than initial request, reset max_results to total to get a full export
-    if totalItems > res.get('_meta', None).get('max_results', None):
-        setArgs = request.args.copy()
-        setArgs['max_results'] = totalItems
-        request.args = setArgs
-        if themeName:
-            qAll = get_internal('statistics',  **{"variable_theme_default": themeName})
-        else:
-            qAll = get_internal('statistics')
-        results = qAll[0].get('_items', None)
-    else:
-        results = res.get('_items', None)
+    results, totalItems = getAllResults(atlasType='statistics', **findThisElement)
+
     # Get list of all instances
     myList = []
     instanceList = []
     for r in results:
-        if themeName:
-            myList.append((r['site'], r['name'], r['users']['username']['site_owner'], r['days_since_last_edit']))
-            instanceList = sorted(myList, key=lambda x : x[1])
+        myList.append((r['site'], r['name'], r['users']['username']['site_owner'], r['days_since_last_edit']))
+        instanceList = sorted(myList, key=lambda x : x[1])
     return instanceList

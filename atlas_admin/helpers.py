@@ -394,9 +394,9 @@ def sitesByStat(themeName=None):
     results, totalItems = getAllResults(atlasType='statistics', **findThisElement)
 
     # Get list of all instances
-    myList = []
+    unsortedList = []
     instanceList = []
     for r in results:
-        myList.append((r['site'], r['name'], r['users']['username']['site_owner'], r['days_since_last_edit']))
-        instanceList = sorted(myList, key=lambda x : x[1])
+        unsortedList.append((r['site'], r['name'], r['users']['username']['site_owner'], r['days_since_last_edit']))
+        instanceList = sorted(unsortedList, key=lambda x : x[1])
     return instanceList

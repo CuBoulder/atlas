@@ -397,6 +397,6 @@ def sitesByStat(themeName=None):
     unsortedList = []
     instanceList = []
     for r in results:
-        unsortedList.append((r['site'], r['name'], r['users']['username']['site_owner'], r['days_since_last_edit']))
-        instanceList = sorted(unsortedList, key=lambda x : x[1])
+        unsortedList.append((r['site'], r['name'], r['users']['username']['site_owner']))
+        instanceList = sorted(unsortedList, key=lambda x: x[1])
     return instanceList

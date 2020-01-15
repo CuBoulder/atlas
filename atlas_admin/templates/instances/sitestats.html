@@ -11,7 +11,7 @@ instances{% endblock %}
           <tr>
             <th>Name</th><th>Site Owners</th>
             </tr>
-            {% for (i, j, k, l) in instanceList %}
+            {% for (i, j, k) in instanceList %}
             <tr>
                 <td><a href="{{ url_for('.index') }}instances/{{ i }}">{{ j }}</a> </td>
                 <td>

@@ -31,7 +31,14 @@
         <nav class="columns three">
             {% block navigation %}
             <ul>
-                <li><a href="{{ url_for('.index') }}available">Available Instances</a></li>
+                <li>Instances
+                  <ul>
+                    <li><a href="{{ url_for('.index') }}available">Available Instances</a></li>
+                    <li><a href="{{ url_for('.index') }}instances">Instance summary</a></li>
+                    <li><a href="{{ url_for('.index') }}search">Lookup instances</a></li>
+                  </ul>
+                </li>
+
                 <li>User lists
                     <ul>
                         <li><a href="{{ url_for('.index') }}users">All users</a></li>
@@ -40,9 +47,8 @@
                         <li><a href="{{ url_for('.index') }}user/search">By Path</a></li>
                     </ul>
                 </li>
-                <li><a href="{{ url_for('.index') }}instances">Instance summary</a></li>
                 <li><a href="{{ url_for('.index') }}instances/cse">CSE</a></li>
-                <li><a href="{{ url_for('.index') }}search">Lookup instances</a></li>
+                
             </ul>
             {% endblock %}
         </nav>

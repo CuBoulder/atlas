@@ -1,0 +1,30 @@
+{% extends "base.html" %}
+
+{% block title %}{%- if themeName -%}{{ themeName }}{%-  else -%}All{% endif %}
+instances{% endblock %}
+
+{% block content %}
+{%- if instanceList -%}
+<div class="row">
+    <div class="columns twelve">
+        <table>
+          <tr>
+            <th>Name</th><th>Site Owners</th>
+            </tr>
+            {% for (i, j, k) in instanceList %}
+            <tr>
+                <td><a href="{{ url_for('.index') }}instances/{{ i }}">{{ j }}</a> </td>
+                <td>
+                  <ul>
+                      {% for person in k %}
+                      <li> {{ person }} </li>
+                      {% endfor %}
+                    </ul>
+                </td>
+            </tr>
+            {% endfor %}
+        </table>
+    </div>
+</div>
+{% endif %}
+{% endblock %}

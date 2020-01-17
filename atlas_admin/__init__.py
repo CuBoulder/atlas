@@ -66,6 +66,12 @@ def instances():
         statBreakdown=statBreakdown)
 
 
+@atlas_admin.route('/instances/stats')
+def stat_summary():
+    statBreakdown = helpers.statBreakdown()
+    return render_template('instances/statlist.html', statBreakdown=statBreakdown)
+
+
 @atlas_admin.route('/instances/th/<themeName>')
 def stat_instances(themeName=None):
     instanceList = helpers.sitesByStat(themeName=themeName)
@@ -75,6 +81,18 @@ def stat_instances(themeName=None):
         themeName=themeName)
 
 
+@atlas_admin.route('/instances/nt/<nodeType>')
+def node_instances(nodeType=None):
+    instanceList = helpers.sitesByNode(nodeType=nodeType)
+    return render_template('instances/sitestats.html', instanceList=instanceList, nodeType=nodeType)
+
+
+@atlas_admin.route('/instances/ont/<nodeType>')
+def other_node_instances(nodeType=None):
+    instanceList = helpers.sitesByOtherNode(nodeType=nodeType)
+    return render_template('instances/sitestats.html', instanceList=instanceList, nodeType=nodeType)
+
+    
 @atlas_admin.route('/instances/<id>')
 def instance(id):
     instanceRecord = helpers.instanceSummary(id)

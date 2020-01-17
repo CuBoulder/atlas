@@ -1,6 +1,6 @@
 {% extends "base.html" %}
 
-{% block title %}{%- if themeName -%}{{ themeName }}{%-  else -%}All{% endif %}
+{% block title %}{%- if themeName -%}{{ themeName }}{%- elif nodeCount -%}{{ nodeCount }}{%- elif nodeType -%}{{ nodeType }}{%-  else -%}All{% endif %}
 instances{% endblock %}
 
 {% block content %}

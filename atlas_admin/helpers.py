@@ -132,38 +132,19 @@ def instancesUserLookup(query=None, query_type=None):
 
 
 def summaryUsers():
-    """Return a list of summary statistics about users
+    """Return a list of summary statistics about users to display on home page '/'
     """
-
-    q = get_internal('statistics')
-    res = q[0] if len(q) > 0 else {}
-    totalItems = res.get('_meta', None).get('total', None)
-
     summary = {}
-
-    if totalItems:
-        # If more items exist than initial request, reset max_results to total to get a full export
-        if totalItems > res.get('_meta', None).get('max_results', None):
-            # Copy the existing arguments on the request object
-            setArgs = request.args.copy()
-            # Set our new header
-            setArgs['max_results'] = totalItems
-            request.args = setArgs
-            results = get_internal('statistics')[0]['_items']
-        else:
-            results = res.get('_items', None)
-
-        # Sum totals by role
-        for res in results:
-            if 'users' in res:
-                for k, v in res['users']['counts'].iteritems():
-                    if k in summary:
-                        summary[k] += v
-                    else:
-                        summary[k] = v
-        summary['total'] = len(users()[0])
-    else:
-        summary = {}
+    results, totalItems = getAllResults(atlasType='statistics')
+    # Sum totals by role
+    for res in results:
+        if 'users' in res:
+            for k, v in res['users']['counts'].iteritems():
+                if k in summary:
+                    summary[k] += v
+                else:
+                    summary[k] = v
+    summary['total'] = len(users()[0])
 
     sortedUsers = OrderedDict(sorted(summary.items())) if summary else None
 

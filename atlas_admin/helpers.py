@@ -72,40 +72,17 @@ def instanceSummary(instance):
 
 def instances(siteType=None, pantheonSize=None, path=None, siteStatus=None, cse=False):
     if siteType:
-        q = get_internal('sites', **{"site_type": siteType})
+        findThisElement = {"site_type": siteType}
     elif pantheonSize:
-        q = get_internal('sites', **{"pantheon_size": pantheonSize})
+        findThisElement = {"pantheon_size": pantheonSize}
     elif siteStatus:
-        q = get_internal('sites', **{"status": siteStatus})
+        findThisElement = {"status": siteStatus}
     elif path:
-        q = get_internal('sites', **{"path": {"$regex": path}})
+        findThisElement = {"path": {"$regex": path}}
     elif cse:
-        q = get_internal('sites', **{"settings.cse_id": {"$exists": True}})
-    else:
-        q = get_internal('sites')
-    res = q[0] if len(q) > 0 else {}
-    totalItems = res.get('_meta', None).get('total', None)
+        findThisElement = {"settings.cse_id": {"$exists": True}}
 
-    # If more items exist than initial request, reset max_results to total to get a full export
-    if totalItems > res.get('_meta', None).get('max_results', None):
-        setArgs = request.args.copy()
-        setArgs['max_results'] = totalItems
-        request.args = setArgs
-        if siteType:
-            qAll = get_internal('sites', **{"site_type": siteType})
-        elif pantheonSize:
-            qAll = get_internal('sites', **{"pantheon_size": pantheonSize})
-        elif siteStatus:
-            qAll = get_internal('sites', **{"status": siteStatus})
-        elif path:
-            qAll = get_internal('sites', **{"path": {"$regex": path}})
-        elif cse:
-            qAll = get_internal('sites', **{"settings.cse_id": {"$exists": 1}})
-        else:
-            qAll = get_internal('sites')
-        results = qAll[0].get('_items', None)
-    else:
-        results = res.get('_items', None)
+    results, totalItems = getAllResults(atlasType='sites', **findThisElement)
     # Get list of all instances
     instanceList = []
     for r in results:

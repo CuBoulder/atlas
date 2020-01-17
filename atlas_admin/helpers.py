@@ -98,6 +98,11 @@ def instances(siteType=None, pantheonSize=None, path=None, siteStatus=None, cse=
 
 
 def instancesUserLookup(query=None, query_type=None):
+    """
+    Return a list of sites to which the requested user belongs
+    Display on  /search
+    """
+    
     if query_type == 'username':
         kwargs = {"$or": [{"users.username.site_owner": {"$regex": query, "$options": "i"}}, {"users.username.site_editor": {"$regex": query, "$options": "i"}}, {"users.username.form_manager": {"$regex": query, "$options": "i"}}, {"users.username.edit_my_content": {"$regex": query, "$options": "i"}}, {
             "users.username.content_editor": {"$regex": query, "$options": "i"}}, {"users.username.configuration_manager": {"$regex": query, "$options": "i"}}, {"users.username.campaign_manager": {"$regex": query, "$options": "i"}}, {"users.username.access_manager": {"$regex": query, "$options": "i"}}]}
@@ -105,6 +110,7 @@ def instancesUserLookup(query=None, query_type=None):
         # Handle mixed case in email addresses
         kwargs = {"$or": [{"users.email_address.site_owner": {"$regex": query, "$options": "i"}}, {"users.email_address.site_editor": {"$regex": query, "$options": "i"}}, {"users.email_address.form_manager": {"$regex": query, "$options": "i"}}, {"users.email_address.edit_my_content": {"$regex": query, "$options": "i"}}, {
             "users.email_address.content_editor": {"$regex": query, "$options": "i"}}, {"users.email_address.configuration_manager": {"$regex": query, "$options": "i"}}, {"users.email_address.campaign_manager": {"$regex": query, "$options": "i"}}, {"users.email_address.access_manager": {"$regex": query, "$options": "i"}}]}
+
     q = get_internal('statistics', **kwargs)
     res = q[0] if len(q) > 0 else {}
     totalItems = res.get('_meta', None).get('total', None)
@@ -115,9 +121,12 @@ def instancesUserLookup(query=None, query_type=None):
         setArgs['max_results'] = totalItems
         request.args = setArgs
         qAll = get_internal('statistics', **kwargs)
-        results = qAll[0].get('_items', None)
+        results2 = qAll[0].get('_items', None)
     else:
-        results = res.get('_items', None)
+        results2 = res.get('_items', None)
+
+    results, totalItems = getAllResults(atlasType='statistics', **kwargs)
+
     # Get list of all instances
     instanceList = []
     for r in results:

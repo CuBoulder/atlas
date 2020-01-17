@@ -30,36 +30,22 @@ def summaryInstances():
           with bundles - To Do
     """
 
-    q = get_internal('sites')
-    res = q[0] if len(q) > 0 else {}
-    totalItems = res.get('_meta', None).get('total', None)
-
     summary = {}
+    results, totalItems = getAllResults(atlasType='sites')
 
-    if totalItems:
-        summary['total'] = totalItems
-
-        # If more items exist than initial request, reset max_results to total to get a full export
-        if totalItems > res.get('_meta', None).get('max_results', None):
-            # Copy the existing arguments on the request object
-            setArgs = request.args.copy()
-            # Set our new header
-            setArgs['max_results'] = totalItems
-            request.args = setArgs
-            results = get_internal('sites')[0]['_items']
-        else:
-            results = res.get('_items', None)
-
+    if results:
         statusCount = Counter()
         typeCount = Counter()
         pantheonCount = Counter()
         # Count totals by status
         for res in results:
-            statusCount[res['status']] += 1
+            if 'status' in res:
+                 statusCount[res['status']] += 1
             if 'site_type' in res:
                 typeCount[res['site_type']] += 1
             if 'pantheon_size' in res:
                 pantheonCount[res['pantheon_size']] += 1
+        summary['total'] = totalItems
         summary['status'] = OrderedDict(sorted(dict(statusCount).items()))
         summary['site_type'] = OrderedDict(sorted(dict(typeCount).items()))
         summary['pantheon_size'] = OrderedDict(sorted(dict(pantheonCount).items()))

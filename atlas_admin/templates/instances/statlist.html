@@ -11,7 +11,7 @@
     <div class="columns six">
         <h3>Themes</h3>
         <ul>
-            {% for k,v in statBreakdown.variable_theme_default.items() %}
+            {% for k, v in statBreakdown.variable_theme_default.items() %}
             <li><a href="{{ url_for('.index') }}instances/th/{{ k }}">{{ k }}</a>: {{ v }}</li>
             {% endfor %}
         </ul>
@@ -23,7 +23,7 @@
         {%- if statBreakdown.nodes_by_type -%}
         <h3>Nodes by Type</h3>
         <ul>
-            {% for k,v in statBreakdown.nodes_by_type.items() %}
+            {% for  k, v in statBreakdown.nodes_by_type.items() %}
           <li><a href="{{ url_for('.index') }}instances/nt/{{ k }}">{{ k }}</a>: {{ v }}</li>
             {% endfor %}
         </ul>
@@ -32,7 +32,7 @@
          {%- if statBreakdown.nodes_other -%}
          <h3>Other Node Types</h3>
          <ul>
-             {% for k,v in statBreakdown.nodes_other.items() %}
+             {% for  k, v in statBreakdown.nodes_other.items() %}
            <li><a href="{{ url_for('.index') }}instances/ont/{{ k }}">{{ k }}</a>: {{ v }}</li>
              {% endfor %}
          </ul>

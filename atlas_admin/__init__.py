@@ -92,7 +92,7 @@ def other_node_instances(nodeType=None):
     instanceList = helpers.sitesByOtherNode(nodeType=nodeType)
     return render_template('instances/sitestats.html', instanceList=instanceList, nodeType=nodeType)
 
-    
+
 @atlas_admin.route('/instances/<id>')
 def instance(id):
     instanceRecord = helpers.instanceSummary(id)

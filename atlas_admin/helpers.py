@@ -339,26 +339,14 @@ def sitesByNode(nodeType=None):
     """return a list of nodes by type
     """
 
-    q = get_internal('statistics')
-    res = q[0] if len(q) > 0 else {}
-    totalItems = res.get('_meta', None).get('total', None)
-
-    # If more items exist than initial request, reset max_results to total to get a full export
-    if totalItems > res.get('_meta', None).get('max_results', None):
-        setArgs = request.args.copy()
-        setArgs['max_results'] = totalItems
-        request.args = setArgs
-        qAll = get_internal('statistics')
-        results = qAll[0].get('_items', None)
-    else:
-        results = res.get('_items', None)
+    results, totalItems = getAllResults(atlasType='statistics')
 
     instanceList = []
-    for r in results:
+    for res in results:
         if "nodes_by_type" in res:
             for k, v in res["nodes_by_type"].items():
                 if k == nodeType:
-                    instanceList.append((r['site'], r['name'], r['users']['username']['site_owner']))
+                    instanceList.append((res['site'], res['name'], res['users']['username']['site_owner']))
 
     return instanceList
 
@@ -367,24 +355,12 @@ def sitesByOtherNode(nodeType=None):
     """return a list of nodes by type
     """
 
-    q = get_internal('statistics')
-    res = q[0] if len(q) > 0 else {}
-    totalItems = res.get('_meta', None).get('total', None)
-
-    # If more items exist than initial request, reset max_results to total to get a full export
-    if totalItems > res.get('_meta', None).get('max_results', None):
-        setArgs = request.args.copy()
-        setArgs['max_results'] = totalItems
-        request.args = setArgs
-        qAll = get_internal('statistics')
-        results = qAll[0].get('_items', None)
-    else:
-        results = res.get('_items', None)
+    results, totalItems = getAllResults(atlasType='statistics')
 
     instanceList = []
-    for r in results:
+    for res in results:
         if "nodes_other" in res:
             if nodeType in res["nodes_other"]:
-                    instanceList.append((r['site'], r['name'], r['users']['username']['site_owner']))
+                    instanceList.append((res['site'], res['name'], res['users']['username']['site_owner']))
 
     return instanceList

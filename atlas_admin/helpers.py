@@ -341,13 +341,15 @@ def sitesByNode(nodeType=None):
 
     results, totalItems = getAllResults(atlasType='statistics')
 
+    unsortedList = []
     instanceList = []
     for res in results:
         if "nodes_by_type" in res:
             for k, v in res["nodes_by_type"].items():
                 if k == nodeType:
-                    instanceList.append((res['site'], res['name'], res['users']['username']['site_owner']))
+                    unsortedList.append((res['site'], res['name'], res['status']))
 
+    instanceList = sorted(unsortedList, key=lambda x: x[1])
     return instanceList
 
 
@@ -357,10 +359,12 @@ def sitesByOtherNode(nodeType=None):
 
     results, totalItems = getAllResults(atlasType='statistics')
 
+    unsortedList = []
     instanceList = []
     for res in results:
         if "nodes_other" in res:
             if nodeType in res["nodes_other"]:
-                    instanceList.append((res['site'], res['name'], res['users']['username']['site_owner']))
+                    unsortedList.append((res['site'], res['name'], res['status']))
 
+    instanceList = sorted(unsortedList, key=lambda x: x[1])
     return instanceList

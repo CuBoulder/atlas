@@ -336,7 +336,8 @@ def sitesByStat(themeName=None):
 
 
 def sitesByNode(nodeType=None):
-    """return a list of nodes by type
+    """
+    return a list of nodes by type
     """
 
     results, totalItems = getAllResults(atlasType='statistics')
@@ -354,7 +355,8 @@ def sitesByNode(nodeType=None):
 
 
 def sitesByOtherNode(nodeType=None):
-    """return a list of nodes by type
+    """
+    return a list of nodes by type
     """
 
     results, totalItems = getAllResults(atlasType='statistics')

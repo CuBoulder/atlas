@@ -9,7 +9,7 @@ from eve.methods.get import getitem_internal, get_internal
 def availableInstances():
     """Get a list of available instances and display them with links to invitation pages
     """
-    availableInstances = get_internal('sites', **{"status": "available"})
+    availableInstances = get_internal('sites', **{'status': 'available'})
     availableInstancesSidList = []
     if availableInstances and availableInstances[4]:
         for header in availableInstances[4]:
@@ -59,11 +59,11 @@ def instanceSummary(instance):
     instanceSummary = {}
 
     # Get site record
-    q = get_internal('sites', **{"_id": instance})
+    q = get_internal('sites', **{'_id': instance})
     instances = q[0].get('_items', None)
     instanceSummary['instance'] = instances[0]
     # Get statistics record
-    s = get_internal('statistics', **{"_id": instanceSummary['instance']['statistics']})
+    s = get_internal('statistics', **{'_id': instanceSummary['instance']['statistics']})
     statistics = s[0].get('_items', None)
     instanceSummary['statistics'] = statistics[0]
 
@@ -72,15 +72,15 @@ def instanceSummary(instance):
 
 def instances(siteType=None, pantheonSize=None, path=None, siteStatus=None, cse=False):
     if siteType:
-        findThisElement = {"site_type": siteType}
+        findThisElement = {'site_type': siteType}
     elif pantheonSize:
-        findThisElement = {"pantheon_size": pantheonSize}
+        findThisElement = {'pantheon_size': pantheonSize}
     elif siteStatus:
-        findThisElement = {"status": siteStatus}
+        findThisElement = {'status': siteStatus}
     elif path:
-        findThisElement = {"path": {"$regex": path}}
+        findThisElement = {'path': {'$regex': path}}
     elif cse:
-        findThisElement = {"settings.cse_id": {"$exists": True}}
+        findThisElement = {'settings.cse_id': {'$exists': True}}
 
     results, totalItems = getAllResults(atlasType='sites', **findThisElement)
     # Get list of all instances
@@ -104,12 +104,12 @@ def instancesUserLookup(query=None, query_type=None):
     """
 
     if query_type == 'username':
-        kwargs = {"$or": [{"users.username.site_owner": {"$regex": query, "$options": "i"}}, {"users.username.site_editor": {"$regex": query, "$options": "i"}}, {"users.username.form_manager": {"$regex": query, "$options": "i"}}, {"users.username.edit_my_content": {"$regex": query, "$options": "i"}}, {
-            "users.username.content_editor": {"$regex": query, "$options": "i"}}, {"users.username.configuration_manager": {"$regex": query, "$options": "i"}}, {"users.username.campaign_manager": {"$regex": query, "$options": "i"}}, {"users.username.access_manager": {"$regex": query, "$options": "i"}}]}
+        kwargs = {'$or': [{'users.username.site_owner': {'$regex': query, '$options': 'i'}}, {'users.username.site_editor': {'$regex': query, '$options': 'i'}}, {'users.username.form_manager': {'$regex': query, '$options': 'i'}}, {'users.username.edit_my_content': {'$regex': query, '$options': 'i'}}, {
+            'users.username.content_editor': {'$regex': query, '$options': 'i'}}, {'users.username.configuration_manager': {'$regex': query, '$options': 'i'}}, {'users.username.campaign_manager': {'$regex': query, '$options': 'i'}}, {'users.username.access_manager': {'$regex': query, '$options': 'i'}}]}
     elif query_type == 'email_address':
         # Handle mixed case in email addresses
-        kwargs = {"$or": [{"users.email_address.site_owner": {"$regex": query, "$options": "i"}}, {"users.email_address.site_editor": {"$regex": query, "$options": "i"}}, {"users.email_address.form_manager": {"$regex": query, "$options": "i"}}, {"users.email_address.edit_my_content": {"$regex": query, "$options": "i"}}, {
-            "users.email_address.content_editor": {"$regex": query, "$options": "i"}}, {"users.email_address.configuration_manager": {"$regex": query, "$options": "i"}}, {"users.email_address.campaign_manager": {"$regex": query, "$options": "i"}}, {"users.email_address.access_manager": {"$regex": query, "$options": "i"}}]}
+        kwargs = {'$or': [{'users.email_address.site_owner': {'$regex': query, '$options': 'i'}}, {'users.email_address.site_editor': {'$regex': query, '$options': 'i'}}, {'users.email_address.form_manager': {'$regex': query, '$options': 'i'}}, {'users.email_address.edit_my_content': {'$regex': query, '$options': 'i'}}, {
+            'users.email_address.content_editor': {'$regex': query, '$options': 'i'}}, {'users.email_address.configuration_manager': {'$regex': query, '$options': 'i'}}, {'users.email_address.campaign_manager': {'$regex': query, '$options': 'i'}}, {'users.email_address.access_manager': {'$regex': query, '$options': 'i'}}]}
 
     results, totalItems = getAllResults(atlasType='statistics', **kwargs)
 
@@ -117,7 +117,7 @@ def instancesUserLookup(query=None, query_type=None):
     instanceList = []
     for r in results:
         instance = get_internal(
-            'sites', **{"_id": r['site']})[0]['_items'][0]
+            'sites', **{'_id': r['site']})[0]['_items'][0]
         for role, user in r['users'][query_type].iteritems():
             # Handle mixed case in email addresses
             if query.lower() in lowerList(user):
@@ -185,7 +185,7 @@ def userInstanceLookup(instanceList):
         instanceList {list}
     """
 
-    findThisElement = {"site": {"$in": instanceList}}
+    findThisElement = {'site': {'$in': instanceList}}
     results, totalItems = getAllResults(atlasType='statistics', **findThisElement)
 
     userNameList = []
@@ -246,16 +246,16 @@ def summaryStatistics():
         if r.get('theme_is_responsive', False):
             responsive_total += 1
 
-    summary['percent_responsive'] = "{0:.2f}%".format(
-        (float(responsive_total)/totalItems)*100) if responsive_total is not 0 else "N/A"
+    summary['percent_responsive'] = '{0:.2f}%'.format(
+        (float(responsive_total)/totalItems)*100) if responsive_total is not 0 else 'N/A'
     summary['nodes_avg'] = int(summary['nodes_total'] /
-                               totalItems) if summary['nodes_total'] is not 0 else "N/A"
+                               totalItems) if summary['nodes_total'] is not 0 else 'N/A'
     summary['beans_avg'] = int(summary['beans_total'] /
-                               totalItems) if summary['beans_total'] is not 0 else "N/A"
-    summary['avg_days_since_edit'] = int(days_total/totalItems) if days_total is not 0 else "N/A"
+                               totalItems) if summary['beans_total'] is not 0 else 'N/A'
+    summary['avg_days_since_edit'] = int(days_total/totalItems) if days_total is not 0 else 'N/A'
 
-    summary['nodes_total'] = "{:,}".format(summary['nodes_total'])
-    summary['beans_total'] = "{:,}".format(summary['beans_total'])
+    summary['nodes_total'] = '{:,}'.format(summary['nodes_total'])
+    summary['beans_total'] = '{:,}'.format(summary['beans_total'])
 
     return OrderedDict(sorted(summary.items()))
 
@@ -291,7 +291,7 @@ def statBreakdown():
     results, totalItems = getAllResults(atlasType='statistics')
 
     if results:
-        otherNodeTypes = ["collection_item", "class_note", "homepage_callout", "issue", "newsletter", "people_list_page", "section_page"]
+        otherNodeTypes = ['collection_item', 'class_note', 'homepage_callout', 'issue', 'newsletter', 'people_list_page', 'section_page']
         themeCount = Counter()
         nodeCount = Counter()
         otherNodesCount = Counter()
@@ -299,11 +299,11 @@ def statBreakdown():
             if 'variable_theme_default' in res:
                 themeCount[res['variable_theme_default']] += 1
             if 'nodes_by_type' in res:
-                for k, v in res["nodes_by_type"].items():
+                for k, v in res['nodes_by_type'].items():
                     nodeCount[k] += v
-            if "nodes_other" in res:
+            if 'nodes_other' in res:
                 for nodeType in otherNodeTypes:
-                    if nodeType in res["nodes_other"]:
+                    if nodeType in res['nodes_other']:
                         otherNodesCount[nodeType] += 1
         themeList = dict(themeCount)
         sortedThemeList = sorted(themeList.items(), key=lambda x: x[1])
@@ -322,7 +322,7 @@ def sitesByStat(themeName=None):
     Displays on individual Stat List page /instances/th/<themeName> using instances/sitestats.html
     """
     if themeName:
-        findThisElement = {"variable_theme_default": themeName}
+        findThisElement = {'variable_theme_default': themeName}
 
     results, totalItems = getAllResults(atlasType='statistics', **findThisElement)
 
@@ -344,8 +344,8 @@ def sitesByNode(nodeType=None):
     unsortedList = []
     instanceList = []
     for r in results:
-        if "nodes_by_type" in r:
-            for k, v in r["nodes_by_type"].items():
+        if 'nodes_by_type' in r:
+            for k, v in r['nodes_by_type'].items():
                 if k == nodeType:
                     unsortedList.append((r['site'], r['name'], r['users']['counts']['site_owner']))
 
@@ -362,9 +362,9 @@ def sitesByOtherNode(nodeType=None):
     unsortedList = []
     instanceList = []
     for r in results:
-        if "nodes_other" in r:
-            if nodeType in r["nodes_other"]:
-                    unsortedList.append((r["site"], r["name"], ['Catherine Snider', 'Jim Bohannon', 'John Borton']))
+        if 'nodes_other' in r:
+            if nodeType in r['nodes_other']:
+                    unsortedList.append((r['site'], r['name'], ['Catherine Snider', 'Jim Bohannon', 'John Borton']))
 
     instanceList = sorted(unsortedList, key=lambda x: x[1])
     return instanceList

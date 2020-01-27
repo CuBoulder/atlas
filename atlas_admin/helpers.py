@@ -348,7 +348,10 @@ def sitesByNode(nodeType=None):
         if 'nodes_by_type' in r:
             for k, v in r['nodes_by_type'].items():
                 if k == nodeType:
-                    unsortedList.append((r['site'], r['name'], r['users']['username']['site_owner']))
+                    if 'site_owner' in r['users']['username'].keys():
+                        unsortedList.append((r['site'], r['name'], r['users']['username']['site_owner']))
+                    else:
+                        unsortedList.append((r['site'], r['name'],'None'))
 
     instanceList = sorted(unsortedList, key=lambda x: x[1])
     return instanceList
@@ -366,7 +369,10 @@ def sitesByOtherNode(nodeType=None):
     for r in results:
         if 'nodes_other' in r:
             if nodeType in r['nodes_other']:
+                if 'site_owner' in r['users']['username'].keys():
                     unsortedList.append((r['site'], r['name'], r['users']['username']['site_owner']))
+                else:
+                    unsortedList.append((r['site'], r['name'],'None'))
 
     instanceList = sorted(unsortedList, key=lambda x: x[1])
     return instanceList

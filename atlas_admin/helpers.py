@@ -336,30 +336,43 @@ def sitesByStat(themeName=None):
 
 
 def sitesByNode(nodeType=None):
-    """return a list of nodes by type
+    """
+    return a list of nodes by type
     """
 
     results, totalItems = getAllResults(atlasType='statistics')
 
+    unsortedList = []
     instanceList = []
-    for res in results:
-        if "nodes_by_type" in res:
-            for k, v in res["nodes_by_type"].items():
+    for r in results:
+        if 'nodes_by_type' in r:
+            for k, v in r['nodes_by_type'].items():
                 if k == nodeType:
-                    instanceList.append((res["site"], res["name"]))
+                    if 'site_owner' in r['users']['username'].keys():
+                        unsortedList.append((r['site'], r['name'], r['users']['username']['site_owner']))
+                    else:
+                        unsortedList.append((r['site'], r['name'],'None'))
 
+    instanceList = sorted(unsortedList, key=lambda x: x[1])
     return instanceList
+    
 
 def sitesByOtherNode(nodeType=None):
-    """return a list of nodes by type
+    """
+    return a list of nodes by type
     """
 
     results, totalItems = getAllResults(atlasType='statistics')
 
+    unsortedList = []
     instanceList = []
-    for res in results:
-        if "nodes_other" in res:
-            if nodeType in res["nodes_other"]:
-                    instanceList.append((res["site"], res["name"]))
+    for r in results:
+        if 'nodes_other' in r:
+            if nodeType in r['nodes_other']:
+                if 'site_owner' in r['users']['username'].keys():
+                    unsortedList.append((r['site'], r['name'], r['users']['username']['site_owner']))
+                else:
+                    unsortedList.append((r['site'], r['name'],'None'))
 
+    instanceList = sorted(unsortedList, key=lambda x: x[1])
     return instanceList

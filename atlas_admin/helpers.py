@@ -374,29 +374,16 @@ def lowerList(mixedList):
 
 def statBreakdown():
     """
-    Returns a summary breakdown of statistics
+    Returns all site statistics
+    Displays on /instances using instances/summary.html
+    Displays on /instances/stats using instances/statlist.html
     """
 
-    q = get_internal('statistics')
-    res = q[0] if len(q) > 0 else {}
-    totalItems = res.get('_meta', None).get('total', None)
-
     summary = {}
+    results, totalItems = getAllResults(atlasType='statistics')
 
-    if totalItems:
-
-        # If more items exist than initial request, reset max_results to total to get a full export
-        if totalItems > res.get('_meta', None).get('max_results', None):
-            # Copy the existing arguments on the request object
-            setArgs = request.args.copy()
-            # Set our new header
-            setArgs['max_results'] = totalItems
-            request.args = setArgs
-            results = get_internal('statistics')[0]['_items']
-        else:
-            results = res.get('_items', None)
-
-        otherNodeTypes = ["collection_item", "class_note", "homepage_callout", "issue", "newsletter", "people_list_page", "section_page"]
+    if results:
+        otherNodeTypes = ['collection_item', 'class_note', 'homepage_callout', 'issue', 'newsletter', 'people_list_page', 'section_page']
         themeCount = Counter()
         nodeCount = Counter()
         otherNodesCount = Counter()
@@ -404,11 +391,11 @@ def statBreakdown():
             if 'variable_theme_default' in res:
                 themeCount[res['variable_theme_default']] += 1
             if 'nodes_by_type' in res:
-                for k, v in res["nodes_by_type"].items():
+                for k, v in res['nodes_by_type'].items():
                     nodeCount[k] += v
-            if "nodes_other" in res:
+            if 'nodes_other' in res:
                 for nodeType in otherNodeTypes:
-                    if nodeType in res["nodes_other"]:
+                    if nodeType in res['nodes_other']:
                         otherNodesCount[nodeType] += 1
         themeList = dict(themeCount)
         sortedThemeList = sorted(themeList.items(), key=lambda x: x[1])
@@ -424,32 +411,19 @@ def statBreakdown():
 def sitesByStat(themeName=None):
     """
     Return a list of sites with the requested statistic
+    Displays on individual Stat List page /instances/th/<themeName> using instances/sitestats.html
     """
     if themeName:
-        q = get_internal('statistics',  **{"variable_theme_default": themeName})
-    else:
-        q = get_internal('statistics')
-    res = q[0] if len(q) > 0 else {}
-    totalItems = res.get('_meta', None).get('total', None)
+        findThisElement = {'variable_theme_default': themeName}
 
-    # If more items exist than initial request, reset max_results to total to get a full export
-    if totalItems > res.get('_meta', None).get('max_results', None):
-        setArgs = request.args.copy()
-        setArgs['max_results'] = totalItems
-        request.args = setArgs
-        if themeName:
-            qAll = get_internal('statistics',  **{"variable_theme_default": themeName})
-        else:
-            qAll = get_internal('statistics')
-        results = qAll[0].get('_items', None)
-    else:
-        results = res.get('_items', None)
+    results, totalItems = getAllResults(atlasType='statistics', **findThisElement)
+
     # Get list of all instances
+    unsortedList = []
     instanceList = []
     for r in results:
-        if themeName:
-            instanceList.append((r['site'], r['name']))
-
+        unsortedList.append((r['site'], r['name'], r['users']['username']['site_owner']))
+        instanceList = sorted(unsortedList, key=lambda x: x[1])
     return instanceList
 
 

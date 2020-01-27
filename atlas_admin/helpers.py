@@ -330,7 +330,10 @@ def sitesByStat(themeName=None):
     unsortedList = []
     instanceList = []
     for r in results:
-        unsortedList.append((r['site'], r['name'], r['users']['username']['site_owner']))
+        if 'site_owner' in r['users']['username'].keys():
+            unsortedList.append((r['site'], r['name'], r['users']['username']['site_owner']))
+        else:
+            unsortedList.append((r['site'], r['name'],'None'))
         instanceList = sorted(unsortedList, key=lambda x: x[1])
     return instanceList
 
@@ -355,7 +358,7 @@ def sitesByNode(nodeType=None):
 
     instanceList = sorted(unsortedList, key=lambda x: x[1])
     return instanceList
-    
+
 
 def sitesByOtherNode(nodeType=None):
     """

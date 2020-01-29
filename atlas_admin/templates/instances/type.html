@@ -1,6 +1,6 @@
 {% extends "base.html" %}
 
-{% block title %}{%- if siteType -%}{{ siteType }}{%- elif siteStatus -%}{{ siteStatus }}{%-  else -%}All{% endif %}
+{% block title %}{%- if siteType -%}{{ siteType }}{%- elif siteStatus -%}{{ siteStatus }}{%- elif major_unit -%}{{ major_unit }}{%-  else -%}All{% endif %}
 instances{% endblock %}
 
 {% block content %}

@@ -87,6 +87,12 @@ def instances_type(siteType=None):
     return render_template('instances/type.html', instanceList=instanceList, siteType=siteType)
 
 
+@atlas_admin.route('/instances/m/<major_unit>')
+def instances_major_unit(major_unit=None):
+    instanceList = helpers.instances(major_unit=major_unit)
+    return render_template('instances/type.html', instanceList=instanceList, major_unit=major_unit)
+
+
 @atlas_admin.route('/instances/p/<pantheonSize>')
 def instances_pantheon(pantheonSize=None):
     instanceList = helpers.instances(pantheonSize=pantheonSize)

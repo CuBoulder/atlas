@@ -75,7 +75,7 @@ def stat_instances(themeName=None):
         themeName=themeName)
 
 
-@atlas_admin.route('/instances/<id>')
+@atlas_admin.route('/instances/id/<id>')
 def instance(id):
     instanceRecord = helpers.instanceSummary(id)
     return render_template('instance_summary.html', instance=instanceRecord, envVars=envVars)

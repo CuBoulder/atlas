@@ -12,7 +12,7 @@ instances{% endblock %}
             <th>Pantheon size</th>
             {% for (i, j, k) in instanceList %}
             <tr>
-                <td><a href="{{ url_for('.index') }}instances/{{ i }}">{{ j }}</a></td>
+                <td><a href="{{ url_for('.index') }}instances/id/{{ i }}">{{ j }}</a></td>
                 <td>{{ k }}</td>
             </tr>
             {% endfor %}

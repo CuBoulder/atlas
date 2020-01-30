@@ -28,7 +28,7 @@ lxml==3.7.3
 MarkupSafe==0.23
 mysql-connector==2.2.9
 packaging==16.8
-paramiko==1.18.5
+paramiko==2.0.9
 premailer==3.0.1
 pyasn1==0.2.3
 pycparser==2.17

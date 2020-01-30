@@ -221,10 +221,17 @@ def getAllResults(atlasType, **findThisElement):
             results = get_internal(atlasType, **findThisElement)[0]['_items']
         else:
             results = res.get('_items', None)
+<<<<<<< HEAD
 
     return results, totalItems
 
 
+=======
+
+    return results, totalItems
+
+
+>>>>>>> dev
 def summaryStatistics():
     # TODO drupal_system_status
     summary = {

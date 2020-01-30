@@ -8,17 +8,18 @@ instances{% endblock %}
 <div class="row">
     <div class="columns twelve">
         <table>
-          <tr>
-            <th>Name</th><th>Site Owners</th>
+            <tr>
+                <th>Name</th>
+                <th>Site Owners</th>
             </tr>
             {% for (i, j, k) in instanceList %}
             <tr>
-                <td><a href="{{ url_for('.index') }}instances/{{ i }}">{{ j }}</a> </td>
+                <td><a href="{{ url_for('.index') }}instances/id/{{ i }}">{{ j }}</a> </td>
                 <td>
-                  <ul>
-                      {% for person in k %}
-                      <li> {{ person }} </li>
-                      {% endfor %}
+                    <ul>
+                        {% for person in k %}
+                        <li> {{ person }} </li>
+                        {% endfor %}
                     </ul>
                 </td>
             </tr>

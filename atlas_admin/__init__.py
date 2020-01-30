@@ -75,7 +75,7 @@ def stat_instances(themeName=None):
         themeName=themeName)
 
 
-@atlas_admin.route('/instances/<id>')
+@atlas_admin.route('/instances/id/<id>')
 def instance(id):
     instanceRecord = helpers.instanceSummary(id)
     return render_template('instance_summary.html', instance=instanceRecord, envVars=envVars)
@@ -103,6 +103,19 @@ def instances_pantheon(pantheonSize=None):
 def instances_status(siteStatus=None):
     instanceList = helpers.instances(siteStatus=siteStatus)
     return render_template('instances/type.html', instanceList=instanceList, siteStatus=siteStatus)
+
+
+@atlas_admin.route('/instances/b')
+def instances_bundles():
+    statistics_list = helpers.getAllResults('statistics', **{"bundles": {"$exists": 1}})
+    return render_template('instances/statistics.html', statistics_list=statistics_list)
+
+
+@atlas_admin.route('/instances/b/<bundle>')
+def instances_bundle(bundle=None):
+    statistics_list = helpers.getAllResults(
+        'statistics', **{"bundles.{0}".format(bundle): {"$exists": 1}})
+    return render_template('instances/statistics.html', statistics_list=statistics_list, bundle=bundle)
 
 
 @atlas_admin.route('/search', methods=['GET', 'POST'])

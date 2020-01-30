@@ -13,7 +13,7 @@ instances{% endblock %}
             <th>Bundles</th>
             {% for item in statistics_list[0] %}
             <tr>
-                <td><a href="{{ url_for('.index') }}instances/id/{{ item.site }}">{{ item.site }}</a></td>
+                <td><a href="{{ url_for('.index') }}instances/id/{{ item.site }}">{{ item.name }}</a></td>
                 <td>
                     <ul>
                         {% for bundle in item.bundles %}

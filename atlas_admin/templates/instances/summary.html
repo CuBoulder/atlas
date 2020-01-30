@@ -6,7 +6,7 @@
 {%- if summaryInstances -%}
 <div class="row">
     <div class="columns six">
-    {%- if summaryInstances.pantheon_size -%}
+        {%- if summaryInstances.pantheon_size -%}
         <h3>Pantheon Size</h3>
         <ul>
             {% for k,v in summaryInstances.pantheon_size.items() %}
@@ -31,16 +31,16 @@
                 </tr>
             </tbody>
         </table>
-    {% endif %}
-    {%- if statBreakdown.variable_theme_default -%}
-      <h3>Themes</h3>
+        {% endif %}
+        {%- if statBreakdown.variable_theme_default -%}
+        <h3>Themes</h3>
         <ul>
             {% for k,v in statBreakdown.variable_theme_default.items() %}
             <li><a href="{{ url_for('.index') }}instances/th/{{ k }}">{{ k }}</a>: {{ v }}</li>
             {% endfor %}
         </ul>
-      {% endif %}
-      </div>
+        {% endif %}
+    </div>
     {%- if summaryInstances.site_type -%}
     <div class="columns six">
         <h3>Type</h3>
@@ -51,6 +51,16 @@
         </ul>
     </div>
     {% endif %}
+</div>
+<div class="row">
+    <div class="columns six">
+        <h3>Bundles</h3>
+        <ul>
+            {% for k,v in statBreakdown.bundles.items() %}
+            <li><a href="{{ url_for('.index') }}instances/b/{{ k }}">{{ k }}</a>: {{ v }}</li>
+            {% endfor %}
+        </ul>
+    </div>
 </div>
 {%- else -%}
 <p>There are no instances.</p>

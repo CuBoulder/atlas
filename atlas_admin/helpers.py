@@ -371,12 +371,20 @@ def statBreakdown():
 
     if results:
         themeCount = Counter()
+        bundleCount = Counter()
         for res in results:
             if 'variable_theme_default' in res:
                 themeCount[res['variable_theme_default']] += 1
+            if 'bundles' in res:
+                for bundle in res['bundles']:
+                    bundleCount[bundle] += 1
+
         themeList = dict(themeCount)
+        bundleList = dict(bundleCount)
         sortedThemeList = sorted(themeList.items(), key=lambda x: x[1])
+        sortedBundleList = sorted(bundleList.items(), key=lambda x: x[1])
         summary['variable_theme_default'] = OrderedDict(sortedThemeList)
+        summary['bundles'] = OrderedDict(sortedBundleList)
     else:
         summary = None
 

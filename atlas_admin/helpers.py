@@ -40,7 +40,7 @@ def summaryInstances():
         # Count totals by status
         for res in results:
             if 'status' in res:
-                 statusCount[res['status']] += 1
+                statusCount[res['status']] += 1
             if 'site_type' in res:
                 typeCount[res['site_type']] += 1
             if 'pantheon_size' in res:
@@ -223,7 +223,7 @@ def getAllResults(atlasType, **findThisElement):
             results = res.get('_items', None)
 
     return results, totalItems
-    
+
 
 def summaryStatistics():
     # TODO drupal_system_status
@@ -330,7 +330,8 @@ def sitesByStat(themeName=None):
     unsortedList = []
     instanceList = []
     for r in results:
-        unsortedList.append((r['site'], r['name'], r.get('users', None).get('username', None).get('site_owner', 'No Site Owner')))
+        unsortedList.append((r['site'], r['name'],
+            r.get('users', None).get('username', None).get('site_owner', 'No Site Owner')))
         instanceList = sorted(unsortedList, key=lambda x: x[1])
     return instanceList
 
@@ -348,7 +349,8 @@ def sitesByNode(nodeType=None):
         if 'nodes_by_type' in r:
             for k, v in r['nodes_by_type'].items():
                 if k == nodeType:
-                    unsortedList.append((r['site'], r['name'], r.get('users', None).get('username', None).get('site_owner', 'No Site Owner')))
+                    unsortedList.append((r['site'], r['name'],
+                        r.get('users', None).get('username', None).get('site_owner', 'No Site Owner')))
 
     instanceList = sorted(unsortedList, key=lambda x: x[1])
     return instanceList
@@ -366,7 +368,8 @@ def sitesByOtherNode(nodeType=None):
     for r in results:
         if 'nodes_other' in r:
             if nodeType in r['nodes_other']:
-                unsortedList.append((r['site'], r['name'], r.get('users', None).get('username', None).get('site_owner', 'No Site Owner')))
+                unsortedList.append((r['site'], r['name'],
+                    r.get('users', None).get('username', None).get('site_owner', 'No Site Owner')))
 
     instanceList = sorted(unsortedList, key=lambda x: x[1])
     return instanceList

@@ -1,10 +1,7 @@
 {% extends "base.html" %}
 
-<<<<<<< HEAD
 {% block title %}{%- if themeName -%}{{ themeName }}{%- elif nodeCount -%}{{ nodeCount }}{%- elif nodeType -%}{{ nodeType }}{%-  else -%}All{% endif %}
-=======
-{% block title %}{%- if themeName -%}{{ themeName }}{%-  else -%}All{% endif %}
->>>>>>> dev
+
 instances{% endblock %}
 
 {% block content %}
@@ -13,26 +10,12 @@ instances{% endblock %}
     <div class="columns twelve">
         <table>
           <tr>
-<<<<<<< HEAD
             <th width="75%">Name and Site Owner</th>
             </tr>
             {% for (i, j, k) in instanceList %}
             <tr>
                 <td><a href="{{ url_for('.index') }}instances/{{ i }}">{{ j }}</a> <br />
                     {% for person in k %} {{ person }}, {% endfor %}
-=======
-            <th>Name</th><th>Site Owners</th>
-            </tr>
-            {% for (i, j, k) in instanceList %}
-            <tr>
-                <td><a href="{{ url_for('.index') }}instances/{{ i }}">{{ j }}</a> </td>
-                <td>
-                  <ul>
-                      {% for person in k %}
-                      <li> {{ person }} </li>
-                      {% endfor %}
-                    </ul>
->>>>>>> dev
                 </td>
             </tr>
             {% endfor %}

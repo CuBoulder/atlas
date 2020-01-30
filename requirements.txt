@@ -38,7 +38,7 @@ pyparsing==2.2.0
 python-dateutil==2.6.0
 python-ldap==2.4.28
 pytz==2016.4
-PyYAML==3.12
+PyYAML==5.1
 requests==2.20.0
 setuptools==18.5
 simplejson==3.16.0

@@ -43,14 +43,23 @@
     </div>
     {%- if summaryInstances.site_type -%}
     <div class="columns six">
+        {%- if summaryInstances.site_type -%}
         <h3>Type</h3>
         <ul>
             {% for k,v in summaryInstances.site_type.items() %}
             <li><a href="{{ url_for('.index') }}instances/t/{{ k }}">{{ k }}</a>: {{ v }}</li>
             {% endfor %}
         </ul>
+        {% endif %}
+        {%- if summaryInstances.major_unit -%}
+        <h3>Major Unit</h3>
+        <ul>
+            {% for k,v in summaryInstances.major_unit.items() %}
+            <li>{{ k }}: {{ v }}</li>
+            {% endfor %}
+        </ul>
+        {% endif %}
     </div>
-    {% endif %}
 </div>
 <div class="row">
     <div class="columns six">

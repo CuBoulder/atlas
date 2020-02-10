@@ -53,15 +53,19 @@ def summaryInstances():
         statusCount = Counter()
         typeCount = Counter()
         pantheonCount = Counter()
+        major_unit_counter = Counter()
         # Count totals by status
         for res in results:
             statusCount[res['status']] += 1
             if 'site_type' in res:
                 typeCount[res['site_type']] += 1
+            if 'major_unit' in res:
+                major_unit_counter[res['major_unit']] += 1
             if 'pantheon_size' in res:
                 pantheonCount[res['pantheon_size']] += 1
         summary['status'] = OrderedDict(sorted(dict(statusCount).items()))
         summary['site_type'] = OrderedDict(sorted(dict(typeCount).items()))
+        summary['major_unit'] = OrderedDict(sorted(dict(major_unit_counter).items()))
         summary['pantheon_size'] = OrderedDict(sorted(dict(pantheonCount).items()))
     else:
         summary = None
@@ -84,7 +88,7 @@ def instanceSummary(instance):
     return instanceSummary
 
 
-def instances(siteType=None, pantheonSize=None, path=None, siteStatus=None, cse=False):
+def instances(siteType=None, pantheonSize=None, path=None, siteStatus=None, cse=False, major_unit=None):
     if siteType:
         q = get_internal('sites', **{"site_type": siteType})
     elif pantheonSize:
@@ -95,6 +99,8 @@ def instances(siteType=None, pantheonSize=None, path=None, siteStatus=None, cse=
         q = get_internal('sites', **{"path": {"$regex": path}})
     elif cse:
         q = get_internal('sites', **{"settings.cse_id": {"$exists": True}})
+    elif major_unit:
+        q = get_internal('sites', **{"major_unit": major_unit})
     else:
         q = get_internal('sites')
     res = q[0] if len(q) > 0 else {}
@@ -115,6 +121,8 @@ def instances(siteType=None, pantheonSize=None, path=None, siteStatus=None, cse=
             qAll = get_internal('sites', **{"path": {"$regex": path}})
         elif cse:
             qAll = get_internal('sites', **{"settings.cse_id": {"$exists": 1}})
+        elif major_unit:
+            qAll = get_internal('sites', **{"major_unit": major_unit})
         else:
             qAll = get_internal('sites')
         results = qAll[0].get('_items', None)

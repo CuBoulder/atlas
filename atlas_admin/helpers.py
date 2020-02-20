@@ -37,17 +37,21 @@ def summaryInstances():
         statusCount = Counter()
         typeCount = Counter()
         pantheonCount = Counter()
+        major_unit_counter = Counter()
         # Count totals by status
         for res in results:
             if 'status' in res:
                 statusCount[res['status']] += 1
             if 'site_type' in res:
                 typeCount[res['site_type']] += 1
+            if 'major_unit' in res:
+                major_unit_counter[res['major_unit']] += 1
             if 'pantheon_size' in res:
                 pantheonCount[res['pantheon_size']] += 1
         summary['total'] = totalItems
         summary['status'] = OrderedDict(sorted(dict(statusCount).items()))
         summary['site_type'] = OrderedDict(sorted(dict(typeCount).items()))
+        summary['major_unit'] = OrderedDict(sorted(dict(major_unit_counter).items()))
         summary['pantheon_size'] = OrderedDict(sorted(dict(pantheonCount).items()))
     else:
         summary = None
@@ -70,7 +74,7 @@ def instanceSummary(instance):
     return instanceSummary
 
 
-def instances(siteType=None, pantheonSize=None, path=None, siteStatus=None, cse=False):
+def instances(siteType=None, pantheonSize=None, path=None, siteStatus=None, cse=False, major_unit=None):
     if siteType:
         findThisElement = {'site_type': siteType}
     elif pantheonSize:
@@ -81,8 +85,11 @@ def instances(siteType=None, pantheonSize=None, path=None, siteStatus=None, cse=
         findThisElement = {'path': {'$regex': path}}
     elif cse:
         findThisElement = {'settings.cse_id': {'$exists': True}}
+    elif major_unit:
+        findThisElement = {"major_unit": major_unit}
 
     results, totalItems = getAllResults(atlasType='sites', **findThisElement)
+
     # Get list of all instances
     instanceList = []
     for r in results:
@@ -295,6 +302,7 @@ def statBreakdown():
         themeCount = Counter()
         nodeCount = Counter()
         otherNodesCount = Counter()
+        bundleCount = Counter()
         for res in results:
             if 'variable_theme_default' in res:
                 themeCount[res['variable_theme_default']] += 1
@@ -305,11 +313,18 @@ def statBreakdown():
                 for nodeType in otherNodeTypes:
                     if nodeType in res['nodes_other']:
                         otherNodesCount[nodeType] += 1
+            if 'bundles' in res:
+                for bundle in res['bundles']:
+                    bundleCount[bundle] += 1
+
         themeList = dict(themeCount)
+        bundleList = dict(bundleCount)
         sortedThemeList = sorted(themeList.items(), key=lambda x: x[1])
+        sortedBundleList = sorted(bundleList.items(), key=lambda x: x[1])
         summary['variable_theme_default'] = OrderedDict(sortedThemeList)
         summary['nodes_by_type'] = OrderedDict(sorted(dict(nodeCount).items()))
         summary['nodes_other'] = OrderedDict(sorted(dict(otherNodesCount).items()))
+        summary['bundles'] = OrderedDict(sortedBundleList)
     else:
         summary = None
 

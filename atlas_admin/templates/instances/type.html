@@ -1,6 +1,6 @@
 {% extends "base.html" %}
 
-{% block title %}{%- if siteType -%}{{ siteType }}{%- elif siteStatus -%}{{ siteStatus }}{%-  else -%}All{% endif %}
+{% block title %}{%- if siteType -%}{{ siteType }}{%- elif siteStatus -%}{{ siteStatus }}{%- elif major_unit -%}{{ major_unit }}{%-  else -%}All{% endif %}
 instances{% endblock %}
 
 {% block content %}
@@ -12,7 +12,7 @@ instances{% endblock %}
             <th>Pantheon size</th>
             {% for (i, j, k) in instanceList %}
             <tr>
-                <td><a href="{{ url_for('.index') }}instances/{{ i }}">{{ j }}</a></td>
+                <td><a href="{{ url_for('.index') }}instances/id/{{ i }}">{{ j }}</a></td>
                 <td>{{ k }}</td>
             </tr>
             {% endfor %}

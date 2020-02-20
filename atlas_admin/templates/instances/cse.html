@@ -13,7 +13,7 @@
             <th>CSE ID</th>
             {% for (i, j, k, l) in group.list|sort(attribute=2) %}
             <tr>
-                <td><a href="{{ url_for('.index') }}instances/{{ i }}">{{ j }}</a></td>
+                <td><a href="{{ url_for('.index') }}instances/id/{{ i }}">{{ j }}</a></td>
                 <td>{{ k }}</td>
             </tr>
             {% endfor %}

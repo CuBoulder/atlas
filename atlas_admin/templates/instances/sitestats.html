@@ -14,7 +14,7 @@ instances{% endblock %}
             </tr>
             {% for (i, j, k) in instanceList %}
             <tr>
-                <td><a href="{{ url_for('.index') }}instances/{{ i }}">{{ j }}</a> <br />
+                 <td><a href="{{ url_for('.index') }}instances/id/{{ i }}">{{ j }}</a> <br />
                     {% for person in k %} {{ person }}, {% endfor %}
                 </td>
             </tr>

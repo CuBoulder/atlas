@@ -1,0 +1,49 @@
+{% extends "base.html" %}
+
+{% block title %}Instances by Statistic{% endblock %}
+
+{% block content %}
+{%- if statBreakdown -%}
+
+<div class="row">
+
+    {%- if statBreakdown.variable_theme_default -%}
+    <div class="columns six">
+        <h3>Themes</h3>
+        <ul>
+            {% for k,v in statBreakdown.variable_theme_default.items() %}
+            <li><a href="{{ url_for('.index') }}instances/th/{{ k }}">{{ k }}</a>: {{ v }}</li>
+            {% endfor %}
+        </ul>
+    </div>
+    {% endif %}
+
+
+    <div class="columns six">
+        {%- if statBreakdown.nodes_by_type -%}
+        <h3>Nodes by Type</h3>
+        <ul>
+            {% for k,v in statBreakdown.nodes_by_type.items() %}
+          <li><a href="{{ url_for('.index') }}instances/nt/{{ k }}">{{ k }}</a>: {{ v }}</li>
+            {% endfor %}
+        </ul>
+         {% endif %}
+
+         {%- if statBreakdown.nodes_other -%}
+         <h3>Other Node Types</h3>
+         <ul>
+             {% for k,v in statBreakdown.nodes_other.items() %}
+           <li><a href="{{ url_for('.index') }}instances/ont/{{ k }}">{{ k }}</a>: {{ v }}</li>
+             {% endfor %}
+         </ul>
+          {% endif %}
+
+    </div>
+
+
+</div>
+
+{%- else -%}
+<p>There are no instances.</p>
+{% endif %}
+{% endblock %}

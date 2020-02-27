@@ -66,8 +66,14 @@ def instances():
         statBreakdown=statBreakdown)
 
 
+@atlas_admin.route('/instances/stats')
+def stat_summary():
+    statBreakdown = helpers.statBreakdown()
+    return render_template('instances/statlist.html', statBreakdown=statBreakdown)
+
+
 @atlas_admin.route('/instances/th/<themeName>')
-def stat_instances(themeName=None):
+def theme_instances(themeName=None):
     instanceList = helpers.sitesByStat(themeName=themeName)
     return render_template(
         'instances/sitestats.html',
@@ -75,7 +81,19 @@ def stat_instances(themeName=None):
         themeName=themeName)
 
 
-@atlas_admin.route('/instances/<id>')
+@atlas_admin.route('/instances/nt/<nodeType>')
+def node_instances(nodeType=None):
+    instanceList = helpers.sitesByNode(nodeType=nodeType)
+    return render_template('instances/sitestats.html', instanceList=instanceList, nodeType=nodeType)
+
+
+@atlas_admin.route('/instances/ont/<nodeType>')
+def other_node_instances(nodeType=None):
+    instanceList = helpers.sitesByOtherNode(nodeType=nodeType)
+    return render_template('instances/sitestats.html', instanceList=instanceList, nodeType=nodeType)
+
+
+@atlas_admin.route('/instances/id/<id>')
 def instance(id):
     instanceRecord = helpers.instanceSummary(id)
     return render_template('instance_summary.html', instance=instanceRecord, envVars=envVars)
@@ -85,6 +103,12 @@ def instance(id):
 def instances_type(siteType=None):
     instanceList = helpers.instances(siteType=siteType)
     return render_template('instances/type.html', instanceList=instanceList, siteType=siteType)
+
+
+@atlas_admin.route('/instances/m/<major_unit>')
+def instances_major_unit(major_unit=None):
+    instanceList = helpers.instances(major_unit=major_unit)
+    return render_template('instances/type.html', instanceList=instanceList, major_unit=major_unit)
 
 
 @atlas_admin.route('/instances/p/<pantheonSize>')
@@ -97,6 +121,19 @@ def instances_pantheon(pantheonSize=None):
 def instances_status(siteStatus=None):
     instanceList = helpers.instances(siteStatus=siteStatus)
     return render_template('instances/type.html', instanceList=instanceList, siteStatus=siteStatus)
+
+
+@atlas_admin.route('/instances/b')
+def instances_bundles():
+    statistics_list = helpers.getAllResults('statistics', **{"bundles": {"$exists": 1}})
+    return render_template('instances/statistics.html', statistics_list=statistics_list)
+
+
+@atlas_admin.route('/instances/b/<bundle>')
+def instances_bundle(bundle=None):
+    statistics_list = helpers.getAllResults(
+        'statistics', **{"bundles.{0}".format(bundle): {"$exists": 1}})
+    return render_template('instances/statistics.html', statistics_list=statistics_list, bundle=bundle)
 
 
 @atlas_admin.route('/search', methods=['GET', 'POST'])

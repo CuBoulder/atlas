@@ -30,38 +30,28 @@ def summaryInstances():
           with bundles - To Do
     """
 
-    q = get_internal('sites')
-    res = q[0] if len(q) > 0 else {}
-    totalItems = res.get('_meta', None).get('total', None)
-
     summary = {}
+    results, totalItems = getAllResults(atlasType='sites')
 
-    if totalItems:
-        summary['total'] = totalItems
-
-        # If more items exist than initial request, reset max_results to total to get a full export
-        if totalItems > res.get('_meta', None).get('max_results', None):
-            # Copy the existing arguments on the request object
-            setArgs = request.args.copy()
-            # Set our new header
-            setArgs['max_results'] = totalItems
-            request.args = setArgs
-            results = get_internal('sites')[0]['_items']
-        else:
-            results = res.get('_items', None)
-
+    if results:
         statusCount = Counter()
         typeCount = Counter()
         pantheonCount = Counter()
+        major_unit_counter = Counter()
         # Count totals by status
         for res in results:
-            statusCount[res['status']] += 1
+            if 'status' in res:
+                statusCount[res['status']] += 1
             if 'site_type' in res:
                 typeCount[res['site_type']] += 1
+            if 'major_unit' in res:
+                major_unit_counter[res['major_unit']] += 1
             if 'pantheon_size' in res:
                 pantheonCount[res['pantheon_size']] += 1
+        summary['total'] = totalItems
         summary['status'] = OrderedDict(sorted(dict(statusCount).items()))
         summary['site_type'] = OrderedDict(sorted(dict(typeCount).items()))
+        summary['major_unit'] = OrderedDict(sorted(dict(major_unit_counter).items()))
         summary['pantheon_size'] = OrderedDict(sorted(dict(pantheonCount).items()))
     else:
         summary = None
@@ -84,42 +74,22 @@ def instanceSummary(instance):
     return instanceSummary
 
 
-def instances(siteType=None, pantheonSize=None, path=None, siteStatus=None, cse=False):
+def instances(siteType=None, pantheonSize=None, path=None, siteStatus=None, cse=False, major_unit=None):
     if siteType:
-        q = get_internal('sites', **{"site_type": siteType})
+        findThisElement = {'site_type': siteType}
     elif pantheonSize:
-        q = get_internal('sites', **{"pantheon_size": pantheonSize})
+        findThisElement = {'pantheon_size': pantheonSize}
     elif siteStatus:
-        q = get_internal('sites', **{"status": siteStatus})
+        findThisElement = {'status': siteStatus}
     elif path:
-        q = get_internal('sites', **{"path": {"$regex": path}})
+        findThisElement = {'path': {'$regex': path}}
     elif cse:
-        q = get_internal('sites', **{"settings.cse_id": {"$exists": True}})
-    else:
-        q = get_internal('sites')
-    res = q[0] if len(q) > 0 else {}
-    totalItems = res.get('_meta', None).get('total', None)
+        findThisElement = {'settings.cse_id': {'$exists': True}}
+    elif major_unit:
+        findThisElement = {"major_unit": major_unit}
 
-    # If more items exist than initial request, reset max_results to total to get a full export
-    if totalItems > res.get('_meta', None).get('max_results', None):
-        setArgs = request.args.copy()
-        setArgs['max_results'] = totalItems
-        request.args = setArgs
-        if siteType:
-            qAll = get_internal('sites', **{"site_type": siteType})
-        elif pantheonSize:
-            qAll = get_internal('sites', **{"pantheon_size": pantheonSize})
-        elif siteStatus:
-            qAll = get_internal('sites', **{"status": siteStatus})
-        elif path:
-            qAll = get_internal('sites', **{"path": {"$regex": path}})
-        elif cse:
-            qAll = get_internal('sites', **{"settings.cse_id": {"$exists": 1}})
-        else:
-            qAll = get_internal('sites')
-        results = qAll[0].get('_items', None)
-    else:
-        results = res.get('_items', None)
+    results, totalItems = getAllResults(atlasType='sites', **findThisElement)
+
     # Get list of all instances
     instanceList = []
     for r in results:
@@ -135,31 +105,26 @@ def instances(siteType=None, pantheonSize=None, path=None, siteStatus=None, cse=
 
 
 def instancesUserLookup(query=None, query_type=None):
+    """
+    Return a list of sites to which the requested user belongs
+    Display on  /search
+    """
+
     if query_type == 'username':
-        kwargs = {"$or": [{"users.username.site_owner": {"$regex": query, "$options": "i"}}, {"users.username.site_editor": {"$regex": query, "$options": "i"}}, {"users.username.form_manager": {"$regex": query, "$options": "i"}}, {"users.username.edit_my_content": {"$regex": query, "$options": "i"}}, {
-            "users.username.content_editor": {"$regex": query, "$options": "i"}}, {"users.username.configuration_manager": {"$regex": query, "$options": "i"}}, {"users.username.campaign_manager": {"$regex": query, "$options": "i"}}, {"users.username.access_manager": {"$regex": query, "$options": "i"}}]}
+        kwargs = {'$or': [{'users.username.site_owner': {'$regex': query, '$options': 'i'}}, {'users.username.site_editor': {'$regex': query, '$options': 'i'}}, {'users.username.form_manager': {'$regex': query, '$options': 'i'}}, {'users.username.edit_my_content': {'$regex': query, '$options': 'i'}}, {
+            'users.username.content_editor': {'$regex': query, '$options': 'i'}}, {'users.username.configuration_manager': {'$regex': query, '$options': 'i'}}, {'users.username.campaign_manager': {'$regex': query, '$options': 'i'}}, {'users.username.access_manager': {'$regex': query, '$options': 'i'}}]}
     elif query_type == 'email_address':
         # Handle mixed case in email addresses
-        kwargs = {"$or": [{"users.email_address.site_owner": {"$regex": query, "$options": "i"}}, {"users.email_address.site_editor": {"$regex": query, "$options": "i"}}, {"users.email_address.form_manager": {"$regex": query, "$options": "i"}}, {"users.email_address.edit_my_content": {"$regex": query, "$options": "i"}}, {
-            "users.email_address.content_editor": {"$regex": query, "$options": "i"}}, {"users.email_address.configuration_manager": {"$regex": query, "$options": "i"}}, {"users.email_address.campaign_manager": {"$regex": query, "$options": "i"}}, {"users.email_address.access_manager": {"$regex": query, "$options": "i"}}]}
-    q = get_internal('statistics', **kwargs)
-    res = q[0] if len(q) > 0 else {}
-    totalItems = res.get('_meta', None).get('total', None)
+        kwargs = {'$or': [{'users.email_address.site_owner': {'$regex': query, '$options': 'i'}}, {'users.email_address.site_editor': {'$regex': query, '$options': 'i'}}, {'users.email_address.form_manager': {'$regex': query, '$options': 'i'}}, {'users.email_address.edit_my_content': {'$regex': query, '$options': 'i'}}, {
+            'users.email_address.content_editor': {'$regex': query, '$options': 'i'}}, {'users.email_address.configuration_manager': {'$regex': query, '$options': 'i'}}, {'users.email_address.campaign_manager': {'$regex': query, '$options': 'i'}}, {'users.email_address.access_manager': {'$regex': query, '$options': 'i'}}]}
 
-    # If more items exist than initial request, reset max_results to total to get a full export
-    if totalItems > res.get('_meta', None).get('max_results', None):
-        setArgs = request.args.copy()
-        setArgs['max_results'] = totalItems
-        request.args = setArgs
-        qAll = get_internal('statistics', **kwargs)
-        results = qAll[0].get('_items', None)
-    else:
-        results = res.get('_items', None)
+    results, totalItems = getAllResults(atlasType='statistics', **kwargs)
+
     # Get list of all instances
     instanceList = []
     for r in results:
         instance = get_internal(
-            'sites', **{"_id": r['site']})[0]['_items'][0]
+            'sites', **{'_id': r['site']})[0]['_items'][0]
         for role, user in r['users'][query_type].iteritems():
             # Handle mixed case in email addresses
             if query.lower() in lowerList(user):
@@ -169,38 +134,19 @@ def instancesUserLookup(query=None, query_type=None):
 
 
 def summaryUsers():
-    """Return a list of summary statistics about users
+    """Return a list of summary statistics about users to display on home page '/'
     """
-
-    q = get_internal('statistics')
-    res = q[0] if len(q) > 0 else {}
-    totalItems = res.get('_meta', None).get('total', None)
-
     summary = {}
-
-    if totalItems:
-        # If more items exist than initial request, reset max_results to total to get a full export
-        if totalItems > res.get('_meta', None).get('max_results', None):
-            # Copy the existing arguments on the request object
-            setArgs = request.args.copy()
-            # Set our new header
-            setArgs['max_results'] = totalItems
-            request.args = setArgs
-            results = get_internal('statistics')[0]['_items']
-        else:
-            results = res.get('_items', None)
-
-        # Sum totals by role
-        for res in results:
-            if 'users' in res:
-                for k, v in res['users']['counts'].iteritems():
-                    if k in summary:
-                        summary[k] += v
-                    else:
-                        summary[k] = v
-        summary['total'] = len(users()[0])
-    else:
-        summary = {}
+    results, totalItems = getAllResults(atlasType='statistics')
+    # Sum totals by role
+    for res in results:
+        if 'users' in res:
+            for k, v in res['users']['counts'].iteritems():
+                if k in summary:
+                    summary[k] += v
+                else:
+                    summary[k] = v
+    summary['total'] = len(users()[0])
 
     sortedUsers = OrderedDict(sorted(summary.items())) if summary else None
 
@@ -208,21 +154,11 @@ def summaryUsers():
 
 
 def users(role=None):
-    """Return a list of user names and email addresses
     """
-    q = get_internal('statistics')
-    res = q[0] if len(q) > 0 else {}
-    totalItems = res.get('_meta', None).get('total', None)
-
-    # If more items exist than initial request, reset max_results to total to get a full export
-    if totalItems > res.get('_meta', None).get('max_results', None):
-        setArgs = request.args.copy()
-        setArgs['max_results'] = totalItems
-        request.args = setArgs
-        qAll = get_internal('statistics')
-        results = qAll[0].get('_items', None)
-    else:
-        results = res.get('_items', None)
+    Return a list of user names and email addresses
+    Display on /users and users/<role>
+    """
+    results, totalItems = getAllResults(atlasType='statistics')
 
     # Get list of all users
     userNameList = []
@@ -251,23 +187,14 @@ def users(role=None):
 
 def userInstanceLookup(instanceList):
     """Get a list of users and roles given a list of instances
-
+    for display on /user/search
     Arguments:
         instanceList {list}
     """
-    q = get_internal('statistics', **{"site": {"$in": instanceList}})
-    res = q[0] if len(q) > 0 else {}
-    totalItems = res.get('_meta', None).get('total', None)
 
-    # If more items exist than initial request, reset max_results to total to get a full export
-    if totalItems > res.get('_meta', None).get('max_results', None):
-        setArgs = request.args.copy()
-        setArgs['max_results'] = totalItems
-        request.args = setArgs
-        qAll = get_internal('statistics', **{"site": {"$in": instanceList}})
-        results = qAll[0].get('_items', None)
-    else:
-        results = res.get('_items', None)
+    findThisElement = {'site': {'$in': instanceList}}
+    results, totalItems = getAllResults(atlasType='statistics', **findThisElement)
+
     userNameList = []
     for r in results:
         if r.get('users'):
@@ -326,16 +253,16 @@ def summaryStatistics():
         if r.get('theme_is_responsive', False):
             responsive_total += 1
 
-    summary['percent_responsive'] = "{0:.2f}%".format(
-        (float(responsive_total)/totalItems)*100) if responsive_total is not 0 else "N/A"
+    summary['percent_responsive'] = '{0:.2f}%'.format(
+        (float(responsive_total)/totalItems)*100) if responsive_total is not 0 else 'N/A'
     summary['nodes_avg'] = int(summary['nodes_total'] /
-                               totalItems) if summary['nodes_total'] is not 0 else "N/A"
+                               totalItems) if summary['nodes_total'] is not 0 else 'N/A'
     summary['beans_avg'] = int(summary['beans_total'] /
-                               totalItems) if summary['beans_total'] is not 0 else "N/A"
-    summary['avg_days_since_edit'] = int(days_total/totalItems) if days_total is not 0 else "N/A"
+                               totalItems) if summary['beans_total'] is not 0 else 'N/A'
+    summary['avg_days_since_edit'] = int(days_total/totalItems) if days_total is not 0 else 'N/A'
 
-    summary['nodes_total'] = "{:,}".format(summary['nodes_total'])
-    summary['beans_total'] = "{:,}".format(summary['beans_total'])
+    summary['nodes_total'] = '{:,}'.format(summary['nodes_total'])
+    summary['beans_total'] = '{:,}'.format(summary['beans_total'])
 
     return OrderedDict(sorted(summary.items()))
 
@@ -364,19 +291,40 @@ def statBreakdown():
     """
     Returns all site statistics
     Displays on /instances using instances/summary.html
+    Displays on /instances/stats using instances/statlist.html
     """
 
     summary = {}
     results, totalItems = getAllResults(atlasType='statistics')
 
     if results:
+        otherNodeTypes = ['collection_item', 'class_note', 'homepage_callout', 'issue', 'newsletter', 'people_list_page', 'section_page']
         themeCount = Counter()
+        nodeCount = Counter()
+        otherNodesCount = Counter()
+        bundleCount = Counter()
         for res in results:
             if 'variable_theme_default' in res:
                 themeCount[res['variable_theme_default']] += 1
+            if 'nodes_by_type' in res:
+                for k, v in res['nodes_by_type'].items():
+                    nodeCount[k] += v
+            if 'nodes_other' in res:
+                for nodeType in otherNodeTypes:
+                    if nodeType in res['nodes_other']:
+                        otherNodesCount[nodeType] += 1
+            if 'bundles' in res:
+                for bundle in res['bundles']:
+                    bundleCount[bundle] += 1
+
         themeList = dict(themeCount)
+        bundleList = dict(bundleCount)
         sortedThemeList = sorted(themeList.items(), key=lambda x: x[1])
+        sortedBundleList = sorted(bundleList.items(), key=lambda x: x[1])
         summary['variable_theme_default'] = OrderedDict(sortedThemeList)
+        summary['nodes_by_type'] = OrderedDict(sorted(dict(nodeCount).items()))
+        summary['nodes_other'] = OrderedDict(sorted(dict(otherNodesCount).items()))
+        summary['bundles'] = OrderedDict(sortedBundleList)
     else:
         summary = None
 
@@ -389,7 +337,7 @@ def sitesByStat(themeName=None):
     Displays on individual Stat List page /instances/th/<themeName> using instances/sitestats.html
     """
     if themeName:
-        findThisElement = {"variable_theme_default": themeName}
+        findThisElement = {'variable_theme_default': themeName}
 
     results, totalItems = getAllResults(atlasType='statistics', **findThisElement)
 
@@ -397,6 +345,46 @@ def sitesByStat(themeName=None):
     unsortedList = []
     instanceList = []
     for r in results:
-        unsortedList.append((r['site'], r['name'], r['users']['username']['site_owner']))
+        unsortedList.append((r['site'], r['name'],
+            r.get('users', None).get('username', None).get('site_owner', 'No Site Owner')))
         instanceList = sorted(unsortedList, key=lambda x: x[1])
+    return instanceList
+
+
+def sitesByNode(nodeType=None):
+    """
+    return a list of nodes by type
+    """
+
+    results, totalItems = getAllResults(atlasType='statistics')
+
+    unsortedList = []
+    instanceList = []
+    for r in results:
+        if 'nodes_by_type' in r:
+            for k, v in r['nodes_by_type'].items():
+                if k == nodeType:
+                    unsortedList.append((r['site'], r['name'],
+                        r.get('users', None).get('username', None).get('site_owner', 'No Site Owner')))
+
+    instanceList = sorted(unsortedList, key=lambda x: x[1])
+    return instanceList
+
+
+def sitesByOtherNode(nodeType=None):
+    """
+    return a list of nodes by type
+    """
+
+    results, totalItems = getAllResults(atlasType='statistics')
+
+    unsortedList = []
+    instanceList = []
+    for r in results:
+        if 'nodes_other' in r:
+            if nodeType in r['nodes_other']:
+                unsortedList.append((r['site'], r['name'],
+                    r.get('users', None).get('username', None).get('site_owner', 'No Site Owner')))
+
+    instanceList = sorted(unsortedList, key=lambda x: x[1])
     return instanceList

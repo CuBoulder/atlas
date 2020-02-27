@@ -1,5 +1,12 @@
 # Change log
 
+## v2.3.2
+
+- &#35;644 - Updating requirements.txt with compatible dependencies
+- &#35;629 - Add summaries of major_unit and site_type
+- &#35;626 - Add summary of bundles in use
+- &#35;625 - Add Node Count by Node Type
+
 ## v2.3.0-beta8
 
 Resolves:

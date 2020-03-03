@@ -55,7 +55,7 @@
         <h3>Major Unit</h3>
         <ul>
             {% for k,v in summaryInstances.major_unit.items() %}
-            <li>{{ k }}: {{ v }}</li>
+            <li><a href="{{ url_for('.index') }}instances/mu/{{ k }}">{{ k }}</a>: {{ v }}</li>
             {% endfor %}
         </ul>
         {% endif %}

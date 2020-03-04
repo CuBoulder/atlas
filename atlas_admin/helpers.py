@@ -100,7 +100,8 @@ def instances(siteType=None, pantheonSize=None, path=None, siteStatus=None, cse=
         elif cse:
             instanceList.append(
                 (r['_id'], r['path'], r['settings']['cse_id'], r['settings']['cse_creator']))
-
+        elif major_unit:
+            instanceList.append((r['_id'], r['path'], r.get('major_unit', 'no unit')))
     return instanceList
 
 

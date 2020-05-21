@@ -39,6 +39,13 @@ Atlas is a RESTful API that interacts with servers to deploy and maintain [Web E
   brew services start mongodb-community@4.2
   ```
 
+* Create config files and update with your information
+
+  ```sh
+  cp atlas/config_local.py.example atlas/config_local.py
+  cp atlas/config_servers.py.example atlas/config_servers.py
+  ```
+
 * Start Atlas
 
   ```sh

@@ -327,7 +327,7 @@ def switch_settings_files(instance):
         'siteimprove_group': siteimprove_group,
         'google_cse_csx': google_cse_csx,
         'google_tag_client_container_id': google_tag_client_container_id,
-        'reverse_proxies': SERVERDEFS[ENVIRONMENT]['varnish_servers'],
+        'reverse_proxies': SERVERDEFS[ENVIRONMENT]['varnish_servers_ip'],
         'varnish_control': VARNISH_CONTROL_TERMINALS[ENVIRONMENT],
         'varnish_control_key': VARNISH_CONTROL_KEY,
         'pw': utilities.decrypt_string(instance['db_key']),

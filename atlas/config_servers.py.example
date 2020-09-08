@@ -24,6 +24,9 @@ SERVERDEFS = {
             'varnish1.example.com',
             'varnish2.example.com',
         ],
+        'varnish_servers_ip': [
+            '127.0.0.1',
+        ],
         'memcache_servers': [
             'memcache1.example.com:port',
             'memcache2.example.com:port',
@@ -48,6 +51,9 @@ SERVERDEFS = {
             'varnish-test1.example.com',
             'varnish-test2.example.com',
         ],
+        'varnish_servers_ip': [
+            '127.0.0.1',
+        ],
         'memcache_servers': [
             'memcache-test1.example.com:port',
             'memcache-test2.example.com:port',
@@ -70,6 +76,9 @@ SERVERDEFS = {
         'varnish_servers': [
             'varnish-dev1.example.com',
             'varnish-dev2.example.com',
+        ],
+        'varnish_servers_ip': [
+            '127.0.0.1',
         ],
         'memcache_servers': [
             'memcache-dev1.example.com:port',

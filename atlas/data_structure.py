@@ -213,6 +213,9 @@ SITES_SCHEMA = {
             'cse_id': {
                 'type': 'string',
             },
+            'cse_cx_id': {
+                'type': 'string',
+            },
             'google_tag_client_container_id': {
                 'type': 'string',
             },

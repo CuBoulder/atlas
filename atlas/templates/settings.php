@@ -116,8 +116,9 @@ $conf['cache_backends'] = array(
 // Varnish
 $conf['reverse_proxy'] = TRUE;
 $conf['reverse_proxy_addresses'] = array({% for ip in reverse_proxies -%}'{{ip}}',{% endfor %});
-// Drupal will look for IP in $_SERVER['X-Forwarded-For']
-$conf['reverse_proxy_header'] = 'X-Forwarded-For';
+// Drupal will look for IP in the 'X-Forwarded-For' header.
+// Need to use $_SERVER superglobal, so format is 'HTTP_X_FORWARDED_FOR'.
+$conf['reverse_proxy_header'] = 'HTTP_X_FORWARDED_FOR';
 // Define Varnish Server Pool and version.
 $conf['varnish_control_terminal'] = '{{ varnish_control }}';
 $conf['varnish_version'] = 4;

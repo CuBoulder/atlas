@@ -297,6 +297,8 @@ def switch_settings_files(instance):
 
     if ('cse_creator' in instance['settings']) and ('cse_id' in instance['settings']):
         google_cse_csx = instance['settings']['cse_creator'] + ':' + instance['settings']['cse_id']
+    elif 'cse_cx_id' in instance['settings']:
+        google_cse_csx = instance['settings']['cse_cx_id']
     else:
         google_cse_csx = None
 

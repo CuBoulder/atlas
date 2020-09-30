@@ -43,7 +43,7 @@ $conf["google_cse_cx"] = "{{google_cse_csx}}";
 {% else -%}
 $conf["google_cse_cx"] = NULL;
 {% endif %}
-$conf['googleanalytics_account'] = 'UA-25752450-1';
+$conf['googleanalytics_account'] = 'UA-105731679-1';
 
 {% if ( (google_tag_client_container_id) and (environment in ['local','dev','test']) ) %}
   $conf['google_tag_client_container_id'] = '{{ google_tag_client_container_id }}';

@@ -24,7 +24,7 @@ gitdb2==2.0.4
 itsdangerous==0.24
 Jinja2==2.10.1
 kombu==3.0.37
-lxml==3.7.3
+lxml==4.6.3
 MarkupSafe==0.23
 mysql-connector==2.2.9
 packaging==16.8

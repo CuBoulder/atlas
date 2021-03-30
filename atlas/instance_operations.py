@@ -342,7 +342,8 @@ def switch_settings_files(instance):
         'smtp_password': SMTP_PASSWORD,
         'base_url': BASE_URLS[ENVIRONMENT],
         'domain': domain,
-        'servicenow_key': SERVICENOW_KEY
+        'servicenow_key': SERVICENOW_KEY,
+        'express_site_metrics_secret': EXPRESS_SITE_METRICS_SECRET
     }
 
     log.info('Instance | Settings file | Render settings file | Instance ID - %s', instance['_id'])

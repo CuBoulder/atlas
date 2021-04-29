@@ -31,7 +31,7 @@ from atlas.config import (ENVIRONMENT, INSTANCE_ROOT, WEB_ROOT, CORE_WEB_ROOT_SY
                           NFS_MOUNT_FILES_DIR, NFS_MOUNT_LOCATION, SAML_AUTH,
                           SERVICE_ACCOUNT_USERNAME, SERVICE_ACCOUNT_PASSWORD, VARNISH_CONTROL_KEY,
                           SMTP_PASSWORD, WEBSERVER_USER_GROUP, ATLAS_LOCATION, SITE_DOWN_PATH,
-                          SSH_USER, SERVICENOW_KEY)
+                          SSH_USER, SERVICENOW_KEY, EXPRESS_SITE_METRICS_SECRET)
 from atlas.config_servers import (SERVERDEFS, ATLAS_LOGGING_URLS, API_URLS,
                                   VARNISH_CONTROL_TERMINALS, BASE_URLS)
 
@@ -342,7 +342,8 @@ def switch_settings_files(instance):
         'smtp_password': SMTP_PASSWORD,
         'base_url': BASE_URLS[ENVIRONMENT],
         'domain': domain,
-        'servicenow_key': SERVICENOW_KEY
+        'servicenow_key': SERVICENOW_KEY,
+        'express_site_metrics_secret': EXPRESS_SITE_METRICS_SECRET
     }
 
     log.info('Instance | Settings file | Render settings file | Instance ID - %s', instance['_id'])

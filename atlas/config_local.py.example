@@ -74,3 +74,6 @@ EMAIL_USERNAME = ''
 EMAIL_PASSWORD = ''
 # List of users to exlude from any notification emails
 EMAIL_USERS_EXCLUDE = ['test@example.com','osr-test-owner@example.com','osr-test-edit-own@example.com','osr-test-content@example.com']
+
+# Express Site Metrics Settings
+EXPRESS_SITE_METRICS_SECRET = ''

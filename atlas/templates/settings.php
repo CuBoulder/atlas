@@ -26,7 +26,7 @@ $conf["atlas_statistics_id"] = "{{atlas_statistics_id}}";
 $conf["atlas_logging_url"] = "{{atlas_logging_url|join(sid)}}";
 
 // Express Site Metrics
-$conf['express_site_metrics_secret'] = "{{express_site_metrics_secret}}";
+$conf["express_site_metrics_secret"] = "{{express_site_metrics_secret}}";
 $path = "{{path}}";
 {% if status in ['launched', 'launching'] -%}
 $launched = TRUE;

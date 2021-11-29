@@ -53,7 +53,7 @@ pylint==1.9.5
 pymongo==3.7.0
 pyparsing==2.2.0
 python-dateutil==2.6.0
-python-ldap==3.2.0
+python-ldap==3.4.0
 pytz==2016.4
 PyYAML==3.12
 requests==2.20.0

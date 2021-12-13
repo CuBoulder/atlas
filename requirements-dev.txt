@@ -36,7 +36,7 @@ itsdangerous==0.24
 Jinja2==2.10.1
 kombu==3.0.37
 lazy-object-proxy==1.4.2
-lxml==3.7.3
+lxml==4.6.5
 MarkupSafe==0.23
 mccabe==0.6.1
 mysql-connector==2.2.9
